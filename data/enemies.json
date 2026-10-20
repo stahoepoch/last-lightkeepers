@@ -1,0 +1,56 @@
+{
+  "_comment": "Enemy roster. Four types in version one. Every enemy must telegraph with sound before sight - that is an accessibility requirement, not polish.",
+
+  "Sweepers": {
+    "formerJob": "Floor cleaners",
+    "behaviour": "Weak alone. Swarm lit players and dropped loot.",
+    "counterplay": "Kill lights, move, or drop loot as a decoy.",
+    "health": 40,
+    "moveSpeed": 14,
+    "aggroRadiusDark": 12,
+    "aggroRadiusLit": 38,
+    "swarmCallRadius": 45,
+    "attractedToDroppedLoot": true,
+    "audioTelegraphSeconds": 1.0
+  },
+
+  "Stockers": {
+    "formerJob": "Shelf stackers",
+    "behaviour": "Slow, tall, strong line of sight.",
+    "counterplay": "Break sight and pass in darkness.",
+    "health": 160,
+    "moveSpeed": 8,
+    "sightRange": 70,
+    "sightConeDegrees": 70,
+    "losesTargetAfterSeconds": 4,
+    "audioTelegraphSeconds": 1.5
+  },
+
+  "Glimmers": {
+    "formerJob": "Maintenance drones",
+    "behaviour": "Complete a 2-second scan, then tag one player for 20 seconds.",
+    "counterplay": "Go dark before the scan completes; break sight and relocate if tagged.",
+    "health": 25,
+    "moveSpeed": 18,
+    "scanSeconds": 2,
+    "tagSeconds": 20,
+    "tagRevealsPositionToAllRobots": true,
+    "tagAddsStormCharge": 0,
+    "tagGivesWardenPermanentWaypoint": false,
+    "scanRequiresActiveLantern": true,
+    "audioTelegraphSeconds": 0.75
+  },
+
+  "Warden": {
+    "formerJob": "Mall security",
+    "behaviour": "Converges on the brightest position once Storm Charge hits WardenConverges.",
+    "counterplay": "Hide, kite, distract, or extract. Never kill it.",
+    "killable": false,
+    "dropsLoot": false,
+    "moveSpeed": 16,
+    "spawnStage": "Rooftop",
+    "retargetIntervalSeconds": 5,
+    "audioTelegraphSeconds": 3.0,
+    "_comment": "Not a boss. It is Storm Charge's final warning given a body. If it ever becomes killable, the meter stops meaning anything."
+  }
+}

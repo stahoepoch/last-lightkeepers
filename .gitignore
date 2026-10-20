@@ -1,0 +1,18 @@
+# Rojo build output
+*.rbxl
+*.rbxlx
+*.rbxl.lock
+*.rbxlx.lock
+
+# Rojo serve logs
+rojo-serve.log
+rojo-serve.err.log
+
+# Toolchain
+/.lune/
+/node_modules/
+
+# OS
+Thumbs.db
+desktop.ini
+.DS_Store

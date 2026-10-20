@@ -1,0 +1,66 @@
+{
+  "_comment": "Loot tiers. The tier/examples/feeds mapping below is my reading of the handoff's loot table, which is still collapsed in the rendered PDF - correct it if I guessed wrong.",
+
+  "rules": {
+    "baselineLootAlwaysVisible": true,
+    "relicsRequireLanternLight": true,
+    "restorationCratesArePocketable": false
+  },
+
+  "tiers": {
+    "Supplies": {
+      "examples": ["fabric", "scrap", "batteries", "food"],
+      "visibility": "always",
+      "feeds": "WorkshopUpgrades",
+      "carrySlots": 1
+    },
+    "Components": {
+      "examples": ["medicine", "wiring", "lenses", "tools"],
+      "visibility": "always",
+      "sourceHint": "Logical locations - pharmacy for medicine, arcade for wiring and lenses.",
+      "feeds": "GadgetCrafting",
+      "carrySlots": 1
+    },
+    "Relics": {
+      "examples": ["odd pre-storm technology"],
+      "visibility": "lanternOnly",
+      "sourceHint": "Rare caches. Invisible without an active lantern - this is the whole reason to turn light on.",
+      "feeds": ["Cosmetics", "SpecialCrafting", "LandmarkContributions"],
+      "carrySlots": 2
+    },
+    "RestorationCrates": {
+      "examples": ["bulky town supplies"],
+      "visibility": "always",
+      "sourceHint": "Fixed spawns. Team-carried; a carrier cannot fight normally.",
+      "feeds": "LanternholdLandmarks",
+      "carrySlots": 0,
+      "blocksCombatWhileCarried": true
+    }
+  },
+
+  "banking": {
+    "_comment": "Partial-loss wipe rule. Never sell a way around this.",
+    "relayBanksPerRun": 1,
+    "bankedKeptOnWipe": 1.0,
+    "unbankedKeptOnWipe": 0.5,
+    "disconnectUsesSameRule": true
+  },
+
+  "extraction": {
+    "LoadingDock": {
+      "reliability": "high",
+      "payoutModifier": 1.0,
+      "arrivalSeconds": 0,
+      "note": "Reliable and early. Pays less than a deeper push."
+    },
+    "FreightLift": {
+      "reliability": "risky",
+      "payoutModifier": 1.6,
+      "arrivalSeconds": 20,
+      "requires": "SubBasementBreakerRestored",
+      "note": "Deeper second exit. The 20-second wait is the cost."
+    }
+  },
+
+  "_notAnExit": ["Rooftop"]
+}

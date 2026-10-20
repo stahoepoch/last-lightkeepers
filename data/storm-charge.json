@@ -1,0 +1,43 @@
+{
+  "_comment": "Storm Charge tuning. Portable balance data - no Roblox types in here. Anchors come from the handoff: 8 minutes to first threshold in permanent darkness; one active lantern raises the meter at roughly 2.5x baseline.",
+
+  "baselineRatePerSecond": 1.0,
+
+  "lantern": {
+    "_comment": "multiplier = 1 + perLanternBonus * activeLanterns, clamped to maxMultiplier. One lantern = 2.5x, per the handoff. The cap is the knob that decides how brutal an all-lit four-crew run is; test it before trusting it.",
+    "perLanternBonus": 1.5,
+    "maxMultiplier": 5.0
+  },
+
+  "thresholds": [
+    {
+      "id": "PatrolsAlert",
+      "value": 480,
+      "darkSeconds": 480,
+      "oneLanternSeconds": 192,
+      "effect": "Patrol routes tighten and Sweepers investigate noise further from their spawn."
+    },
+    {
+      "id": "PatrolsHunt",
+      "value": 720,
+      "darkSeconds": 720,
+      "oneLanternSeconds": 288,
+      "effect": "All patrols actively hunt. Glimmer scan frequency increases."
+    },
+    {
+      "id": "WardenConverges",
+      "value": 960,
+      "darkSeconds": 960,
+      "oneLanternSeconds": 384,
+      "effect": "The Warden spawns at the rooftop stage and converges on the crew's brightest position."
+    }
+  ],
+
+  "anchorRevive": {
+    "_comment": "Solo rule: one self-revive per run, paid for with light.",
+    "chargesPerRun": 1,
+    "reviveSeconds": 8,
+    "consumesFullLanternCharge": true,
+    "stormChargeSpike": 120
+  }
+}
