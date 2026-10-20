@@ -46,3 +46,20 @@ The static map currently has no tags, marker parts, or explicit SpawnLocation.
 The new map builder is addressing that ownership-side requirement. Once it lands,
 verify at runtime that `RelayBank`, `Extraction`, `Loot`, and `SweeperSpawn`
 each report nonzero tagged instance counts.
+
+## 2026-10-20 — runtime blocker in the first Studio playtest
+
+The generated Flooded Mall is structurally ready in Studio: `Loot=8`,
+`RelayBank=1`, `Extraction=2`, and `SweeperSpawn=4`, with both extraction IDs
+present. The player spawns and the lantern/HUD client path runs.
+
+However, Output reports `You must publish this place to the web to access
+DataStore` from `ServerScriptService.Server.services.PlayerDataService`, line 9,
+followed by `Requested module experienced an error while loading` at
+`ServerScriptService.Server`, line 16. As a result, no `ProximityPrompt`
+instances are created in the running client, including at the relay and exits.
+
+Please make the API-disabled local-playtest path non-fatal: continue startup
+with persistence disabled, while retaining the current fail-closed rule that a
+profile which did not load cleanly must never be saved. This is not a map tag
+or placement issue.

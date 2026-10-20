@@ -1,0 +1,11 @@
+{
+  "name": "last-lightkeepers",
+  "private": true,
+  "type": "module",
+  "description": "Checks for the Last Lightkeepers Roblox project. Node only - no dependencies, no install.",
+  "scripts": {
+    "test": "node tests/balance.test.mjs && node tests/wiring.test.mjs",
+    "test:balance": "node tests/balance.test.mjs",
+    "test:wiring": "node tests/wiring.test.mjs"
+  }
+}

@@ -232,7 +232,8 @@ local function loot(parent: Instance, name: string, position: Vector3, tier: str
 end
 
 local function addStormLighting()
-	Lighting.Technology = Enum.Technology.Future
+	-- Rendering technology is configured by the place. Setting it here requires
+	-- RobloxScript capability and prevents MCP-driven builds from running.
 	Lighting.ClockTime = 2
 	Lighting.Brightness = 1.1
 	Lighting.Ambient = Color3.fromRGB(8, 11, 20)
