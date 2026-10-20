@@ -206,22 +206,36 @@ function GalleriaBuilder.Build(): Model
 	local seAng = math.atan2(se.Y, se.X)
 	local seNE = Vector2.new(se.Y, -se.X) -- north-east flank of the Sears arm
 
-	anchor("BOSCOVS", -24.5, 0, 13, 14, 0, { { -16.3, 0, 0 } })
+	-- Every anchor is placed from the mall's own geometry rather than from a
+	-- hand-typed centre, because hand-typed centres drift the moment HALL or
+	-- DEPTH changes. EDGE is the outer face of the shop band; an anchor that
+	-- flanks an arm puts its near face there, and an anchor that closes an arm
+	-- puts its near face on the arm's end. Chris: "it looks like boscov's is
+	-- detached lol" - it was, by two units, and shrinking DEPTH from 3.4 to 3.2
+	-- had quietly opened a smaller gap at JCPenney too while burying Bon-Ton
+	-- inside the shops.
+	local EDGE = HALL + DEPTH
 
-	local sears = ARMS[2].b + se * 6.5
-	local searsDoor = ARMS[2].b + se * 1.4
-	anchor("SEARS", sears.X, sears.Y, 14, 13, seAng, { { searsDoor.X, searsDoor.Y, 0 } })
+	-- Boscov's closes the west arm, so its east face is the arm's end.
+	local bosc = Vector2.new(ARMS[1].b.X - 13 / 2, 0)
+	anchor("BOSCOVS", bosc.X, bosc.Y, 13, 14, 0, { { ARMS[1].b.X, 0, -math.pi / 2 } })
+
+	-- Sears closes the south-east arm the same way, squared to it.
+	local sears = ARMS[2].b + se * (14 / 2)
+	local searsDoor = ARMS[2].b + se * 0.3
+	anchor("SEARS", sears.X, sears.Y, 14, 13, seAng, { { searsDoor.X, searsDoor.Y, seAng - math.pi / 2 } })
 
 	-- JCPenney and Bon-Ton both sit on the NORTH side, on opposite arms, with
 	-- the bend between them. Three earlier versions had one or both on the
 	-- south, which is what Chris kept seeing as wrong: on the aerial there is
 	-- open ground between them right at the court, and putting them on the same
 	-- flank closed that gap up.
-	anchor("JCPENNEY", -6, -10.6, 14, 11, 0, { { -9, -5.3, 0 }, { -3, -5.3, 0 } })
+	local jcpZ = -(EDGE + 11 / 2)
+	anchor("JCPENNEY", -6, jcpZ, 14, 11, 0, { { -9, -EDGE, 0 }, { -3, -EDGE, 0 } })
 
-	local bt = BEND + se * 5.0 + seNE * 8.0
-	local btDoor = BEND + se * 5.0 + seNE * 3.3
-	anchor("BON-TON", bt.X, bt.Y, 12, 10, seAng, { { btDoor.X, btDoor.Y, 0 } })
+	local bt = BEND + se * 5.0 + seNE * (EDGE + 10 / 2)
+	local btDoor = BEND + se * 5.0 + seNE * EDGE
+	anchor("BON-TON", bt.X, bt.Y, 12, 10, seAng, { { btDoor.X, btDoor.Y, seAng + math.pi / 2 } })
 
 	M.Parent = map
 	return M
