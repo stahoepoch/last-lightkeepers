@@ -6,7 +6,21 @@ local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
 
 local STORE_NAME = "LightkeeperProfile_v1"
-local store = DataStoreService:GetDataStore(STORE_NAME)
+local store: GlobalDataStore? = nil
+
+do
+
+	local ok, result = pcall(function()
+		return DataStoreService:GetDataStore(STORE_NAME)
+	end)
+	if ok then
+		store = result
+	else
+		-- Local, unpublished places can reject DataStore access before a profile
+		-- read begins. Keep the game playable, but never write a temporary profile.
+		warn(`[PlayerDataService] persistence unavailable: {result}`)
+	end
+end
 
 local PlayerDataService = {}
 
@@ -39,6 +53,11 @@ function PlayerDataService.load(player: Player): Profile
 	end
 
 	local profile = defaultProfile()
+	if not store then
+		profile.loadFailed = true
+		cache[player.UserId] = profile
+		return profile
+	end
 	local ok, result = pcall(function()
 		return store:GetAsync(tostring(player.UserId))
 	end)

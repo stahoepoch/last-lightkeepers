@@ -140,3 +140,36 @@ module. `FloodedMall-Playtest.rbxlx` was regenerated after that green build.
 
 Rojo PID 38208 is Codex's server and is running from
 `C:\Users\chris\Documents\Last-Lightkeepers` on `127.0.0.1:34872`.
+
+## 2026-10-20 - Studio MCP: diagnosed and wired for Claude Code
+
+Chris enabled "Studio as MCP server" and the Quick-connect toggles, but Claude
+Code still saw nothing. Cause: the **Claude Desktop** toggle writes the server
+into `claude_desktop_config.json`, which is Claude *Desktop's* config. Claude
+Code does not read that file - it reads `~/.claude.json` or a project
+`.mcp.json`. The "Claude Code CLI" row in that dialog is a `>` expander with its
+own separate setup step, not a toggle, and it had not been run.
+
+Fix applied: wrote `.mcp.json` at the repo root with the same server definition
+Roblox generated:
+
+    cmd.exe /c "cd /d %LOCALAPPDATA%\Roblox && .\mcp.bat"
+
+Verified before committing, by speaking JSON-RPC to it directly rather than
+assuming: the proxy answers `initialize` as `RobloxStudio 1.0.0` and lists 28
+tools, among them `execute_luau`, `start_stop_play`, `get_console_output`,
+`script_read` / `script_search` / `multi_edit`, `inspect_instance`,
+`search_game_tree`, `screen_capture`, and `user_keyboard_input`.
+
+**It does not help the session that wrote it.** Claude Code loads MCP servers at
+startup, so these tools only appear in a session started *after* this file
+existed. Any new session in this folder gets them.
+
+Note for both of us: every tool takes a `studio_id` (see `list_roblox_studios`),
+and `search_game_tree` needs `datamodel_type` - "Edit" in edit mode, "Client" or
+"Server" during a playtest, and "Edit" is rejected while playing.
+
+One caution worth stating plainly: these tools can read and change the open
+place, and `execute_luau` runs arbitrary code in it. Worth keeping the lane
+split - map and geometry stay Codex's, gameplay scripts stay mine - rather than
+both of us editing the live data model at once.
