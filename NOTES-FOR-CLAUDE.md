@@ -143,3 +143,68 @@ acquires a target and again if a player walks into an idle one, and may not hit
 until the delay has elapsed. That guarantees sound precedes damage in every
 path. Gating detection itself would mean a Sweeper that sees you but cannot act
 for a second, which reads worse and is not what the sentence requires.
+
+## 2026-10-20 - The two-player pass. All three co-op behaviours verified.
+
+Chris got Studio's Clients and Servers running with 2 players, which turned out
+to expose three separately addressable Studio instances - one server and one per
+client - so each player could be driven independently. Everything below was
+previously impossible to test and is now confirmed in a running game.
+
+**Relic visibility is genuinely per-player.** Both players standing at
+`Relic_Waterfall`, Player 1 lit, Player 2 dark:
+
+    Player 1 client : relic prompt Enabled = true
+    Player 2 client : relic prompt Enabled = false   (while seeing activeLanterns = 1)
+    Server          : relic prompt Enabled = false
+
+Player 2's snapshot shows `activeLanterns = 1`, so the crew-wide fact is visible
+to them and the per-player decision still comes out right. Under the old
+crew-wide toggle Player 2 would have seen the prompt. That closes the gap for
+real rather than by argument.
+
+**Teammate revive works, and takes exactly as long as configured.** Player 2
+downed, Player 1 three studs away: 4.04s from request to standing, against
+`teammateHoldSeconds` of 4.
+
+A measurement caution worth keeping: the first run of this measured 7.78s and I
+nearly reported a double-count bug. The extra 3.7s was my own tool round-trip
+between arming the watcher and firing the request. Re-measured with
+`workspace:GetServerTimeNow()` taken on the client immediately before firing, it
+is 4.04s. Time co-op interactions inside one call, or with a synced clock.
+
+**The crew wipe fires, and the solo-only gate is what allows it.** Both players
+downed with `crewSize` 2: neither could Anchor Revive, so the wipe ran. Player 1
+carried Components x2 and the summary read
+
+    "Lanterns burned out - half of what you carried is gone  |  Components x1"
+
+which is `unbankedKeptOnWipe` 0.5 applied correctly, while Player 2 - carrying
+nothing - got "nothing recovered". Per-viewer payouts are right. Snapshots
+stopped, confirming `run.finished`. This is the runtime verification 2bb8b84
+was committed without.
+
+### Open, not fixed: the revive costs twice what it should
+
+The RevivePrompt is created with `HoldDuration = teammateHoldSeconds` (observed
+live: `hold=4s`), and `Triggered` only fires once that hold completes. The server
+then runs its own 4s through `stepRevives` (observed: 4.04s from request to
+standing). So a real player holds E for 4s and then waits another 4s - about 8s
+for a "4-second proximity hold".
+
+Both halves are observed; the 8s total is inferred, because simulated input does
+not reach a ProximityPrompt with a non-zero hold and I could not press the key
+for real. Chris can confirm it in two windows in about ten seconds.
+
+It is left unfixed because the three fixes trade off differently and the choice
+is a feel decision, not a correctness one:
+
+- Prompt taps (`HoldDuration` 0), server keeps the 4s. Matches the documented
+  "4-second proximity hold... walking away cancels it" and keeps timing
+  server-authoritative, but loses the prompt's built-in progress bar, so the
+  rescuer gets no feedback that anything is happening.
+- Prompt keeps the 4s hold and `Triggered` stands them up immediately. Keeps the
+  progress bar, but moves the timing to the client - a modified client could
+  revive instantly. Proximity is still server-checked.
+- Prompt taps and the HUD draws the progress from a new snapshot field. Correct
+  on both axes, and the most work.

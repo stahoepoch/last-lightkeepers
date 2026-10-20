@@ -252,6 +252,13 @@ function RunStateService.knockDown(player: Player)
 	if Config.Lantern.knockdown.lanternForcedOffWhenDowned then
 		state.lanternOn = false
 	end
+	-- Off by Chris's call, 2026-10-20: a downed Lightkeeper keeps the crate.
+	--
+	-- Note what this branch does and does not do, because a playtest caught it
+	-- being a lie: it frees the carry slot but leaves RestorationCrates sitting
+	-- in the haul, so a "dropped" crate still extracted at full value. Setting
+	-- the flag back on needs the tier removed from state.haul.carried here too,
+	-- and a decision about where the crate goes - the floor, or gone.
 	if Config.Lantern.knockdown.dropsCarriedCrate then
 		state.carryingCrate = false
 	end
