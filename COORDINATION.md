@@ -149,3 +149,23 @@ Append a dated line per working session. Newest at the bottom.
   build error Claude recorded in `NOTES-FOR-CODEX.md`; regenerated the place
   from a green Rojo build at the flattened root. Rojo serve PID 38208 is the
   current, root-bound server.
+
+## Commit hygiene with two agents in one tree (learned the hard way)
+
+**Do not use `git add -A`.** Stage the paths you actually changed.
+
+On 2026-10-20 commit `e65cee1` ("Record the Workspace.Map root cause for Codex")
+says "Diagnosis only - map geometry and the builder are Codex's lane". That is
+false about its own contents: a `git add -A` swept in Codex's in-flight fix to
+`src/server/init.server.luau`, a README edit and wiring-test additions that
+were sitting unstaged in the working tree at that moment. The code is good and
+has been left alone; only the attribution is wrong, and it is recorded here
+rather than rewritten, because another session was working in this tree at the
+time and rebasing under it would have been worse.
+
+The log is now slightly misleading about who wrote what in that commit. That is
+exactly the failure COORDINATION.md was written to prevent, and it happened
+anyway because the rule covered file ownership but not staging.
+
+Rule going forward: `git add <explicit paths>`, and check `git status` before
+committing when any other session may be live.
