@@ -307,6 +307,57 @@ console.log("\nCross-module calls");
   }
 }
 
+// ---- 8. the Sweeper rig and its telegraph ----------------------------------
+{
+  const byName = new Map(files.map((f) => [f.name, f]));
+  const rig = byName.get("SweeperRig");
+  const enemy = byName.get("EnemyService");
+
+  check("SweeperRig exists", rig !== undefined, "EnemyService clones a template that must be built somewhere");
+
+  // These two guards look for the ABSENCE of a string, so they have to ignore
+  // comments - the file explains in prose why it avoids both of them.
+  const codeOnly = (src) =>
+    src
+      .split("\n")
+      .filter((l) => !l.trim().startsWith("--"))
+      .join("\n");
+
+  if (rig) {
+    check(
+      "the rig builds ReplicatedStorage.Enemies.Sweeper",
+      /FOLDER_NAME = "Enemies"/.test(rig.src) && /RIG_NAME = "Sweeper"/.test(rig.src),
+      "EnemyService looks the template up by that exact path",
+    );
+    // The handoff requires a sound telegraph; a made-up asset id would be worse
+    // than an obvious gap, so the id stays empty until Chris supplies one.
+    check(
+      "the telegraph SoundId is left empty",
+      /SoundId = ""/.test(rig.src) && !/rbxassetid/.test(codeOnly(rig.src)),
+      "never invent an rbxassetid for a required accessibility sound",
+    );
+    check(
+      "the rig needs no project mapping or model file",
+      !/\.rbxmx/.test(codeOnly(rig.src)),
+      "default.project.json and .rbxmx are Codex's lane; the rig is built in code",
+    );
+  }
+
+  if (enemy) {
+    check(
+      "EnemyService builds the rig before spawning",
+      /function EnemyService[.]init[\s\S]*?SweeperRig[.]ensure/.test(enemy.src),
+      "spawnSweepersAtTaggedPoints clones a template that must already exist",
+    );
+    // Accessibility: sound before sight. A hit may not land before the warning.
+    check(
+      "contact is gated on audioTelegraphSeconds",
+      /audioTelegraphSeconds[\s\S]{0,200}registerContact/.test(enemy.src),
+      "an enemy must telegraph with sound before it can hit you",
+    );
+  }
+}
+
 console.log(`\n${checks - failures}/${checks} passed`);
 if (failures > 0) {
   console.log(`${failures} FAILED\n`);

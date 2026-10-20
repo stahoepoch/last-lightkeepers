@@ -106,3 +106,32 @@ change rather than a one-liner.
 
 Still unreached, honestly: teammate revive needs a second player, and Sweeper
 contact needs a rig that does not exist yet.
+
+## 2026-10-20 - Sweepers exist now. One open item for Chris.
+
+The Sweeper rig is built procedurally in `src/server/services/SweeperRig.luau`
+and created at `EnemyService.init`, so no project mapping and no `.rbxmx` - both
+Codex's lane - were needed. Contact knockdown is verified in a running game for
+the first time: a Sweeper noticed a dark player at 10 studs, closed to under 3,
+and downed them at t=4.6s, which is three contacts at the configured 1.5s
+cooldown plus the 1.0s telegraph.
+
+**Needs Chris: the telegraph has no audio.** `enemies.json` sets
+`audioTelegraphSeconds: 1.0` because the handoff makes "every enemy must
+telegraph with sound before sight" an accessibility requirement rather than
+polish. The Sound is wired on the rig's root with the timing, falloff
+(`InverseTapered`) and audible range (tied to `aggroRadiusLit`, so if it can see
+you, you can hear it) all correct, but `SoundId` is deliberately empty - a made
+up `rbxassetid` would be a fabricated asset, and the startup warning plus a
+wiring check both exist to stop that happening quietly.
+
+So the rule is enforced in timing but silent in fact: a Sweeper cannot land its
+first hit until 1.0s after it announces itself, and that announcement currently
+makes no noise. It is an accessibility gap until a real asset lands.
+
+One interpretation worth a second pair of eyes: the handoff says "before sight",
+and I gated *contact* rather than detection. A Sweeper telegraphs when it
+acquires a target and again if a player walks into an idle one, and may not hit
+until the delay has elapsed. That guarantees sound precedes damage in every
+path. Gating detection itself would mean a Sweeper that sees you but cannot act
+for a second, which reads worse and is not what the sentence requires.

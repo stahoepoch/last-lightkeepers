@@ -15,6 +15,7 @@ local Config = require(Shared:WaitForChild("Config"))
 local Types = require(Shared:WaitForChild("Types"))
 
 local RunStateService = require(script.Parent:WaitForChild("RunStateService"))
+local SweeperRig = require(script.Parent:WaitForChild("SweeperRig"))
 
 local EnemyService = {}
 
@@ -76,6 +77,23 @@ function EnemyService.driveSweeper(model: Model)
 	humanoid.MaxHealth = def.health
 	humanoid.Health = def.health
 
+	-- The telegraph. "Every enemy must telegraph with sound before sight" is an
+	-- accessibility requirement from the handoff, so a Sweeper may not land its
+	-- first hit until `audioTelegraphSeconds` after it has announced itself.
+	-- Tracked per Sweeper, because the warning belongs to the robot that is
+	-- about to hit you, not to the species.
+	local telegraphedAt: number? = nil
+	local sound = (root :: BasePart):FindFirstChild("Telegraph") :: Sound?
+
+	local function telegraph()
+		telegraphedAt = os.clock()
+		-- An empty SoundId is the known gap, not a bug: playing it would only
+		-- log noise. EnemyService.init says so once, at startup.
+		if sound and sound.SoundId ~= "" then
+			sound:Play()
+		end
+	end
+
 	-- Contact watcher. Separate from the path loop so a Sweeper still lands hits
 	-- while it is mid-waypoint rather than only when it finishes moving.
 	task.spawn(function()
@@ -87,7 +105,13 @@ function EnemyService.driveSweeper(model: Model)
 				if targetRoot and targetRoot:IsA("BasePart") then
 					local distance = ((root :: BasePart).Position - targetRoot.Position).Magnitude
 					if distance <= contact.contactRange then
-						RunStateService.registerContact(player)
+						-- Walking into an idle Sweeper must still be announced,
+						-- so the telegraph starts here if the chase never did.
+						if not telegraphedAt then
+							telegraph()
+						elseif os.clock() - telegraphedAt >= def.audioTelegraphSeconds then
+							RunStateService.registerContact(player)
+						end
 					end
 				end
 			end
@@ -96,8 +120,14 @@ function EnemyService.driveSweeper(model: Model)
 	end)
 
 	task.spawn(function()
+		local hadTarget = false
 		while model.Parent and humanoid.Health > 0 do
 			local target = EnemyService.pickTarget((root :: BasePart).Position, "Sweepers")
+			-- Announce on acquisition, which is what puts the sound before sight.
+			if target and not hadTarget then
+				telegraph()
+			end
+			hadTarget = target ~= nil
 			if target and target.Character then
 				local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
 				if targetRoot then
@@ -185,6 +215,15 @@ end
 
 function EnemyService.init()
 	RunStateService.onThresholdCrossed = EnemyService.onThresholdCrossed
+
+	-- Build the template before anything tries to clone it.
+	local rig = SweeperRig.ensure()
+	local sound = rig.PrimaryPart and rig.PrimaryPart:FindFirstChild("Telegraph")
+	if sound and sound:IsA("Sound") and sound.SoundId == "" then
+		warn(
+			"[EnemyService] the Sweeper telegraph has no SoundId - timing and falloff are wired, but it is silent until Chris supplies an audio asset. Enemies are required to telegraph with sound before sight."
+		)
+	end
 
 	-- This was never called. Sweepers had a spawn function, four tagged spawn
 	-- points and a contact path that knocks players down, and none of it ever
