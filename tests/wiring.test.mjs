@@ -259,6 +259,17 @@ console.log("\nCross-module calls");
       "the spawn function existed but was never called, so nothing could knock a player down",
     );
   }
+
+  const server = files.find((f) => f.rel.endsWith("server/init.server.luau"));
+  if (server) {
+    const buildAt = server.src.indexOf("FloodedMallBuilder.Build()");
+    const interactionsAt = server.src.indexOf("InteractionService.init()");
+    check(
+      "server builds the tagged mall before interactions initialize",
+      buildAt >= 0 && interactionsAt > buildAt,
+      "Rojo clears Workspace.Map.GeneratedFloodedMall on sync; starting services first leaves no prompts",
+    );
+  }
 }
 
 console.log(`\n${checks - failures}/${checks} passed`);

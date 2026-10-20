@@ -2,12 +2,21 @@
 -- Server entry point. Creates remotes, wires services, starts the run.
 
 local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Remotes = require(Shared:WaitForChild("Remotes"))
 
 Remotes.init()
+
+-- Rojo owns Workspace.Map, so each sync deliberately removes the generated
+-- mall and its CollectionService tags. Build the authoritative runtime slice
+-- before any service scans or watches those tags. This keeps a clean Play
+-- session playable without asking a designer to run a command-bar step.
+local Map = Workspace:WaitForChild("Map")
+local FloodedMallBuilder = require(Map:WaitForChild("FloodedMallBuilder"))
+FloodedMallBuilder.Build()
 
 local Services = script:WaitForChild("services")
 local RunStateService = require(Services:WaitForChild("RunStateService"))

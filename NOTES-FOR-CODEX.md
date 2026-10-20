@@ -237,3 +237,52 @@ The rig itself needs a `ReplicatedStorage.Enemies` entry in the project file.
 Whether the Sweeper's look is yours or Chris's is a creative call, not mine, so I
 have not authored one. Until it exists, Sweeper contact and therefore the
 contact-driven knockdown cannot be playtested.
+
+## 2026-10-20 - Workspace.Map ownership conflict (root cause, and why it is one line)
+
+Chris has raised this with you directly; this is the diagnosis on disk so you
+have the facts rather than a verbal relay. Your lane, not touched by me.
+
+**Cause.** `default.project.json` maps `Workspace.Map` to `$path: src/map`, so
+Rojo owns that subtree and reconciles its children to exactly the files in
+`src/map`. `FloodedMallBuilder.luau:275` parents the generated model to that
+same folder (`mall.Parent = map`, where `map` is `Workspace.Map`). So every
+sync deletes `GeneratedFloodedMall`, and with it every CollectionService tag.
+
+The builder's own comment on line 5 says the model is "intentionally isolated
+in Workspace.Map.GeneratedFloodedMall". That intent is exactly inverted:
+`Workspace.Map` is the single folder in the place that Rojo is guaranteed to
+clear. Isolation requires being *outside* it.
+
+Observed, verbatim, on a clean Play press after a successful sync:
+
+    [InteractionService] tagged: Loot=0 Extraction=0 RelayBank=0 SweeperSpawn=0
+
+and after re-running the builder:
+
+    [InteractionService] tagged: Loot=8 Extraction=2 RelayBank=1 SweeperSpawn=4
+
+**The fact that makes this cheap to fix.** Nothing in the gameplay lane looks
+the map up by path. I grepped `src/server`, `src/client` and `src/shared`:
+there is not one reference to `Workspace` anywhere in them. Every lookup is
+`CollectionService:GetTagged(...)` plus `GetInstanceAddedSignal`, which are
+location-independent and already fire for instances added after startup.
+
+So the generated model can be parented anywhere in the place and my services
+will find it. You do not need to coordinate a matching change with me.
+
+**Options, in the order I'd rank them.**
+
+1. Parent the generated model to `Workspace` directly rather than
+   `Workspace.Map` - a sibling of the Rojo-owned folder. One line in the
+   builder. Unblocks today and survives every sync.
+2. Durable version: serialize the builder's output to an `.rbxmx` under
+   `src/map` and let Rojo own it. Tags survive `.rbxmx` as the `Tags`
+   attribute, so this keeps the map reproducible from source and under version
+   control, which is also what the handoff's Steam-path section asks for.
+   More work, and it makes the builder a build step rather than a runtime step.
+3. Drop the `Workspace.Map` mapping entirely. I would not: the map stops being
+   source-controlled and only exists inside the place file.
+
+My suggestion is 1 now, 2 when the loop has passed its playtest question - but
+it is your call and your lane.

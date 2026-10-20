@@ -128,7 +128,11 @@ new player understand where to go and why to risk turning on light?
 ## Generated vertical slice
 
 `src/map/FloodedMallBuilder.luau` is the authoritative, repeatable first-run
-map build. After Rojo sync and Studio MCP connection, run:
+map build. The server calls it automatically on every Play session, before it
+registers loot, extraction, relay, and enemy tags. This matters because Rojo
+owns `Workspace.Map` and removes the generated model on sync.
+
+To refresh the slice while staying in Edit mode, run:
 
 ```luau
 require(workspace.Map.FloodedMallBuilder).Build()
