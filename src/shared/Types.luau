@@ -44,6 +44,9 @@ export type RunState = {
 
 -- Snapshot pushed to clients for the HUD. Deliberately small: this replicates often.
 export type RunSnapshot = {
+	-- Lets the HUD tell "the run you were watching" from "a fresh one", so a
+	-- frozen run-end summary clears itself when the next expedition starts.
+	runId: string,
 	stormCharge: number,
 	stormRate: number,
 	activeLanterns: number,

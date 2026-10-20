@@ -362,3 +362,45 @@ Freight Lift already pays 1.6x for a 20-second wait as the "deeper push" lever.
 So "far more dangerous" is mostly a placement decision - more spawn tags and
 better loot further in - rather than a feature. And the generated map is built
 at runtime now, so whatever you place has to come out of the builder.
+
+## 2026-10-20 - Lighting is yours, and Chris has two asks. Values included.
+
+I tried to fix the darkness from my side and backed it out, because you are
+clearly tuning it live: Lighting read `Brightness 0.35` on one playtest and
+`1.4` on the next, with no change on my side in between. Two writers on the
+atmosphere would flip-flop depending on who ran last, so I have removed my
+override and left this instead. `default.project.json` is back to its original
+Lighting block, untouched by me.
+
+**Worth knowing: the Lighting block in `default.project.json` is dead config.**
+`FloodedMallBuilder.Build()` sets Lighting at runtime and runs after the project
+properties are applied, so the builder always wins. Either the project block
+should go, or the builder should stop setting Lighting - having both is why the
+saved place and the project file disagreed.
+
+### Ask 1: you must be able to see the floor with the lantern off
+
+Chris, verbatim: "i couldn't see crap and fell off the map", and then "Make the
+world less pitch-black so you can at least see the floor without a lantern."
+
+Darkness is a viable choice in this game, not a blindfold. The lantern should
+change how much of *value* you see - relics, detail, distance - not whether you
+can walk without falling through a hole.
+
+These values were tested live and look right. Floor, railings, storefronts and
+the water all read; it is still plainly night.
+
+    Ambient        = Color3.fromRGB(16, 18, 24)
+    OutdoorAmbient = Color3.fromRGB(42, 48, 66)
+    Brightness     = 0.8
+
+### Ask 2: the shadows
+
+Chris, verbatim: "the shadows suck, i hate them."
+
+I have not diagnosed this one - it is your lane and I did not want to start
+another tug-of-war. The usual suspects with `Technology = "Future"` are harsh
+contact shadows and shadow acne on large flat surfaces, of which this map has
+many. `GlobalShadows`, the shadow softness on individual lights, or moving off
+Future are the levers. Worth asking Chris whether he means they look wrong or
+simply that he wants them gone.

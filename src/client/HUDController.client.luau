@@ -105,8 +105,36 @@ label.Parent = meterFrame
 -- payout line before anyone could read it, and a player never saw what they
 -- came back with.
 local runOver = false
+local endedRunId: string? = nil
+local lastRunId: string? = nil
+
+-- Being downed refuses your lantern, your pickups and your movement, all three
+-- silently. A one-line label at the top of a pitch-black screen is not enough to
+-- explain that - Chris read it as the game being broken. This says it in the
+-- middle of the screen, where someone lying on the floor in the dark will see it.
+local downed = Instance.new("TextLabel")
+downed.Name = "DownedBanner"
+downed.AnchorPoint = Vector2.new(0.5, 0.5)
+downed.Position = UDim2.new(0.5, 0, 0.5, 0)
+downed.Size = UDim2.new(1, 0, 0, 44)
+downed.BackgroundTransparency = 1
+downed.Font = Enum.Font.GothamBold
+downed.TextSize = 28
+downed.TextColor3 = AMBER
+downed.TextStrokeTransparency = 0.4
+downed.Visible = false
+downed.Parent = screen
+
+local downedHint = downed:Clone()
+downedHint.Name = "DownedHint"
+downedHint.Position = UDim2.new(0.5, 0, 0.5, 30)
+downedHint.TextSize = 18
+downedHint.Font = Enum.Font.GothamMedium
+downedHint.TextColor3 = Color3.fromRGB(226, 232, 240)
+downedHint.Parent = screen
 
 Remotes.get("RunSnapshot").OnClientEvent:Connect(function(snapshot)
+	lastRunId = snapshot.runId
 	local ratio = math.clamp(snapshot.stormCharge / wardenCharge, 0, 1)
 	fill.Size = UDim2.new(ratio, 0, 1, 0)
 
@@ -123,8 +151,31 @@ Remotes.get("RunSnapshot").OnClientEvent:Connect(function(snapshot)
 	local lanterns = snapshot.activeLanterns
 	local multiplier = Config.stormRate(lanterns) / Config.StormCharge.baselineRatePerSecond
 
+	-- A new expedition clears the last one's summary.
+	if runOver and snapshot.runId ~= endedRunId then
+		runOver = false
+		endedRunId = nil
+	end
 	if runOver then
+		downed.Visible = false
+		downedHint.Visible = false
 		return
+	end
+
+	downed.Visible = snapshot.yourKnockedDown == true
+	downedHint.Visible = downed.Visible
+	if downed.Visible then
+		downed.Text = "YOU ARE DOWN"
+		local crewUp = (snapshot.crewTotal or 1) - (snapshot.crewDown or 0)
+		if crewUp > 0 then
+			downedHint.Text = string.format("%d still standing - wait for a hand up", crewUp)
+		elseif snapshot.yourCanAnchorRevive then
+			downedHint.Text = "Press R to anchor - it burns a full lantern charge"
+		elseif (snapshot.yourAnchorRevivesLeft or 0) <= 0 then
+			downedHint.Text = "No anchor left this run"
+		else
+			downedHint.Text = "Anchor needs a full lantern charge"
+		end
 	end
 
 	-- Most urgent fact first. A downed player does not need the storm multiplier.
@@ -158,6 +209,9 @@ end)
 
 Remotes.get("RunEnded").OnClientEvent:Connect(function(result)
 	runOver = true
+	endedRunId = lastRunId
+	downed.Visible = false
+	downedHint.Visible = false
 	local lines = {}
 	for tier, amount in pairs(result.payout or {}) do
 		table.insert(lines, string.format("%s x%d", tier, amount))

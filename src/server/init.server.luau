@@ -65,6 +65,28 @@ LootService.onExtracted = function(player, payout)
 	PlayerDataService.save(player)
 end
 
+-- A finished run used to leave the world dead: you could still walk around, but
+-- the lantern refused to light, loot refused to be picked up and nothing said
+-- why, because every service checks `run.finished` and silently returns. Chris
+-- hit exactly that - "pressing F still doesn't turn my lantern on, it flickers",
+-- then "same thing with E, nothing works".
+--
+-- So the expedition resets instead. This is deliberately not a Lanternhold flow:
+-- the hub does not exist yet and inventing one is a design decision, not a bug
+-- fix. The crew simply goes back out, with the mall rebuilt and the robots
+-- cleared, which is the smallest thing that stops the world being a dead end.
+local RESTART_DELAY_SECONDS = 6
+
+RunStateService.onRunEnded = function(_outcome: string)
+	task.delay(RESTART_DELAY_SECONDS, function()
+		-- Order matters: clear the old robots before the rebuild re-tags the
+		-- spawn points, or the watcher adds a second set on top of the first.
+		EnemyService.clearSweepers()
+		FloodedMallBuilder.Build()
+		RunStateService.start()
+	end)
+end
+
 Players.PlayerAdded:Connect(RunStateService.addPlayer)
 Players.PlayerRemoving:Connect(RunStateService.removePlayer)
 

@@ -532,6 +532,7 @@ local function buildSnapshot(state: Types.LightkeeperState): Types.RunSnapshot
 	end
 
 	return {
+		runId = current.runId,
 		stormCharge = current.stormCharge,
 		stormRate = Config.stormRate(active),
 		activeLanterns = active,

@@ -190,6 +190,17 @@ function EnemyService.spawnSweeperAt(point: Instance)
 	EnemyService.driveSweeper(clone)
 end
 
+--- Removes every live Sweeper. Called between expeditions: the spawn points are
+--- re-tagged when the map rebuilds, and without this the new ones pile on top of
+--- the old and the second run is four times as dangerous as the first.
+function EnemyService.clearSweepers()
+	for _, model in ipairs(workspace:GetChildren()) do
+		if model:IsA("Model") and model.Name == "Sweeper" then
+			model:Destroy()
+		end
+	end
+end
+
 function EnemyService.spawnSweepersAtTaggedPoints()
 	for _, point in ipairs(CollectionService:GetTagged("SweeperSpawn")) do
 		EnemyService.spawnSweeperAt(point)
