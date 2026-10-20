@@ -1,0 +1,36 @@
+{
+  "_comment": "Lantern charge and knockdown/revive tuning. Charge existed in the scaffold but never drained, which made the solo Anchor Revive free - it is paid for with 'a full lantern charge', and a charge that never depletes costs nothing. Values are placeholders for Chris.",
+
+  "charge": {
+    "secondsOfLightPerFullCharge": 150,
+    "_note": "A run is 6-10 minutes door-to-door. 150s means a crew cannot stay lit for a whole run on one charge - light becomes something you spend, not a switch you flip once.",
+    "autoOffAtEmpty": true,
+    "rechargeAtRelay": false,
+    "_rechargeProposal": "PROPOSAL, default off, Chris's call: refill the lantern when you bank at the relay. It would make the relay do double duty - securing loot and buying more light - which strengthens the bank-or-push decision. It also softens the charge economy, so it is off until Chris says otherwise."
+  },
+
+  "knockdown": {
+    "_note": "Enemies knock Lightkeepers down rather than killing them. A downed player keeps their loot until the crew wipes.",
+    "downedWalkSpeed": 0,
+    "lanternForcedOffWhenDowned": true,
+    "dropsCarriedCrate": true,
+    "bleedOutSeconds": 0,
+    "_bleedOutNote": "0 = downed players wait indefinitely. The handoff's forgiving tone argues against a bleed-out timer in v1; the wipe already comes from the whole crew going down. Set a value only if playtests show downs are being ignored."
+  },
+
+  "revive": {
+    "teammateHoldSeconds": 4,
+    "maxReviveDistance": 12,
+    "_note": "Server-validated hold. Moving out of range cancels it, so reviving is a real commitment of a teammate's attention - that is the co-op role the handoff asks for."
+  },
+
+  "sweeperContact": {
+    "_note": "Day 4 behaviour: a Sweeper that reaches a Lightkeeper knocks them down. Weak alone, dangerous as a swarm.",
+    "knockdownOnContact": true,
+    "contactRange": 5,
+    "contactCooldownSeconds": 1.5,
+    "hitsToKnockDown": 3,
+    "hitDecaySeconds": 6,
+    "_hitsNote": "hitsToKnockDown with decay is what makes one Sweeper survivable and four lethal, without giving players a health bar to optimise."
+  }
+}

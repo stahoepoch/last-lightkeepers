@@ -25,6 +25,12 @@ export type LightkeeperState = {
 	taggedUntil: number?, -- os.clock() deadline set by a completed Glimmer scan
 	carryingCrate: boolean,
 	haul: Haul,
+	-- Sweeper contact accumulates; decays if they break away. See lantern.json.
+	contactHits: number,
+	lastContactAt: number?,
+	-- Set while a teammate is holding a revive on this player.
+	reviveProgress: number,
+	reviveBy: number?,
 }
 
 export type RunState = {
@@ -43,6 +49,14 @@ export type RunSnapshot = {
 	activeLanterns: number,
 	highestThreshold: ThresholdId?,
 	wardenActive: boolean,
+	-- Per-viewer fields. Sent with FireClient, not broadcast, so one player's
+	-- charge and state never leak into another's HUD.
+	yourCharge: number,
+	yourLanternOn: boolean,
+	yourKnockedDown: boolean,
+	yourTagged: boolean,
+	crewDown: number,
+	crewTotal: number,
 }
 
 return nil

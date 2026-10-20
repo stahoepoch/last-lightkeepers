@@ -76,6 +76,25 @@ function EnemyService.driveSweeper(model: Model)
 	humanoid.MaxHealth = def.health
 	humanoid.Health = def.health
 
+	-- Contact watcher. Separate from the path loop so a Sweeper still lands hits
+	-- while it is mid-waypoint rather than only when it finishes moving.
+	task.spawn(function()
+		local contact = Config.Lantern.sweeperContact
+		while model.Parent and humanoid.Health > 0 do
+			for _, player in ipairs(Players:GetPlayers()) do
+				local character = player.Character
+				local targetRoot = character and character:FindFirstChild("HumanoidRootPart")
+				if targetRoot and targetRoot:IsA("BasePart") then
+					local distance = ((root :: BasePart).Position - targetRoot.Position).Magnitude
+					if distance <= contact.contactRange then
+						RunStateService.registerContact(player)
+					end
+				end
+			end
+			task.wait(0.2)
+		end
+	end)
+
 	task.spawn(function()
 		while model.Parent and humanoid.Health > 0 do
 			local target = EnemyService.pickTarget((root :: BasePart).Position, "Sweepers")

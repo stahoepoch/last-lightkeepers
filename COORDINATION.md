@@ -115,6 +115,14 @@ Append a dated line per working session. Newest at the bottom.
   graybox (`src/map/FloodedMall.rbxmx`), and built `FloodedMall-Playtest.rbxlx`
   successfully. Rojo serve is live at `127.0.0.1:34872`. Gameplay service code
   was intentionally not changed.
+- 2026-10-19 — Claude: flattened the repo to
+  `C:\Users\chris\Documents\Last-Lightkeepers` as Chris asked (stopped Rojo PID
+  28508 first; its relative project path could not survive the move). Made the
+  git baseline. Then built Days 4-5 of the systems lane: lantern charge drain,
+  knockdown with movement lock and death interception, teammate revive as a
+  proximity hold, solo Anchor Revive split out and now actually paying its cost,
+  Sweeper contact knockdown with decaying hits, per-viewer HUD snapshots, and
+  48 balance invariant tests that run on plain Node. `rojo build` green.
 - 2026-10-19 — Claude: verified Codex's claims (port listening, both map files
   present, gameplay markers intact). Corrected the Studio-access section: Studio
   has a built-in MCP server and an official Claude Code plugin, so the earlier
@@ -124,3 +132,16 @@ Append a dated line per working session. Newest at the bottom.
   (no commit). Added `GalleriaDetails.rbxmx` plus the first-playtest script;
   rebuilt successfully with 27 total place parts and both Rain Garden lights.
   No Claude-owned gameplay code changed.
+- 2026-10-19 — Codex: read-only first-playable audit recorded in
+  `NOTES-FOR-CLAUDE.md`; interaction, server proximity validation, and the
+  knockdown path are the P0/P1 systems blockers. Map construction continues in
+  Codex's lane; no system code was changed.
+- 2026-10-19 — Codex: added the authoritative generated-map slice
+  `src/map/FloodedMallBuilder.luau` (spawn, two exits, relay, eight loot
+  markers, four Sweeper spawns, tags/attributes, Galleria shell, Rain Garden,
+  and lighting). Formatted with StyLua and Rojo build is green. Lune parses the
+  module then stops at the expected `game` global absence outside Studio.
+- 2026-10-19 — Codex: resolved the transient `GalleriaDetails.rbxmx` structural
+  build error Claude recorded in `NOTES-FOR-CODEX.md`; regenerated the place
+  from a green Rojo build at the flattened root. Rojo serve PID 38208 is the
+  current, root-bound server.

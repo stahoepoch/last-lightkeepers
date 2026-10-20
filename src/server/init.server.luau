@@ -36,11 +36,13 @@ Remotes.get("ReviveRequest").OnServerEvent:Connect(function(player, targetUserId
 		return
 	end
 	if targetUserId == player.UserId then
-		RunStateService.revive(player, true)
+		-- Solo Anchor Revive: paid for with a full lantern charge.
+		RunStateService.anchorRevive(player)
 	else
+		-- Teammate revive is a hold the server advances while they stay close.
 		local target = Players:GetPlayerByUserId(targetUserId)
 		if target then
-			RunStateService.revive(target, false)
+			RunStateService.beginRevive(player, target)
 		end
 	end
 end)

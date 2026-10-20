@@ -77,6 +77,21 @@ reaches the Warden in about 3.2 minutes. Test it before trusting it.
    (Supplies → workshop, Components → gadget crafting, Relics → cosmetics and
    landmark contributions). Correct it there if I guessed wrong.
 
+## Tests
+
+```bash
+node tests/balance.test.mjs
+```
+
+48 invariant checks over `data/*.json` — no Roblox, no Rojo, no Luau toolchain
+needed. They assert that the numbers still match the handoff: the 8-minute dark
+anchor, the 2.5× lantern rate, exactly one lantern-only loot tier, banked loot
+fully surviving a wipe, the Warden unkillable, the locked Glimmer scan/tag
+values, and that a lone Sweeper cannot stack a knockdown.
+
+They do **not** test gameplay code. The Luau is still untypechecked — see
+`rokit.toml` for the one command that fixes that.
+
 ## Not built yet
 
 Day 4 onward is deliberately incomplete, per "build one enemy before the full
@@ -109,6 +124,23 @@ without using real mall branding or a copied layout.
 When Studio MCP is connected, use `src/map/FIRST_PLAYTEST.md` for the first
 walkthrough. It protects the only question that matters at this stage: does a
 new player understand where to go and why to risk turning on light?
+
+## Generated vertical slice
+
+`src/map/FloodedMallBuilder.luau` is the authoritative, repeatable first-run
+map build. After Rojo sync and Studio MCP connection, run:
+
+```luau
+require(workspace.Map.FloodedMallBuilder).Build()
+```
+
+It rebuilds only `Workspace.Map.GeneratedFloodedMall`, so a rebuild cannot
+delete hand-authored work. The generated slice includes its own SpawnLocation,
+tagged RelayBank and Extraction parts, eight typed Loot markers, four
+SweeperSpawn markers, the main concourse/storefront shell, upper galleries,
+Rain Garden, and storm lighting. The static `.rbxmx` sources remain as a
+pre-MCP preview; do not run both map approaches as overlapping production
+content after the Studio workflow is live.
 
 ## Rules this code enforces — do not relax them casually
 

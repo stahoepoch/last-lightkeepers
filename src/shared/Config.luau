@@ -13,11 +13,13 @@ local Balance = ReplicatedStorage:WaitForChild("Balance")
 local StormCharge = require(Balance:WaitForChild("storm-charge"))
 local Loot = require(Balance:WaitForChild("loot"))
 local Enemies = require(Balance:WaitForChild("enemies"))
+local Lantern = require(Balance:WaitForChild("lantern"))
 
 local Config = {
 	StormCharge = StormCharge,
 	Loot = Loot,
 	Enemies = Enemies,
+	Lantern = Lantern,
 }
 
 -- Session shape, from the handoff's product position: 6-10 minutes door-to-door.
@@ -45,6 +47,15 @@ function Config.thresholdAt(charge: number)
 		end
 	end
 	return crossed
+end
+
+--- Fraction of a full lantern charge consumed per second of light.
+function Config.lanternDrainPerSecond(): number
+	local seconds = Config.Lantern.charge.secondsOfLightPerFullCharge
+	if seconds <= 0 then
+		return 0
+	end
+	return 1 / seconds
 end
 
 function Config.wardenCharge(): number
