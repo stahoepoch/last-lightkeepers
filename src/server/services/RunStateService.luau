@@ -198,9 +198,6 @@ end
 -- Assigned by init.server so EnemyService can react without a circular require.
 RunStateService.onThresholdCrossed = function(_threshold: any) end
 
---- Whether this Lightkeeper could stand up on their own right now. Both the
---- wipe check and anchorRevive ask this, so the price can never drift apart
---- between "we wiped you" and "you may revive".
 --- How many Lightkeepers are on this run, down or not.
 function RunStateService.crewSize(): number
 	if not run then
@@ -213,6 +210,9 @@ function RunStateService.crewSize(): number
 	return count
 end
 
+--- Whether this Lightkeeper could stand up on their own right now. Both the
+--- wipe check and anchorRevive ask this, so the price can never drift apart
+--- between "we wiped you" and "you may revive".
 function RunStateService.canAnchorRevive(state: Types.LightkeeperState): boolean
 	if not state.knockedDown then
 		return false
