@@ -206,6 +206,27 @@ function RunStateService.setLantern(player: Player, on: boolean)
 	state.lanternOn = on
 end
 
+--- Why a request to light the lantern was refused, or nil if it would be
+--- granted. The client has no way to work this out on its own: an echo of
+--- `false` means both "you asked to turn it off" and "no", which is how a dead
+--- lantern came to look like a broken key.
+function RunStateService.lanternRefusal(player: Player): string?
+	if not run or run.finished then
+		return "The expedition is over"
+	end
+	local state = run.lightkeepers[player.UserId]
+	if not state then
+		return "The expedition is over"
+	end
+	if state.knockedDown then
+		return "Not while you are down"
+	end
+	if state.lanternCharge <= 0 then
+		return "Lantern spent - no charge left this run"
+	end
+	return nil
+end
+
 function RunStateService.isLanternOn(player: Player): boolean
 	if not run then
 		return false

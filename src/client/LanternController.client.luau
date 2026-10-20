@@ -57,10 +57,12 @@ local function applyLocalVisual(on: boolean)
 	end
 end
 
+--- Ask, then wait. The light used to switch on locally the moment F was pressed
+--- and switch back off when the server's refusal arrived a frame later, which
+--- is what Chris saw as "it flickers and thats it". The server is the authority
+--- on whether the lantern is lit, so the visual now follows only the echo.
 local function toggle()
-	wantLanternOn = not wantLanternOn
-	applyLocalVisual(wantLanternOn)
-	lanternRequest:FireServer(wantLanternOn)
+	lanternRequest:FireServer(not wantLanternOn)
 end
 
 ContextActionService:BindAction("ToggleLantern", function(_, state)
@@ -85,7 +87,46 @@ end)
 -- a toggle (charge spent, knocked down), so the local visual follows the echo
 -- rather than the keypress. The broadcast snapshot carries a crew-wide lantern
 -- count and cannot answer "is *mine* lit", so don't infer it from there.
-lanternRequest.OnClientEvent:Connect(function(actuallyOn: boolean)
+--- A refusal has to be legible. Pressing a key and getting nothing is the single
+--- most common way this game has read as broken.
+local notice = Instance.new("TextLabel")
+notice.Name = "LanternNotice"
+notice.AnchorPoint = Vector2.new(0.5, 0.5)
+notice.Position = UDim2.new(0.5, 0, 0.5, 110)
+notice.Size = UDim2.new(1, 0, 0, 26)
+notice.BackgroundTransparency = 1
+notice.Font = Enum.Font.GothamMedium
+notice.TextSize = 18
+notice.TextColor3 = LANTERN_COLOUR
+notice.TextStrokeTransparency = 0.4
+notice.Visible = false
+
+local shownAt = 0
+local NOTICE_SECONDS = 2.2
+
+task.spawn(function()
+	local playerGui = player:WaitForChild("PlayerGui")
+	local screen = Instance.new("ScreenGui")
+	screen.Name = "LanternNoticeGui"
+	screen.ResetOnSpawn = false
+	screen.IgnoreGuiInset = true
+	screen.Parent = playerGui
+	notice.Parent = screen
+
+	while true do
+		if notice.Visible and os.clock() - shownAt > NOTICE_SECONDS then
+			notice.Visible = false
+		end
+		task.wait(0.2)
+	end
+end)
+
+lanternRequest.OnClientEvent:Connect(function(actuallyOn: boolean, refusal: string?)
 	wantLanternOn = actuallyOn
 	applyLocalVisual(actuallyOn)
+	if refusal then
+		notice.Text = refusal
+		notice.Visible = true
+		shownAt = os.clock()
+	end
 end)

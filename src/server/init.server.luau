@@ -37,10 +37,14 @@ lanternRequest.OnServerEvent:Connect(function(player, on)
 	if type(on) ~= "boolean" then
 		return
 	end
+	-- Work out the refusal before acting, so the reason describes the request
+	-- the player actually made.
+	local refusal = if on then RunStateService.lanternRefusal(player) else nil
 	RunStateService.setLantern(player, on)
-	-- Echo the authoritative result: setLantern can refuse (no charge, knocked
-	-- down), and the client must not keep showing a light the server denied.
-	lanternRequest:FireClient(player, RunStateService.isLanternOn(player))
+	-- Echo the authoritative result, and why if it was a no. The client must not
+	-- keep showing a light the server denied, and the player deserves to know
+	-- the difference between a dead lantern and a dead key.
+	lanternRequest:FireClient(player, RunStateService.isLanternOn(player), refusal)
 end)
 
 Remotes.get("ReviveRequest").OnServerEvent:Connect(function(player, targetUserId)

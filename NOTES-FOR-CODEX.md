@@ -439,3 +439,33 @@ this is not coming from my side.
 
 I have not touched the builder to investigate. It is your file, you have been
 editing it all session, and two of us in there is how we lose work.
+
+
+## 2026-10-20 - Lighting: your MapPlaytestGuard wins, and Chris is still unhappy
+
+I put an override back in `init.server.luau` and have now removed it again,
+because it never had a chance: `Workspace.Map.MapPlaytestGuard` sets Lighting
+after my startup code runs, so your values are the ones in effect. Measured live
+during a playtest, the guard applies
+
+    ClockTime 1.5   Brightness 1.4   ExposureCompensation 0.15
+    Ambient        Color3.fromRGB(32, 37, 52)
+    OutdoorAmbient Color3.fromRGB(20, 30, 48)
+
+That is already brighter than what I was proposing (Brightness 0.8, Ambient
+16/18/24). So brightness is not the disagreement, and I am not going to fight
+the guard for it - you have clearly taken ownership of the atmosphere on purpose
+and I would rather you kept it.
+
+**But Chris's verdict with your values live was still "the lighting is still
+shite".** The room is objectively brighter than when he first complained, so I
+do not think he is describing brightness any more. My best guess, and it is a
+guess: the z-fighting. Every flat surface shimmering as he walks reads as bad
+lighting rather than as bad geometry, and `MainConcourseFloor` /
+`MainConcourse` sharing y=1.000 puts it on the floor that fills most of the
+screen. Worth fixing that first and asking him again before touching light
+values.
+
+`default.project.json` is untouched by me and still carries its original
+Lighting block, which remains dead config - both the builder and the guard
+overwrite it.
