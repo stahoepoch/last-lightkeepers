@@ -169,3 +169,25 @@ anyway because the rule covered file ownership but not staging.
 
 Rule going forward: `git add <explicit paths>`, and check `git status` before
 committing when any other session may be live.
+
+## 2026-10-20 - Lanes revised: one writer per lane
+
+Three writers in one folder was too many, and two of them were the same lane.
+The playtest session and this session are both Claude doing gameplay systems,
+which is why work collided. Revised split, agreed by Chris and Codex:
+
+| Party | Owns |
+| --- | --- |
+| **Playtest session** | Gameplay systems and runtime fixes. The only writer in `src/server/**`, `src/client/**`, `src/shared/**`. It can actually run the game, so it verifies its own work. |
+| **Codex** | Map generation, Studio/Rojo integration, playtest artifact builds, verifying the generated map survives a sync. Will not touch InteractionService, client gameplay controllers, run state, loot or enemies while that session is active. |
+| **This session** | Coordination and review. Holds the handoff and checks work against locked decisions. **Writes no gameplay code.** |
+| **Chris** | Creative authority, all balance values in `data/*.json`, and every account, publish or release action. |
+
+Why this session stopped writing code: everything it produces is unverified
+until something else runs it, and that was the bottleneck all day. Its useful
+contribution has been catching drift from the handoff - the solo-only Anchor
+Revive being the example - not racing another session to the same files.
+
+Staging rule still applies to everyone: `git add <explicit paths>`, never `-A`,
+and check `git status` first. That is how Codex's fix ended up inside a commit
+of this session's with a message that denied touching it.
