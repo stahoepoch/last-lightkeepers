@@ -51,10 +51,15 @@ local C = {
 	brick = Color3.fromRGB(176, 150, 136),
 }
 
--- The concourse, as two straight runs meeting at the court.
+-- The concourse: two straight runs meeting at the court, with proportions
+-- taken off the Google Earth view rather than guessed. The bend sits near the
+-- middle and the arms are close to the same length. An earlier version had one
+-- arm twice the other, which put the court in the wrong place and threw every
+-- anchor off with it - Chris spotted it by orienting the aerial to match.
+local BEND = Vector2.new(0, 0)
 local ARMS = {
-	{ a = Vector2.new(-13.0, -4.5), b = Vector2.new(7.5, -4.5) },
-	{ a = Vector2.new(7.5, -4.5), b = Vector2.new(14.5, 2.2) },
+	{ a = BEND, b = Vector2.new(17.0, 0) }, -- east, to Boscov's
+	{ a = BEND, b = Vector2.new(-12.3, -10.2) }, -- north-west, to Sears
 }
 
 local L1_NAMES = {
@@ -194,31 +199,27 @@ function GalleriaBuilder.Build(): Model
 		end
 	end
 
-	local bend = ARMS[2].a
-	local a2 = (ARMS[2].b - ARMS[2].a).Unit
-	local a2ang = math.atan2(a2.Y, a2.X)
-	local a2nrm = Vector2.new(-a2.Y, a2.X)
+	local nw = (ARMS[2].b - ARMS[2].a).Unit
+	local nwAng = math.atan2(nw.Y, nw.X)
+	local nwPerp = Vector2.new(-nw.Y, nw.X)
 
-	-- Boscov's closes the straight arm.
-	anchor("BOSCOVS", -19.5, -4.5, 12, 11, 0, { { -13.6, -4.5, 0 } })
+	-- Sizes and sides read off the aerial. The anchors are most of this
+	-- building's mass; the concourse is a narrow slot between them.
+	anchor("BOSCOVS", 24.0, 0, 13, 14, 0, { { 17.3, 0, 0 } })
 
-	-- JCPenney sits in the crook and opens onto BOTH arms. The two entrances
-	-- are on the printed plan and are the giveaway that it straddles the bend.
-	anchor("JCPENNEY", 4.0, -13.6, 14, 8, 0, { { 0.5, -9.5, 0 }, { 8.0, -9.5, 0 } })
+	local se = ARMS[2].b + nw * 7.5
+	local seDoor = ARMS[2].b + nw * 1.6
+	anchor("SEARS", se.X, se.Y, 14, 12, nwAng, { { seDoor.X, seDoor.Y, 0 } })
 
-	-- Bon-Ton hangs off the outer flank of the angled arm.
-	-- Far enough along the arm to leave real daylight between it and JCPenney.
-	-- Chris, from the aerial: "that jcpenney building doesn't connect to bon
-	-- ton" - on the photograph there is parking between the two, and they had
-	-- been close enough here to read as one building.
-	local bt = bend + a2 * 11.0 - a2nrm * 7.2
-	local btDoor = bend + a2 * 11.0 - a2nrm * 2.9
-	anchor("BON-TON", bt.X, bt.Y, 11, 9, a2ang, { { btDoor.X, btDoor.Y, a2ang } })
+	-- JCPenney in the crook, projecting south, opening onto both arms.
+	anchor("JCPENNEY", 5.0, 10.5, 16, 12, 0, { { 1.0, 5.2, 0 }, { 9.0, 5.2, 0 } })
 
-	-- Sears caps the far end of the angled arm, square to it.
-	local se = bend + a2 * 17.5
-	local seDoor = bend + a2 * 11.6
-	anchor("SEARS", se.X, se.Y, 13, 11, a2ang, { { seDoor.X, seDoor.Y, a2ang } })
+	-- Bon-Ton on the SOUTH-WEST flank of the north-west arm - the same side as
+	-- JCPenney, which is what the aerial shows, and far enough along it that
+	-- there is open ground between the two buildings.
+	local bt = BEND + nw * 7.0 - nwPerp * 8.5
+	local btDoor = BEND + nw * 7.0 - nwPerp * 3.4
+	anchor("BON-TON", bt.X, bt.Y, 12, 10, nwAng, { { btDoor.X, btDoor.Y, 0 } })
 
 	M.Parent = map
 	return M
