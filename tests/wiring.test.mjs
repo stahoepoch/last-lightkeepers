@@ -205,6 +205,62 @@ console.log("\nCross-module calls");
   }
 }
 
+// ---- 6. regressions the first playtest found -------------------------------
+//
+// These three cost a whole playtest between them and all three read as fine on
+// a review, so they are pinned here rather than trusted to one.
+{
+  const byName = new Map(files.map((f) => [f.name, f]));
+  const runState = byName.get("RunStateService");
+  const interaction = byName.get("InteractionService");
+  const loot = byName.get("LootService");
+  const enemy = byName.get("EnemyService");
+
+  if (runState) {
+    // A solo knockdown used to wipe the run inside the same call, so the
+    // Anchor Revive could never be reached at all.
+    const knockDown = runState.src.slice(
+      runState.src.indexOf("function RunStateService.knockDown"),
+      runState.src.indexOf("local function stand"),
+    );
+    check(
+      "knockDown defers the wipe to canAnchorRevive",
+      knockDown.includes("canAnchorRevive") &&
+        knockDown.indexOf("canAnchorRevive") < knockDown.indexOf("RunStateService.wipe()"),
+      "without this a solo player is hard-wiped on their first knockdown and R is dead code",
+    );
+    check(
+      "snapshot carries the Anchor Revive reason",
+      runState.src.includes("yourCanAnchorRevive") && runState.src.includes("yourAnchorRevivesLeft"),
+      "the client cannot explain a refused R without these",
+    );
+  }
+
+  // Every gameplay tag must be watched, not scanned once: the generated map is
+  // tagged after the services start.
+  for (const [tag, file, owner] of [
+    ["TAG_LOOT", interaction, "InteractionService"],
+    ["TAG_EXTRACTION", interaction, "InteractionService"],
+    ["TAG_RELAY", loot, "LootService"],
+    ["SweeperSpawn", enemy, "EnemyService"],
+  ]) {
+    check(
+      `${owner} watches ${tag} for late tags`,
+      file !== undefined && new RegExp(`GetInstanceAddedSignal[(][^)]*${tag}`).test(file.src),
+      `a map tagged after startup leaves ${tag} unwired`,
+    );
+  }
+
+  if (enemy) {
+    const init = enemy.src.slice(enemy.src.indexOf("function EnemyService.init"));
+    check(
+      "EnemyService.init spawns Sweepers",
+      init.includes("spawnSweepersAtTaggedPoints"),
+      "the spawn function existed but was never called, so nothing could knock a player down",
+    );
+  }
+}
+
 console.log(`\n${checks - failures}/${checks} passed`);
 if (failures > 0) {
   console.log(`${failures} FAILED\n`);

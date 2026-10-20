@@ -100,6 +100,12 @@ label.TextColor3 = Color3.fromRGB(226, 232, 240)
 label.Text = "Storm closing"
 label.Parent = meterFrame
 
+-- Once a run has ended, the summary stays on screen. Extraction does not stop
+-- the run tick, so the next snapshot - 250ms later - used to overwrite the
+-- payout line before anyone could read it, and a player never saw what they
+-- came back with.
+local runOver = false
+
 Remotes.get("RunSnapshot").OnClientEvent:Connect(function(snapshot)
 	local ratio = math.clamp(snapshot.stormCharge / wardenCharge, 0, 1)
 	fill.Size = UDim2.new(ratio, 0, 1, 0)
@@ -117,13 +123,23 @@ Remotes.get("RunSnapshot").OnClientEvent:Connect(function(snapshot)
 	local lanterns = snapshot.activeLanterns
 	local multiplier = Config.stormRate(lanterns) / Config.StormCharge.baselineRatePerSecond
 
+	if runOver then
+		return
+	end
+
 	-- Most urgent fact first. A downed player does not need the storm multiplier.
 	if snapshot.yourKnockedDown then
 		local crewUp = (snapshot.crewTotal or 1) - (snapshot.crewDown or 0)
 		if crewUp > 0 then
 			label.Text = string.format("DOWN - %d still standing", crewUp)
+		elseif snapshot.yourCanAnchorRevive then
+			label.Text = "DOWN - press R to anchor (burns a full charge)"
+		elseif (snapshot.yourAnchorRevivesLeft or 0) <= 0 then
+			label.Text = "DOWN - no anchor left this run"
 		else
-			label.Text = "DOWN - no one left standing"
+			-- The keybind is deliberately suppressed when the price cannot be
+			-- paid; saying so is the difference between a cost and a dead key.
+			label.Text = "DOWN - anchor needs a full lantern charge"
 		end
 	elseif snapshot.wardenActive then
 		label.Text = "THE WARDEN IS COMING"
@@ -141,6 +157,7 @@ Remotes.get("RunSnapshot").OnClientEvent:Connect(function(snapshot)
 end)
 
 Remotes.get("RunEnded").OnClientEvent:Connect(function(result)
+	runOver = true
 	local lines = {}
 	for tier, amount in pairs(result.payout or {}) do
 		table.insert(lines, string.format("%s x%d", tier, amount))

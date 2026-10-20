@@ -173,3 +173,67 @@ One caution worth stating plainly: these tools can read and change the open
 place, and `execute_luau` runs arbitrary code in it. Worth keeping the lane
 split - map and geometry stay Codex's, gameplay scripts stay mine - rather than
 both of us editing the live data model at once.
+
+## 2026-10-20 - First real playtest: three integration blockers
+
+The gameplay lane now runs. Everything below is in your lane, found by actually
+playing the place rather than by reading it.
+
+### P0 - connecting Rojo deletes the entire tagged map
+
+`default.project.json` maps `Workspace.Map` to `$path: "src/map"`. Rojo therefore
+owns that whole subtree and removes any child that does not come from source. The
+command-bar-generated `Workspace.Map.GeneratedFloodedMall` is exactly such a
+child, and **every tag in the game lives inside it**.
+
+So connecting Rojo - the thing that makes the scripts current - destroys the map
+that makes the scripts testable. Observed verbatim on a clean Play press after a
+successful sync:
+
+    [InteractionService] tagged: Loot=0 Extraction=0 RelayBank=0 SweeperSpawn=0
+    [InteractionService] the map is missing tags - a run cannot be completed
+
+This is also the answer to Chris's "F turns the light on but E doesn't gather":
+with zero tagged loot there are no ProximityPrompts anywhere, while the lantern
+needs no tags at all. Nothing was wrong with the pickup code.
+
+Workaround I used for this session, which is not a fix: re-run
+`require(workspace.Map.FloodedMallBuilder).Build()` in the command bar after every
+Play press. That restores `Loot=8 Extraction=2 RelayBank=1 SweeperSpawn=4`.
+
+**Done when** a plain Play press on a Rojo-connected place reports nonzero tagged
+counts without anyone running the builder by hand. Options, your call: commit the
+generated model as an `.rbxmx` under `src/map`, give the generated model its own
+path outside `Workspace.Map`, or have a server script build it at runtime.
+
+### P1 - the generated map splits gameplay markers across two folders
+
+`GeneratedFloodedMall` puts loot in `GameplayMarkers` and the relay plus both
+exits in `Objectives`:
+
+    Workspace.Map.GeneratedFloodedMall.GameplayMarkers.Supplies_Dock
+    Workspace.Map.GeneratedFloodedMall.Objectives.Extraction_LoadingDock
+    Workspace.Map.GeneratedFloodedMall.Objectives.RelayBank_RainGarden
+
+Gameplay code reads tags, not paths, so this does not break anything - but it
+cost me two wrong conclusions while debugging, because I checked `Objectives` for
+loot and read "part is gone" as "pickup succeeded". One folder, or a documented
+split, would be worth it.
+
+### P1 - there is no Sweeper rig, so nothing can damage a player
+
+`EnemyService.spawnSweepersAtTaggedPoints` clones
+`ReplicatedStorage.Enemies.Sweeper`. That instance does not exist anywhere in the
+project, and `Enemies` is not in `default.project.json` at all. The four
+`SweeperSpawn` tags therefore spawn nothing.
+
+I fixed the half of this that was mine - the spawn function was never called from
+`init` - and it now warns instead of failing silently:
+
+    [EnemyService] no ReplicatedStorage.Enemies.Sweeper template - no Sweepers
+    will spawn, so nothing can knock a Lightkeeper down
+
+The rig itself needs a `ReplicatedStorage.Enemies` entry in the project file.
+Whether the Sweeper's look is yours or Chris's is a creative call, not mine, so I
+have not authored one. Until it exists, Sweeper contact and therefore the
+contact-driven knockdown cannot be playtested.

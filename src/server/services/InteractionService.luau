@@ -38,8 +38,19 @@ local function makePrompt(parent: Instance, actionText: string, objectText: stri
 	return prompt
 end
 
---- Loot prompts. Relics are hidden unless the player's own lantern is lit, so
---- the prompt's visibility has to track that per-player, not globally.
+--- Loot prompts.
+---
+--- KNOWN GAP, deliberately not bodged: a relic prompt is hidden unless *a*
+--- lantern is lit, not unless *yours* is. `ProximityPrompt.Enabled` is a
+--- property of the instance, not a per-player view, so a server-created prompt
+--- cannot be shown to one player and hidden from another. A dark player next to
+--- a lit teammate therefore sees relic prompts they should not.
+---
+--- Pickup is still correct: `LootService.isVisibleTo` re-checks the acting
+--- player's own lantern and refuses, so this leaks a prompt, not loot. Closing
+--- it properly means moving relic prompt visibility to the client (one prompt
+--- per viewer, or a client-side pass that disables prompts it should not see),
+--- which is a bigger change than this comment's original claim implied.
 local function attachLootPrompt(instance: Instance)
 	if not instance:IsA("BasePart") or instance:FindFirstChildOfClass("ProximityPrompt") then
 		return
@@ -54,7 +65,8 @@ local function attachLootPrompt(instance: Instance)
 	local isCrate = tier == "RestorationCrates"
 	local prompt = makePrompt(instance, if isCrate then "Lift" else "Take", tier, if isCrate then 0.6 else 0)
 
-	-- A lantern-only tier should not advertise itself in the dark.
+	-- A lantern-only tier should not advertise itself in the dark. Crew-wide
+	-- for now; see the per-player gap noted above this function.
 	if Config.Loot.tiers[tier].visibility == "lanternOnly" then
 		prompt.Enabled = false
 		task.spawn(function()

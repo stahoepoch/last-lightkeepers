@@ -125,16 +125,44 @@ function EnemyService.driveSweeper(model: Model)
 	end)
 end
 
+--- The Sweeper rig. Absent from the project today, so this reports the gap
+--- loudly rather than spawning nothing in silence - a map with four spawn
+--- points and no robots looks identical to a working one until you go looking
+--- for something to be chased by.
+local warnedMissingTemplate = false
+
+local function sweeperTemplate(): Model?
+	local folder = ReplicatedStorage:FindFirstChild("Enemies")
+	local model = folder and folder:FindFirstChild("Sweeper")
+	if model and model:IsA("Model") then
+		return model
+	end
+	if not warnedMissingTemplate then
+		warnedMissingTemplate = true
+		warn(
+			"[EnemyService] no ReplicatedStorage.Enemies.Sweeper template - no Sweepers will spawn, so nothing can knock a Lightkeeper down"
+		)
+	end
+	return nil
+end
+
+function EnemyService.spawnSweeperAt(point: Instance)
+	if not point:IsA("BasePart") then
+		return
+	end
+	local model = sweeperTemplate()
+	if not model then
+		return
+	end
+	local clone = model:Clone()
+	clone:PivotTo(CFrame.new((point :: BasePart).Position + Vector3.new(0, 3, 0)))
+	clone.Parent = workspace
+	EnemyService.driveSweeper(clone)
+end
+
 function EnemyService.spawnSweepersAtTaggedPoints()
 	for _, point in ipairs(CollectionService:GetTagged("SweeperSpawn")) do
-		local template = ReplicatedStorage:FindFirstChild("Enemies")
-		local model = template and template:FindFirstChild("Sweeper")
-		if model and point:IsA("BasePart") then
-			local clone = (model :: Model):Clone()
-			clone:PivotTo(CFrame.new((point :: BasePart).Position + Vector3.new(0, 3, 0)))
-			clone.Parent = workspace
-			EnemyService.driveSweeper(clone)
-		end
+		EnemyService.spawnSweeperAt(point)
 	end
 end
 
@@ -157,6 +185,14 @@ end
 
 function EnemyService.init()
 	RunStateService.onThresholdCrossed = EnemyService.onThresholdCrossed
+
+	-- This was never called. Sweepers had a spawn function, four tagged spawn
+	-- points and a contact path that knocks players down, and none of it ever
+	-- ran, so the knockdown rule could not be reached in play at all.
+	EnemyService.spawnSweepersAtTaggedPoints()
+	-- Spawn points tagged after startup still populate, matching the loot,
+	-- extraction and relay watchers.
+	CollectionService:GetInstanceAddedSignal("SweeperSpawn"):Connect(EnemyService.spawnSweeperAt)
 end
 
 return EnemyService

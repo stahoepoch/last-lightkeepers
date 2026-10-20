@@ -25,7 +25,11 @@ Remotes.get("RunSnapshot").OnClientEvent:Connect(function(snapshot)
 	downed = snapshot.yourKnockedDown == true
 	-- A full charge is the price. Showing the prompt when it cannot be paid
 	-- would read as a bug rather than a cost.
-	anchorAvailable = (snapshot.yourCharge or 0) >= 1
+	--
+	-- Ask the server rather than re-deriving the price here: this copy knew
+	-- nothing about anchorRevivesLeft, so a player out of anchors still got a
+	-- live key that silently did nothing. The HUD explains the refusal.
+	anchorAvailable = snapshot.yourCanAnchorRevive == true
 end)
 
 ContextActionService:BindAction("AnchorRevive", function(_, state)

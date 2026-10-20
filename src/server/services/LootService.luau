@@ -192,16 +192,28 @@ function LootService.init()
 	end)
 
 	-- Relay banks: stepping into a tagged zone banks whatever you carry.
-	for _, relay in ipairs(CollectionService:GetTagged(TAG_RELAY)) do
-		if relay:IsA("BasePart") then
-			relay.Touched:Connect(function(hit)
-				local player = Players:GetPlayerFromCharacter(hit.Parent)
-				if player then
-					LootService.handleBank(player)
-				end
-			end)
+	--
+	-- Watched rather than scanned once, matching Loot and Extraction. A map
+	-- built or tagged after this service starts - which is how the generated
+	-- Flooded Mall actually arrives - left the relay with no Touched handler at
+	-- all, so banking silently did nothing and the loop could not be completed.
+	local function attachRelay(relay: Instance)
+		if not relay:IsA("BasePart") or relay:GetAttribute("__RelayWired") then
+			return
 		end
+		relay:SetAttribute("__RelayWired", true)
+		relay.Touched:Connect(function(hit)
+			local player = Players:GetPlayerFromCharacter(hit.Parent)
+			if player then
+				LootService.handleBank(player)
+			end
+		end)
 	end
+
+	for _, relay in ipairs(CollectionService:GetTagged(TAG_RELAY)) do
+		attachRelay(relay)
+	end
+	CollectionService:GetInstanceAddedSignal(TAG_RELAY):Connect(attachRelay)
 
 	-- Extraction volumes are driven by the client's ExtractionRequest (the player
 	-- chooses to leave), so they only need to exist and carry an ExtractionId.

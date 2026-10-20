@@ -198,6 +198,23 @@ end
 -- Assigned by init.server so EnemyService can react without a circular require.
 RunStateService.onThresholdCrossed = function(_threshold: any) end
 
+--- Whether this Lightkeeper could stand up on their own right now. Both the
+--- wipe check and anchorRevive ask this, so the price can never drift apart
+--- between "we wiped you" and "you may revive".
+function RunStateService.canAnchorRevive(state: Types.LightkeeperState): boolean
+	if not state.knockedDown then
+		return false
+	end
+	local anchor = Config.StormCharge.anchorRevive
+	if state.anchorRevivesLeft <= 0 then
+		return false
+	end
+	if anchor.consumesFullLanternCharge and state.lanternCharge < 1 then
+		return false
+	end
+	return true
+end
+
 function RunStateService.knockDown(player: Player)
 	if not run then
 		return
@@ -224,6 +241,19 @@ function RunStateService.knockDown(player: Player)
 			return
 		end
 	end
+
+	-- ...unless someone down there can still pay for an Anchor Revive. Without
+	-- this the wipe fires inside the same call that knocked the last player
+	-- down, so the Anchor Revive could never be reached at all - a solo player
+	-- was hard-wiped on their first knockdown even holding a full charge, which
+	-- is the exact opposite of what anchorRevive below is for. A crew with no
+	-- charge and no anchors left still wipes; that part was always right.
+	for _, other in pairs(run.lightkeepers) do
+		if RunStateService.canAnchorRevive(other) then
+			return
+		end
+	end
+
 	RunStateService.wipe()
 end
 
@@ -247,14 +277,11 @@ function RunStateService.anchorRevive(player: Player): boolean
 		return false
 	end
 
-	local anchor = Config.StormCharge.anchorRevive
-	if state.anchorRevivesLeft <= 0 then
-		return false
-	end
 	-- "Consumes a full lantern charge" means it must actually be full.
-	if anchor.consumesFullLanternCharge and state.lanternCharge < 1 then
+	if not RunStateService.canAnchorRevive(state) then
 		return false
 	end
+	local anchor = Config.StormCharge.anchorRevive
 
 	state.anchorRevivesLeft -= 1
 	state.lanternCharge = 0
@@ -452,6 +479,8 @@ local function buildSnapshot(state: Types.LightkeeperState): Types.RunSnapshot
 		yourLanternOn = state.lanternOn and state.lanternCharge > 0,
 		yourKnockedDown = state.knockedDown,
 		yourTagged = state.taggedUntil ~= nil,
+		yourAnchorRevivesLeft = state.anchorRevivesLeft,
+		yourCanAnchorRevive = RunStateService.canAnchorRevive(state),
 		crewDown = down,
 		crewTotal = total,
 	}

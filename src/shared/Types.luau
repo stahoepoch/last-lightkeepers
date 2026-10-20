@@ -55,6 +55,10 @@ export type RunSnapshot = {
 	yourLanternOn: boolean,
 	yourKnockedDown: boolean,
 	yourTagged: boolean,
+	-- Why the Anchor Revive is or is not offered. The client used to suppress
+	-- the keybind with no way to say why, which read as a dead key.
+	yourAnchorRevivesLeft: number,
+	yourCanAnchorRevive: boolean,
 	crewDown: number,
 	crewTotal: number,
 }

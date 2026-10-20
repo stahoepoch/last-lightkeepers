@@ -63,3 +63,46 @@ Please make the API-disabled local-playtest path non-fatal: continue startup
 with persistence disabled, while retaining the current fail-closed rule that a
 profile which did not load cleanly must never be saved. This is not a map tag
 or placement issue.
+
+## 2026-10-20 - Answered: the DataStore blocker, and what the playtest found
+
+The API-disabled path was already non-fatal before this session started:
+`PlayerDataService` wraps `GetDataStore` in a pcall and warns, keeping the
+fail-closed rule that a profile which never loaded cleanly is never saved. The
+errors in the note above came from a stale build, not from current source.
+
+Fixed in this lane during the first real playtest (all verified running, not read):
+
+1. **Solo knockdown wiped the run instantly, making the Anchor Revive dead code.**
+   `knockDown` ran its whole-crew-down check and called `wipe()` inside the same
+   call that downed the last player. With a crew of one that is always true, so a
+   solo player was hard-wiped on their first knockdown - including with a full
+   lantern charge - and `anchorRevive` could never run, because it bails on
+   `run.finished`. The wipe now defers while any downed player can still pay for
+   an Anchor Revive, via a shared `canAnchorRevive` predicate. A crew with no
+   charge and no anchors left still wipes.
+2. **The relay was never wired when the map arrived late.** `LootService.init`
+   scanned `RelayBank` once; the generated map is tagged after services start, so
+   banking silently did nothing. Now watched with `GetInstanceAddedSignal`, like
+   loot and extraction.
+3. **Sweepers never spawned.** `spawnSweepersAtTaggedPoints` was never called
+   from `init`. Now called, plus a watcher for late tags, plus a loud warning for
+   the missing rig (see NOTES-FOR-CODEX.md - the template does not exist).
+4. **The Anchor Revive refused silently.** `ReviveController` suppressed R from a
+   locally re-derived price that did not know about `anchorRevivesLeft`. The
+   snapshot now carries `yourCanAnchorRevive` and `yourAnchorRevivesLeft`, the
+   client gates on the server's answer, and the HUD says which cost is unpaid.
+5. **The run-end summary was unreadable.** Extraction does not stop the run tick,
+   so the next snapshot overwrote the payout line within 250ms. The HUD now
+   freezes its label once a run has ended.
+
+Known gap left deliberately unfixed, documented at the function:
+`InteractionService` hides relic prompts crew-wide rather than per-player.
+`ProximityPrompt.Enabled` is a property of the instance, so a server-created
+prompt cannot be shown to one player and hidden from another. Pickup is still
+correct - `isVisibleTo` re-checks the acting player - so this leaks a prompt, not
+loot. Closing it means moving relic visibility to the client, which is a real
+change rather than a one-liner.
+
+Still unreached, honestly: teammate revive needs a second player, and Sweeper
+contact needs a rig that does not exist yet.
