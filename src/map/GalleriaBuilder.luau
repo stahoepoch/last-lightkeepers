@@ -204,16 +204,20 @@ function GalleriaBuilder.Build(): Model
 
 	-- JCPenney sits in the crook and opens onto BOTH arms. The two entrances
 	-- are on the printed plan and are the giveaway that it straddles the bend.
-	anchor("JCPENNEY", 6.0, -12.5, 14, 8, 0, { { 2.0, -8.4, 0 }, { 9.6, -8.4, 0 } })
+	anchor("JCPENNEY", 4.0, -13.6, 14, 8, 0, { { 0.5, -9.5, 0 }, { 8.0, -9.5, 0 } })
 
 	-- Bon-Ton hangs off the outer flank of the angled arm.
-	local bt = bend + a2 * 5.5 - a2nrm * 7.6
-	local btDoor = bend + a2 * 5.5 - a2nrm * 3.1
+	-- Far enough along the arm to leave real daylight between it and JCPenney.
+	-- Chris, from the aerial: "that jcpenney building doesn't connect to bon
+	-- ton" - on the photograph there is parking between the two, and they had
+	-- been close enough here to read as one building.
+	local bt = bend + a2 * 11.0 - a2nrm * 7.2
+	local btDoor = bend + a2 * 11.0 - a2nrm * 2.9
 	anchor("BON-TON", bt.X, bt.Y, 11, 9, a2ang, { { btDoor.X, btDoor.Y, a2ang } })
 
 	-- Sears caps the far end of the angled arm, square to it.
-	local se = bend + a2 * 16.0
-	local seDoor = bend + a2 * 10.2
+	local se = bend + a2 * 17.5
+	local seDoor = bend + a2 * 11.6
 	anchor("SEARS", se.X, se.Y, 13, 11, a2ang, { { seDoor.X, seDoor.Y, a2ang } })
 
 	M.Parent = map
