@@ -25,6 +25,24 @@ local RIG_NAME = "Sweeper"
 -- full volume before it starts falling off.
 local TELEGRAPH_MIN_DISTANCE = 8
 
+-- The telegraph sound.
+--
+-- "Servo Motor 7 (SFX)", asset 9118959688, from the Pro Sound Effects library
+-- Roblox licenses for creator use - free, and usable in an unpublished place.
+-- Short servo bursts, which is what a former floor cleaner should sound like
+-- noticing you, and distinct from the storm's own noise.
+--
+-- Chosen rather than invented: searched the Creator Store, then loaded it in a
+-- running playtest and read back `IsLoaded = true` and `TimeLength = 1.11s`.
+-- That 1.11s covers `audioTelegraphSeconds` of 1.0, so the warning is still
+-- sounding when the first hit becomes legal rather than having finished before.
+--
+-- Swap the id if Chris wants a different voice for the Sweepers; everything
+-- around it - timing, falloff, range - is independent of the choice.
+local TELEGRAPH_SOUND_ID = "rbxassetid://9118959688"
+local TELEGRAPH_SOUND_NAME = "Servo Motor 7 (SFX), Pro Sound Effects"
+local TELEGRAPH_MEASURED_SECONDS = 1.11
+
 local SweeperRig = {}
 
 local function weldTo(root: BasePart, part: BasePart)
@@ -37,24 +55,32 @@ end
 --- The sound that has to arrive before the player can be hit.
 --
 -- The handoff makes this an accessibility requirement rather than polish:
--- "every enemy must telegraph with sound before sight". `SoundId` is left empty
--- deliberately - inventing an `rbxassetid` would be a fabricated asset, and a
--- wrong one is worse than an obvious gap. Chris supplies the audio; the timing,
--- range and falloff around it are wired and correct.
+-- "every enemy must telegraph with sound before sight".
 --
 -- Audible range is tied to `aggroRadiusLit`, the furthest a Sweeper can notice
 -- anybody. If it can see you, you can hear it.
+--
+-- A telegraph shorter than `audioTelegraphSeconds` would finish before the hit
+-- it is warning about, so the mismatch is reported rather than left to be
+-- noticed in play.
 local function addTelegraph(root: BasePart): Sound
 	local sweeper = Config.Enemies.Sweepers
 	local sound = Instance.new("Sound")
 	sound.Name = "Telegraph"
-	sound.SoundId = ""
+	sound.SoundId = TELEGRAPH_SOUND_ID
 	sound.Looped = false
 	sound.Volume = 0.6
 	sound.RollOffMode = Enum.RollOffMode.InverseTapered
 	sound.RollOffMinDistance = TELEGRAPH_MIN_DISTANCE
 	sound.RollOffMaxDistance = sweeper.aggroRadiusLit
 	sound.Parent = root
+
+	if TELEGRAPH_MEASURED_SECONDS < sweeper.audioTelegraphSeconds then
+		warn(
+			`[SweeperRig] telegraph "{TELEGRAPH_SOUND_NAME}" is {TELEGRAPH_MEASURED_SECONDS}s but audioTelegraphSeconds is {sweeper.audioTelegraphSeconds}s - the warning would end before the hit it announces`
+		)
+	end
+
 	return sound
 end
 

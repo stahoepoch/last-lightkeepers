@@ -329,12 +329,25 @@ console.log("\nCross-module calls");
       /FOLDER_NAME = "Enemies"/.test(rig.src) && /RIG_NAME = "Sweeper"/.test(rig.src),
       "EnemyService looks the template up by that exact path",
     );
-    // The handoff requires a sound telegraph; a made-up asset id would be worse
-    // than an obvious gap, so the id stays empty until Chris supplies one.
+    // The handoff requires a sound telegraph, so the id must be set - a silent
+    // telegraph is an accessibility gap. This cannot prove the asset is real;
+    // provenance lives in the file (searched, then loaded in a playtest with
+    // IsLoaded and TimeLength read back) and is confirmed by running the game.
+    // What it does catch is the id going missing or drifting inline.
     check(
-      "the telegraph SoundId is left empty",
-      /SoundId = ""/.test(rig.src) && !/rbxassetid/.test(codeOnly(rig.src)),
-      "never invent an rbxassetid for a required accessibility sound",
+      "the telegraph has an asset id",
+      /TELEGRAPH_SOUND_ID = "rbxassetid:\/\/\d+"/.test(rig.src),
+      "a silent telegraph does not satisfy sound before sight",
+    );
+    check(
+      "the telegraph sound is set from that constant",
+      /sound[.]SoundId = TELEGRAPH_SOUND_ID/.test(rig.src),
+      "an inline id drifts away from the documented, verified one",
+    );
+    check(
+      "a telegraph shorter than the gate is reported",
+      /TELEGRAPH_MEASURED_SECONDS < sweeper[.]audioTelegraphSeconds/.test(rig.src),
+      "a warning that ends before the hit it announces is worse than none",
     );
     check(
       "the rig needs no project mapping or model file",

@@ -116,18 +116,26 @@ the first time: a Sweeper noticed a dark player at 10 studs, closed to under 3,
 and downed them at t=4.6s, which is three contacts at the configured 1.5s
 cooldown plus the 1.0s telegraph.
 
-**Needs Chris: the telegraph has no audio.** `enemies.json` sets
-`audioTelegraphSeconds: 1.0` because the handoff makes "every enemy must
-telegraph with sound before sight" an accessibility requirement rather than
-polish. The Sound is wired on the rig's root with the timing, falloff
-(`InverseTapered`) and audible range (tied to `aggroRadiusLit`, so if it can see
-you, you can hear it) all correct, but `SoundId` is deliberately empty - a made
-up `rbxassetid` would be a fabricated asset, and the startup warning plus a
-wiring check both exist to stop that happening quietly.
+**RESOLVED same day - the telegraph has audio.** Chris had no sound to give, so
+rather than leave an accessibility gap open I sourced one instead of inventing
+one: "Servo Motor 7 (SFX)", asset `9118959688`, from the Pro Sound Effects
+library Roblox licenses for creator use. Free, and it loads in an unpublished
+place. Short servo bursts, which is what a former floor cleaner should sound
+like noticing you.
 
-So the rule is enforced in timing but silent in fact: a Sweeper cannot land its
-first hit until 1.0s after it announces itself, and that announcement currently
-makes no noise. It is an accessibility gap until a real asset lands.
+Verified rather than assumed, which is the part that matters for an `rbxassetid`:
+searched the Creator Store, then loaded it in a running playtest and read back
+`IsLoaded = true` and `TimeLength = 1.11s`. That 1.11s covers
+`audioTelegraphSeconds` of 1.0, so the warning is still sounding when the first
+hit becomes legal rather than having finished before it. In play the telegraph
+fired at t=0.45s on target acquisition and the knockdown landed at t=4.95s.
+
+The rule is now enforced in timing *and* in fact. The id sits in one named
+constant with its provenance beside it, so swapping the Sweepers' voice is a
+one-line change; everything around it - timing, falloff, range - is independent
+of the choice. `SweeperRig` also warns if a future sound is shorter than
+`audioTelegraphSeconds`, because a warning that ends before the hit it announces
+is worse than none.
 
 One interpretation worth a second pair of eyes: the handoff says "before sight",
 and I gated *contact* rather than detection. A Sweeper telegraphs when it
