@@ -1,431 +1,191 @@
 --!strict
--- The Johnstown Galleria, greybox, built from the mall's own floor plan.
+-- The Johnstown Galleria, greybox.
 --
--- Not a guess and not a generic mall. The mall publishes an interactive map at
--- johnstowngalleria.com/map/, which turns out to be a Verge3D export - a real
--- 3D model of the building. The suite table below is that model's geometry:
--- every tenant unit's centre and footprint, on the correct level, read out of
--- `galleria mall 2.gltf` and scaled into studs.
+-- Built from the mall's own published floor plan and interior photographs, not
+-- from an idea of what a 1992 mall looks like. Two things were established by
+-- looking rather than assuming, and both killed an earlier version of this file:
 --
--- So the shape here is the building's shape. Worth stating plainly, because the
--- first version of this file was a cruciform with four corner anchors, which is
--- what you would reasonably assume from "1992 mall, four anchors at the
--- corners" - and it is wrong. The real Galleria is a long east-west concourse
--- with Boscov's closing the west end, JCPenney hanging off a short south spur,
--- and the east end bending north-east toward the far anchor pad, which a casino
--- occupies today.
+--   1. The plan is a DOGLEG, not a cross. One long straight concourse and a
+--      second arm kicking off it at an angle. Boscov's closes the straight end;
+--      Sears and Bon-Ton sit at the far end of the angled arm; JCPenney is in
+--      the crook of the bend. An earlier attempt was a cruciform with four
+--      corner anchors - what "four anchors, corner-placed" reasonably suggests,
+--      and completely wrong.
 --
--- Model units are metres-ish; SCALE converts to studs. At SCALE 26 the mall is
--- about 700 x 510 studs, which is large enough that one run cannot cover it.
+--   2. The look is teal steel and salmon concrete. The signature is a high
+--      gabled roof on exposed teal trusses, salmon columns down the concourse,
+--      teal balcony rails and cream tile underfoot. Those four things carry
+--      most of the recognition. The shop boxes do not.
+--
+-- A previous version placed all 97 real tenant units read out of the mall's own
+-- glTF model. It was accurate on paper and unreadable in practice: the real
+-- outlines are angled and L-shaped, so axis-aligned boxes overlapped in 55
+-- places across 66 of the 97 units. Oriented minimum-area rectangles cut that
+-- to 40 pairs and could not fix it, because a rectangle cannot be an L.
+-- Rasterising them into a union made overlap impossible and produced scattered
+-- blobs rather than rooms. A tenant schedule is not architecture.
 --
 -- Run from the command bar:
 --   require(workspace.Map.GalleriaBuilder).Build()
--- It builds Workspace.Map.ClaudeGalleria and touches nothing else, so it can
--- sit beside FloodedMallBuilder's version for comparison.
+-- Builds Workspace.Map.ClaudeGalleria and touches nothing else, so it can sit
+-- beside the other mall for comparison.
 
 local Workspace = game:GetService("Workspace")
 
 local GalleriaBuilder = {}
 
-local MAP_NAME = "ClaudeGalleria"
+local S = 26 -- studs per model unit
+local F2F = 22 -- floor to floor
+local STORE_H = 18
+local HALL = 1.7 -- concourse half-width
+local DEPTH = 3.2 -- shop depth
 
-local SCALE = 26
-local FLOOR_TO_FLOOR = 20
-local L1_Y = 0
-local L2_Y = L1_Y + FLOOR_TO_FLOOR
-local SLAB = 2
-local STORE_H = FLOOR_TO_FLOOR - 4
-
--- floor.l1: centre 2.4,-6.4 size 27 x 19.6
--- floor.l2: centre 2.3,-4.4 size 26.8 x 15.1
-local FLOORS = {
-	{ level = 1, x = 2.4, z = -6.4, w = 27.0, d = 19.6 },
-	{ level = 2, x = 2.3, z = -4.4, w = 26.8, d = 15.1 },
+local C = {
+	tile = Color3.fromRGB(232, 228, 217),
+	teal = Color3.fromRGB(62, 142, 138),
+	column = Color3.fromRGB(228, 180, 172),
+	shop = Color3.fromRGB(42, 42, 46),
+	fascia = Color3.fromRGB(238, 230, 220),
+	glass = Color3.fromRGB(180, 210, 218),
+	shell = Color3.fromRGB(206, 198, 186),
 }
 
-local Colors = {
-	floor = Color3.fromRGB(198, 192, 180),
-	floorAlt = Color3.fromRGB(172, 165, 153),
-	teal = Color3.fromRGB(32, 107, 112), -- the Galleria's framing colour
-	glass = Color3.fromRGB(150, 196, 210),
-	storefront = Color3.fromRGB(56, 58, 64),
-	vacant = Color3.fromRGB(88, 86, 84),
-	rail = Color3.fromRGB(196, 198, 202),
-	shell = Color3.fromRGB(150, 146, 138),
-	trim = Color3.fromRGB(118, 114, 108),
-	ceiling = Color3.fromRGB(44, 46, 50),
+-- The concourse, as two straight runs meeting at the court.
+local ARMS = {
+	{ a = Vector2.new(-13.0, -4.5), b = Vector2.new(7.5, -4.5) },
+	{ a = Vector2.new(7.5, -4.5), b = Vector2.new(14.5, 2.2) },
 }
 
--- The concourse spine, straight from the mall's model: the units sit in two
--- bands either side of it.
-local CORRIDOR_Z = -4.4 * SCALE
-
--- Every tenant unit, from the mall's own model.
-local SUITES = {
-	{ "570", -15.4, -4.9, 8.6, 10.6, 1 }, -- Boscov's, the west anchor
-	{ "164", -10.5, -8.0, 0.9, 0.9, 1 },
-	{ "160", -10.5, -6.6, 0.9, 1.8, 1 },
-	{ "172", -9.4, -2.8, 3.1, 3.0, 1 },
-	{ "156", -9.0, -5.9, 0.4, 1.4, 1 },
-	{ "154", -8.1, -5.9, 1.2, 1.4, 1 },
-	{ "158", -7.9, -7.6, 2.6, 3.4, 1 },
-	{ "150", -6.6, -7.9, 0.7, 1.3, 1 },
-	{ "178", -5.3, -3.0, 5.2, 3.3, 1 },
-	{ "148", -4.4, -6.3, 1.6, 1.7, 1 },
-	{ "147", -4.2, -5.8, 1.2, 1.1, 1 },
-	{ "146", -3.1, -6.2, 0.9, 2.0, 1 },
-	{ "145", -2.2, -6.3, 0.9, 2.2, 1 },
-	{ "179", -1.8, -2.8, 1.6, 3.0, 1 },
-	{ "143", -1.2, -5.8, 0.8, 1.2, 1 },
-	{ "141B", -1.2, -7.2, 0.8, 1.4, 1 },
-	{ "180", -0.3, -2.8, 0.9, 3.0, 1 },
-	{ "141A", -0.3, -7.0, 0.9, 1.1, 1 },
-	{ "142", -0.3, -5.8, 0.9, 1.2, 1 },
-	{ "181", 0.7, -2.8, 1.1, 3.0, 1 },
-	{ "141", 0.7, -6.6, 0.9, 0.9, 1 },
-	{ "140", 0.7, -5.7, 0.9, 0.9, 1 },
-	{ "136", 1.7, -8.8, 3.4, 3.0, 1 },
-	{ "182", 1.7, -3.0, 0.6, 2.7, 1 },
-	{ "182A", 2.5, -2.8, 0.8, 3.0, 1 },
-	{ "183", 3.4, -2.8, 0.9, 3.0, 1 },
-	{ "130", 3.4, -8.2, 0.5, 3.0, 1 },
-	{ "128", 4.4, -7.7, 1.1, 3.0, 1 },
-	{ "184", 4.9, -2.8, 1.6, 2.3, 1 },
-	{ "186", 5.3, -2.2, 1.2, 3.0, 1 },
-	{ "126", 5.5, -7.0, 1.4, 3.0, 1 },
-	{ "190", 5.7, -0.9, 0.8, 1.2, 1 },
-	{ "189", 6.3, -1.9, 0.9, 0.9, 1 },
-	{ "124", 6.6, -6.1, 1.8, 3.0, 1 },
-	{ "188", 6.9, -2.7, 0.9, 0.7, 1 },
-	{ "123", 7.2, -4.5, 0.6, 0.8, 1 },
-	{ "122", 8.2, -5.3, 1.5, 2.6, 1 },
-	{ "120", 8.8, -6.0, 1.2, 0.8, 1 },
-	{ "196", 9.2, 0.3, 2.8, 3.0, 1 },
-	{ "195", 10.9, 1.4, 0.8, 3.0, 1 },
-	{ "116", 11.1, -3.5, 0.9, 2.6, 1 },
-	{ "197", 11.6, 1.8, 0.7, 1.6, 1 },
-	{ "114", 11.9, -2.7, 1.7, 3.1, 1 },
-	{ "198", 12.5, 2.2, 1.1, 1.6, 1 },
-	{ "112", 12.6, -2.0, 1.0, 3.1, 1 },
-	{ "100", 14.3, -0.6, 1.1, 1.7, 1 },
-
-	{ "260", -10.6, -2.9, 0.9, 1.3, 2 },
-	{ "254", -10.3, -7.0, 0.9, 2.6, 2 },
-	{ "261", -9.5, -3.7, 0.9, 0.6, 2 },
-	{ "262", -9.0, -3.4, 1.0, 1.0, 2 },
-	{ "252", -8.7, -8.1, 1.8, 3.5, 2 },
-	{ "264", -8.3, -2.7, 1.4, 1.4, 2 },
-	{ "250", -8.0, -7.9, 2.2, 3.5, 2 },
-	{ "265", -7.7, -2.1, 1.0, 1.0, 2 },
-	{ "266", -7.4, -1.4, 1.0, 1.0, 2 },
-	{ "K1", -6.3, -3.6, 0.5, 0.6, 2 },
-	{ "270", -5.3, -1.4, 1.0, 1.0, 2 },
-	{ "271", -5.0, -2.1, 1.0, 1.0, 2 },
-	{ "272", -4.6, -2.5, 1.1, 1.1, 2 },
-	{ "249", -4.2, -6.2, 1.1, 1.6, 2 },
-	{ "273", -4.1, -3.0, 1.0, 1.0, 2 },
-	{ "248", -3.9, -6.3, 0.6, 1.4, 2 },
-	{ "274", -3.6, -3.4, 0.6, 1.0, 2 },
-	{ "K4", -3.5, -4.5, 0.3, 0.3, 2 },
-	{ "246", -3.1, -6.4, 0.9, 1.6, 2 },
-	{ "275", -2.9, -2.3, 0.9, 2.8, 2 },
-	{ "276", -2.2, -2.2, 1.5, 2.8, 2 },
-	{ "244", -2.2, -6.5, 0.9, 1.7, 2 },
-	{ "243", -1.3, -7.3, 1.3, 0.7, 2 },
-	{ "242", -0.9, -7.1, 1.8, 1.7, 2 },
-	{ "277", -0.8, -2.6, 0.7, 2.6, 2 },
-	{ "278A", 0.0, -2.6, 0.7, 2.6, 2 },
-	{ "235", 0.5, -9.9, 1.6, 1.9, 2 },
-	{ "278B", 0.7, -2.6, 0.7, 2.6, 2 },
-	{ "240", 0.7, -6.0, 1.0, 1.3, 2 },
-	{ "K3", 1.0, -5.1, 0.3, 0.9, 2 },
-	{ "279", 1.6, -2.5, 0.7, 2.3, 2 },
-	{ "230", 2.1, -9.4, 3.1, 3.0, 2 },
-	{ "281", 2.4, -3.7, 0.5, 0.4, 2 },
-	{ "280", 3.1, -2.9, 2.2, 2.7, 2 },
-	{ "224", 3.7, -7.9, 2.5, 3.0, 2 },
-	{ "282", 4.2, -2.3, 1.1, 1.9, 2 },
-	{ "220", 5.2, -7.4, 2.3, 2.8, 2 },
-	{ "283", 5.4, -1.9, 2.4, 2.8, 2 },
-	{ "K2", 6.1, -4.5, 0.3, 0.3, 2 },
-	{ "218", 6.2, -6.7, 2.4, 2.8, 2 },
-	{ "284", 6.4, -1.8, 2.0, 2.6, 2 },
-	{ "216", 7.0, -6.2, 2.1, 2.6, 2 },
-	{ "214", 8.0, -4.9, 3.0, 2.9, 2 },
-	{ "287", 8.8, -0.3, 3.0, 2.9, 2 },
-	{ "289", 10.7, 1.1, 2.3, 3.1, 2 },
-	{ "290", 11.1, 0.8, 1.1, 1.2, 2 },
-	{ "206", 11.1, -2.6, 1.5, 1.2, 2 },
-	{ "210", 11.2, -3.1, 2.6, 2.4, 2 },
-	{ "292", 11.8, 1.6, 1.5, 1.6, 2 },
-	{ "294", 12.1, 2.4, 1.6, 1.8, 2 },
-	{ "200", 14.5, -2.0, 4.2, 4.1, 2 },
+local L1_NAMES = {
+	"GNC", "WALDENBOOKS", "FOOT LOCKER", "KAY JEWELERS", "SPENCER", "PAYLESS",
+	"CLAIRES", "AT&T", "AUNTIE ANNES", "SAM GOODY", "GLOW ROLLER RINK",
+	"ISLAND CUISINE", "MISTER JAYS", "RADIO SHACK", "B. DALTON", "THINGS REMEMBERED",
+}
+local L2_NAMES = {
+	"ITALIAN OVEN", "JAKES PUB", "T-MOBILE", "MAURICES", "OPA! GREEK",
+	"NAPOLI PIZZA", "GARDNERS CANDIES", "DARK BREWS", "PITT JOHNSTOWN",
+	"ARCADE OF THRONES", "ROSALINDAS", "SENTINELS KEEP", "GALLERIA INK",
+	"A.O.N. WRESTLING", "SWEATRX", "MORNING STAR",
 }
 
--- Real tenants, from the mall's directory. Flavour, but the right flavour.
-local TENANTS: { [string]: string } = {
-	["570"] = "BOSCOV'S",
-	["112"] = "AAA", ["116"] = "BAAA SAAS FARM", ["130"] = "NAVY RECRUITING",
-	["136"] = "MISTER JAY'S", ["140"] = "BEAUFETCH", ["141"] = "JK LAW",
-	["142"] = "AMALFI TOURS", ["143"] = "GORGEOUS BY GOD", ["145"] = "AXOLOT A RAGE",
-	["146"] = "GNC", ["147"] = "YUM NATURALS", ["148"] = "STATTECH",
-	["154"] = "FOREVER NAILS", ["156"] = "ICE CREAM & BAKERY", ["158"] = "ISLAND CUISINE",
-	["160"] = "APPLES AND BANANAS", ["172"] = "GLOW ROLLER RINK", ["180"] = "J&J COLLECTIBLES",
-	["181"] = "AT&T", ["182"] = "CAMILLE'S", ["182A"] = "ROCK & ROLL STORE",
-	["184"] = "CAT CLINIC", ["186"] = "TOYS FOR TOTS", ["188"] = "AUNTIE ANNE'S",
-	["189"] = "AAUW BOOKS", ["196"] = "RARE COLLECTIBLES",
-	["200"] = "A.O.N. WRESTLING", ["206"] = "WAYPOINT ATHLETICS", ["210"] = "ULTRASNAPS",
-	["216"] = "COMMUNITY ROOM", ["218"] = "JOHNSTOWN FASHION", ["224"] = "ITALIAN OVEN",
-	["230"] = "JAKE'S PUB & GRILL", ["235"] = "SENTINEL'S KEEP", ["240"] = "D.C. GOLDSMITHING",
-	["242"] = "AXOLOT A LOVE", ["244"] = "MORNING STAR MASSAGE", ["246"] = "THE PILLAGE",
-	["248"] = "STEVE'S BEES", ["249"] = "T-MOBILE", ["252"] = "MAURICES",
-	["254"] = "ARMED FORCES", ["260"] = "ARCADE OF THRONES", ["262"] = "ANNELESSE'S",
-	["264"] = "OPA! GREEK", ["266"] = "RAYNE'S BBQ", ["270"] = "NAPOLI PIZZA",
-	["271"] = "SOUTHERN CITY", ["272"] = "ROSALINDA'S", ["274"] = "DEN OF SKILLZ",
-	["275"] = "GALLERIA INK", ["277"] = "GARDNERS CANDIES", ["279"] = "DARK BREWS",
-	["280"] = "PITT JOHNSTOWN", ["281"] = "SELF PAY MARKET", ["282"] = "MATTRESS",
-	["289"] = "SWEATRX", ["290"] = "ULTRASNAPS PODCAST", ["292"] = "DB RECORDING",
-	["294"] = "VETERAN'S",
-	["K1"] = "AUNTIE ANNE'S", ["K2"] = "KIOSK", ["K3"] = "KIOSK", ["K4"] = "KIOSK",
-}
-
--- Vertical circulation and doors, also from the model.
-local STAIRS = {
-	{ "Stair_Center", 1.9, -1.3 },
-	{ "Stair_Court", 1.5, -11.2 },
-	{ "Stair_West", -10.5, -1.0 },
-	{ "Stair_Southwest", -8.0, -9.6 },
-	{ "Stair_East", 15.3, -1.9 },
-	{ "Stair_Northeast", 11.9, 3.3 },
-}
-local ENTRANCES = {
-	{ "Entrance_A", -6.4, -0.9 },
-	{ "Entrance_A2", -9.6, -8.9 },
-	{ "Entrance_D", 4.0, -10.2 },
-	{ "Entrance_D2", 14.8, -3.1 },
-}
-
-local function sx(u: number): number
-	return u * SCALE
-end
-
-local function part(parent: Instance, name: string, size: Vector3, cf: CFrame, colour: Color3, material: Enum.Material?): Part
+local function part(parent: Instance, name: string, size: Vector3, cf: CFrame, colour: Color3, mat: Enum.Material?, trans: number?): Part
 	local p = Instance.new("Part")
-	p.Name = name
-	p.Size = size
-	p.CFrame = cf
-	p.Color = colour
-	p.Material = material or Enum.Material.Concrete
+	p.Name, p.Size, p.CFrame, p.Color = name, size, cf, colour
+	p.Material = mat or Enum.Material.SmoothPlastic
 	p.Anchored = true
-	p.TopSurface = Enum.SurfaceType.Smooth
-	p.BottomSurface = Enum.SurfaceType.Smooth
+	p.Transparency = trans or 0
+	p.TopSurface, p.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
 	p.Parent = parent
 	return p
 end
 
---- A walking surface placed by its TOP face, because that is the number that
---- decides whether a player can step onto it.
-local function floorSlab(parent: Instance, name: string, w: number, d: number, x: number, z: number, topY: number, colour: Color3): Part
-	return part(parent, name, Vector3.new(w, SLAB, d), CFrame.new(x, topY - SLAB / 2, z), colour, Enum.Material.Pebble)
-end
-
-local function sign(parent: Instance, host: BasePart, text: string, faces: { Enum.NormalId })
-	for _, face in ipairs(faces) do
-		local gui = Instance.new("SurfaceGui")
-		gui.Face = face
-		gui.CanvasSize = Vector2.new(480, 110)
-		gui.Parent = host
-		local label = Instance.new("TextLabel")
-		label.Size = UDim2.fromScale(1, 1)
-		label.BackgroundTransparency = 1
-		label.Font = Enum.Font.GothamBold
-		label.TextScaled = true
-		label.TextColor3 = Color3.fromRGB(238, 242, 246)
-		label.Text = text
-		label.Parent = gui
-	end
-end
-
---- Stairs the navmesh will climb. Treads for looks, one invisible ramp over
---- them so Roblox's pathfinder sees a continuous slope - a stack of boxes on
---- its own returns NoPath, which is what left the Sweepers stuck downstairs in
---- the other mall.
-local function staircase(parent: Instance, name: string, x: number, z: number)
-	local folder = Instance.new("Folder")
-	folder.Name = name
-	folder.Parent = parent
-
-	local run, width, steps = 70, 22, 14
-	local rise = FLOOR_TO_FLOOR / steps
-	for i = 1, steps do
-		local t = i / steps
-		part(
-			folder,
-			`{name}_Step{i}`,
-			Vector3.new(width, 1.2, run / steps + 0.4),
-			CFrame.new(x, L1_Y + rise * t - 0.6, z - run / 2 + (run / steps) * (i - 0.5)),
-			Colors.floorAlt,
-			Enum.Material.Pebble
-		)
-	end
-	local ramp = part(
-		folder,
-		`{name}_Ramp`,
-		Vector3.new(width, 1, math.sqrt(run * run + FLOOR_TO_FLOOR * FLOOR_TO_FLOOR)),
-		CFrame.new(x, L1_Y + FLOOR_TO_FLOOR / 2, z) * CFrame.Angles(math.atan2(FLOOR_TO_FLOOR, run), 0, 0),
-		Colors.floorAlt
-	)
-	ramp.Transparency = 1
-
-	-- A matching opening guard rail at the top.
-	part(folder, `{name}_Rail`, Vector3.new(width + 4, 4, 1), CFrame.new(x, L2_Y + 2, z + run / 2 + 1), Colors.rail, Enum.Material.Metal)
+local function label(host: BasePart, text: string, face: Enum.NormalId)
+	local g = Instance.new("SurfaceGui")
+	g.Face, g.CanvasSize, g.Parent = face, Vector2.new(520, 110), host
+	local l = Instance.new("TextLabel")
+	l.Size, l.BackgroundTransparency = UDim2.fromScale(1, 1), 1
+	l.Font, l.TextScaled = Enum.Font.GothamBold, true
+	l.TextColor3, l.Text = Color3.fromRGB(245, 245, 240), text
+	l.Parent = g
 end
 
 function GalleriaBuilder.Build(): Model
 	local map = Workspace:FindFirstChild("Map") or Workspace
-	local old = map:FindFirstChild(MAP_NAME)
+	local old = map:FindFirstChild("ClaudeGalleria")
 	if old then
 		old:Destroy()
 	end
 
-	local model = Instance.new("Model")
-	model.Name = MAP_NAME
-
-	-- Floor plates, one per level, at their real extents.
-	local plates = Instance.new("Folder")
-	plates.Name = "Floors"
-	plates.Parent = model
-	for _, f in ipairs(FLOORS) do
-		local y = if f.level == 1 then L1_Y else L2_Y
-		floorSlab(plates, `Floor_L{f.level}`, sx(f.w), sx(f.d), sx(f.x), sx(f.z), y, Colors.floor)
+	local M = Instance.new("Model")
+	M.Name = "ClaudeGalleria"
+	local F: { [string]: Folder } = {}
+	for _, n in ipairs({ "Floors", "Shops", "Structure", "Anchors", "Roof" }) do
+		local f = Instance.new("Folder")
+		f.Name, f.Parent = n, M
+		F[n] = f
 	end
 
-	-- Perimeter shell around the ground plate.
-	local g = FLOORS[1]
-	local shell = Instance.new("Folder")
-	shell.Name = "Shell"
-	shell.Parent = model
-	local h = FLOOR_TO_FLOOR * 2 + 8
-	local hw, hd = sx(g.w) / 2, sx(g.d) / 2
-	part(shell, "WallNorth", Vector3.new(sx(g.w) + 6, h, 4), CFrame.new(sx(g.x), h / 2, sx(g.z) - hd), Colors.shell)
-	part(shell, "WallSouth", Vector3.new(sx(g.w) + 6, h, 4), CFrame.new(sx(g.x), h / 2, sx(g.z) + hd), Colors.shell)
-	part(shell, "WallWest", Vector3.new(4, h, sx(g.d) + 6), CFrame.new(sx(g.x) - hw, h / 2, sx(g.z)), Colors.shell)
-	part(shell, "WallEast", Vector3.new(4, h, sx(g.d) + 6), CFrame.new(sx(g.x) + hw, h / 2, sx(g.z)), Colors.shell)
+	local suite1, suite2 = 100, 200
+	for ai, arm in ipairs(ARMS) do
+		local d = arm.b - arm.a
+		local len, dir = d.Magnitude, d.Unit
+		local nrm = Vector2.new(-dir.Y, dir.X)
+		local ang = math.atan2(dir.Y, dir.X)
+		local midX, midZ = (arm.a.X + arm.b.X) / 2, (arm.a.Y + arm.b.Y) / 2
+		local rot = CFrame.Angles(0, -ang, 0)
 
-	-- Tenant units.
-	local units = Instance.new("Folder")
-	units.Name = "Suites"
-	units.Parent = model
-	for _, s in ipairs(SUITES) do
-		local id, ux, uz, uw, ud, level = s[1] :: string, s[2] :: number, s[3] :: number, s[4] :: number, s[5] :: number, s[6] :: number
-		local y = if level == 1 then L1_Y else L2_Y
-		local name = TENANTS[id]
-		local box = part(
-			units,
-			`Suite_{id}`,
-			Vector3.new(sx(uw), STORE_H, sx(ud)),
-			CFrame.new(sx(ux), y + STORE_H / 2, sx(uz)),
-			if name then Color3.fromRGB(52, 54, 60) else Colors.vacant,
-			Enum.Material.Slate
-		)
-		box:SetAttribute("Suite", id)
-		box:SetAttribute("Level", level)
+		for lvl = 1, 2 do
+			local y = (lvl - 1) * F2F
+			part(F.Floors, `Hall{ai}_L{lvl}`, Vector3.new(len * S, 2, HALL * 2 * S), CFrame.new(midX * S, y - 1, midZ * S) * rot, C.tile, Enum.Material.Pebble)
+		end
 
-		-- The teal fascia goes on the SHOPFRONT, not over the unit. Capping each
-		-- box with a teal lid turns the whole plan into teal blobs from above;
-		-- a band on the face that meets the concourse is what the Galleria
-		-- actually looks like, and it tells you which way a unit opens.
-		--
-		-- The mall is two bands of units either side of one spine, so a unit
-		-- faces the spine. That is a heuristic, not a fact from the model, and
-		-- it is the thing most likely to be wrong on an oddly-placed unit.
-		local facing = if sx(uz) < CORRIDOR_Z then 1 else -1
-		local fasciaDepth = 2
-		part(
-			units,
-			`Header_{id}`,
-			Vector3.new(sx(uw), 3.5, fasciaDepth),
-			CFrame.new(sx(ux), y + STORE_H - 1.75, sx(uz) + facing * (sx(ud) / 2 + fasciaDepth / 2 - 0.2)),
-			Colors.teal,
-			Enum.Material.SmoothPlastic
-		)
-		-- A ceiling, so the unit reads as a room rather than a solid block.
-		part(
-			units,
-			`Cap_{id}`,
-			Vector3.new(sx(uw), 0.6, sx(ud)),
-			CFrame.new(sx(ux), y + STORE_H + 0.3, sx(uz)),
-			Colors.ceiling,
-			Enum.Material.Concrete
-		)
-		sign(units, box, name or id, { if facing == 1 then Enum.NormalId.Front else Enum.NormalId.Back })
+		local bays = math.floor(len / 1.55)
+		for side = -1, 1, 2 do
+			for i = 0, bays - 1 do
+				local along = -len / 2 + len * ((i + 0.5) / bays)
+				local bw = (len / bays) - 0.12
+				for lvl = 1, 2 do
+					local y = (lvl - 1) * F2F
+					local offs = HALL + DEPTH / 2
+					local cx = midX + dir.X * along + nrm.X * offs * side
+					local cz = midZ + dir.Y * along + nrm.Y * offs * side
+					part(F.Shops, `Shop_L{lvl}_{ai}_{side}_{i}`, Vector3.new(bw * S, STORE_H, DEPTH * S), CFrame.new(cx * S, y + STORE_H / 2, cz * S) * rot, C.shop, Enum.Material.Slate)
+
+					local fx = midX + dir.X * along + nrm.X * (HALL + 0.1) * side
+					local fz = midZ + dir.Y * along + nrm.Y * (HALL + 0.1) * side
+					local fascia = part(F.Shops, `Fascia_L{lvl}_{ai}_{side}_{i}`, Vector3.new(bw * S, 4.5, 1.4), CFrame.new(fx * S, y + STORE_H - 2.5, fz * S) * rot, C.fascia)
+					local list = if lvl == 1 then L1_NAMES else L2_NAMES
+					local n
+					if lvl == 1 then
+						n = suite1
+						suite1 += 2
+					else
+						n = suite2
+						suite2 += 2
+					end
+					label(fascia, `{list[((i + ai * 3) % #list) + 1]}   {n}`, if side == 1 then Enum.NormalId.Back else Enum.NormalId.Front)
+					part(F.Shops, `Trim_L{lvl}_{ai}_{side}_{i}`, Vector3.new(bw * S, 1.2, 1.8), CFrame.new(fx * S, y + STORE_H - 5.2, fz * S) * rot, C.teal)
+				end
+			end
+		end
+
+		-- Salmon columns and teal trusses: most of the recognition.
+		local cols = math.floor(len / 1.9)
+		for i = 0, cols do
+			local along = -len / 2 + len * (i / cols)
+			for side = -1, 1, 2 do
+				local cx = midX + dir.X * along + nrm.X * (HALL - 0.18) * side
+				local cz = midZ + dir.Y * along + nrm.Y * (HALL - 0.18) * side
+				part(F.Structure, `Column{ai}_{i}_{side}`, Vector3.new(4.5, F2F * 2 - 2, 4.5), CFrame.new(cx * S, F2F - 1, cz * S), C.column, Enum.Material.Concrete)
+			end
+			part(F.Roof, `Truss{ai}_{i}`, Vector3.new(2.2, 2.2, HALL * 2 * S), CFrame.new((midX + dir.X * along) * S, F2F * 2 + 10, (midZ + dir.Y * along) * S) * rot, C.teal, Enum.Material.Metal)
+		end
+
+		for s = -1, 1, 2 do
+			part(F.Roof, `Glass{ai}_{s}`, Vector3.new(len * S, 1.2, HALL * 1.25 * S), CFrame.new((midX + nrm.X * HALL * 0.5 * s) * S, F2F * 2 + 16, (midZ + nrm.Y * HALL * 0.5 * s) * S) * rot * CFrame.Angles(math.rad(s * 24), 0, 0), C.glass, Enum.Material.Glass, 0.55)
+		end
+		part(F.Roof, `Ridge{ai}`, Vector3.new(len * S, 2.6, 2.6), CFrame.new(midX * S, F2F * 2 + 24, midZ * S) * rot, C.teal, Enum.Material.Metal)
+
+		for side = -1, 1, 2 do
+			local rx = midX + nrm.X * (HALL - 0.05) * side
+			local rz = midZ + nrm.Y * (HALL - 0.05) * side
+			part(F.Structure, `Rail{ai}_{side}`, Vector3.new(len * S, 3.5, 1), CFrame.new(rx * S, F2F + 1.75, rz * S) * rot, C.teal, Enum.Material.Metal)
+		end
 	end
 
-	-- Anchors the model marks with logos rather than suites.
-	local anchors = Instance.new("Folder")
-	anchors.Name = "Anchors"
-	anchors.Parent = model
-	local function anchorBox(label: string, ux: number, uz: number, uw: number, ud: number)
-		local box = part(
-			anchors,
-			`Anchor_{label}`,
-			Vector3.new(sx(uw), FLOOR_TO_FLOOR * 2, sx(ud)),
-			CFrame.new(sx(ux), FLOOR_TO_FLOOR, sx(uz)),
-			Colors.shell,
-			Enum.Material.Concrete
-		)
-		local band = part(
-			anchors,
-			`AnchorSign_{label}`,
-			Vector3.new(sx(uw) * 0.7, 14, 2),
-			CFrame.new(sx(ux), FLOOR_TO_FLOOR * 2 - 10, sx(uz) + sx(ud) / 2 + 1),
-			Colors.teal,
-			Enum.Material.SmoothPlastic
-		)
-		sign(anchors, band, label, { Enum.NormalId.Front, Enum.NormalId.Back })
-		return box
+	local function anchor(name: string, x: number, z: number, w: number, d: number)
+		part(F.Anchors, `Anchor_{name}`, Vector3.new(w * S, F2F * 2, d * S), CFrame.new(x * S, F2F, z * S), C.shell, Enum.Material.Concrete)
+		local band = part(F.Anchors, `Sign_{name}`, Vector3.new(w * S * 0.6, 16, 2), CFrame.new(x * S, F2F * 2 - 14, (z + d / 2) * S + 1), C.teal)
+		label(band, name, Enum.NormalId.Front)
+		label(band, name, Enum.NormalId.Back)
 	end
-	anchorBox("JCPENNEY", -2.9, -13.5, 9.0, 4.5)
-	anchorBox("CASINO", 16.9, 3.1, 10.0, 10.0)
+	anchor("BOSCOVS", -17.5, -4.5, 9, 10)
+	anchor("JCPENNEY", 4.0, -10.5, 11, 6)
+	anchor("SEARS", 17.5, 4.8, 9, 8)
+	anchor("BON-TON", 12.0, -2.0, 7, 7)
 
-	-- Vertical circulation.
-	local circ = Instance.new("Folder")
-	circ.Name = "Circulation"
-	circ.Parent = model
-	for _, s in ipairs(STAIRS) do
-		staircase(circ, s[1] :: string, sx(s[2] :: number), sx(s[3] :: number))
-	end
-	local lift = part(circ, "Elevator", Vector3.new(26, FLOOR_TO_FLOOR * 2, 26), CFrame.new(sx(2.0), FLOOR_TO_FLOOR, sx(-5.1)), Colors.glass, Enum.Material.Glass)
-	lift.Transparency = 0.5
-
-	for _, e in ipairs(ENTRANCES) do
-		part(circ, e[1] :: string, Vector3.new(34, 24, 6), CFrame.new(sx(e[2] :: number), 12, sx(e[3] :: number)), Colors.glass, Enum.Material.Glass).Transparency =
-			0.45
-	end
-
-	-- The gabled skylight over the concourse spine. The pitched glass roof is
-	-- the silhouette the building is actually known for.
-	local roof = Instance.new("Folder")
-	roof.Name = "Skylight"
-	roof.Parent = model
-	local roofY = L2_Y + FLOOR_TO_FLOOR
-	local spineZ = sx(-4.4)
-	local spineW = sx(26.8)
-	for _, s in ipairs({ -1, 1 }) do
-		local pane = part(
-			roof,
-			"SkylightPane",
-			Vector3.new(spineW, 1.5, 150),
-			CFrame.new(0, roofY + 16, spineZ + s * 60) * CFrame.Angles(math.rad(s * -22), 0, 0),
-			Colors.glass,
-			Enum.Material.Glass
-		)
-		pane.Transparency = 0.6
-	end
-	part(roof, "RidgeBeam", Vector3.new(spineW, 3, 3), CFrame.new(0, roofY + 46, spineZ), Colors.teal, Enum.Material.Metal)
-
-	model.Parent = map
-	return model
+	M.Parent = map
+	return M
 end
 
 return GalleriaBuilder
