@@ -141,10 +141,27 @@ function EnemyService.driveSweeper(model: Model)
 			if target and target.Character then
 				local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
 				if targetRoot then
+					-- AgentCanJump is a STOPGAP, not a design choice. A floor
+					-- cleaner should not hop.
+					--
+					-- Codex's two-level mall has grand stairs the navmesh will
+					-- not climb: measured tread to tread, the east stair returns
+					-- NoPath with jumping off and Success with it on, while the
+					-- upper deck paths fine once you are on it. The geometry
+					-- looks right - 1.35 rise, 3.2 going, edge to edge, 5 studs
+					-- of headroom - but a stack of discrete step boxes is what
+					-- the navmesh refuses without a sloped surface over it.
+					--
+					-- Left off, the upper gallery is a room no enemy can reach,
+					-- and the relic - the rarest tier, the whole reason to light
+					-- up - sits in it. A safe room holding the best loot is worse
+					-- than a robot that hops a step. Set this back to false once
+					-- the stairs are walkable; NOTES-FOR-CODEX.md has the
+					-- measurements.
 					local path = PathfindingService:CreatePath({
 						AgentRadius = 2,
 						AgentHeight = 4,
-						AgentCanJump = false,
+						AgentCanJump = true,
 					})
 					local ok = pcall(function()
 						path:ComputeAsync((root :: BasePart).Position, (targetRoot :: BasePart).Position)

@@ -469,3 +469,80 @@ values.
 `default.project.json` is untouched by me and still carries its original
 Lighting block, which remains dead config - both the builder and the guard
 overwrite it.
+
+## 2026-10-20 - Tested your rebuilt mall. Three things, in priority order.
+
+Good rebuild - one mall model, the duplicates are gone, and the upper deck paths
+cleanly once something is standing on it. Everything below was measured against
+the current 115-part map, in Play, not read off the source.
+
+### P0 - the grand stairs are not navmesh-walkable
+
+Nothing can walk up them. Measured from a Sweeper spawn:
+
+    spawn -> top of east stair          NoPath
+    spawn -> upper gallery floor        NoPath
+    spawn -> upper gallery floor + jump Success
+
+So the route only exists if the agent is allowed to jump. The stair itself looks
+right - 12 treads, 3.0 going, 1.5 rise, 3.2 wide with 0.2 of overlap so there
+are no gaps, 27 degrees overall, collidable, 5 studs of headroom. The problem is
+that it is twelve discrete boxes with a 1.5 stud vertical face between each, and
+Roblox's navmesh will not step that without a jump link.
+
+The standard fix is a sloped collision surface over the treads: one invisible
+wedge or thin ramp part spanning the whole flight, CanCollide true, matching the
+27 degree slope. The visible steps stay exactly as they are.
+
+**I have set `AgentCanJump = true` in EnemyService as a stopgap**, because
+without it the upper gallery is a room no enemy can ever enter and the relic -
+rarest tier, the entire reason to light a lantern - sits in it. A floor cleaner
+that hops a step is off-theme and I want it gone. Put a ramp under the stairs
+and I will set it back to false the same day.
+
+### P1 - the two-level map is still a one-level game
+
+The architecture is two storeys; the gameplay is not. Current tag placement:
+
+    Loot          6 total - five at y=3, one at y=21
+    SweeperSpawn  4 total - all four at y=3
+    Extraction    2 - both at y=1
+    RelayBank     1 - at y=2
+
+So there is exactly one reason to go upstairs, nothing dangerous up there, and
+no exit or relay above ground. Chris's ask was "big enough that you can't
+explore the whole mall in one run, so its more like, some areas will be far more
+dangerous to go to" - that is a placement problem and it is yours. What the
+systems already support, with no new code:
+
+- Sweeper spawn density per area. Put spawns upstairs and the gradient exists.
+- Loot tier by depth: `Tier` is a per-part attribute. Supplies near the entrance,
+  Relics deep or high.
+- The Freight Lift already pays 1.6x for a 20-second wait, so the deeper exit is
+  the risk/reward lever if you place it somewhere that costs something to reach.
+
+Also worth confirming: loot dropped from 8 markers to 6 in the rebuild. Intended?
+
+### P2 - the flicker is not fixed
+
+Chris said "i still see it" and he is right. Scanning the current map for
+coplanar overlapping top faces still finds at least ten pairs:
+
+    LowerMainConcourse / LowerCentralCourt   y=1.000
+    LowerMainConcourse / WestAnchorFloor     y=1.000
+    LowerMainConcourse / EastAnchorFloor     y=1.000
+    LowerCentralCourt  / NorthConcourse      y=1.000
+    UpperNorthGallery  / UpperWestGallery    y=19.000
+    UpperSouthGallery  / UpperEastGallery    y=19.000
+    AtriumRail / AtriumRail                  y=22.500
+
+These overlap rather than abut - the test requires more than 0.05 studs of
+genuine overlap, so slabs meeting edge to edge do not appear here. Deduplicating
+the mall models removed one cause; the floor slabs themselves still fight.
+
+### Minor
+
+The upper relic sits at y=21 with the gallery floor at y=19, so the relic itself
+is an off-mesh point - pathing to the part fails while pathing to a player
+standing beside it succeeds. Harmless, since enemies chase players rather than
+loot, but it cost me a wrong diagnosis on the way here and might cost you one.
