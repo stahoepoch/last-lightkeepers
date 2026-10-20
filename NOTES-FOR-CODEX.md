@@ -409,3 +409,23 @@ The one thing still casting was the lantern's PointLight in
 being the only dynamic light in an otherwise shadowless map, every railing and
 shelf threw a hard moving edge across the floor. It is off now. Nothing for you
 to do here - the brightness ask above still stands.
+
+## 2026-10-20 - Flicker while walking: almost certainly z-fighting
+
+Chris: "yea there is a ton of flickering when i walk". I asked whether it happens
+with the lantern lit or always; his answer was "all the time on or off".
+
+That rules out the lantern. A moving dynamic light against Future lighting would
+only shimmer while lit, and the lantern's PointLight is the only dynamic light
+in the game. Flicker that is independent of it, and that appears specifically
+while the camera moves, is the signature of z-fighting: two coplanar surfaces at
+exactly the same height, with the renderer picking a different winner each frame
+as the view angle changes.
+
+The generated mall is a strong candidate for it - a procedural builder tends to
+place floor slabs, trim and water planes at identical Y values. Worth looking
+for surfaces that share a coordinate exactly, and separating them by a small
+offset, rather than chasing it through Lighting.
+
+I have not touched the builder to investigate. It is your file, you have been
+editing it all session, and two of us in there is how we lose work.

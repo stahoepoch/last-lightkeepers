@@ -1,5 +1,6 @@
 --!strict
--- Per-player relic visibility.
+-- Per-player loot readability: what you can see, and what you are told you can
+-- take. Both are per-viewer, so both live on the client.
 --
 -- Relics are revealed by *your* lantern, not the crew's - that is the whole
 -- reason to turn light on, and a locked decision.
@@ -29,6 +30,38 @@ local PROMPT_WAIT_SECONDS = 15
 
 local lanternOn = false
 local prompts: { [BasePart]: ProximityPrompt } = {}
+local marks: { [BasePart]: Highlight } = {}
+
+-- "Baseline loot is always visible" is a rule from the handoff, and it was only
+-- true on paper: an unlit grey box in an unlit room is invisible at any range.
+-- Chris walked past loot repeatedly and reported E as broken - he was pressing
+-- it fifteen studs from the nearest pickup, outside the prompt's ten.
+--
+-- A thin outline, drawn only where you could actually see the object, is the
+-- smallest thing that makes the rule real without lighting the room up. It is
+-- not a light: it adds nothing to Storm Charge, which only ever counts lanterns.
+local MARK_COLOUR = Color3.fromRGB(214, 226, 240)
+local MARK_TRANSPARENCY = 0.35
+
+local function markFor(part: BasePart): Highlight
+	local existing = marks[part]
+	if existing and existing.Parent then
+		return existing
+	end
+	local mark = Instance.new("Highlight")
+	mark.Name = "LootMark"
+	mark.FillTransparency = 1
+	mark.OutlineColor = MARK_COLOUR
+	mark.OutlineTransparency = MARK_TRANSPARENCY
+	-- Occluded, so loot does not glow through walls and give away a room you
+	-- have not entered. Darkness still hides things; it just stops hiding the
+	-- thing you are standing next to.
+	mark.DepthMode = Enum.HighlightDepthMode.Occluded
+	mark.Adornee = part
+	mark.Parent = part
+	marks[part] = mark
+	return mark
+end
 
 local function isLanternOnly(instance: BasePart): boolean
 	local tier = instance:GetAttribute("Tier")
@@ -65,13 +98,30 @@ local function track(instance: Instance)
 	end)
 end
 
-for _, instance in ipairs(CollectionService:GetTagged(TAG_LOOT)) do
-	track(instance)
+local function markLoot(instance: Instance)
+	if not instance:IsA("BasePart") then
+		return
+	end
+	local part = instance :: BasePart
+	local mark = markFor(part)
+	-- A relic you cannot take should not be outlined either, or the outline
+	-- becomes the lantern-only reveal that the lantern is supposed to be.
+	mark.Enabled = not isLanternOnly(part) or lanternOn
 end
-CollectionService:GetInstanceAddedSignal(TAG_LOOT):Connect(track)
+
+local function onLoot(instance: Instance)
+	track(instance)
+	markLoot(instance)
+end
+
+for _, instance in ipairs(CollectionService:GetTagged(TAG_LOOT)) do
+	onLoot(instance)
+end
+CollectionService:GetInstanceAddedSignal(TAG_LOOT):Connect(onLoot)
 CollectionService:GetInstanceRemovedSignal(TAG_LOOT):Connect(function(instance)
 	if instance:IsA("BasePart") then
 		prompts[instance :: BasePart] = nil
+		marks[instance :: BasePart] = nil
 	end
 end)
 
@@ -89,6 +139,14 @@ Remotes.get("RunSnapshot").OnClientEvent:Connect(function(snapshot)
 			prompt.Enabled = lit
 		else
 			prompts[part] = nil
+		end
+	end
+
+	for part, mark in pairs(marks) do
+		if mark.Parent and part:IsDescendantOf(workspace) then
+			mark.Enabled = not isLanternOnly(part) or lit
+		else
+			marks[part] = nil
 		end
 	end
 end)
