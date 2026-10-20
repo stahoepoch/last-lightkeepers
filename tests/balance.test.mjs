@@ -138,6 +138,37 @@ console.log("\nLantern, knockdown, revive");
   );
 }
 
+console.log("\nLantern multiplier curve");
+{
+  const lamp = storm.lantern;
+  const mult = (n, curve) => {
+    if (n <= 0) return 1;
+    if (curve === "diminishing") {
+      const d = lamp.diminishingDecay;
+      const series = d === 1 ? n : (1 - d ** n) / (1 - d);
+      return 1 + lamp.perLanternBonus * series;
+    }
+    return Math.min(1 + lamp.perLanternBonus * n, lamp.maxMultiplier);
+  };
+
+  check("curve is a documented option", lamp.curve in lamp._curveOptions, `got "${lamp.curve}"`);
+  check("decay is a proper fraction", lamp.diminishingDecay > 0 && lamp.diminishingDecay < 1);
+
+  // The 2.5x one-lantern anchor is locked. Neither curve may move it.
+  for (const curve of Object.keys(lamp._curveOptions)) {
+    check(`${curve} keeps one lantern at 2.5x`, near(mult(1, curve), 2.5, 0.05), `got ${mult(1, curve).toFixed(2)}x`);
+    check(`${curve} is monotonic in lantern count`, [1, 2, 3, 4].every((n) => mult(n, curve) >= mult(n - 1, curve)));
+  }
+
+  // The whole reason the diminishing curve exists.
+  const marginal = [1, 2, 3, 4].map((n) => mult(n, "diminishing") - mult(n - 1, "diminishing"));
+  check("no lantern is free under diminishing", marginal.every((x) => x > 0));
+  check(
+    "diminishing self-limits below the clamp",
+    1 + lamp.perLanternBonus / (1 - lamp.diminishingDecay) <= lamp.maxMultiplier,
+  );
+}
+
 console.log(`\n${checks - failures}/${checks} passed`);
 if (failures > 0) {
   console.log(`${failures} FAILED\n`);

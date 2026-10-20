@@ -1,14 +1,18 @@
 {
   "_comment": "Storm Charge tuning. Portable balance data - no Roblox types in here. Anchors come from the handoff: 8 minutes to first threshold in permanent darkness; one active lantern raises the meter at roughly 2.5x baseline.",
-
   "baselineRatePerSecond": 1.0,
-
   "lantern": {
-    "_comment": "multiplier = 1 + perLanternBonus * activeLanterns, clamped to maxMultiplier. One lantern = 2.5x, per the handoff. The cap is the knob that decides how brutal an all-lit four-crew run is; test it before trusting it.",
+    "_comment": "multiplier = 1 + perLanternBonus * activeLanterns, clamped to maxMultiplier. One lantern = 2.5x, per the handoff. NOTE: the clamp flattens crew size - three lanterns (5.5x) and four (7x) both clamp to 5.0, so the fourth player's light is free. See curve below.",
     "perLanternBonus": 1.5,
-    "maxMultiplier": 5.0
+    "maxMultiplier": 5.0,
+    "curve": "linearCapped",
+    "_curveOptions": {
+      "linearCapped": "Current default. 1 + bonus*n, hard-clamped at maxMultiplier. Simple, but every lantern past the clamp is free.",
+      "diminishing": "1 + bonus*(1-decay^n)/(1-decay). Each extra lantern adds less than the last but never nothing, so no player's light is free. Preserves the locked 2.5x one-lantern anchor exactly and self-limits near 4.75x with the values below - no clamp needed."
+    },
+    "diminishingDecay": 0.6,
+    "_decayNote": "Only used when curve is 'diminishing'. 0.6 gives 2.5 / 3.40 / 3.94 / 4.26 for one to four lanterns, asymptote 4.75."
   },
-
   "thresholds": [
     {
       "id": "PatrolsAlert",
@@ -32,7 +36,6 @@
       "effect": "The Warden spawns at the rooftop stage and converges on the crew's brightest position."
     }
   ],
-
   "anchorRevive": {
     "_comment": "Solo rule: one self-revive per run, paid for with light.",
     "chargesPerRun": 1,

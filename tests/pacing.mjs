@@ -28,12 +28,19 @@ const DRAIN = 1 / CHARGE_SECONDS;
 const RUN_MIN = 6 * 60;
 const RUN_MAX = 10 * 60;
 
-function rate(activeLanterns) {
-  const m = Math.min(
-    1 + storm.lantern.perLanternBonus * activeLanterns,
-    storm.lantern.maxMultiplier,
-  );
-  return storm.baselineRatePerSecond * m;
+// Mirrors Config.lanternMultiplier. Kept in sync by a balance test.
+function multiplier(n, curve = storm.lantern.curve) {
+  if (n <= 0) return 1;
+  const { perLanternBonus: bonus, maxMultiplier: cap, diminishingDecay: decay } = storm.lantern;
+  if (curve === "diminishing") {
+    const series = decay === 1 ? n : (1 - decay ** n) / (1 - decay);
+    return 1 + bonus * series;
+  }
+  return Math.min(1 + bonus * n, cap);
+}
+
+function rate(activeLanterns, curve) {
+  return storm.baselineRatePerSecond * multiplier(activeLanterns, curve);
 }
 
 // Each crew member keeps their lantern lit for `duty` of the time, in 20s
@@ -113,3 +120,29 @@ console.log(`    which is past the end of even a long run. A dark crew faces no 
 
 console.log(`  - A full charge buys ${CHARGE_SECONDS}s of light against a ${RUN_MIN / 60}-${RUN_MAX / 60} minute run, so no crew can`);
 console.log(`    stay lit the whole way. Light is a budget, which is what the design wants.\n`);
+
+// ---- curve comparison -----------------------------------------------------
+//
+// The clamp flattens crew size. This is the evidence for whether that matters.
+
+console.log(`Lantern multiplier by curve`);
+console.log(`lanterns   linearCapped   diminishing   marginal cost of the Nth lantern`);
+console.log(`${"-".repeat(72)}`);
+let prevA = 1;
+let prevB = 1;
+for (const n of [1, 2, 3, 4]) {
+  const a = multiplier(n, "linearCapped");
+  const b = multiplier(n, "diminishing");
+  const dA = a - prevA;
+  const dB = b - prevB;
+  const note = dA === 0 ? "  <- free under the clamp" : "";
+  console.log(
+    `    ${n}          ${a.toFixed(2)}x          ${b.toFixed(2)}x        capped +${dA.toFixed(2)} · diminishing +${dB.toFixed(2)}${note}`,
+  );
+  prevA = a;
+  prevB = b;
+}
+const asymptote = 1 + storm.lantern.perLanternBonus / (1 - storm.lantern.diminishingDecay);
+console.log(`\n  diminishing self-limits at ${asymptote.toFixed(2)}x, so it needs no clamp.`);
+console.log(`  Both give exactly ${multiplier(1, "diminishing").toFixed(2)}x for one lantern, so the locked anchor holds either way.`);
+console.log(`  Active curve: ${storm.lantern.curve}\n`);

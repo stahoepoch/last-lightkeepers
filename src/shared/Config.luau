@@ -29,13 +29,40 @@ Config.Run = {
 	maxCrewSize = 4,
 }
 
+--- How much faster the storm climbs with N lanterns lit.
+--
+-- Two shapes, chosen by `curve` in storm-charge.json:
+--
+--   linearCapped (default) - 1 + bonus*n, hard-clamped. Simple, but the clamp
+--     flattens crew size: three lanterns (5.5x) and four (7x) both clamp to
+--     5.0, so the fourth player's light costs the crew nothing.
+--
+--   diminishing - a geometric series. Each extra lantern adds less than the
+--     last but never nothing, so no player's light is free. It preserves the
+--     locked 2.5x one-lantern anchor exactly and self-limits, needing no clamp.
+--
+-- The default is unchanged; switching the curve is a balance decision.
+function Config.lanternMultiplier(activeLanterns: number): number
+	local lantern = StormCharge.lantern
+	local n = math.max(activeLanterns, 0)
+	if n == 0 then
+		return 1
+	end
+
+	if lantern.curve == "diminishing" then
+		local decay = lantern.diminishingDecay
+		-- Sum of bonus * decay^(i-1) for i = 1..n.
+		local series = if decay == 1 then n else (1 - decay ^ n) / (1 - decay)
+		return 1 + lantern.perLanternBonus * series
+	end
+
+	return math.min(1 + lantern.perLanternBonus * n, lantern.maxMultiplier)
+end
+
 --- Storm Charge rate for a given number of active lanterns.
 -- Darkness still climbs; light only accelerates it. The meter never falls.
 function Config.stormRate(activeLanterns: number): number
-	local lantern = StormCharge.lantern
-	local multiplier = 1 + lantern.perLanternBonus * math.max(activeLanterns, 0)
-	multiplier = math.min(multiplier, lantern.maxMultiplier)
-	return StormCharge.baselineRatePerSecond * multiplier
+	return StormCharge.baselineRatePerSecond * Config.lanternMultiplier(activeLanterns)
 end
 
 --- Highest threshold crossed at a given charge value, or nil.
