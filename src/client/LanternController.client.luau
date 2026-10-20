@@ -37,7 +37,13 @@ local function ensureLight(): PointLight?
 	created.Color = LANTERN_COLOUR
 	created.Range = LANTERN_RANGE
 	created.Brightness = 2.4
-	created.Shadows = true
+	-- Off by Chris's call, 2026-10-20: "the shadows suck, i hate them."
+	--
+	-- This was the only thing still casting. The map already runs with
+	-- Lighting.GlobalShadows false and its own lights set to Shadows false, so
+	-- a lit lantern was the one source of hard shadows in the game - every
+	-- railing and shelf throwing a sharp edge across the floor as you moved.
+	created.Shadows = false
 	created.Enabled = false
 	created.Parent = root
 	light = created

@@ -394,13 +394,18 @@ the water all read; it is still plainly night.
     OutdoorAmbient = Color3.fromRGB(42, 48, 66)
     Brightness     = 0.8
 
-### Ask 2: the shadows
+### Ask 2: the shadows - RESOLVED, and it was mine, not yours
 
-Chris, verbatim: "the shadows suck, i hate them."
+Chris, verbatim: "the shadows suck, i hate them", then "Turn the shadows off
+entirely".
 
-I have not diagnosed this one - it is your lane and I did not want to start
-another tug-of-war. The usual suspects with `Technology = "Future"` are harsh
-contact shadows and shadow acne on large flat surfaces, of which this map has
-many. `GlobalShadows`, the shadow softness on individual lights, or moving off
-Future are the levers. Worth asking Chris whether he means they look wrong or
-simply that he wants them gone.
+I wrote this section first as a handover to you. That was wrong and I am
+correcting it rather than leaving you to chase it: you had already turned
+shadows off. `FloodedMallBuilder` sets `Lighting.GlobalShadows = false` and its
+own lights to `Shadows = false`.
+
+The one thing still casting was the lantern's PointLight in
+`LanternController`, which I had set to `Shadows = true`. With a lit lantern
+being the only dynamic light in an otherwise shadowless map, every railing and
+shelf threw a hard moving edge across the floor. It is off now. Nothing for you
+to do here - the brightness ask above still stands.
