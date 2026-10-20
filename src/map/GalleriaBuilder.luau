@@ -56,10 +56,13 @@ local C = {
 -- middle and the arms are close to the same length. An earlier version had one
 -- arm twice the other, which put the court in the wrong place and threw every
 -- anchor off with it - Chris spotted it by orienting the aerial to match.
+-- North is -Z and east is +X, so a plan view of this is directly comparable
+-- with the Google Maps image. Boscov's closes the west arm, Sears the
+-- south-east arm, and the court is the bend between them.
 local BEND = Vector2.new(0, 0)
 local ARMS = {
-	{ a = BEND, b = Vector2.new(17.0, 0) }, -- east, to Boscov's
-	{ a = BEND, b = Vector2.new(-12.3, -10.2) }, -- north-west, to Sears
+	{ a = BEND, b = Vector2.new(-16, 0) }, -- west, to Boscov's
+	{ a = BEND, b = Vector2.new(11, 11) }, -- south-east, to Sears
 }
 
 local L1_NAMES = {
@@ -199,27 +202,26 @@ function GalleriaBuilder.Build(): Model
 		end
 	end
 
-	local nw = (ARMS[2].b - ARMS[2].a).Unit
-	local nwAng = math.atan2(nw.Y, nw.X)
-	local nwPerp = Vector2.new(-nw.Y, nw.X)
+	local se = (ARMS[2].b - ARMS[2].a).Unit
+	local seAng = math.atan2(se.Y, se.X)
+	local seNE = Vector2.new(se.Y, -se.X) -- north-east flank of the Sears arm
 
-	-- Sizes and sides read off the aerial. The anchors are most of this
-	-- building's mass; the concourse is a narrow slot between them.
-	anchor("BOSCOVS", 24.0, 0, 13, 14, 0, { { 17.3, 0, 0 } })
+	anchor("BOSCOVS", -24.5, 0, 13, 14, 0, { { -16.3, 0, 0 } })
 
-	local se = ARMS[2].b + nw * 7.5
-	local seDoor = ARMS[2].b + nw * 1.6
-	anchor("SEARS", se.X, se.Y, 14, 12, nwAng, { { seDoor.X, seDoor.Y, 0 } })
+	local sears = ARMS[2].b + se * 6.5
+	local searsDoor = ARMS[2].b + se * 1.4
+	anchor("SEARS", sears.X, sears.Y, 14, 13, seAng, { { searsDoor.X, searsDoor.Y, 0 } })
 
-	-- JCPenney in the crook, projecting south, opening onto both arms.
-	anchor("JCPENNEY", 5.0, 10.5, 16, 12, 0, { { 1.0, 5.2, 0 }, { 9.0, 5.2, 0 } })
+	-- JCPenney and Bon-Ton both sit on the NORTH side, on opposite arms, with
+	-- the bend between them. Three earlier versions had one or both on the
+	-- south, which is what Chris kept seeing as wrong: on the aerial there is
+	-- open ground between them right at the court, and putting them on the same
+	-- flank closed that gap up.
+	anchor("JCPENNEY", -6, -10.6, 14, 11, 0, { { -9, -5.3, 0 }, { -3, -5.3, 0 } })
 
-	-- Bon-Ton on the SOUTH-WEST flank of the north-west arm - the same side as
-	-- JCPenney, which is what the aerial shows, and far enough along it that
-	-- there is open ground between the two buildings.
-	local bt = BEND + nw * 7.0 - nwPerp * 8.5
-	local btDoor = BEND + nw * 7.0 - nwPerp * 3.4
-	anchor("BON-TON", bt.X, bt.Y, 12, 10, nwAng, { { btDoor.X, btDoor.Y, 0 } })
+	local bt = BEND + se * 5.0 + seNE * 8.0
+	local btDoor = BEND + se * 5.0 + seNE * 3.3
+	anchor("BON-TON", bt.X, bt.Y, 12, 10, seAng, { { btDoor.X, btDoor.Y, 0 } })
 
 	M.Parent = map
 	return M
