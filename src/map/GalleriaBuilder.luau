@@ -48,6 +48,7 @@ local C = {
 	fascia = Color3.fromRGB(238, 230, 220),
 	glass = Color3.fromRGB(180, 210, 218),
 	shell = Color3.fromRGB(206, 198, 186),
+	brick = Color3.fromRGB(176, 150, 136),
 }
 
 -- The concourse, as two straight runs meeting at the court.
@@ -173,16 +174,47 @@ function GalleriaBuilder.Build(): Model
 		end
 	end
 
-	local function anchor(name: string, x: number, z: number, w: number, d: number)
-		part(F.Anchors, `Anchor_{name}`, Vector3.new(w * S, F2F * 2, d * S), CFrame.new(x * S, F2F, z * S), C.shell, Enum.Material.Concrete)
-		local band = part(F.Anchors, `Sign_{name}`, Vector3.new(w * S * 0.6, 16, 2), CFrame.new(x * S, F2F * 2 - 14, (z + d / 2) * S + 1), C.teal)
-		label(band, name, Enum.NormalId.Front)
-		label(band, name, Enum.NormalId.Back)
+	-- Anchors are buildings hung off the mall, not signs on the end of a
+	-- corridor. Chris, reading the printed plan and the aerial: "those anchor
+	-- stores need to be anchors... bon ton is like inside the mall, and sears
+	-- is sideways." Two storeys of brick with a parapet, squared to whichever
+	-- arm they meet, and glazed mall entrances cut into the face that touches
+	-- the concourse.
+	local function anchor(name: string, cx: number, cz: number, w: number, d: number, yaw: number, doors: { { number } })
+		local rot = CFrame.Angles(0, -yaw, 0)
+		local h = F2F * 2
+		part(F.Anchors, `Anchor_{name}`, Vector3.new(w * S, h, d * S), CFrame.new(cx * S, h / 2, cz * S) * rot, C.brick, Enum.Material.Brick)
+		part(F.Anchors, `Parapet_{name}`, Vector3.new(w * S + 3, 5, d * S + 3), CFrame.new(cx * S, h + 2, cz * S) * rot, C.shell, Enum.Material.Concrete)
+		local band = part(F.Anchors, `Sign_{name}`, Vector3.new(w * S * 0.55, 20, d * S * 0.55), CFrame.new(cx * S, h - 16, cz * S) * rot, C.teal)
+		for _, f in ipairs({ Enum.NormalId.Front, Enum.NormalId.Back, Enum.NormalId.Left, Enum.NormalId.Right }) do
+			label(band, name, f)
+		end
+		for i, e in ipairs(doors) do
+			part(F.Anchors, `Entry_{name}_{i}`, Vector3.new(36, 26, 3), CFrame.new(e[1] * S, 13, e[2] * S) * CFrame.Angles(0, -e[3], 0), C.glass, Enum.Material.Glass, 0.35)
+		end
 	end
-	anchor("BOSCOVS", -17.5, -4.5, 9, 10)
-	anchor("JCPENNEY", 4.0, -10.5, 11, 6)
-	anchor("SEARS", 17.5, 4.8, 9, 8)
-	anchor("BON-TON", 12.0, -2.0, 7, 7)
+
+	local bend = ARMS[2].a
+	local a2 = (ARMS[2].b - ARMS[2].a).Unit
+	local a2ang = math.atan2(a2.Y, a2.X)
+	local a2nrm = Vector2.new(-a2.Y, a2.X)
+
+	-- Boscov's closes the straight arm.
+	anchor("BOSCOVS", -19.5, -4.5, 12, 11, 0, { { -13.6, -4.5, 0 } })
+
+	-- JCPenney sits in the crook and opens onto BOTH arms. The two entrances
+	-- are on the printed plan and are the giveaway that it straddles the bend.
+	anchor("JCPENNEY", 6.0, -12.5, 14, 8, 0, { { 2.0, -8.4, 0 }, { 9.6, -8.4, 0 } })
+
+	-- Bon-Ton hangs off the outer flank of the angled arm.
+	local bt = bend + a2 * 5.5 - a2nrm * 7.6
+	local btDoor = bend + a2 * 5.5 - a2nrm * 3.1
+	anchor("BON-TON", bt.X, bt.Y, 11, 9, a2ang, { { btDoor.X, btDoor.Y, a2ang } })
+
+	-- Sears caps the far end of the angled arm, square to it.
+	local se = bend + a2 * 16.0
+	local seDoor = bend + a2 * 10.2
+	anchor("SEARS", se.X, se.Y, 13, 11, a2ang, { { seDoor.X, seDoor.Y, a2ang } })
 
 	M.Parent = map
 	return M
