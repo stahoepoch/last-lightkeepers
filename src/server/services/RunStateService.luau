@@ -543,6 +543,8 @@ local function buildSnapshot(state: Types.LightkeeperState): Types.RunSnapshot
 		yourKnockedDown = state.knockedDown,
 		yourTagged = state.taggedUntil ~= nil,
 		yourAnchorRevivesLeft = state.anchorRevivesLeft,
+		yourContactHits = state.contactHits,
+		hitsToKnockDown = Config.Lantern.sweeperContact.hitsToKnockDown,
 		yourCanAnchorRevive = RunStateService.canAnchorRevive(state),
 		crewDown = down,
 		crewTotal = total,

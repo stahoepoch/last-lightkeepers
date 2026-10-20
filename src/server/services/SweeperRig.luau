@@ -84,6 +84,33 @@ local function addTelegraph(root: BasePart): Sound
 	return sound
 end
 
+--- The sound a Sweeper makes while it is actually coming for you.
+--
+-- The telegraph is a single 1.1 second burst when it first notices you, which
+-- Chris correctly read as not being able to hear them at all: "i can't like hear
+-- them, hear them approaching". One noise at acquisition tells you something
+-- happened; it does not tell you something is getting closer.
+--
+-- Same asset as the telegraph, looped and quieter, so a chase has a continuous
+-- mechanical source you can place in the room. Reused rather than sourcing a
+-- second clip so there is still only one audio asset in the project to replace
+-- when real sound design happens - this is a placeholder with correct wiring,
+-- not a finished mix.
+local function addChaseLoop(root: BasePart): Sound
+	local sweeper = Config.Enemies.Sweepers
+	local sound = Instance.new("Sound")
+	sound.Name = "Chase"
+	sound.SoundId = TELEGRAPH_SOUND_ID
+	sound.Looped = true
+	sound.Volume = 0.35
+	sound.PlaybackSpeed = 0.8
+	sound.RollOffMode = Enum.RollOffMode.InverseTapered
+	sound.RollOffMinDistance = TELEGRAPH_MIN_DISTANCE
+	sound.RollOffMaxDistance = sweeper.aggroRadiusLit
+	sound.Parent = root
+	return sound
+end
+
 local function build(): Model
 	local sweeper = Config.Enemies.Sweepers
 
@@ -140,6 +167,7 @@ local function build(): Model
 	humanoid.Parent = model
 
 	addTelegraph(root)
+	addChaseLoop(root)
 
 	model.PrimaryPart = root
 	return model

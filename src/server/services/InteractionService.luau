@@ -65,8 +65,16 @@ local function attachLootPrompt(instance: Instance)
 		return
 	end
 
+	-- Taking something is a held action, not a tap. Chris, after playing: "it
+	-- just feels like i should hold E for a second or so to see that I've picked
+	-- it up." An instant pickup gives you nothing to feel, and the prompt's own
+	-- fill ring is the only progress the player ever sees.
+	--
+	-- The crate stays the slower of the two. It is bulky and team-carried, so
+	-- lifting one should read as heavier than pocketing a battery. Both numbers
+	-- are feel rather than balance and are meant to be tuned by hand.
 	local isCrate = tier == "RestorationCrates"
-	local prompt = makePrompt(instance, if isCrate then "Lift" else "Take", tier, if isCrate then 0.6 else 0)
+	local prompt = makePrompt(instance, if isCrate then "Lift" else "Take", tier, if isCrate then 1 else 0.4)
 
 	-- A lantern-only tier should not advertise itself in the dark. Off here, and
 	-- turned on per viewer by RelicVisibilityController; see above.

@@ -125,6 +125,25 @@ downed.TextStrokeTransparency = 0.4
 downed.Visible = false
 downed.Parent = screen
 
+-- A Sweeper landing a hit used to change nothing a player could perceive: the
+-- count lived in run state and the first you knew of it was collapsing. Chris:
+-- "i got hit by a sweeper and didn't seem like it did anything."
+local hit = Instance.new("TextLabel")
+hit.Name = "HitFlash"
+hit.AnchorPoint = Vector2.new(0.5, 0.5)
+hit.Position = UDim2.new(0.5, 0, 0.5, -70)
+hit.Size = UDim2.new(1, 0, 0, 30)
+hit.BackgroundTransparency = 1
+hit.Font = Enum.Font.GothamBold
+hit.TextSize = 22
+hit.TextColor3 = Color3.fromRGB(255, 122, 92)
+hit.TextStrokeTransparency = 0.4
+hit.Visible = false
+hit.Parent = screen
+
+local lastHits = 0
+local hitShownAt = 0
+
 local downedHint = downed:Clone()
 downedHint.Name = "DownedHint"
 downedHint.Position = UDim2.new(0.5, 0, 0.5, 30)
@@ -162,7 +181,24 @@ Remotes.get("RunSnapshot").OnClientEvent:Connect(function(snapshot)
 		return
 	end
 
+	-- Only on the rising edge: a hit is an event, not a status.
+	local hits = snapshot.yourContactHits or 0
+	local limit = snapshot.hitsToKnockDown or 3
+	if hits > lastHits and not snapshot.yourKnockedDown then
+		local left = math.max(limit - hits, 0)
+		hit.Text = if left == 1 then "HIT - one more and you are down" else string.format("HIT - %d more and you are down", left)
+		hit.Visible = true
+		hitShownAt = os.clock()
+	end
+	lastHits = hits
+	if hit.Visible and os.clock() - hitShownAt > 1.6 then
+		hit.Visible = false
+	end
+
 	downed.Visible = snapshot.yourKnockedDown == true
+	if downed.Visible then
+		hit.Visible = false
+	end
 	downedHint.Visible = downed.Visible
 	if downed.Visible then
 		downed.Text = "YOU ARE DOWN"

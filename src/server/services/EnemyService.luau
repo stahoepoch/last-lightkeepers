@@ -84,6 +84,7 @@ function EnemyService.driveSweeper(model: Model)
 	-- about to hit you, not to the species.
 	local telegraphedAt: number? = nil
 	local sound = (root :: BasePart):FindFirstChild("Telegraph") :: Sound?
+	local chase = (root :: BasePart):FindFirstChild("Chase") :: Sound?
 
 	local function telegraph()
 		telegraphedAt = os.clock()
@@ -126,6 +127,15 @@ function EnemyService.driveSweeper(model: Model)
 			-- Announce on acquisition, which is what puts the sound before sight.
 			if target and not hadTarget then
 				telegraph()
+			end
+			-- Audible for as long as it is actually hunting, so a player can
+			-- hear one coming and hear it give up.
+			if chase then
+				if target and not chase.IsPlaying then
+					chase:Play()
+				elseif not target and chase.IsPlaying then
+					chase:Stop()
+				end
 			end
 			hadTarget = target ~= nil
 			if target and target.Character then

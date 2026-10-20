@@ -422,10 +422,20 @@ while the camera moves, is the signature of z-fighting: two coplanar surfaces at
 exactly the same height, with the renderer picking a different winner each frame
 as the view angle changes.
 
-The generated mall is a strong candidate for it - a procedural builder tends to
-place floor slabs, trim and water planes at identical Y values. Worth looking
-for surfaces that share a coordinate exactly, and separating them by a small
-offset, rather than chasing it through Lighting.
+Chris then asked me to make sure it was not something of mine, so I checked the
+geometry rather than guessing again. Scanning all 491 parts under `Workspace.Map`
+for pairs whose top faces are coplanar within 2mm and whose footprints overlap:
+
+    MainConcourseFloor / MainConcourse   both top out at y = 1.000
+    TealGable / TealGable  (seven pairs) both top out at y = 45.000
+
+`MainConcourseFloor` and `MainConcourse` are the surface the player walks on,
+which is why it flickers underfoot the whole time and why it does not care about
+the lantern. The gables are the same problem on the roof.
+
+A few thousandths of a stud of separation, or removing whichever slab is
+redundant, should settle both. Nothing in the client touches map geometry, so
+this is not coming from my side.
 
 I have not touched the builder to investigate. It is your file, you have been
 editing it all session, and two of us in there is how we lose work.

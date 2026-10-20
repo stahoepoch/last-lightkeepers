@@ -61,6 +61,10 @@ export type RunSnapshot = {
 	-- Why the Anchor Revive is or is not offered. The client used to suppress
 	-- the keybind with no way to say why, which read as a dead key.
 	yourAnchorRevivesLeft: number,
+	-- How close this Lightkeeper is to going down. Sweeper contact used to be
+	-- invisible: you took hits and learned about them only by collapsing.
+	yourContactHits: number,
+	hitsToKnockDown: number,
 	yourCanAnchorRevive: boolean,
 	crewDown: number,
 	crewTotal: number,
