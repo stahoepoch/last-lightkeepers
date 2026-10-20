@@ -292,6 +292,19 @@ function RunStateService.beginRevive(rescuer: Player, target: Player): boolean
 	return true
 end
 
+--- A rescuer let go of the prompt. Clears only their own claim, so one player
+--- releasing cannot cancel another's revive on the same target.
+function RunStateService.cancelRevive(target: Player)
+	if not run then
+		return
+	end
+	local state = run.lightkeepers[target.UserId]
+	if state and state.knockedDown then
+		state.reviveProgress = 0
+		state.reviveBy = nil
+	end
+end
+
 --- Advances every in-progress revive. Called from the tick.
 local function stepRevives(dt: number)
 	if not run then

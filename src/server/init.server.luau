@@ -14,10 +14,13 @@ local RunStateService = require(Services:WaitForChild("RunStateService"))
 local LootService = require(Services:WaitForChild("LootService"))
 local EnemyService = require(Services:WaitForChild("EnemyService"))
 local PlayerDataService = require(Services:WaitForChild("PlayerDataService"))
+local InteractionService = require(Services:WaitForChild("InteractionService"))
 
 PlayerDataService.init()
 LootService.init()
 EnemyService.init()
+-- After LootService: prompts call into it.
+InteractionService.init()
 
 -- Client requests. Each one is validated server-side; nothing here trusts a payload.
 local lanternRequest = Remotes.get("LanternRequest")

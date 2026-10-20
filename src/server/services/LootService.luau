@@ -22,8 +22,13 @@ local TAG_RELAY = "RelayBank"
 local TAG_EXTRACTION = "Extraction"
 
 local PICKUP_RANGE = 10
+local EXTRACTION_RANGE = 14
 
 local LootService = {}
+
+-- Players with an extraction attempt in flight, so the freight lift's wait
+-- cannot be started twice against one haul.
+local extracting: { [number]: boolean? } = {}
 
 local function tierOf(instance: Instance): Types.LootTier?
 	local value = instance:GetAttribute("Tier")
@@ -36,13 +41,14 @@ local function tierOf(instance: Instance): Types.LootTier?
 	return value :: any
 end
 
-local function withinRange(player: Player, instance: Instance): boolean
+local function withinRange(player: Player, instance: Instance, range: number?): boolean
 	local character = player.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart")
 	if not root or not instance:IsA("BasePart") then
 		return false
 	end
-	return ((root :: BasePart).Position - (instance :: BasePart).Position).Magnitude <= PICKUP_RANGE
+	local limit = range or PICKUP_RANGE
+	return ((root :: BasePart).Position - (instance :: BasePart).Position).Magnitude <= limit
 end
 
 --- Relics only exist for a player whose own lantern is lit.
@@ -115,13 +121,46 @@ function LootService.handleExtraction(player: Player, extractionId: string)
 		return
 	end
 
+	-- The client picks the exit it is standing at, not the exit it wants. Resolve
+	-- a real tagged instance carrying that id and check the player is actually
+	-- there; otherwise anyone could extract from anywhere by naming a string.
+	local exitPart: BasePart? = nil
+	for _, candidate in ipairs(CollectionService:GetTagged(TAG_EXTRACTION)) do
+		if candidate:IsA("BasePart") and candidate:GetAttribute("ExtractionId") == extractionId then
+			if withinRange(player, candidate, EXTRACTION_RANGE) then
+				exitPart = candidate
+				break
+			end
+		end
+	end
+	if not exitPart then
+		return
+	end
+
+	-- One extraction attempt at a time. Without this, parallel freight-lift
+	-- requests each resolve a payout from the same haul.
+	if extracting[player.UserId] then
+		return
+	end
+	extracting[player.UserId] = true
+
 	-- The freight lift's 20-second arrival is the cost of the deeper exit.
 	if def.arrivalSeconds > 0 then
 		task.wait(def.arrivalSeconds)
-		if run.finished or state.knockedDown then
+		-- Leaving the pad cancels it. The wait has to be a commitment, or the
+		-- deeper exit costs nothing but patience.
+		if
+			run.finished
+			or state.knockedDown
+			or not exitPart:IsDescendantOf(workspace)
+			or not withinRange(player, exitPart, EXTRACTION_RANGE)
+		then
+			extracting[player.UserId] = nil
 			return
 		end
 	end
+
+	extracting[player.UserId] = nil
 
 	local payout = RunStateService.resolveHaul(state, true)
 	for tier, amount in pairs(payout) do
