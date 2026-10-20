@@ -201,12 +201,34 @@ RunStateService.onThresholdCrossed = function(_threshold: any) end
 --- Whether this Lightkeeper could stand up on their own right now. Both the
 --- wipe check and anchorRevive ask this, so the price can never drift apart
 --- between "we wiped you" and "you may revive".
+--- How many Lightkeepers are on this run, down or not.
+function RunStateService.crewSize(): number
+	if not run then
+		return 0
+	end
+	local count = 0
+	for _ in pairs(run.lightkeepers) do
+		count += 1
+	end
+	return count
+end
+
 function RunStateService.canAnchorRevive(state: Types.LightkeeperState): boolean
 	if not state.knockedDown then
 		return false
 	end
 	local anchor = Config.StormCharge.anchorRevive
 	if state.anchorRevivesLeft <= 0 then
+		return false
+	end
+	-- The handoff grants the Anchor Revive to *solo players*: it exists so a
+	-- lone Lightkeeper is not hard-wiped on a first knockdown. Granting it to
+	-- everyone breaks the other half of the same rule - "if the whole crew goes
+	-- down, it wakes in Lanternhold with half of unbanked loot" - because a
+	-- four-crew all-down would sit there waiting for someone to press R instead
+	-- of wiping. Checked live rather than at spawn, so it tracks a crew that
+	-- shrinks to one mid-run.
+	if anchor.soloOnly and RunStateService.crewSize() > 1 then
 		return false
 	end
 	if anchor.consumesFullLanternCharge and state.lanternCharge < 1 then

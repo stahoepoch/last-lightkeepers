@@ -169,6 +169,16 @@ console.log("\nLantern multiplier curve");
   );
 }
 
+console.log("\nSolo rule");
+{
+  const anchor = storm.anchorRevive;
+  // "Solo players receive one Anchor Revive per run" is a resolved decision.
+  // Granting it to a crew silently breaks the whole-crew-down wipe.
+  check("Anchor Revive is solo-only", anchor.soloOnly === true);
+  check("solo gets exactly one", anchor.chargesPerRun === 1);
+  check("it costs a full charge", anchor.consumesFullLanternCharge === true);
+}
+
 console.log(`\n${checks - failures}/${checks} passed`);
 if (failures > 0) {
   console.log(`${failures} FAILED\n`);

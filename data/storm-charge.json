@@ -1,10 +1,10 @@
 {
   "_comment": "Storm Charge tuning. Portable balance data - no Roblox types in here. Anchors come from the handoff: 8 minutes to first threshold in permanent darkness; one active lantern raises the meter at roughly 2.5x baseline.",
-  "baselineRatePerSecond": 1.0,
+  "baselineRatePerSecond": 1,
   "lantern": {
     "_comment": "multiplier = 1 + perLanternBonus * activeLanterns, clamped to maxMultiplier. One lantern = 2.5x, per the handoff. NOTE: the clamp flattens crew size - three lanterns (5.5x) and four (7x) both clamp to 5.0, so the fourth player's light is free. See curve below.",
     "perLanternBonus": 1.5,
-    "maxMultiplier": 5.0,
+    "maxMultiplier": 5,
     "curve": "linearCapped",
     "_curveOptions": {
       "linearCapped": "Current default. 1 + bonus*n, hard-clamped at maxMultiplier. Simple, but every lantern past the clamp is free.",
@@ -41,6 +41,8 @@
     "chargesPerRun": 1,
     "reviveSeconds": 8,
     "consumesFullLanternCharge": true,
-    "stormChargeSpike": 120
+    "stormChargeSpike": 120,
+    "soloOnly": true,
+    "_soloOnlyNote": "LOCKED by the handoff: \"Solo players receive one Anchor Revive per run.\" It exists so a lone Lightkeeper is not hard-wiped on a first knockdown. Granting it to a crew breaks the other half of the same rule - whole crew down wakes in Lanternhold with half of unbanked loot - because a four-crew all-down would wait for someone to press R instead of wiping. Do not set false without changing the handoff first."
   }
 }
