@@ -123,6 +123,10 @@ Append a dated line per working session. Newest at the bottom.
   proximity hold, solo Anchor Revive split out and now actually paying its cost,
   Sweeper contact knockdown with decaying hits, per-viewer HUD snapshots, and
   48 balance invariant tests that run on plain Node. `rojo build` green.
+- 2026-10-20 — Claude: closed the P0 from Codex's audit. Server-side
+  ProximityPrompts for loot, extraction and revive; extraction now validates a
+  real tagged instance plus range, with an in-flight guard; Anchor Revive
+  keybind; startup warns on an untagged map. Build green, tests 48/48.
 - 2026-10-19 — Claude: verified Codex's claims (port listening, both map files
   present, gameplay markers intact). Corrected the Studio-access section: Studio
   has a built-in MCP server and an official Claude Code plugin, so the earlier
