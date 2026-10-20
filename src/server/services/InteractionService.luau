@@ -40,17 +40,20 @@ end
 
 --- Loot prompts.
 ---
---- KNOWN GAP, deliberately not bodged: a relic prompt is hidden unless *a*
---- lantern is lit, not unless *yours* is. `ProximityPrompt.Enabled` is a
---- property of the instance, not a per-player view, so a server-created prompt
---- cannot be shown to one player and hidden from another. A dark player next to
---- a lit teammate therefore sees relic prompts they should not.
+--- Relic prompts are created disabled and deliberately left that way here.
+--- `ProximityPrompt.Enabled` is a property of the instance, not a per-player
+--- view, so nothing on the server can show one prompt to one player and hide it
+--- from another; the old crew-wide toggle meant a dark player standing next to a
+--- lit teammate saw relics they should not.
 ---
---- Pickup is still correct: `LootService.isVisibleTo` re-checks the acting
---- player's own lantern and refuses, so this leaks a prompt, not loot. Closing
---- it properly means moving relic prompt visibility to the client (one prompt
---- per viewer, or a client-side pass that disables prompts it should not see),
---- which is a bigger change than this comment's original claim implied.
+--- `RelicVisibilityController` enables them per viewer instead, from the
+--- per-player `yourLanternOn` in the run snapshot. Client property writes do not
+--- replicate, so one player's light cannot reveal a relic for anyone else.
+---
+--- The server keeps the authority that matters: `Triggered` still fires here
+--- with the player who pressed, and `LootService.isVisibleTo` re-checks that
+--- player's own lantern before granting anything. A client that force-enables a
+--- relic prompt gains a prompt and nothing else.
 local function attachLootPrompt(instance: Instance)
 	if not instance:IsA("BasePart") or instance:FindFirstChildOfClass("ProximityPrompt") then
 		return
@@ -65,17 +68,10 @@ local function attachLootPrompt(instance: Instance)
 	local isCrate = tier == "RestorationCrates"
 	local prompt = makePrompt(instance, if isCrate then "Lift" else "Take", tier, if isCrate then 0.6 else 0)
 
-	-- A lantern-only tier should not advertise itself in the dark. Crew-wide
-	-- for now; see the per-player gap noted above this function.
+	-- A lantern-only tier should not advertise itself in the dark. Off here, and
+	-- turned on per viewer by RelicVisibilityController; see above.
 	if Config.Loot.tiers[tier].visibility == "lanternOnly" then
 		prompt.Enabled = false
-		task.spawn(function()
-			while prompt.Parent and instance:IsDescendantOf(workspace) do
-				local anyoneLit = RunStateService.activeLanterns() > 0
-				prompt.Enabled = anyoneLit
-				task.wait(0.4)
-			end
-		end)
 	end
 
 	prompt.Triggered:Connect(function(player: Player)

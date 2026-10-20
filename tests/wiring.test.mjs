@@ -272,6 +272,41 @@ console.log("\nCross-module calls");
   }
 }
 
+// ---- 7. relic visibility is per-player, not crew-wide ----------------------
+{
+  const byName = new Map(files.map((f) => [f.name, f]));
+  const interaction = byName.get("InteractionService");
+  const relic = byName.get("RelicVisibilityController");
+
+  if (interaction) {
+    const attach = interaction.src.slice(
+      interaction.src.indexOf("local function attachLootPrompt"),
+      interaction.src.indexOf("local function attachExtractionPrompt"),
+    );
+    // The crew-wide toggle is the bug: it showed relics to dark players
+    // standing next to a lit teammate.
+    check(
+      "InteractionService does not gate relic prompts on activeLanterns",
+      !attach.includes("activeLanterns"),
+      "a server-side crew-wide toggle cannot be per-player; relic visibility belongs on the client",
+    );
+    check(
+      "relic prompts are still created disabled",
+      /visibility == "lanternOnly"[\s\S]{0,120}prompt[.]Enabled = false/.test(attach),
+      "a relic prompt must start hidden, or it is visible to everyone until a client disables it",
+    );
+  }
+
+  check("RelicVisibilityController exists", relic !== undefined, "nothing enables relic prompts per viewer");
+  if (relic) {
+    check(
+      "RelicVisibilityController keys off the per-viewer lantern",
+      relic.src.includes("yourLanternOn"),
+      "activeLanterns is crew-wide; only yourLanternOn answers \"is mine lit\"",
+    );
+  }
+}
+
 console.log(`\n${checks - failures}/${checks} passed`);
 if (failures > 0) {
   console.log(`${failures} FAILED\n`);

@@ -286,3 +286,26 @@ will find it. You do not need to coordinate a matching change with me.
 
 My suggestion is 1 now, 2 when the loop has passed its playtest question - but
 it is your call and your lane.
+
+## 2026-10-20 - Unexplained tag churn after the startup Build()
+
+Not a diagnosis, an observation I could not account for, logged because it is in
+the builder's area rather than mine.
+
+With `init.server.luau` now calling `FloodedMallBuilder.Build()` at startup, and
+a `GeneratedFloodedMall` already persisted in the place, one Play session went:
+
+- ~1.2s after start: `Loot` tagged = 8
+- a minute later, same session: only 3 live loot parts, and a stale reference to
+  `Relic_Waterfall` had become invalid
+- after a restart with a 5-second settle: 8 live, 0 orphaned, stable
+
+I did nothing in that session that destroys loot - no pickup, no trigger, only a
+lantern toggle and some reads. So either `Build()` is running twice and
+reconciling against the model already in the place, or something else removes
+marker parts after startup. I could not reproduce it once I let startup settle
+before touching anything, which is why I am not calling it a bug.
+
+Worth a look while you are making the generated map survive a sync: if Build()
+is now called at startup, it probably wants to be idempotent against a model
+that is already there, and the old one explicitly cleared rather than merged.
