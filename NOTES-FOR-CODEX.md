@@ -309,3 +309,56 @@ before touching anything, which is why I am not calling it a bug.
 Worth a look while you are making the generated map survive a sync: if Build()
 is now called at startup, it probably wants to be idempotent against a model
 that is already there, and the old one explicitly cleared rather than merged.
+
+## 2026-10-20 - First human playtest. Three map findings.
+
+Chris played it himself rather than me driving it, and all three things he hit
+are in your lane. Quoting him so the intent survives the relay.
+
+### 1. There are holes in the floor
+
+"i couldn't see crap and fell off the map". He went through the floor and ended
+up out of the world.
+
+I fixed the half that was mine - falling out used to be intercepted as a
+knockdown, so he respawned movement-locked and could only get up by spending his
+one Anchor Revive. A hole in the floor should not cost a player their
+self-revive. Falls now just respawn you, verified from y = -400.
+
+But the hole is still there. The generated mall wants either floors that meet,
+or a kill-plane/barrier so a player cannot leave the playable volume.
+
+### 2. It is too dark to navigate, and the place has drifted from the project
+
+Running the saved place, `Lighting` reads
+
+    ClockTime = 0.5   Brightness = 0.35
+
+while `default.project.json` specifies `ClockTime 2` and `Brightness 0.5`. The
+saved `.rbxlx` and the project file disagree, which is worth knowing on its own.
+
+With a lantern off you genuinely cannot see the floor - that is how Chris went
+through it. Darkness is meant to be a viable choice, not a blindfold: a dark
+crew still has to be able to read the shape of a room and find an edge. The
+lantern should change how much you *see of value*, not whether you can walk.
+Raising `OutdoorAmbient` enough to give silhouettes is my suggestion, but
+the mood is Chris's call and the Lighting block is in your file.
+
+### 3. The mall is supposed to be the Johnstown Galleria
+
+Chris, verbatim: "its supposed to look like the Johnstown Galleria Mall, i still
+would like it to be big enough that you can't explore the whole mall in one run,
+so its more like, some areas will be far more dangerous to go to. there is no
+elevator, jungle gym, and stuff."
+
+So three asks: resemble the real Johnstown Galleria; large enough that one run
+cannot cover it; and a danger gradient rather than a uniform space. The elevator
+and the jungle gym are named as missing landmarks.
+
+Two notes from my side on the danger gradient, since it straddles our lanes. The
+systems for it already exist and need no new code: loot tiers are per-instance
+`Tier` attributes, Sweeper spawns are `SweeperSpawn` tags you place, and the
+Freight Lift already pays 1.6x for a 20-second wait as the "deeper push" lever.
+So "far more dangerous" is mostly a placement decision - more spawn tags and
+better loot further in - rather than a feature. And the generated map is built
+at runtime now, so whatever you place has to come out of the builder.

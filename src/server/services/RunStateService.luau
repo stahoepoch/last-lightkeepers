@@ -18,6 +18,11 @@ local Types = require(Shared:WaitForChild("Types"))
 
 local SNAPSHOT_INTERVAL = 0.25
 
+-- Below this, a character is falling out of the world rather than standing in
+-- it. The mall's lowest floor sits near y = -3; Roblox destroys parts at
+-- workspace.FallenPartsDestroyHeight, far below this.
+local VOID_HEIGHT = -100
+
 local RunStateService = {}
 
 local run: Types.RunState? = nil
@@ -96,6 +101,22 @@ function RunStateService.start()
 	end
 end
 
+--- A character that has left the world rather than been hurt in it.
+--
+-- Falling out of the map destroys the character's parts, which reads to a
+-- Humanoid exactly like dying. It is not the same event and must not be
+-- treated as one: see the comment in guardCharacter.
+local function fellOutOfTheWorld(character: Model): boolean
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if not root or not root:IsA("BasePart") then
+		-- The parts are already gone, which only happens on the way out.
+		return true
+	end
+	-- Comfortably below the lowest floor of the mall, and well above the
+	-- height at which Roblox starts destroying things.
+	return (root :: BasePart).Position.Y < VOID_HEIGHT
+end
+
 --- Enemies knock Lightkeepers down; they do not kill them. This intercepts the
 --- lethal case rather than trusting every damage source to be polite about it.
 function RunStateService.guardCharacter(player: Player, character: Model)
@@ -109,6 +130,18 @@ function RunStateService.guardCharacter(player: Player, character: Model)
 		if health > 0 then
 			return
 		end
+
+		-- Falling off the map is not a Sweeper, and must not be charged as one.
+		-- Found by Chris in the first human playtest: he fell through a gap,
+		-- respawned, and could not move. Intercepting the fall knocked him
+		-- down, CharacterAdded re-locked the fresh character because the run
+		-- still had him downed, and the only way out was the Anchor Revive -
+		-- one per run, paid for with a full lantern. A hole in the floor should
+		-- not cost a player their self-revive. Let the respawn happen.
+		if fellOutOfTheWorld(character) then
+			return
+		end
+
 		-- Pull them back off the floor and down them instead.
 		humanoid.Health = 1
 		RunStateService.knockDown(player)
