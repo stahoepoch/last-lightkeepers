@@ -2,8 +2,9 @@
   "_comment": "Lantern charge and knockdown/revive tuning. Charge existed in the scaffold but never drained, which made the solo Anchor Revive free - it is paid for with 'a full lantern charge', and a charge that never depletes costs nothing. Values are placeholders for Chris.",
 
   "charge": {
-    "secondsOfLightPerFullCharge": 150,
-    "_note": "A run is 6-10 minutes door-to-door. 150s means a crew cannot stay lit for a whole run on one charge - light becomes something you spend, not a switch you flip once.",
+    "secondsOfLightPerFullCharge": 0,
+    "_note": "0 means the lantern never runs out. Chris's call, 2026-10-20: \"i don't think the lantern should ever run out of light, its kind of a hurt to run out and then be all like running around like that. the risk is always having it on.\" The cost of light is the Storm Charge it pours into the meter, not a fuel gauge. Was 150, which made a dry lantern a second failure state on top of the storm - you were punished for having used the thing the game is named after.",
+    "_anchorRevivePrice": "CONSEQUENCE, flagged for Chris: the handoff prices the solo Anchor Revive at 'a full lantern charge'. With charge that never depletes that price is always paid, so the anchor is now limited only by chargesPerRun (1) and its permanent Storm Charge spike. Those are still real costs, but the handoff's wording no longer describes what happens. Decide whether that is fine or whether the anchor needs a different price.",
     "autoOffAtEmpty": true,
     "rechargeAtRelay": false,
     "_rechargeProposal": "PROPOSAL, default off, Chris's call: refill the lantern when you bank at the relay. It would make the relay do double duty - securing loot and buying more light - which strengthens the bank-or-push decision. It also softens the charge economy, so it is off until Chris says otherwise."

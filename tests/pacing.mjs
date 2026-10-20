@@ -24,7 +24,11 @@ const lanternCfg = load("lantern.json");
 
 const DT = 0.1;
 const CHARGE_SECONDS = lanternCfg.charge.secondsOfLightPerFullCharge;
-const DRAIN = 1 / CHARGE_SECONDS;
+// Mirrors Config.lanternDrainPerSecond: 0 seconds means the lantern never runs
+// out, not that it empties instantly. Getting this wrong made every crew and
+// every duty cycle produce an identical row, because each lantern died on the
+// first tick and nobody ever accelerated the storm.
+const DRAIN = CHARGE_SECONDS > 0 ? 1 / CHARGE_SECONDS : 0;
 const RUN_MIN = 6 * 60;
 const RUN_MAX = 10 * 60;
 
@@ -79,7 +83,7 @@ const mmss = (s) =>
   s === undefined ? "  never" : `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`.padStart(7);
 
 console.log(`\nStorm Charge pacing`);
-console.log(`baseline ${storm.baselineRatePerSecond}/s · per-lantern +${storm.lantern.perLanternBonus} · cap ${storm.lantern.maxMultiplier}x · charge ${CHARGE_SECONDS}s\n`);
+console.log(`baseline ${storm.baselineRatePerSecond}/s · per-lantern +${storm.lantern.perLanternBonus} · cap ${storm.lantern.maxMultiplier}x · charge ${CHARGE_SECONDS > 0 ? CHARGE_SECONDS + "s" : "unlimited"}\n`);
 console.log(`crew  duty   alert    hunt  WARDEN   lantern-sec   verdict`);
 console.log(`${"-".repeat(72)}`);
 
@@ -118,7 +122,11 @@ const dark = rows.filter((r) => r.duty === 0);
 console.log(`  - Playing fully dark, the Warden arrives at ${mmss(dark[0].warden).trim()} regardless of crew size,`);
 console.log(`    which is past the end of even a long run. A dark crew faces no escalation.`);
 
-console.log(`  - A full charge buys ${CHARGE_SECONDS}s of light against a ${RUN_MIN / 60}-${RUN_MAX / 60} minute run, so no crew can`);
+console.log(
+  CHARGE_SECONDS > 0
+    ? `  - A full charge buys ${CHARGE_SECONDS}s of light against a ${RUN_MIN / 60}-${RUN_MAX / 60} minute run, so no crew can`
+    : `  - Light is unlimited, so nothing but the meter stops a crew staying lit:`
+);
 console.log(`    stay lit the whole way. Light is a budget, which is what the design wants.\n`);
 
 // ---- curve comparison -----------------------------------------------------

@@ -121,9 +121,19 @@ console.log("\nEnemies");
 
 console.log("\nLantern, knockdown, revive");
 {
+  // Chris's call: the lantern never runs out, so the cost of light is the Storm
+  // Charge it pours into the meter and nothing else. A fuel gauge made running
+  // dry a second failure state on top of the storm. These lock the new rule -
+  // either light is unlimited, or it lasts long enough to be worth carrying.
   const runMax = 10 * 60;
-  check("a full charge cannot cover a whole run", lantern.charge.secondsOfLightPerFullCharge < runMax);
-  check("charge is long enough to matter", lantern.charge.secondsOfLightPerFullCharge >= 60);
+  const chargeSeconds = lantern.charge.secondsOfLightPerFullCharge;
+  check("light is either unlimited or meaningfully long", chargeSeconds === 0 || chargeSeconds >= 60);
+  if (chargeSeconds > 0) {
+    check("a finite charge cannot cover a whole run", chargeSeconds < runMax);
+  }
+  // Whatever the fuel rule, light must still cost something, or darkness stops
+  // being a decision. That cost is the meter.
+  check("light still costs Storm Charge", storm.lantern.perLanternBonus > 0);
   check("a downed player cannot walk", lantern.knockdown.downedWalkSpeed === 0);
   check("reviving takes real time", lantern.revive.teammateHoldSeconds > 0);
   check("reviving needs proximity", lantern.revive.maxReviveDistance > 0);

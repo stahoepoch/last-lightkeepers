@@ -21,6 +21,11 @@ local TRACK = Color3.fromRGB(18, 22, 34)
 
 local wardenCharge = Config.wardenCharge()
 
+-- With unlimited light the charge bar is a gauge that never moves, which is
+-- worse than no gauge: it reads as a resource right up until you notice it is
+-- decorative. Chris's call that the lantern never runs out, so it goes.
+local lanternDrains = Config.lanternDrainPerSecond() > 0
+
 local screen = Instance.new("ScreenGui")
 screen.Name = "LightkeeperHUD"
 screen.ResetOnSpawn = false
@@ -66,6 +71,7 @@ end
 -- shared clock, this is your personal fuel. Conflating them would hide which
 -- resource a player is actually running out of.
 local chargeTrack = Instance.new("Frame")
+chargeTrack.Visible = lanternDrains
 chargeTrack.Name = "LanternCharge"
 chargeTrack.AnchorPoint = Vector2.new(0.5, 0)
 chargeTrack.Position = UDim2.new(0.5, 0, 1, 4)
@@ -162,7 +168,9 @@ Remotes.get("RunSnapshot").OnClientEvent:Connect(function(snapshot)
 	fill.BackgroundColor3 = AMBER:Lerp(STORM_BLUE, ratio)
 
 	local charge = snapshot.yourCharge or 0
-	chargeFill.Size = UDim2.new(math.clamp(charge, 0, 1), 0, 1, 0)
+	if lanternDrains then
+		chargeFill.Size = UDim2.new(math.clamp(charge, 0, 1), 0, 1, 0)
+	end
 	-- Dim the charge bar when the lantern is off, so "I have fuel" and "I am
 	-- burning it" are never the same reading.
 	chargeFill.BackgroundTransparency = if snapshot.yourLanternOn then 0 else 0.55
@@ -206,7 +214,9 @@ Remotes.get("RunSnapshot").OnClientEvent:Connect(function(snapshot)
 		if crewUp > 0 then
 			downedHint.Text = string.format("%d still standing - wait for a hand up", crewUp)
 		elseif snapshot.yourCanAnchorRevive then
-			downedHint.Text = "Press R to anchor - it burns a full lantern charge"
+			downedHint.Text = if lanternDrains
+				then "Press R to anchor - it burns a full lantern charge"
+				else "Press R to anchor - it spikes the storm, once per run"
 		elseif (snapshot.yourAnchorRevivesLeft or 0) <= 0 then
 			downedHint.Text = "No anchor left this run"
 		else
@@ -232,7 +242,7 @@ Remotes.get("RunSnapshot").OnClientEvent:Connect(function(snapshot)
 		label.Text = "THE WARDEN IS COMING"
 	elseif snapshot.yourTagged then
 		label.Text = "TAGGED - they know where you are"
-	elseif charge <= 0 then
+	elseif lanternDrains and charge <= 0 then
 		label.Text = "Lantern dead - storm still rising"
 	elseif (snapshot.crewDown or 0) > 0 then
 		label.Text = string.format("%d down - go get them", snapshot.crewDown)

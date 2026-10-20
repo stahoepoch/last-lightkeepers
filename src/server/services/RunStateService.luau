@@ -367,7 +367,15 @@ function RunStateService.anchorRevive(player: Player): boolean
 	local anchor = Config.StormCharge.anchorRevive
 
 	state.anchorRevivesLeft -= 1
-	state.lanternCharge = 0
+	-- Spend the charge only if charge is a resource at all. Chris's decision
+	-- that the lantern never runs out removes the fuel economy, and zeroing a
+	-- gauge that can never refill would strand the player lightless for the
+	-- rest of the run - the exact misery the decision was meant to remove.
+	-- With unlimited light the anchor's price is what remains: one per run, and
+	-- a permanent spike in the meter.
+	if Config.lanternDrainPerSecond() > 0 then
+		state.lanternCharge = 0
+	end
 	state.lanternOn = false
 	RunStateService.addStormCharge(anchor.stormChargeSpike)
 	stand(state)
