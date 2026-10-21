@@ -11,7 +11,7 @@
 //
 //   node tests/lighting.test.mjs
 
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -50,6 +50,31 @@ check(
   typeof L.EnvironmentDiffuseScale === "number" && L.EnvironmentDiffuseScale <= 0.2,
   `got ${L.EnvironmentDiffuseScale} — sky bounce fills every interior from above as if it had no roof`,
 );
+
+// ---- 1b. the runtime owner --------------------------------------------------
+//
+// LightingService applies a profile to Lighting on every playtest, which makes
+// it the real authority - it overwrites whatever the project file and the
+// place say, a moment after load. That is a good mechanism (one owner beats
+// a tug-of-war over editor state) but it means guarding default.project.json
+// alone is useless: the file can be correct while the game is white.
+
+const lightingServicePath = join(root, "src", "server", "services", "LightingService.luau");
+if (existsSync(lightingServicePath)) {
+  const svc = readFileSync(lightingServicePath, "utf8");
+  const amb = svc.match(/Ambient\s*=\s*Color3\.fromRGB\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/);
+  check(
+    "LightingService profile Ambient is black",
+    amb !== null && Number(amb[1]) === 0 && Number(amb[2]) === 0 && Number(amb[3]) === 0,
+    `got ${amb ? amb.slice(1, 4).join(",") : "unreadable"} — this runs every playtest and overrides the project file`,
+  );
+  const env = svc.match(/EnvironmentDiffuseScale\s*=\s*([\d.]+)/);
+  check(
+    "LightingService profile EnvironmentDiffuseScale is at or near zero",
+    env !== null && Number(env[1]) <= 0.2,
+    `got ${env ? env[1] : "unreadable"} — unconditional sky fill, applied on every playtest`,
+  );
+}
 
 // ---- 2. shadows ------------------------------------------------------------
 
