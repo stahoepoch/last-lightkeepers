@@ -52,9 +52,19 @@ build by being forgotten.
 
 The handoff makes enemy audio an accessibility rule, not polish: *telegraph
 every enemy with sound before sight.* That means each enemy needs a
-**distinguishable** cue. Three enemies sharing one sound defeats the rule even
-if we own the file — a player who cannot see the screen clearly must be able to
-tell a Sweeper swarm from a waking Window Walker by ear alone.
+**distinguishable** cue — a player who cannot see the screen clearly must be
+able to tell a Sweeper swarm from a waking Window Walker by ear alone.
+
+Precisely where this stands, corrected 2026-10-20 after the gameplay session
+pushed back on an overstatement of mine. The three rigs are *not* playing an
+identical cue: they are pitched apart at 1.0, 1.35 and 0.72, now declared as a
+named `CUE_PITCH` per rig rather than left incidental, so they are partly
+tellable apart already.
+
+But it is one sample wearing three hats, and pitch alone will not carry five
+enemies. The Glimmer is the clearest failure: its cue is a single hit, when
+what it has to convey is a **2-second window closing**. The player needs to
+hear how long they have to go dark, not guess.
 
 So the audio brief is at least:
 

@@ -17,7 +17,10 @@ must not ship.**
 
 | Asset id | Used for | Problem |
 | --- | --- | --- |
-| `rbxassetid://9118959688` | Telegraph sound in `SweeperRig`, `GlimmerRig` and `WindowWalkerRig` | Not ours. Origin unverified — it was added without a recorded source, so we do not know what it is or whether its licence permits anything. Also used for three enemies at once, which breaks the telegraph-by-ear accessibility rule on its own. |
+| `rbxassetid://9118959688` | Telegraph sound in `SweeperRig`, `GlimmerRig` and `WindowWalkerRig` | **Not ours.** Identified as "Servo Motor 7 (SFX)", Pro Sound Effects — verified real and loadable by the gameplay session via Studio asset search and a live playtest (`IsLoaded` true, `TimeLength` 1.11s). Verifying an asset exists is not owning it: it lives on Roblox's servers under someone else's licence and cannot port. Replace with our own recording. |
+
+An earlier version of this row said "origin unverified", which was wrong — the
+gameplay session had checked it and I had not asked. Corrected 2026-10-20.
 
 ## Source files held but not yet shipped
 
