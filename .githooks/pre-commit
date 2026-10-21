@@ -1,0 +1,21 @@
+#!/bin/sh
+# The lighting in this game has been broken, fixed, and silently reverted by
+# another agent in the same repo more than once. A document nobody is obliged
+# to read did not hold; a test nobody is obliged to run did not hold either.
+# This does.
+#
+# Bypass only if you genuinely mean to change the lighting contract, and update
+# DONTFUCKUPTHELIGHTS.md and tests/lighting.test.mjs in the same commit:
+#   git commit --no-verify
+if ! node tests/lighting.test.mjs >/dev/null 2>&1; then
+	echo ""
+	echo "COMMIT BLOCKED: the lighting guard failed."
+	echo ""
+	node tests/lighting.test.mjs 2>&1 | grep FAIL
+	echo ""
+	echo "Read DONTFUCKUPTHELIGHTS.md. Ambient must be 0,0,0 and"
+	echo "EnvironmentDiffuseScale at or near 0 - these are flat fills that"
+	echo "ignore every light in the game, and raising them whites the world out."
+	echo ""
+	exit 1
+fi
