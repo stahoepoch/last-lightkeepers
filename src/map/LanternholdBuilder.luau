@@ -45,7 +45,11 @@ local LanternholdBuilder = {}
 -- The plan. South is -Z: the road arrives from the farms.
 local W = 130 -- half-width
 local Z0, Z1 = 0, 230 -- south and north walls
-local CORE_X0, CORE_X1 = -126, -72 -- the stair and lift core, west side
+-- The core holds the stairs, the lift and a walkway past both. It used to be
+-- too narrow for all three, so the lift ended up east of it - which put the
+-- shaft squarely in front of the ballroom and lodge doorways, blocking the
+-- view into the rooms the whole hub is built around.
+local CORE_X0, CORE_X1 = -126, -50
 local CORE_Z0, CORE_Z1 = 16, 92
 
 -- Floor levels, as the height you stand on, and the ceiling over each.
@@ -69,6 +73,14 @@ local C = {
 	grass = Color3.fromRGB(94, 104, 74),
 	egypt = Color3.fromRGB(150, 116, 58),
 	gothic = Color3.fromRGB(86, 90, 104),
+	-- Read off Chris's photographs from inside the building.
+	terrazzo = Color3.fromRGB(196, 186, 164), -- speckled cream, polished
+	inlay = Color3.fromRGB(92, 84, 74), -- the dark bands set into it
+	hardwood = Color3.fromRGB(104, 62, 40), -- the ballroom floor, red-brown
+	plaster = Color3.fromRGB(238, 232, 222), -- the coffered ceilings
+	iron = Color3.fromRGB(46, 42, 40), -- the balustrades
+	stencil = Color3.fromRGB(92, 112, 84), -- the painted border band
+	gilt = Color3.fromRGB(176, 148, 86),
 }
 local WARM = Color3.fromRGB(255, 214, 160)
 
@@ -88,8 +100,12 @@ local function box(parent: Instance, name: string, x0: number, x1: number, y0: n
 end
 
 --- A wall with doorways cut in it, each with a lintel over it.
-local function wall(parent: Instance, name: string, axis: string, at: number, from: number, to: number, y0: number, y1: number, colour: Color3, gaps: { { number } })
-	local head = math.min(y0 + DOOR_H, y1)
+local function wall(parent: Instance, name: string, axis: string, at: number, from: number, to: number, y0: number, y1: number, colour: Color3, gaps: { { number } }, headH: number?)
+	-- Doorways are door height by default. The openings onto the rooms that are
+	-- shut take a taller head, because the whole point of those rooms is that
+	-- you stand at the barrier and see what you are not allowed into - and an
+	-- eight stud hole shows you a skirting board.
+	local head = math.min(y0 + (headH or DOOR_H), y1)
 	local cuts = table.clone(gaps)
 	table.sort(cuts, function(a, b)
 		return a[1] < b[1]
@@ -150,6 +166,75 @@ local function lamp(parent: Instance, name: string, x: number, y: number, z: num
 	return glass
 end
 
+--- A room's own floor finish, laid ON the structural slab rather than beside
+--- it. Every room used to build its own two-stud slab at exactly the height
+--- the shell had already put one, which left two collidable surfaces sharing a
+--- plane and made the rooms above unreachable from their own landings.
+local function finish(parent: Instance, name: string, x0: number, x1: number, z0: number, z1: number, y: number, colour: Color3, mat: Enum.Material?)
+	local p = box(parent, name, x0, x1, y, y + 0.2, z0, z1, colour, mat or Enum.Material.WoodPlanks)
+	p.CanCollide = false
+	return p
+end
+
+--- A square column with a moulded capital and a dark plinth. Every column in
+--- the building is like this - square, cream, with a stepped capital - and a
+--- plain post reads as scaffolding beside it.
+local function column(parent: Instance, name: string, x: number, z: number, y0: number, y1: number, w: number)
+	local h = w / 2
+	box(parent, `{name}_Plinth`, x - h - 0.4, x + h + 0.4, y0, y0 + 2.5, z - h - 0.4, z + h + 0.4, C.timber, Enum.Material.WoodPlanks)
+	box(parent, `{name}_Shaft`, x - h, x + h, y0 + 2.5, y1 - 2.5, z - h, z + h, C.plaster, Enum.Material.Concrete)
+	box(parent, `{name}_Capital`, x - h - 1, x + h + 1, y1 - 2.5, y1, z - h - 1, z + h + 1, C.plaster, Enum.Material.Concrete)
+end
+
+--- A coffered ceiling: a grid of beams with the decorative band on their faces.
+--- The ballroom's ceiling is the single most recognisable thing in the photos
+--- of this building, and a flat slab throws all of it away.
+local function coffers(parent: Instance, name: string, x0: number, x1: number, z0: number, z1: number, y: number, bay: number, band: Color3, soffit: boolean?)
+	local nx = math.max(1, math.floor((x1 - x0) / bay))
+	local nz = math.max(1, math.floor((z1 - z0) / bay))
+	-- Only where there is no floor overhead already. Every room but the top one
+	-- has the slab above serving as its ceiling, and laying a soffit there puts
+	-- three collidable surfaces in the same two-stud band - which is what made
+	-- the museum unreachable from its own landing.
+	if soffit then
+		box(parent, `{name}_Soffit`, x0, x1, y, y + 2, z0, z1, C.plaster, Enum.Material.Concrete)
+	end
+	for i = 0, nx do
+		local x = x0 + (x1 - x0) * (i / nx)
+		box(parent, `{name}_BeamX_{i}`, x - 2, x + 2, y - 3, y, z0, z1, C.plaster, Enum.Material.Concrete)
+		box(parent, `{name}_BandX_{i}`, x - 2.3, x + 2.3, y - 2.2, y - 1.2, z0, z1, band, Enum.Material.Concrete)
+	end
+	for j = 0, nz do
+		local z = z0 + (z1 - z0) * (j / nz)
+		box(parent, `{name}_BeamZ_{j}`, x0, x1, y - 3, y, z - 2, z + 2, C.plaster, Enum.Material.Concrete)
+		box(parent, `{name}_BandZ_{j}`, x0, x1, y - 2.2, y - 1.2, z - 2.3, z + 2.3, band, Enum.Material.Concrete)
+	end
+end
+
+--- The dark skirting band that runs round every room at about a foot high.
+local function baseband(parent: Instance, name: string, x0: number, x1: number, z0: number, z1: number, y: number)
+	-- Skirting never collides. Built solid it is a three-stud wall round every
+	-- room, and it ran straight across the front doors, the kitchen opening and
+	-- the stair well - the whole building became unreachable from the road.
+	for _, spec in ipairs({ { x0, x0 + 1, z0, z1 }, { x1 - 1, x1, z0, z1 }, { x0, x1, z0, z0 + 1 }, { x0, x1, z1 - 1, z1 } }) do
+		local b = box(parent, `{name}_{spec[1]}_{spec[3]}`, spec[1], spec[2], y, y + 3, spec[3], spec[4], C.timber, Enum.Material.WoodPlanks)
+		b.CanCollide = false
+	end
+end
+
+--- Terrazzo with dark bands set into it, which is the floor of every hall and
+--- stair in the building.
+local function terrazzo(parent: Instance, name: string, x0: number, x1: number, z0: number, z1: number, y: number)
+	box(parent, `{name}`, x0, x1, y - 2, y, z0, z1, C.terrazzo, Enum.Material.Pebble)
+	local n = math.max(1, math.floor((z1 - z0) / 46))
+	for i = 1, n - 1 do
+		local z = z0 + (z1 - z0) * (i / n)
+		box(parent, `{name}_Band_{i}`, x0, x1, y, y + 0.3, z - 5, z + 5, C.inlay, Enum.Material.Pebble).CanCollide = false
+	end
+	box(parent, `{name}_BandEdgeA`, x0 + 10, x0 + 16, y, y + 0.3, z0, z1, C.inlay, Enum.Material.Pebble).CanCollide = false
+	box(parent, `{name}_BandEdgeB`, x1 - 16, x1 - 10, y, y + 0.3, z0, z1, C.inlay, Enum.Material.Pebble).CanCollide = false
+end
+
 --- A flight as one ramp with treads drawn on it. Discrete steps do not produce
 --- a navmesh anything can path over - that fault has kept the other map's
 --- stairs unusable since the first playtest.
@@ -184,7 +269,18 @@ local function flight(parent: Instance, name: string, x0: number, x1: number, zL
 	-- One handrail, on the outer side only. Railed on both, the flight is a
 	-- walled corridor and the rail on the landing side stands between the top
 	-- of the stair and the floor it arrives at.
-	part(parent, `{name}_Rail`, Vector3.new(0.8, 3.4, hyp), cf * CFrame.new(-((x1 - x0) / 2 - 0.4), 2.6, 0), C.brass, Enum.Material.Metal)
+	-- The balustrade is wrought iron with circles and zigzags in it, not a
+	-- plain bar: it is the most distinctive thing in the stair hall.
+	local railX = -((x1 - x0) / 2 - 0.4)
+	part(parent, `{name}_RailTop`, Vector3.new(1.4, 0.9, hyp), cf * CFrame.new(railX, 4, 0), C.timber, Enum.Material.WoodPlanks)
+	part(parent, `{name}_RailBottom`, Vector3.new(0.7, 0.6, hyp), cf * CFrame.new(railX, 0.9, 0), C.iron, Enum.Material.Metal)
+	for k = 1, 10 do
+		local t = ((k - 0.5) / 10 - 0.5) * hyp
+		part(parent, `{name}_Baluster_{k}`, Vector3.new(0.5, 3.2, 0.5), cf * CFrame.new(railX, 2.3, t), C.iron, Enum.Material.Metal)
+		local ring = part(parent, `{name}_Ring_{k}`, Vector3.new(0.5, 2.2, 2.2), cf * CFrame.new(railX, 2.3, t + hyp / 20), C.iron, Enum.Material.Metal)
+		ring.Shape = Enum.PartType.Cylinder
+		ring.CanCollide = false
+	end
 
 	local function pad(nm: string, y: number, za: number, zb: number)
 		box(parent, nm, x0, x1, y - 2, y, math.min(za, zb), math.max(za, zb), C.trim, Enum.Material.Concrete)
@@ -222,14 +318,26 @@ function LanternholdBuilder.Build(): Model
 	-- across it. Laid solid, the flights ran straight up into the underside of
 	-- the floor above and no route between storeys existed at all - the hall
 	-- had four floors and no way between them.
+	-- Terrazzo in the basement and the stair halls, polished hardwood above.
+	-- Both are in the photographs and they are nothing like the plain boards
+	-- this had: the terrazzo is speckled cream with dark bands set into it, and
+	-- the ballroom floor is a deep red-brown.
 	for i, lvl in ipairs(LEVELS) do
+		local wood = i >= 2
 		if i == 1 then
-			box(F.Shell, `Slab_{i}`, -W, W, lvl - 2, lvl, Z0, Z1, C.board, Enum.Material.WoodPlanks)
+			terrazzo(F.Shell, `Slab_{i}`, -W, W, Z0, Z1, lvl)
 		else
-			box(F.Shell, `Slab_{i}_E`, CORE_X1, W, lvl - 2, lvl, Z0, Z1, C.board, Enum.Material.WoodPlanks)
-			box(F.Shell, `Slab_{i}_W`, -W, CORE_X0, lvl - 2, lvl, Z0, Z1, C.board, Enum.Material.WoodPlanks)
-			box(F.Shell, `Slab_{i}_S`, CORE_X0, CORE_X1, lvl - 2, lvl, Z0, CORE_Z0, C.board, Enum.Material.WoodPlanks)
-			box(F.Shell, `Slab_{i}_N`, CORE_X0, CORE_X1, lvl - 2, lvl, CORE_Z1, Z1, C.board, Enum.Material.WoodPlanks)
+			local function slab(nm, x0, x1, z0, z1)
+				if wood then
+					box(F.Shell, nm, x0, x1, lvl - 2, lvl, z0, z1, C.hardwood, Enum.Material.WoodPlanks)
+				else
+					terrazzo(F.Shell, nm, x0, x1, z0, z1, lvl)
+				end
+			end
+			slab(`Slab_{i}_E`, CORE_X1, W, Z0, Z1)
+			slab(`Slab_{i}_W`, -W, CORE_X0, Z0, Z1)
+			slab(`Slab_{i}_S`, CORE_X0, CORE_X1, Z0, CORE_Z0)
+			slab(`Slab_{i}_N`, CORE_X0, CORE_X1, CORE_Z1, Z1)
 		end
 	end
 	box(F.Shell, "Roof", -W, W, TOP, TOP + 2, Z0, Z1, C.dark, Enum.Material.Slate)
@@ -255,6 +363,12 @@ function LanternholdBuilder.Build(): Model
 	box(F.Shell, "Parapet", -W - 4, W + 4, TOP, TOP + 8, Z0 - 4, Z1 + 4, C.stone, Enum.Material.Concrete)
 	box(F.Shell, "Tower", -W - 10, -W + 16, 0, TOP + 22, Z0 + 6, Z0 + 44, C.stone, Enum.Material.Concrete)
 
+	for e = -1, 1, 2 do
+		local x = e * (DOOR_W / 2)
+		box(F.Shell, `FrontDoor_{e}`, x - e * DOOR_W / 2, x, 0, DOOR_H, Z0 - 1.4, Z0 - 0.6, C.timber, Enum.Material.WoodPlanks)
+		box(F.Shell, `FrontPlate_{e}`, x - e * 2.4, x - e * 1.4, 4, 5.6, Z0 - 1.8, Z0 - 1.4, C.brass, Enum.Material.Metal)
+	end
+
 	local name = box(F.Shell, "NameStone", -40, 40, 15, 23, Z0 - 3.2, Z0 - 2, C.trim, Enum.Material.Concrete)
 	label(name, "LANTERNHOLD", Enum.NormalId.Front)
 
@@ -265,13 +379,23 @@ function LanternholdBuilder.Build(): Model
 		local up = i % 2 == 0
 		flight(F.Core, `Stair_{i}`, CORE_X0 + 6, CORE_X0 + 32, if up then CORE_Z0 + 8 else CORE_Z1 - 8, if up then CORE_Z1 - 8 else CORE_Z0 + 8, LEVELS[i - 1], LEVELS[i])
 	end
-	wall(F.Core, "CoreEast", "X", CORE_X1, CORE_Z0, CORE_Z1, 0, TOP, C.stone, {})
+	-- No full-height wall down the east side of the core. Each floor already
+	-- has its own wall in that plane with its own doorway in it - the
+	-- ballroom's barred opening, the lodge doors, the museum's - and a solid
+	-- shaft wall standing in front of all of them blocked every one. The
+	-- museum became unreachable and the dark rooms you are meant to see into
+	-- could not even be looked at.
 	for i, lvl in ipairs(LEVELS) do
-		box(F.Core, `CoreLanding_{i}`, CORE_X0 + 32, CORE_X1, lvl - 2, lvl, CORE_Z0, CORE_Z1, C.board, Enum.Material.WoodPlanks)
+		terrazzo(F.Core, `CoreLanding_{i}`, CORE_X0 + 32, CORE_X1, CORE_Z0, CORE_Z1, lvl)
+		baseband(F.Core, `CoreBase_{i}`, CORE_X0, CORE_X1, CORE_Z0, CORE_Z1, lvl)
 	end
 
-	local LIFT_X0, LIFT_X1 = CORE_X1 + 6, CORE_X1 + 34
-	local LIFT_Z0, LIFT_Z1 = CORE_Z0 + 10, CORE_Z0 + 38
+	-- Set so there is a walkway on both sides: the stair ends at CORE_X0 + 32,
+	-- then fourteen studs of landing, then the shaft, then twelve more to the
+	-- core wall. Pushed hard against the stair it left a two stud slot you
+	-- could not step off the flight into.
+	local LIFT_X0, LIFT_X1 = CORE_X0 + 46, CORE_X0 + 64
+	local LIFT_Z0, LIFT_Z1 = CORE_Z0 + 48, CORE_Z0 + 72
 	wall(F.Core, "LiftWallW", "X", LIFT_X0, LIFT_Z0, LIFT_Z1, 0, TOP, C.trim, {})
 	wall(F.Core, "LiftWallE", "X", LIFT_X1, LIFT_Z0, LIFT_Z1, 0, TOP, C.trim, {})
 	wall(F.Core, "LiftWallN", "Z", LIFT_Z1, LIFT_X0, LIFT_X1, 0, TOP, C.trim, {})
@@ -282,10 +406,20 @@ function LanternholdBuilder.Build(): Model
 	-- ------------------------------------------------------------- basement
 	local B = LEVELS[1]
 	wall(F.Basement, "LandingNorth", "Z", 86, CORE_X1, W, B, HEADS[1], C.stone, { { -30, -2 } })
+	-- The basement's own wall onto the stair hall, with its door.
+	wall(F.Basement, "CoreDoor", "X", CORE_X1, CORE_Z0, CORE_Z1, B, HEADS[1], C.stone, { { 24, 44 } })
 	-- Stops at the core. Carried across it, this ceiling capped the stair well
 	-- and the first flight rose straight into its underside, which is why no
 	-- floor above the basement could be reached.
-	box(F.Basement, "LandingCeiling", CORE_X1, W, HEADS[1], HEADS[1] + 2, Z0, 86, C.timber, Enum.Material.WoodPlanks)
+	-- The basement is a column grid under a beamed ceiling, which is what the
+	-- photograph shows and what the room needs to stop reading as a hangar.
+	coffers(F.Basement, "LandingCeiling", CORE_X1, W, Z0, 86, HEADS[1], 46, C.plaster)
+	for i = 0, 3 do
+		for j = 0, 1 do
+			column(F.Basement, `LandingColumn_{i}_{j}`, -30 + i * 44, 28 + j * 40, B, HEADS[1], 9)
+		end
+	end
+	baseband(F.Basement, "LandingBase", CORE_X1, W, Z0, 86, B)
 	for i = -1, 1, 2 do
 		for j = 0, 1 do
 			lamp(F.Basement, `LandingLamp_{i}_{j}`, i * 54, HEADS[1] - 5, 26 + j * 36, true)
@@ -305,7 +439,14 @@ function LanternholdBuilder.Build(): Model
 	-- The Community Kitchen and, behind it, the food room. This is what the
 	-- floor was for, which is why the hall has a kitchen before an armoury.
 	wall(F.Basement, "KitchenNorth", "Z", 150, -W, CORE_X1, B, HEADS[1], C.stone, { { -96, -68 } })
-	box(F.Basement, "KitchenCeiling", -W, CORE_X1, HEADS[1], HEADS[1] + 2, CORE_Z1, 150, C.timber, Enum.Material.WoodPlanks)
+	-- The kitchen keeps the painted border band: a green and gold stencil run
+	-- along the beam faces, which is the prettiest thing in the building and
+	-- costs two colours.
+	coffers(F.Basement, "KitchenCeiling", -W, CORE_X1, CORE_Z1, 150, HEADS[1], 40, C.stencil)
+	for i = 0, 1 do
+		column(F.Basement, `KitchenColumn_{i}`, -104 + i * 46, 118, B, HEADS[1], 9)
+	end
+	baseband(F.Basement, "KitchenBase", -W, CORE_X1, CORE_Z1, 150, B)
 	for i = 0, 1 do
 		lamp(F.Basement, `KitchenLamp_{i}`, -98, HEADS[1] - 5, 102 + i * 30, true)
 	end
@@ -332,13 +473,15 @@ function LanternholdBuilder.Build(): Model
 	-- Your workshop corner, where visitors walk past it.
 	-- East of the core. It was sitting in the stairwell, across the foot of the
 	-- first flight.
-	box(F.Fixtures, "WorkBench", -64, -32, B + 2.4, B + 3.2, 20, 30, C.timber, Enum.Material.WoodPlanks)
-	for _, x in ipairs({ -61, -35 }) do
+	-- East of the core and clear of the lift shaft, which the last position ran
+	-- straight through.
+	box(F.Fixtures, "WorkBench", 12, 34, B + 2.4, B + 3.2, 20, 30, C.timber, Enum.Material.WoodPlanks)
+	for _, x in ipairs({ 15, 31 }) do
 		box(F.Fixtures, `WBLeg_{x}`, x - 1, x + 1, B, B + 2.4, 24, 26, C.timber, Enum.Material.WoodPlanks)
 	end
-	local vice = box(F.Fixtures, "Vice", -38, -34, B + 3.2, B + 4.6, 23, 27, C.brass, Enum.Material.Metal)
+	local vice = box(F.Fixtures, "Vice", 30, 34, B + 3.2, B + 4.6, 23, 27, C.brass, Enum.Material.Metal)
 	CollectionService:AddTag(vice, "WorkshopBench")
-	local shop = box(F.Markers, "WorkshopPlot", -66, -30, B, B + 0.4, 16, 40, C.cloth, Enum.Material.Fabric)
+	local shop = box(F.Markers, "WorkshopPlot", 8, 38, B, B + 0.4, 14, 38, C.cloth, Enum.Material.Fabric)
 	shop.CanCollide = false
 	CollectionService:AddTag(shop, "WorkshopPlot")
 
@@ -350,23 +493,35 @@ function LanternholdBuilder.Build(): Model
 	ret.CanCollide = false
 	CollectionService:AddTag(ret, "ReturnPoint")
 
-	box(F.Basement, "StoreFloorDark", -W, CORE_X1, B - 2, B, 150, Z1, C.dark, Enum.Material.WoodPlanks)
+	finish(F.Basement, "StoreFloorDark", -W, CORE_X1, 150, Z1, B, C.dark)
 
 	-- ------------------------------------------------------------- ballroom
 	-- Eight thousand square feet, built and unlit, with its chandeliers fitted
 	-- and never switched on. From the landing you see the whole volume and a
 	-- rope across the doorway.
 	local BR = LEVELS[2]
-	box(F.Ballroom, "BallroomFloor", CORE_X1, W, BR - 2, BR, Z0, Z1, C.dark, Enum.Material.WoodPlanks)
-	wall(F.Ballroom, "BallroomWest", "X", CORE_X1, Z0, Z1, BR, HEADS[2], C.stone, { { 30, 30 + DOOR_W * 2 } })
-	box(F.Ballroom, "BallroomCeiling", CORE_X1, W, HEADS[2], HEADS[2] + 2, Z0, Z1, C.dark, Enum.Material.WoodPlanks)
+	-- Not a black void. The ballroom is a magnificent room that happens to be
+	-- unlit, and you are meant to see that through the doorway - a coffered
+	-- ceiling on a grid of capitalled columns over a deep red-brown floor. If
+	-- it reads as an empty black box there is nothing to want.
+	wall(F.Ballroom, "BallroomWest", "X", CORE_X1, Z0, Z1, BR, HEADS[2], C.stone, { { 30, 30 + DOOR_W * 2 } }, 24)
+	coffers(F.Ballroom, "BallroomCeiling", CORE_X1, W, Z0, Z1, HEADS[2], 50, C.plaster)
+	for i = 0, 2 do
+		for j = 0, 4 do
+			column(F.Ballroom, `BallroomColumn_{i}_{j}`, -40 + i * 60, 24 + j * 46, BR, HEADS[2], 11)
+		end
+	end
+	baseband(F.Ballroom, "BallroomBase", CORE_X1, W, Z0, Z1, BR)
 	for i = 0, 4 do
 		local z = 30 + i * 42
 		part(F.Ballroom, `DeadChandelier_{i}`, Vector3.new(14, 2, 14), CFrame.new(20, HEADS[2] - 10, z), C.dark, Enum.Material.Metal)
 		part(F.Ballroom, `DeadChain_{i}`, Vector3.new(0.8, 10, 0.8), CFrame.new(20, HEADS[2] - 4, z), C.dark, Enum.Material.Metal)
 	end
 	box(F.Ballroom, "BallroomBar", CORE_X1 - 1, CORE_X1 + 1, BR, BR + 3.4, 30, 30 + DOOR_W * 2, C.brass, Enum.Material.Metal)
-	local bn = box(F.Ballroom, "BallroomNotice", CORE_X1 - 1.6, CORE_X1 - 1, BR + 4, BR + 8, 32, 56, C.timber, Enum.Material.WoodPlanks)
+		-- Mounted on the barrier, not hung across the opening at eye height. The
+	-- sign exists to tell you the room is unlit; a sign you have to look round
+	-- to see the room is worse than no sign.
+	local bn = box(F.Ballroom, "BallroomNotice", CORE_X1 - 1.8, CORE_X1 - 1.2, BR + 0.8, BR + 3, 36, 52, C.timber, Enum.Material.WoodPlanks)
 	label(bn, "THE BALLROOM — NOT YET LIT", Enum.NormalId.Left, 18)
 
 	-- ------------------------------------------------------------- lodge
@@ -374,11 +529,10 @@ function LanternholdBuilder.Build(): Model
 	-- The Egyptian room in ochre; the Norman Gothic chapel in grey stone with
 	-- timber beams and a slate floor. These are the rooms worth lighting.
 	local LD = LEVELS[3]
-	box(F.Lodge, "EgyptFloor", CORE_X1, W, LD - 2, LD, Z0, 120, C.egypt, Enum.Material.Slate)
-	box(F.Lodge, "GothicFloor", CORE_X1, W, LD - 2, LD, 120, Z1, C.gothic, Enum.Material.Slate)
+	finish(F.Lodge, "EgyptFloor", CORE_X1, W, Z0, 120, LD, C.egypt, Enum.Material.Slate)
+	finish(F.Lodge, "GothicFloor", CORE_X1, W, 120, Z1, LD, C.gothic, Enum.Material.Slate)
 	wall(F.Lodge, "LodgeSpine", "Z", 120, CORE_X1, W, LD, HEADS[3], C.stone, {})
-	wall(F.Lodge, "LodgeWest", "X", CORE_X1, Z0, Z1, LD, HEADS[3], C.stone, { { 40, 40 + DOOR_W }, { 150, 150 + DOOR_W } })
-	box(F.Lodge, "LodgeCeiling", CORE_X1, W, HEADS[3], HEADS[3] + 2, Z0, Z1, C.dark, Enum.Material.WoodPlanks)
+	wall(F.Lodge, "LodgeWest", "X", CORE_X1, Z0, Z1, LD, HEADS[3], C.stone, { { 40, 40 + DOOR_W }, { 150, 150 + DOOR_W } }, 18)
 	for i = 0, 3 do
 		local z = 24 + i * 24
 		box(F.Lodge, `EgyptColumn_{i}`, 30, 38, LD, HEADS[3], z, z + 8, C.egypt, Enum.Material.Concrete)
@@ -390,7 +544,7 @@ function LanternholdBuilder.Build(): Model
 	for _, spec in ipairs({ { "Egypt", 40, "THE EGYPTIAN ROOM — SHUT" }, { "Gothic", 150, "THE CHAPEL — SHUT" } }) do
 		local nm, z, text = spec[1] :: string, spec[2] :: number, spec[3] :: string
 		box(F.Lodge, `{nm}Bar`, CORE_X1 - 1, CORE_X1 + 1, LD, LD + 3.4, z, z + DOOR_W, C.brass, Enum.Material.Metal)
-		local n = box(F.Lodge, `{nm}Notice`, CORE_X1 - 1.6, CORE_X1 - 1, LD + 4, LD + 8, z, z + DOOR_W, C.timber, Enum.Material.WoodPlanks)
+		local n = box(F.Lodge, `{nm}Notice`, CORE_X1 - 1.8, CORE_X1 - 1.2, LD + 0.8, LD + 3, z + 1, z + DOOR_W - 1, C.timber, Enum.Material.WoodPlanks)
 		label(n, text, Enum.NormalId.Left, 16)
 	end
 
@@ -398,11 +552,11 @@ function LanternholdBuilder.Build(): Model
 	-- The Keeping Room. Relics are the lantern-only tier, so the only way the
 	-- story arrives is by somebody taking the dangerous choice.
 	local MU = LEVELS[4]
-	box(F.Museum, "MuseumFloor", CORE_X1, W, MU - 2, MU, Z0, 120, C.board, Enum.Material.WoodPlanks)
-	box(F.Museum, "StorageFloor", CORE_X1, W, MU - 2, MU, 120, Z1, C.dark, Enum.Material.WoodPlanks)
+	finish(F.Museum, "StorageFloor", CORE_X1, W, 120, Z1, MU, C.dark)
 	wall(F.Museum, "MuseumWest", "X", CORE_X1, Z0, Z1, MU, HEADS[4], C.stone, { { 30, 30 + DOOR_W } })
 	wall(F.Museum, "MuseumNorth", "Z", 120, CORE_X1, W, MU, HEADS[4], C.stone, { { 20, 20 + DOOR_W } })
-	box(F.Museum, "MuseumCeiling", CORE_X1, W, HEADS[4], HEADS[4] + 2, Z0, Z1, C.timber, Enum.Material.WoodPlanks)
+	coffers(F.Museum, "MuseumCeiling", CORE_X1, W, Z0, Z1, HEADS[4], 44, C.plaster, true)
+	baseband(F.Museum, "MuseumBase", CORE_X1, W, Z0, 120, MU)
 	for i = 0, 2 do
 		lamp(F.Museum, `MuseumLamp_{i}`, 20, HEADS[4] - 5, 30 + i * 34, true)
 	end
