@@ -166,6 +166,33 @@ local function lamp(parent: Instance, name: string, x: number, y: number, z: num
 	return glass
 end
 
+--- A fingerpost: one post, an arm per destination, each arm swung to actually
+--- point at the thing it names. The hub's rooms are spread over a 260 by 230
+--- building and Chris walked it cold: "the whole place is strange". The
+--- research on this is consistent - put hints in the world rather than in a
+--- wall of text, and keep the extras to the sides of the route rather than
+--- across it. An arm that points the wrong way is worse than no arm, so the
+--- yaw is derived from the target rather than typed.
+local function fingerpost(parent: Instance, name: string, x: number, z: number, base: number, arms: { { text: string, tx: number, tz: number } })
+	part(parent, `{name}_Post`, Vector3.new(2.2, 15, 2.2), CFrame.new(x, base + 7.5, z), C.iron, Enum.Material.Metal)
+	part(parent, `{name}_Finial`, Vector3.new(3.4, 1, 3.4), CFrame.new(x, base + 15.2, z), C.gilt, Enum.Material.Metal)
+	for i, arm in ipairs(arms) do
+		local yaw = math.atan2(arm.tz - z, arm.tx - x)
+		local y = base + 13 - (i - 1) * 2.9
+		local board = part(
+			parent,
+			`{name}_Arm{i}`,
+			Vector3.new(17, 2.4, 0.5),
+			CFrame.new(x, y, z) * CFrame.Angles(0, -yaw, 0) * CFrame.new(9.5, 0, 0),
+			C.timber,
+			Enum.Material.WoodPlanks
+		)
+		board.CanCollide = false
+		label(board, arm.text, Enum.NormalId.Front, 22)
+		label(board, arm.text, Enum.NormalId.Back, 22)
+	end
+end
+
 --- A room's own floor finish, laid ON the structural slab rather than beside
 --- it. Every room used to build its own two-stud slab at exactly the height
 --- the shell had already put one, which left two collidable surfaces sharing a
@@ -530,6 +557,18 @@ function LanternholdBuilder.Build(): Model
 	local ret = box(F.Markers, "ReturnPoint", -16, 16, B, B + 0.4, 12, 32, C.brass, Enum.Material.Metal)
 	ret.CanCollide = false
 	CollectionService:AddTag(ret, "ReturnPoint")
+
+	-- Just inside the doors and to one side of the walk, so it is in frame
+	-- when you land and again when you come back in, and across nobody's path.
+	-- Each arm points at the room it names: the Lamp Wall on the east wall,
+	-- the Good Cheer Club in the kitchen, the stair core for the Keeping Room
+	-- three floors up, and the workshop bench.
+	fingerpost(F.Markers, "HallPost", 20, 6, B, {
+		{ text = "THE LAMP WALL", tx = 120, tz = 42 },
+		{ text = "THE WORKSHOP", tx = 23, tz = 26 },
+		{ text = "THE GOOD CHEER CLUB", tx = -92, tz = 142 },
+		{ text = "THE KEEPING ROOM", tx = -71, tz = 76 },
+	})
 
 	-- The line from where you land to the way out, drawn on the floor. You
 	-- already arrive facing the departure - the markers measure zero degrees
