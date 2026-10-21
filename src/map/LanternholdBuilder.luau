@@ -74,10 +74,10 @@ local C = {
 	egypt = Color3.fromRGB(150, 116, 58),
 	gothic = Color3.fromRGB(86, 90, 104),
 	-- Read off Chris's photographs from inside the building.
-	terrazzo = Color3.fromRGB(196, 186, 164), -- speckled cream, polished
+	terrazzo = Color3.fromRGB(168, 160, 144), -- speckled cream, polished; see DONTFUCKUPTHELIGHTS.md
 	inlay = Color3.fromRGB(92, 84, 74), -- the dark bands set into it
 	hardwood = Color3.fromRGB(104, 62, 40), -- the ballroom floor, red-brown
-	plaster = Color3.fromRGB(238, 232, 222), -- the coffered ceilings
+	plaster = Color3.fromRGB(202, 196, 184), -- the coffered ceilings; lowered to stop blowing out beside a lamp
 	iron = Color3.fromRGB(46, 42, 40), -- the balustrades
 	stencil = Color3.fromRGB(92, 112, 84), -- the painted border band
 	gilt = Color3.fromRGB(176, 148, 86),
@@ -153,11 +153,17 @@ local function label(host: BasePart, text: string, face: Enum.NormalId, size: nu
 end
 
 local function lamp(parent: Instance, name: string, x: number, y: number, z: number, lit: boolean): Part
-	local glass = part(parent, name, Vector3.new(3, 4.5, 3), CFrame.new(x, y, z), if lit then WARM else C.dark, Enum.Material.Glass, 0.35)
+	local glass = part(parent, name, Vector3.new(3, 4.5, 3), CFrame.new(x, y, z), C.dark, Enum.Material.Metal)
 	part(parent, `{name}_Bracket`, Vector3.new(1, 1, 3.5), CFrame.new(x, y + 2.6, z), C.brass, Enum.Material.Metal)
 	if lit then
 		local light = Instance.new("PointLight")
-		light.Color, light.Brightness, light.Range = WARM, 1.5, 42
+		-- 1.0 at range 34, not 1.5 at 42. Twelve of these on the hub floor at
+		-- the old setting overlapped into a flood rather than twelve pools,
+		-- and against plaster at 238,232,222 the hall went white even with the
+		-- Lighting block correct. The mall reads well at 0.85 and range 46;
+		-- this is the same idea - a lamp lights its own patch of floor and the
+		-- dark between patches is the point.
+		light.Color, light.Brightness, light.Range = WARM, 1.0, 34
 		-- Shadows off everywhere. A lantern that casts them strobes as you walk
 		-- past the posts, which is the flicker Chris hit in the mall.
 		light.Shadows = false
@@ -583,9 +589,6 @@ function LanternholdBuilder.Build(): Model
 		-- house lamps. Marking the way out does not require out-shouting the
 		-- room: the posts and the pad read as the departure because they are
 		-- the only lit thing outside the doors, not because they are hot.
-		local glow = Instance.new("PointLight")
-		glow.Color, glow.Brightness, glow.Range, glow.Shadows = Color3.fromRGB(255, 206, 140), 1.2, 34, false
-		glow.Parent = departure
 		for _, x in ipairs({ -20, 20 }) do
 			box(F.Markers, `RoadLampPost_{x}`, x - 1.2, x + 1.2, B, B + 9, -18, -14, C.iron, Enum.Material.Metal)
 			local head = box(F.Markers, `RoadLamp_{x}`, x - 2.6, x + 2.6, B + 9, B + 12, -18.6, -13.4, C.gilt, Enum.Material.Metal)
@@ -597,6 +600,22 @@ function LanternholdBuilder.Build(): Model
 	local ret = box(F.Markers, "ReturnPoint", -16, 16, B, B + 0.4, 12, 32, C.brass, Enum.Material.Metal)
 	ret.CanCollide = false
 	CollectionService:AddTag(ret, "ReturnPoint")
+
+	-- The hub owns the spawn. Until now the only SpawnLocation in the game was
+	-- inside the Galleria, and the Galleria is not built until a raid is
+	-- launched - so at server start Roblox had nowhere to put a player and
+	-- dropped them into the void. Chris: "i have no clue where i am spawning",
+	-- landing at y = -75 standing on his own torso.
+	--
+	-- A real SpawnLocation here also means arriving in the hub does not depend
+	-- on a script running in the right order.
+	local pad = Instance.new("SpawnLocation")
+	pad.Name = "HallSpawn"
+	pad.Size = Vector3.new(24, 1, 16)
+	pad.CFrame = ret.CFrame
+	pad.Anchored, pad.Neutral, pad.CanCollide = true, true, false
+	pad.Transparency = 1
+	pad.Parent = F.Markers
 
 	-- Just inside the doors and to one side of the walk, so it is in frame
 	-- when you land and again when you come back in, and across nobody's path.
@@ -610,36 +629,8 @@ function LanternholdBuilder.Build(): Model
 		{ text = "THE KEEPING ROOM", tx = 60, tz = 49 },
 	})
 
-	-- The line from where you land to the way out, drawn on the floor. You
-	-- already arrive facing the departure - the markers measure zero degrees
-	-- apart - so this is not navigation, it is confirmation that the thing
-	-- ahead of you is the thing to walk at.
-	do
-		local a0 = Instance.new("Attachment")
-		a0.Position = Vector3.new(0, 0.3, 0)
-		a0.Parent = ret
-		local a1 = Instance.new("Attachment")
-		a1.Position = Vector3.new(0, 0.3, 0)
-		a1.Parent = departure
-		local beam = Instance.new("Beam")
-		beam.Name = "RoadBeam"
-		beam.Attachment0, beam.Attachment1 = a0, a1
-		-- LightInfluence 1, not 0. At 0 a Beam is drawn at full brightness no
-		-- matter what the lighting says - it ignores Brightness, exposure and
-		-- every lamp in the room - so this one lay across the hall floor as a
-		-- hard white strip and no lighting change would touch it. It was a
-		-- large part of why the hub looked blown out and why turning the lights
-		-- off changed nothing. At 1 it is lit like everything else, and it is
-		-- thinner and fainter besides: a line on the floor, not a light source.
-		beam.Color = ColorSequence.new(Color3.fromRGB(255, 206, 140))
-		beam.Width0, beam.Width1 = 1.6, 3
-		beam.LightInfluence, beam.FaceCamera = 1, false
-		beam.Transparency = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 0.75),
-			NumberSequenceKeypoint.new(1, 0.5),
-		})
-		beam.Parent = ret
-	end
+	-- No floor beam. It was a glowing strip and Chris did not want one.
+	-- The lit lamp posts outside the open doors are the signpost now.
 
 	finish(F.Basement, "StoreFloorDark", -W, CORE_X1, 150, Z1, B, C.dark)
 

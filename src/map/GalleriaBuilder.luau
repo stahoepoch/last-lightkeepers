@@ -653,24 +653,18 @@ function GalleriaBuilder.Build(): Model
 		-- Chris walked it: "right now its too dark in some places". Still the
 		-- same weak 0.85 lamp - the answer to a dark patch is another pool of
 		-- light, never a brighter one, and never Ambient.
-		local lamps = math.max(2, math.floor(len / 1.6))
+		local lamps = math.max(2, math.floor(len / 2.8))
 		for i = 0, lamps - 1 do
 			local lx, lz = at(-len / 2 + len * ((i + 0.5) / lamps), 0)
 			local can = part(F.Fixtures, `Downlight{ai}_{i}`, Vector3.new(7, 1.2, 7), CFrame.new(lx * S, F2F + 14, lz * S) * rot, C.shop, Enum.Material.Metal)
-			-- NOT Neon. A Neon surface is fully emissive and blooms, and fourteen
-			-- 5.4 stud panels of it washed the whole mall to white - Chris, who
-			-- could not see past it: "i cant see anything its so bright". The
-			-- PointLight below is what should light the room; the lens only has
-			-- to look like frosted glass with something behind it. The Sweeper
-			-- and Glimmer eyes stay Neon because they are small and meant to
-			-- glow at you in the dark.
-			local lens = part(F.Fixtures, `DownlightLens{ai}_{i}`, Vector3.new(5.4, 0.5, 5.4), CFrame.new(lx * S, F2F + 13.4, lz * S) * rot, Color3.fromRGB(255, 244, 222), Enum.Material.Glass, 0.35)
-			lens.CanCollide, lens.CanQuery = false, false
-			can.CanCollide = false
+			-- A plain dark fitting with a light in it: no glowing lens, no
+			-- emissive panel. Chris: "no fucking glowing shit, basic ass
+			-- lighting". The fixture is scenery, the PointLight does the work.
+			can.CanCollide, can.CanQuery = false, false
 			local light = Instance.new("PointLight")
-			light.Color = Color3.fromRGB(255, 226, 184)
-			light.Brightness, light.Range, light.Shadows = 0.85, 46, true
-			light.Parent = lens
+			light.Color = Color3.fromRGB(255, 232, 200)
+			light.Brightness, light.Range, light.Shadows = 0.85, 46, false
+			light.Parent = can
 		end
 
 		part(F.Roof, `Ridge{ai}`, Vector3.new(len * S, 2.6, 2.6), CFrame.new(midX * S, F2F * 2 + 24, midZ * S) * rot, C.teal, Enum.Material.Metal)
@@ -1050,6 +1044,48 @@ function GalleriaBuilder.Build(): Model
 				end
 			end
 		end
+
+		-- A store with racks in it and nothing else is a warehouse. Chris:
+		-- "144 parts across four department stores is why they feel empty."
+		-- The racks were never the problem - every cache and every Sweeper post
+		-- was out on the arms, and the insides had no light of their own, so
+		-- there was no reason to go in and nothing to see if you did. These are
+		-- meant to be the rooms the run is about.
+		for lvl = 0, 1 do
+			local y = lvl * F2F
+			-- Two caches a floor, out in the quarters, never on a door aisle.
+			for i, q in ipairs({ { -0.26, -0.26 }, { 0.26, 0.26 } }) do
+				local lx, lz = w * q[1], d * q[2]
+				if not onAisle(lx, lz) then
+					local wx, wz = at(lx, lz)
+					local cache = part(F.Gameplay, `Cache_{name}_{lvl}_{i}`, Vector3.new(2.6, 1.25, 2.1), CFrame.new(wx * S, y + 3, wz * S) * rot, C.teal, Enum.Material.Metal)
+					cache.CanCollide = false
+					cache:SetAttribute("Tier", "Relics")
+					cache:SetAttribute("PlacementTier", "Relics")
+					CollectionService:AddTag(cache, "Loot")
+				end
+			end
+
+			-- One Sweeper a floor, deep in the back but off the rear door
+			-- aisle: that door is the one the extraction picker may choose, and
+			-- a robot standing in it is a wall.
+			local px, pz = at(w / 4, d / 2 - 2.2)
+			local post = part(F.Gameplay, `SweeperSpawn_{name}_{lvl}`, Vector3.new(4, 4, 4), CFrame.new(px * S, y + 3, pz * S), C.teal, Enum.Material.Metal)
+			post.CanCollide, post.Transparency = false, 1
+			CollectionService:AddTag(post, "SweeperSpawn")
+		end
+
+		-- Figures standing on the shop floor, not only behind the windows. The
+		-- Window Walkers were display mannequins, so a department store with
+		-- none in it is missing its dressing and its threat at once.
+		for i = 0, 5 do
+			local lx = -w / 2 + w * ((i % 3 + 0.5) / 3)
+			local lz = -d / 2 + d * ((math.floor(i / 3) + 0.35) / 2)
+			if not onAisle(lx, lz) and not (math.abs(lx) < vw / 2 + 1 and math.abs(lz) < vd / 2 + 1) then
+				local wx, wz = at(lx, lz)
+				mannequin(F.Fixtures, `Dummy_{name}_{i}`, wx * S, wz * S, yaw + i, 0)
+			end
+		end
 	end
 
 	local se = (ARMS[2].b - ARMS[2].a).Unit
@@ -1107,6 +1143,10 @@ function GalleriaBuilder.Build(): Model
 		spawn.Size = Vector3.new(12, 1, 12)
 		spawn.CFrame = CFrame.new(0, 1.5, 2.2 * S)
 		spawn.Anchored, spawn.Neutral, spawn.Transparency = true, true, 0.55
+		-- Not an active spawn point. onLaunch teleports the crew here itself,
+		-- and leaving this enabled let Roblox choose between the mall and the
+		-- hub at random when a character respawned.
+		spawn.Enabled = false
 		spawn.Parent = G
 
 		local relay = part(G, "RelayBank_Court", Vector3.new(5, 4, 5), CFrame.new(2 * S, 2, -2 * S), C.teal, Enum.Material.Metal)
