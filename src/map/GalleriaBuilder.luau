@@ -100,16 +100,22 @@ local ARMS = {
 	{ a = BEND, b = Vector2.new(18, 18) }, -- south-east, to Sears
 }
 
+-- Invented tenants. Chris: "we should change the names of almost all the
+-- stores so it's not copyright or whatever" - right call, and it applies to the
+-- anchors hardest, because a department store name is the most protected thing
+-- in a mall. The building is what makes this the Galleria; the signage does not
+-- have to be, and a greybox is the cheap moment to get this right.
 local L1_NAMES = {
-	"GNC", "WALDENBOOKS", "FOOT LOCKER", "KAY JEWELERS", "SPENCER", "PAYLESS",
-	"CLAIRES", "AT&T", "AUNTIE ANNES", "SAM GOODY", "GLOW ROLLER RINK",
-	"ISLAND CUISINE", "MISTER JAYS", "RADIO SHACK", "B. DALTON", "THINGS REMEMBERED",
+	"VITA-MAX NUTRITION", "PAGE & HEARTH BOOKS", "STRIDE ATHLETIC", "HALLOWELL JEWELERS",
+	"ODDITY", "SOLE & CENT SHOES", "GLIMMER ACCESSORIES", "SIGNAL & WIRE",
+	"TWIST PRETZEL CO.", "WAXWORKS MUSIC", "GLOW ROLLER RINK", "ISLAND PLATE",
+	"MISTER JUNE'S", "TRANSISTOR ALLEY", "D. BARROW BOOKSELLERS", "KEEPSAKE & CO.",
 }
 local L2_NAMES = {
-	"ITALIAN OVEN", "JAKES PUB", "T-MOBILE", "MAURICES", "OPA! GREEK",
-	"NAPOLI PIZZA", "GARDNERS CANDIES", "DARK BREWS", "PITT JOHNSTOWN",
-	"ARCADE OF THRONES", "ROSALINDAS", "SENTINELS KEEP", "GALLERIA INK",
-	"A.O.N. WRESTLING", "SWEATRX", "MORNING STAR",
+	"THE STONE OVEN", "JACOBY'S TAP", "CELLULAR POINT", "MERIDIAN APPAREL",
+	"OLYMPIA GYROS", "VESUVIO PIZZA", "ORCHARD CONFECTIONS", "DARK BREWS",
+	"VALLEY COLLEGE SHOP", "ARCADE OF THRONES", "ROSALINDA'S", "SENTINEL'S KEEP",
+	"VALLEY INK", "A.O.N. WRESTLING", "SWEATRX", "MORNING STAR",
 }
 
 local function part(parent: Instance, name: string, size: Vector3, cf: CFrame, colour: Color3, mat: Enum.Material?, trans: number?): Part
@@ -176,6 +182,18 @@ function GalleriaBuilder.Build(): Model
 	-- steps. Discrete step boxes do not produce a navmesh a Sweeper can path
 	-- over - that was learned on the other mall's stairs, where
 	-- PathfindingService returned NoPath at every attempt.
+	-- A dressed figure in a shop window. Half set dressing, half foreshadowing:
+	-- the Window Walkers were display mannequins, so a mall with none in its
+	-- windows is missing both its life and its threat.
+	local function mannequin(folder: Instance, name: string, wx: number, wz: number, yaw: number, y: number)
+		local rot = CFrame.Angles(0, -yaw, 0)
+		part(folder, `{name}_Base`, Vector3.new(3.4, 0.5, 3.4), CFrame.new(wx, y + 0.25, wz) * rot, C.shop, Enum.Material.Metal)
+		part(folder, `{name}_Leg`, Vector3.new(1, 2.2, 1), CFrame.new(wx, y + 1.5, wz) * rot, C.fascia, Enum.Material.SmoothPlastic)
+		part(folder, `{name}_Body`, Vector3.new(2.4, 2.6, 1.6), CFrame.new(wx, y + 3.9, wz) * rot, C.fascia, Enum.Material.SmoothPlastic)
+		local head = part(folder, `{name}_Head`, Vector3.new(1.3, 1.3, 1.3), CFrame.new(wx, y + 5.8, wz) * rot, C.fascia, Enum.Material.SmoothPlastic)
+		head.Shape = Enum.PartType.Ball
+	end
+
 	local ESC_W = 14
 	-- (x1, z1) is the foot and (x2, z2) is the head. The yaw is taken from that
 	-- vector rather than passed in, because the deck's pitch always lifts its
@@ -217,6 +235,9 @@ function GalleriaBuilder.Build(): Model
 		{ arm = 2, side = -1, at = seUnit * 8 },
 	}
 
+	-- The food court span, shared with the bay loop so the shopfronts inside
+	-- it are built as food units rather than clothes shops.
+	local fcFrom, fcTo, fcArm = math.huge, -math.huge, 2
 	local suite1, suite2 = 100, 200
 	local landings: { { arm: number, side: number, from: number, to: number } } = {}
 
@@ -283,38 +304,61 @@ function GalleriaBuilder.Build(): Model
 		-- down one flank and the tables out over the drop. Chris: "we aint got
 		-- no food court". The Galleria's own sits exactly like this, up a level
 		-- and open to the court below.
-		if ai == 2 then
+		if ai == fcArm then
+			-- The food court. Chris: "The mall still feels dead and has no real
+			-- food court", with photographs of the Galleria's own - a proper
+			-- room on the upper level, counters down one side, a sea of tables
+			-- out over the court, and a chequered floor. The old one was six
+			-- tables on a strip of decking and read as a landing with chairs.
 			local fcAt = -len / 2 + len * 0.49
-			local fcLen = 4.0
+			local fcLen = 6.0
+			fcFrom, fcTo = fcAt - fcLen / 2, fcAt + fcLen / 2
 			local fx, fz = at(fcAt, 0)
 			part(F.Floors, "FoodCourtDeck", Vector3.new(fcLen * S, 2, WELL * 2 * S), CFrame.new(fx * S, F2F - 1, fz * S) * rot, C.tile, Enum.Material.Pebble)
 			for side = -1, 1, 2 do
-				table.insert(landings, { arm = ai, side = side, from = fcAt - fcLen / 2 - 0.1, to = fcAt + fcLen / 2 + 0.1 })
+				table.insert(landings, { arm = ai, side = side, from = fcFrom - 0.1, to = fcTo + 0.1 })
 			end
 			for e = -1, 1, 2 do
 				local ex, ez = at(fcAt + e * (fcLen / 2 + 0.03), 0)
 				part(F.Structure, `FCRail_{e}`, Vector3.new(1, 3.4, WELL * 2 * S), CFrame.new(ex * S, F2F + 1.7, ez * S) * rot, C.fascia)
 				part(F.Structure, `FCCap_{e}`, Vector3.new(1.8, 1.2, WELL * 2 * S), CFrame.new(ex * S, F2F + 4, ez * S) * rot, C.teal, Enum.Material.Metal)
 			end
-			-- One row of tables down the middle, not two rows across. The deck
-			-- is only the width of the well - about thirty studs - and tables
-			-- seventeen studs wide set either side of the centre overhung both
-			-- edges and sealed the deck off from the balcony entirely.
-			local seats = 6
-			for i = 0, seats - 1 do
-				local t = fcAt - fcLen / 2 + fcLen * ((i + 0.5) / seats)
-				local tx, tz = at(t, 0)
-				part(F.Fixtures, `FCPedestal_{i}`, Vector3.new(4, 4, 4), CFrame.new(tx * S, F2F + 2, tz * S) * rot, C.teal, Enum.Material.Metal)
-				part(F.Fixtures, `FCTable_{i}`, Vector3.new(12, 1.2, 12), CFrame.new(tx * S, F2F + 4.6, tz * S) * rot, C.fascia, Enum.Material.WoodPlanks)
-				for c = -1, 1, 2 do
-					local sx, sz = at(t + c * 0.26, 0)
-					part(F.Fixtures, `FCChair_{i}_{c}`, Vector3.new(7, 3, 9), CFrame.new(sx * S, F2F + 1.5, sz * S) * rot, C.column, Enum.Material.WoodPlanks)
+
+			-- The chequered floor, which is most of what a food court looks
+			-- like from the balcony opposite.
+			local cols = math.floor(fcLen * S / 13)
+			local rows = math.floor(WELL * 2 * S / 13)
+			for i = 0, cols - 1 do
+				for j = 0, rows - 1 do
+					if (i + j) % 2 == 0 then
+						local a0 = fcAt - fcLen / 2 + (i + 0.5) * 13 / S
+						local o0 = -WELL + (j + 0.5) * 13 / S
+						local tx, tz = at(a0, o0)
+						part(F.Floors, `FCTile_{i}_{j}`, Vector3.new(13, 0.4, 13), CFrame.new(tx * S, F2F + 0.1, tz * S) * rot, C.shop, Enum.Material.Pebble)
+					end
+				end
+			end
+
+			-- Tables for a crowd. Scaled to a player rather than to the room:
+			-- a top at three studs, which is a table, not a counter you cannot
+			-- see over.
+			local seatRows = 7
+			for i = 0, seatRows - 1 do
+				for _, off in ipairs({ -0.34, 0.34 }) do
+					local t = fcAt - fcLen / 2 + fcLen * ((i + 0.5) / seatRows)
+					local tx, tz = at(t, off)
+					part(F.Fixtures, `FCPedestal_{i}_{off}`, Vector3.new(3, 2.6, 3), CFrame.new(tx * S, F2F + 1.3, tz * S) * rot, C.teal, Enum.Material.Metal)
+					part(F.Fixtures, `FCTable_{i}_{off}`, Vector3.new(10, 0.8, 10), CFrame.new(tx * S, F2F + 3, tz * S) * rot, C.fascia, Enum.Material.WoodPlanks)
+					for c = -1, 1, 2 do
+						local sx, sz = at(t + c * 0.26, off)
+						part(F.Fixtures, `FCSeat_{i}_{off}_{c}`, Vector3.new(5, 0.6, 5), CFrame.new(sx * S, F2F + 1.7, sz * S) * rot, C.column, Enum.Material.WoodPlanks)
+						part(F.Fixtures, `FCSeatLeg_{i}_{off}_{c}`, Vector3.new(1.6, 1.7, 1.6), CFrame.new(sx * S, F2F + 0.85, sz * S) * rot, C.teal, Enum.Material.Metal)
+						part(F.Fixtures, `FCBack_{i}_{off}_{c}`, Vector3.new(0.8, 3, 5), CFrame.new((sx + c * 0.09) * S, F2F + 3.4, sz * S) * rot, C.column, Enum.Material.WoodPlanks)
+					end
 				end
 			end
 		end
 
-		-- The balcony rail runs the length of the well except where an escalator
-		-- comes up through it; its own balustrades guard those stretches.
 		for side = -1, 1, 2 do
 			local segs = math.max(6, math.floor(len / 0.5))
 			for i = 0, segs - 1 do
@@ -433,12 +477,28 @@ function GalleriaBuilder.Build(): Model
 					end
 
 						local fx, fz = at(along, (HALL + 0.08) * side)
+					-- Inside the food court span and on its level, a shopfront
+					-- is a servery: an open counter under a menu board, not a
+					-- shutter. These are the units the smell comes from.
+					if ai == fcArm and lvl == 2 and along > fcFrom and along < fcTo then
+						part(F.Shops, `Counter_{tag}`, Vector3.new(bw * S, 7, 3), CFrame.new(fx * S, y + 3.5, fz * S) * rot, C.fascia, Enum.Material.Marble)
+						part(F.Shops, `CounterFront_{tag}`, Vector3.new(bw * S, 1, 3.6), CFrame.new(fx * S, y + 7.4, fz * S) * rot, C.teal, Enum.Material.Metal)
+						local menu = part(F.Shops, `Menu_{tag}`, Vector3.new(bw * S * 0.8, 9, 0.8), CFrame.new(fx * S, y + STORE_H - 11, fz * S) * rot, C.shop)
+						label(menu, L2_NAMES[((i + ai * 3) % #L2_NAMES) + 1], if side == 1 then Enum.NormalId.Front else Enum.NormalId.Back)
+						local fascia2 = part(F.Shops, `Fascia_{tag}`, Vector3.new(bw * S, 4.5, 1.4), CFrame.new(fx * S, y + STORE_H - 2.5, fz * S) * rot, C.fascia)
+						label(fascia2, L2_NAMES[((i + ai * 3) % #L2_NAMES) + 1], if side == 1 then Enum.NormalId.Front else Enum.NormalId.Back)
+						part(F.Shops, `Trim_{tag}`, Vector3.new(bw * S, 1.2, 1.8), CFrame.new(fx * S, y + STORE_H - 5.2, fz * S) * rot, C.teal)
+						continue
+					end
 					if (i + ai + lvl) % 3 == 0 then
 						local doorW = 14
 						local paneW = (bw * S - doorW) / 2
 						for e = -1, 1, 2 do
 							local px, pz = at(along + e * (doorW / 2 + paneW / 2) / S, (HALL + 0.08) * side)
 							part(F.Shops, `Glass_{tag}_{e}`, Vector3.new(paneW, STORE_H - 5, 1), CFrame.new(px * S, y + (STORE_H - 5) / 2, pz * S) * rot, C.glass, Enum.Material.Glass, 0.45)
+							-- A figure behind the glass, facing out.
+							local mx, mz = at(along + e * (doorW / 2 + paneW / 2) / S, (HALL + 0.55) * side)
+							mannequin(F.Fixtures, `Dummy_{tag}_{e}`, mx * S, mz * S, ang, y)
 						end
 					else
 						part(F.Shops, `Shutter_{tag}`, Vector3.new(bw * S, STORE_H - 5, 1.2), CFrame.new(fx * S, y + (STORE_H - 5) / 2, fz * S) * rot, C.shop, Enum.Material.DiamondPlate)
@@ -478,51 +538,85 @@ function GalleriaBuilder.Build(): Model
 			part(F.Roof, `Truss{ai}_{i}`, Vector3.new(2.2, 2.2, HALL * 2 * S), CFrame.new(tx * S, F2F * 2 + 10, tz * S) * rot, C.teal, Enum.Material.Metal)
 		end
 
-		-- Planters, benches and kiosks down the middle of the concourse. The
-		-- photographs are full of them, and an empty corridor reads as a
-		-- corridor rather than as a mall.
-		local props = math.max(2, math.floor(len / 2.2))
+		-- Street furniture, at a size a player reads. All of this was two to
+		-- three times too big - bench seats seven feet off the floor, kiosks
+		-- seventeen feet tall. Chris, walking it: "some of the stuff ... is
+		-- huge and not to scale with players." It is also denser now, because
+		-- an empty corridor reads as a corridor however well it is lit.
+		local props = math.max(3, math.floor(len / 1.25))
 		for i = 0, props - 1 do
 			local t = -len / 2 + len * ((i + 0.5) / props)
-			-- Keep the middle of the concourse clear at the ends, where the
-			-- department store doors are, and under the escalators, whose feet
-			-- land on this floor. A kiosk had parked itself squarely in
-			-- Boscov's entrance.
+			-- Keep the middle clear at the ends, where the department store
+			-- doors are, and under the escalators, whose feet land on this
+			-- floor. A kiosk had parked itself squarely in Boscov's entrance.
 			local clear = math.abs(t) < len / 2 - 1.8
 			for _, l in ipairs(landings) do
 				if l.arm == ai and t > l.from - 0.6 and t < l.to + 0.6 then
 					clear = false
 				end
 			end
-			local px, pz = at(t, 0)
-			local kind = i % 3
 			if clear then
-			if kind == 0 then
-				part(F.Fixtures, `Planter{ai}_{i}`, Vector3.new(30, 7, 18), CFrame.new(px * S, 2.5, pz * S) * rot, C.column, Enum.Material.Concrete)
-				part(F.Fixtures, `Shrub{ai}_{i}`, Vector3.new(25, 10, 14), CFrame.new(px * S, 10, pz * S) * rot, Color3.fromRGB(74, 112, 72), Enum.Material.Grass)
-			elseif kind == 1 then
-				for b = -1, 1, 2 do
-					local bx, bz = at(t, b * 0.3)
-					part(F.Fixtures, `Bench{ai}_{i}_{b}`, Vector3.new(36, 3, 11), CFrame.new(bx * S, 4.5, bz * S) * rot, C.fascia, Enum.Material.WoodPlanks)
+				local px, pz = at(t, 0)
+				local kind = i % 4
+				if kind == 0 then
+					part(F.Fixtures, `Planter{ai}_{i}`, Vector3.new(26, 2.6, 11), CFrame.new(px * S, 1.3, pz * S) * rot, C.column, Enum.Material.Concrete)
+					part(F.Fixtures, `PlanterRim{ai}_{i}`, Vector3.new(27, 0.7, 12), CFrame.new(px * S, 2.9, pz * S) * rot, C.fascia, Enum.Material.Concrete)
+					part(F.Fixtures, `Shrub{ai}_{i}`, Vector3.new(21, 4.5, 8), CFrame.new(px * S, 5, pz * S) * rot, Color3.fromRGB(74, 112, 72), Enum.Material.Grass)
+				elseif kind == 1 then
+					for b = -1, 1, 2 do
+						local bx, bz = at(t, b * 0.28)
+						part(F.Fixtures, `Bench{ai}_{i}_{b}`, Vector3.new(16, 0.7, 4), CFrame.new(bx * S, 1.7, bz * S) * rot, C.fascia, Enum.Material.WoodPlanks)
+						part(F.Fixtures, `BenchBack{ai}_{i}_{b}`, Vector3.new(16, 2.6, 0.7), CFrame.new((bx + b * 0.07) * S, 3.2, bz * S) * rot, C.fascia, Enum.Material.WoodPlanks)
+						for e = -1, 1, 2 do
+							part(F.Fixtures, `BenchLeg{ai}_{i}_{b}_{e}`, Vector3.new(0.9, 1.7, 3.4), CFrame.new((bx + e * 0.26) * S, 0.85, bz * S) * rot, C.teal, Enum.Material.Metal)
+						end
+					end
+				elseif kind == 2 then
+					part(F.Fixtures, `Kiosk{ai}_{i}`, Vector3.new(30, 4, 16), CFrame.new(px * S, 2, pz * S) * rot, C.fascia)
+					part(F.Fixtures, `KioskTop{ai}_{i}`, Vector3.new(32, 0.6, 18), CFrame.new(px * S, 4.3, pz * S) * rot, C.teal, Enum.Material.Metal)
+					for e = -1, 1, 2 do
+						part(F.Fixtures, `KioskPost{ai}_{i}_{e}`, Vector3.new(0.8, 5, 0.8), CFrame.new((px + e * 0.52) * S, 7, pz * S) * rot, C.teal, Enum.Material.Metal)
+					end
+					part(F.Fixtures, `KioskRoof{ai}_{i}`, Vector3.new(34, 0.8, 20), CFrame.new(px * S, 9.6, pz * S) * rot, C.teal, Enum.Material.Metal)
+				else
+					for e = -1, 1, 2 do
+						local bx, bz = at(t, e * 0.3)
+						local bin = part(F.Fixtures, `Bin{ai}_{i}_{e}`, Vector3.new(3, 3.4, 3), CFrame.new(bx * S, 1.7, bz * S) * rot, C.shop, Enum.Material.Metal)
+						bin.Shape = Enum.PartType.Cylinder
+						bin.CFrame = CFrame.new(bx * S, 1.7, bz * S) * rot * CFrame.Angles(0, 0, math.pi / 2)
+					end
+					local dx, dz = at(t, 0)
+					part(F.Fixtures, `DirectoryPost{ai}_{i}`, Vector3.new(1, 3, 1), CFrame.new(dx * S, 1.5, dz * S) * rot, C.teal, Enum.Material.Metal)
+					local board = part(F.Fixtures, `Directory{ai}_{i}`, Vector3.new(9, 5, 0.8), CFrame.new(dx * S, 5.2, dz * S) * rot, C.shop)
+					label(board, "GALLERIA  DIRECTORY", Enum.NormalId.Front, 26)
+					label(board, "GALLERIA  DIRECTORY", Enum.NormalId.Back, 26)
 				end
-			else
-				part(F.Fixtures, `Kiosk{ai}_{i}`, Vector3.new(46, 15, 27), CFrame.new(px * S, 7.5, pz * S) * rot, C.fascia)
-				part(F.Fixtures, `KioskRoof{ai}_{i}`, Vector3.new(54, 2, 35), CFrame.new(px * S, 16, pz * S) * rot, C.teal, Enum.Material.Metal)
-			end
 			end
 		end
 
-		for s = -1, 1, 2 do
-			local gx, gz = at(0, HALL * 0.5 * s)
-			part(F.Roof, `Glass{ai}_{s}`, Vector3.new(len * S, 1.2, HALL * 1.25 * S), CFrame.new(gx * S, F2F * 2 + 16, gz * S) * rot * CFrame.Angles(math.rad(s * 24), 0, 0), C.glass, Enum.Material.Glass, 0.55)
-		end
-		-- A flat deck over the shop bands. The gable only spans the concourse,
-		-- so without this every bay is open to the sky and the mall reads from
-		-- above as two rows of topless boxes beside a glass tube.
+		-- The floor has a pattern in every photograph of this place: a dark
+		-- border along the shopfronts and bands across the walk. Flat colour on
+		-- a flat floor is what makes a greybox read as a car park.
 		for side = -1, 1, 2 do
-			local dx, dz = at(0, (HALL + DEPTH / 2) * side)
-			part(F.Roof, `Deck{ai}_{side}`, Vector3.new(len * S, 2, DEPTH * S), CFrame.new(dx * S, F2F * 2 + 1, dz * S) * rot, C.shell, Enum.Material.Concrete)
+			local bx, bz = at(0, (HALL - 0.12) * side)
+			part(F.Floors, `FloorBorder{ai}_{side}`, Vector3.new(len * S, 0.4, 5), CFrame.new(bx * S, 0.1, bz * S) * rot, C.shop, Enum.Material.Pebble)
 		end
+		local bands = math.floor(len / 2.2)
+		for i = 0, bands - 1 do
+			local bx, bz = at(-len / 2 + len * ((i + 0.5) / bands), 0)
+			part(F.Floors, `FloorBand{ai}_{i}`, Vector3.new(5, 0.4, HALL * 2 * S), CFrame.new(bx * S, 0.1, bz * S) * rot, C.shop, Enum.Material.Pebble)
+		end
+
+		-- Banners hung off the trusses. Cheap, and they fill the volume that
+		-- otherwise reads as empty air above the shopfronts.
+		local banners = math.floor(len / 3.4)
+		for i = 0, banners - 1 do
+			for side = -1, 1, 2 do
+				local bx, bz = at(-len / 2 + len * ((i + 0.5) / banners), (HALL - 0.45) * side)
+				part(F.Fixtures, `Banner{ai}_{i}_{side}`, Vector3.new(0.6, 16, 11), CFrame.new(bx * S, F2F * 2 - 4, bz * S) * rot, if i % 2 == 0 then C.teal else C.column, Enum.Material.Fabric)
+			end
+		end
+
 		part(F.Roof, `Ridge{ai}`, Vector3.new(len * S, 2.6, 2.6), CFrame.new(midX * S, F2F * 2 + 24, midZ * S) * rot, C.teal, Enum.Material.Metal)
 	end
 
@@ -568,6 +662,28 @@ function GalleriaBuilder.Build(): Model
 			part(F.Court, `CourtWall_{i}`, Vector3.new(w * S, F2F * 2, 2), CFrame.new(wp.X * S, F2F, wp.Y * S) * yaw, C.shell, Enum.Material.Concrete)
 			local r = Vector2.new(math.cos(th), math.sin(th)) * COURT_WELL
 			part(F.Court, `CourtRail_{i}`, Vector3.new(2 * math.pi * COURT_WELL / RING * S * 1.25, 3.5, 1), CFrame.new(r.X * S, F2F + 1.75 + LIFT + jitter, r.Y * S) * yaw, C.teal, Enum.Material.Metal)
+		end
+	end
+
+	-- Two bridges across the well mouths, so the upper level goes all the way
+	-- round the court. Chris: "the circular area I can't walk the whole way
+	-- around the center." He was right - the ring is built in two arcs because
+	-- each arm's well opens into the court, and without a crossing the loop is
+	-- a horseshoe. Real malls bridge exactly here. They are narrow on purpose:
+	-- the void is the point, and a bridge should read as a crossing rather than
+	-- as a floor.
+	for ai, arm in ipairs(ARMS) do
+		local dir = (arm.b - arm.a).Unit
+		local ang = math.atan2(dir.Y, dir.X)
+		local rot = CFrame.Angles(0, -ang, 0)
+		local r = (COURT_WELL + COURT_R) / 2
+		local c = dir * r
+		part(F.Court, `CourtBridge_{ai}`, Vector3.new(1.0 * S, 2, 2.0 * S), CFrame.new(c.X * S, F2F - 1 + LIFT, c.Y * S) * rot, C.tile, Enum.Material.Pebble)
+		-- Both long edges look down into the void.
+		for e = -1, 1, 2 do
+			local edge = dir * (r + e * 0.5)
+			part(F.Court, `CourtBridgePanel_{ai}_{e}`, Vector3.new(1, 3.4, 2.0 * S), CFrame.new(edge.X * S, F2F + 1.7 + LIFT, edge.Y * S) * rot, C.fascia)
+			part(F.Court, `CourtBridgeCap_{ai}_{e}`, Vector3.new(1.8, 1.2, 2.0 * S), CFrame.new(edge.X * S, F2F + 4 + LIFT, edge.Y * S) * rot, C.teal, Enum.Material.Metal)
 		end
 	end
 
@@ -876,21 +992,21 @@ function GalleriaBuilder.Build(): Model
 	local EDGE = HALL + DEPTH
 
 	-- Boscov's closes the west arm, so its east face is the arm's end.
-	department("BOSCOVS", ARMS[1].b.X - 14 / 2, 0, 14, 15, 0, "+X", { 0 }, { -(HALL + WELL) / 2, (HALL + WELL) / 2 })
+	department("BOSWELL'S", ARMS[1].b.X - 14 / 2, 0, 14, 15, 0, "+X", { 0 }, { -(HALL + WELL) / 2, (HALL + WELL) / 2 })
 
 	-- Sears closes the south-east arm the same way, squared to it.
 	local sears = ARMS[2].b + se * (15 / 2)
-	department("SEARS", sears.X, sears.Y, 15, 14, seAng, "-X", { 0 }, { -(HALL + WELL) / 2, (HALL + WELL) / 2 })
+	department("SAYERS", sears.X, sears.Y, 15, 14, seAng, "-X", { 0 }, { -(HALL + WELL) / 2, (HALL + WELL) / 2 })
 
 	-- JCPenney and Bon-Ton both sit on the NORTH side, on opposite arms, with
 	-- the bend between them. Three earlier versions had one or both on the
 	-- south, which is what Chris kept seeing as wrong: on the aerial there is
 	-- open ground between them right at the court, and putting them on the same
 	-- flank closed that gap up.
-	department("JCPENNEY", -10, -(EDGE + 12 / 2), 15, 12, 0, "+Z", { -3, 3 }, { -3, 3 })
+	department("PENHURST", -10, -(EDGE + 12 / 2), 15, 12, 0, "+Z", { -3, 3 }, { -3, 3 })
 
 	local bt = BEND + se * 8 + seNE * (EDGE + 11 / 2)
-	department("BON-TON", bt.X, bt.Y, 13, 11, seAng, "+Z", { 0 }, { 0 })
+	department("BELLEVUE", bt.X, bt.Y, 13, 11, seAng, "+Z", { 0 }, { 0 })
 
 	M.Parent = map
 	return M
