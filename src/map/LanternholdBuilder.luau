@@ -364,9 +364,21 @@ function LanternholdBuilder.Build(): Model
 	box(F.Shell, "Tower", -W - 10, -W + 16, 0, TOP + 22, Z0 + 6, Z0 + 44, C.stone, Enum.Material.Concrete)
 
 	for e = -1, 1, 2 do
-		local x = e * (DOOR_W / 2)
-		box(F.Shell, `FrontDoor_{e}`, x - e * DOOR_W / 2, x, 0, DOOR_H, Z0 - 1.4, Z0 - 0.6, C.timber, Enum.Material.WoodPlanks)
-		box(F.Shell, `FrontPlate_{e}`, x - e * 2.4, x - e * 1.4, 4, 5.6, Z0 - 1.8, Z0 - 1.4, C.brass, Enum.Material.Metal)
+		-- Stood OPEN, against the facade, instead of closed across the opening.
+		-- Closed, they put a solid slab between where you land and the only
+		-- thing you are meant to do: a line of sight check from the arrival
+		-- point to the departure pad hit FrontDoor_1 at 23 studs. You arrived
+		-- facing the way out and could not see it - Chris: "going to a raid
+		-- isn't really explanatory". A hall with its doors flung open also
+		-- reads as somewhere expecting you back.
+		-- box() takes bounds as x1 - x0 with no min/max of its own, so a leaf
+		-- hinged on the west side handed it a negative width and Roblox
+		-- clamped that to 0.001: one door was a paper sliver. Order the pair.
+		local hinge = e * (DOOR_W / 2)
+		local da, db = hinge, hinge + e * 0.8
+		local pa, pb = hinge + e * 0.8, hinge + e * 1
+		box(F.Shell, `FrontDoor_{e}`, math.min(da, db), math.max(da, db), 0, DOOR_H, Z0 - 7.6, Z0 - 0.6, C.timber, Enum.Material.WoodPlanks)
+		box(F.Shell, `FrontPlate_{e}`, math.min(pa, pb), math.max(pa, pb), 4, 5.6, Z0 - 5.4, Z0 - 3.4, C.brass, Enum.Material.Metal)
 	end
 
 	local name = box(F.Shell, "NameStone", -40, 40, 15, 23, Z0 - 3.2, Z0 - 2, C.trim, Enum.Material.Concrete)
@@ -420,9 +432,15 @@ function LanternholdBuilder.Build(): Model
 		end
 	end
 	baseband(F.Basement, "LandingBase", CORE_X1, W, Z0, 86, B)
-	for i = -1, 1, 2 do
-		for j = 0, 1 do
-			lamp(F.Basement, `LandingLamp_{i}_{j}`, i * 54, HEADS[1] - 5, 26 + j * 36, true)
+	-- Four lamps lit the whole hub floor and Chris walked it: "the lanternhold
+	-- is still pretty dark on its own". A hub wants to read as a refuge,
+	-- precisely because the mall does not - if both are dark the lantern you
+	-- carry out means nothing. Density rather than brightness: the same 1.5
+	-- lamp on a grid, so the room is evenly lit instead of having four hot
+	-- spots and a lot of black between them.
+	for _, x in ipairs({ -20, 20, 60, 100 }) do
+		for _, z in ipairs({ 14, 44, 74 }) do
+			lamp(F.Basement, `LandingLamp_{x}_{z}`, x, HEADS[1] - 5, z, true)
 		end
 	end
 
@@ -489,9 +507,53 @@ function LanternholdBuilder.Build(): Model
 	departure.CanCollide = false
 	label(departure, "TO THE ROAD", Enum.NormalId.Top, 26)
 	CollectionService:AddTag(departure, "Departure")
+
+	-- The one thing a hub has to do is get a new player into a run without
+	-- being told, and a brass plate flush with the floor does not do it. Two
+	-- lamps mark the pad, the pad itself is lit, and a beam runs to it from
+	-- where you land. Roblox's own onboarding docs describe testing exactly
+	-- this - a guided arrow - and a staff post on funnel events found players
+	-- stalling on a step until a small icon was put over the thing they were
+	-- meant to use. This is that icon.
+	do
+		local glow = Instance.new("PointLight")
+		glow.Color, glow.Brightness, glow.Range, glow.Shadows = Color3.fromRGB(255, 206, 140), 2.2, 40, false
+		glow.Parent = departure
+		for _, x in ipairs({ -20, 20 }) do
+			box(F.Markers, `RoadLampPost_{x}`, x - 1.2, x + 1.2, B, B + 9, -18, -14, C.iron, Enum.Material.Metal)
+			local head = box(F.Markers, `RoadLamp_{x}`, x - 2.6, x + 2.6, B + 9, B + 12, -18.6, -13.4, C.gilt, Enum.Material.Metal)
+			local lamp = Instance.new("PointLight")
+			lamp.Color, lamp.Brightness, lamp.Range, lamp.Shadows = Color3.fromRGB(255, 196, 120), 2.6, 52, false
+			lamp.Parent = head
+		end
+	end
 	local ret = box(F.Markers, "ReturnPoint", -16, 16, B, B + 0.4, 12, 32, C.brass, Enum.Material.Metal)
 	ret.CanCollide = false
 	CollectionService:AddTag(ret, "ReturnPoint")
+
+	-- The line from where you land to the way out, drawn on the floor. You
+	-- already arrive facing the departure - the markers measure zero degrees
+	-- apart - so this is not navigation, it is confirmation that the thing
+	-- ahead of you is the thing to walk at.
+	do
+		local a0 = Instance.new("Attachment")
+		a0.Position = Vector3.new(0, 0.3, 0)
+		a0.Parent = ret
+		local a1 = Instance.new("Attachment")
+		a1.Position = Vector3.new(0, 0.3, 0)
+		a1.Parent = departure
+		local beam = Instance.new("Beam")
+		beam.Name = "RoadBeam"
+		beam.Attachment0, beam.Attachment1 = a0, a1
+		beam.Color = ColorSequence.new(Color3.fromRGB(255, 206, 140))
+		beam.Width0, beam.Width1 = 3, 6
+		beam.LightInfluence, beam.FaceCamera = 0, false
+		beam.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.55),
+			NumberSequenceKeypoint.new(1, 0.15),
+		})
+		beam.Parent = ret
+	end
 
 	finish(F.Basement, "StoreFloorDark", -W, CORE_X1, 150, Z1, B, C.dark)
 
