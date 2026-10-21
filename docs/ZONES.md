@@ -22,8 +22,10 @@ went.
 | Hub | **Lanternhold** — the hall, out past the farms | Safe | Yours, and warm |
 | 1 | **The Galleria** — hilltop mall near the airport | Enclosed, flat, short sightlines | Light is scarce. You choose to make it |
 | 2 | **The solar farm** — the next hilltop over | Open, flat, long sightlines | Darkness is scarce. You hunt for it |
-| 3 | **The works** — the old mill on the valley floor | Vertical, tangled | Both, at different heights |
-| 4 | **The city** — the Point, the bridge, the old hall | Dense, flooded, final | — |
+| 3 | **The rail yard** — the line where the hills give out | Linear, long sightlines | Cover sits between you and where you are going |
+| 4 | **The works** — the old mill on the valley floor | Vertical, tangled | Both, at different heights |
+| - | **The hospital** — a wing, not a zone | Airless, no sightlines | Nothing visible far enough to plan around |
+| 5 | **The city** — the Point, the bridge, the old hall | Dense, flooded, final | — |
 
 Each zone should invert the previous one's core constraint. That is what keeps
 a second map from being the first map with new wallpaper.
@@ -107,7 +109,7 @@ zone one restores the hall's comfort, zone two restores its *capability*.
 **Amber reads harder here, not softer**, against a field of electric blue. The
 colour-blind readability rule gets stronger in the zone with more light.
 
-## Zone 3 — the works
+## Zone 4 — the works
 
 The descent into the valley, and the inversion of the farm: after enclosed-flat
 and open-flat, **vertical and tangled**. Catwalks, furnace halls, pipe
@@ -117,12 +119,66 @@ It tests a muscle neither earlier zone does, it is the reason the valley exists
 at all, and it justifies a heavier enemy family — this is where heavy machines
 were built and maintained.
 
-Alternates considered: a **rail yard**, which would plant the train escape
-early but repeats the farm's openness; and a **hospital**, which is tight,
-awful and the richest medicine in the game but works better as a one-off set
-piece than a zone.
+## The rail yard — the zone whose reward is access
 
-## Zone 4 — the city
+Chris, 2026-10-20: keep it. On reflection it is not an alternate to the works
+at all; it does a different job, and it is the only place on the ladder whose
+payout is **infrastructure rather than loot**.
+
+The line runs along the river, where the hills give out into the valley — so it
+sits naturally between the farm and the works, and it is how you get further in
+once it is working. Clear it and power it and the line opens; that is the
+handoff's Transit Lift landmark doing its job, with the Incline carrying you
+*up* to the hilltops and the rail carrying you *down* the valley.
+
+It also plants the train three zones before you escape on one.
+
+**What it tests.** Brutally long sightlines straight down the tracks, with
+cover that is mostly *between* you and where you want to be. After the farm's
+open flat and before the works' tangle, the yard is linear — a place where the
+only safe route is the one you can see all the way along, and therefore the one
+that can see you.
+
+**Hazards on fixed paths.** A yard still working is full of things that move
+predictably and kill you anyway: a shunter running its loop, blind, on rails.
+That is a different fear from an enemy that hunts, and pairing the two is
+something no other zone on the ladder does. Predictability as a hazard rather
+than a comfort.
+
+**Locals** (per the job rule): shunters, couplers, signal drones.
+
+## The hospital — the dark mirror
+
+Chris, 2026-10-20: keep it. Not as a full zone — as a **short, dense map** or a
+wing of the city, because it only has one idea and that idea is airless.
+
+**What it tests.** No sightlines at all. Corridors, bays, stairwells, doors on
+both sides. It is the exact opposite of the farm and the yard: nothing is
+visible far enough away to plan around, so Stockers are useless here and
+anything that swarms is terrifying.
+
+**Loot.** The richest medicine in the game — the pharmacy in the Galleria is
+the small version of this — and it should hold the highest relic density
+anywhere, because of what it means.
+
+**Why it means something.** The order's founding fact is that *their hall
+became a hospital.* It held, and strangers lived through the night in it. This
+one is a real hospital, built for exactly that, and it did not hold.
+
+That is the most loaded room in the setting and it should be handled with the
+same care as the Keeping Room — it is powerful if it is deliberate and ugly if
+it is careless.
+
+**Locals.** Care units. Things that were built to be gentle.
+
+## Scope, plainly
+
+That is now six locations plus the hub, and the handoff gates everything past
+zone one. Writing them down is not approving them. The order they get built in,
+and whether half of them ever do, depends entirely on whether the loop earns
+it — and the loop has not answered its question yet.
+
+## Zone 5 — the city
 
 The Point, the bridge that held, and the old hall.
 
