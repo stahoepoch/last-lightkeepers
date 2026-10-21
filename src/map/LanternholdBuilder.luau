@@ -41,6 +41,7 @@ local W = 130 -- the hall's half-width
 local LANDING_Z0, LANDING_Z1 = 0, 80 -- the lobby
 local HALL_Z1 = 230 -- the back wall
 local SIDE_X = -40 -- divide: side room west of this, Great Hall east
+local KEEP_Z = 136 -- the kitchen gives way to the Keeping Room here
 local CORRIDOR_Z = 170 -- where the lit side room gives out to the dark
 
 local FLOOR_Y = 0
@@ -231,22 +232,83 @@ function LanternholdBuilder.Build(): Model
 	-- The side room: where the order actually met for twenty years, and where
 	-- the Kitchen and the workshop corner go when they are built.
 	wall(F.SideRoom, "SideDoorWall", "Z", LANDING_Z1, -W, SIDE_X, FLOOR_Y, GREAT_H, C.brick, { { -100, -70 } })
-	box(F.SideRoom, "SideCeiling", -W, SIDE_X, LANDING_H - 2, LANDING_H, LANDING_Z1, CORRIDOR_Z, C.timber, Enum.Material.WoodPlanks)
-	for i = 0, 2 do
-		lamp(F.SideRoom, `SideLamp_{i}`, -85, LANDING_H - 12, LANDING_Z1 + 24 + i * 30, true)
+	box(F.SideRoom, "KitchenCeiling", -W, SIDE_X, LANDING_H - 2, LANDING_H, LANDING_Z1, KEEP_Z, C.timber, Enum.Material.WoodPlanks)
+	for i = 0, 1 do
+		lamp(F.SideRoom, `KitchenLamp_{i}`, -85, LANDING_H - 12, LANDING_Z1 + 18 + i * 30, true)
 	end
-	-- Long tables, church-basement energy. The Kitchen is the Club's first
-	-- project and this is the room it lands in, so the room is laid out for it.
-	for i = 0, 2 do
-		local z = LANDING_Z1 + 26 + i * 30
-		box(F.Fixtures, `Table_{i}`, -116, -54, FLOOR_Y + 9, FLOOR_Y + 11, z - 7, z + 7, C.timber, Enum.Material.WoodPlanks)
-		for _, x in ipairs({ -110, -60 }) do
+
+	-- The Community Kitchen. v1's shared landmark and the Good Cheer Club's
+	-- first project: long tables and a servery, church-basement energy. The
+	-- hall has a kitchen before it has an armoury, which is the whole tone of
+	-- the place - a town that has done this before and knows the drill.
+	-- Two tables side by side across the room rather than stacked down it. The
+	-- kitchen is only fifty-six studs deep; stacked, the second table's benches
+	-- ran through the servery and out through the Keeping Room wall.
+	for i = 0, 1 do
+		local x0 = -122 + i * 42
+		local x1 = x0 + 36
+		local z = LANDING_Z1 + 22
+		box(F.Fixtures, `Table_{i}`, x0, x1, FLOOR_Y + 9, FLOOR_Y + 11, z - 7, z + 7, C.timber, Enum.Material.WoodPlanks)
+		for _, x in ipairs({ x0 + 5, x1 - 5 }) do
 			part(F.Fixtures, `TableLeg_{i}_{x}`, Vector3.new(3, 9, 3), CFrame.new(x, FLOOR_Y + 4.5, z), C.timber, Enum.Material.WoodPlanks)
 		end
 		for _, dz in ipairs({ -12, 12 }) do
-			box(F.Fixtures, `Bench_{i}_{dz}`, -112, -58, FLOOR_Y + 5, FLOOR_Y + 6.5, z + dz - 4, z + dz + 4, C.timber, Enum.Material.WoodPlanks)
+			box(F.Fixtures, `Bench_{i}_{dz}`, x0 + 3, x1 - 3, FLOOR_Y + 5, FLOOR_Y + 6.5, z + dz - 4, z + dz + 4, C.timber, Enum.Material.WoodPlanks)
 		end
 	end
+
+	-- The servery along the far wall, and the hatch a crew hands its haul over
+	-- at. Contributing is a counter you walk up to, not a menu: the Club has a
+	-- ledger and a board, and this is where a restoration crate stops being
+	-- yours and starts being the next room's lighting.
+	box(F.Fixtures, "Servery", -124, -56, FLOOR_Y, FLOOR_Y + 12, KEEP_Z - 12, KEEP_Z - 4, C.timber, Enum.Material.WoodPlanks)
+	box(F.Fixtures, "ServeryTop", -126, -54, FLOOR_Y + 12, FLOOR_Y + 13.2, KEEP_Z - 13, KEEP_Z - 3, C.stone, Enum.Material.Concrete)
+	local hatch = box(F.Fixtures, "KitchenContribution", -108, -80, FLOOR_Y + 13.2, FLOOR_Y + 13.8, KEEP_Z - 13, KEEP_Z - 5, C.brass, Enum.Material.Metal)
+	hatch.CanCollide = false
+	label(hatch, "HAND IT IN", Enum.NormalId.Top, 26)
+	CollectionService:AddTag(hatch, "KitchenContribution")
+
+	-- Crates already handed in, stacked where they were put down. Evidence that
+	-- other people have been doing this, which is most of what makes a hub feel
+	-- lived in.
+	for i, spec in ipairs({ { -124, 98, 0 }, { -124, 98, 9 }, { -112, 100, 0 }, { -124, 110, 0 } }) do
+		local x, z, dy = spec[1], spec[2], spec[3]
+		box(F.Fixtures, `HandedIn_{i}`, x - 7, x + 7, FLOOR_Y + dy, FLOOR_Y + dy + 9, z - 7, z + 7, C.cloth, Enum.Material.WoodPlanks)
+	end
+
+	-- ---------------------------------------------------------------- keeping
+	-- The Keeping Room: the order's vault, and the game's lore engine. Relics
+	-- are the lantern-only tier, so the only way the story arrives is by
+	-- somebody taking the dangerous choice. Play it safe and you finish runs
+	-- and learn nothing; burn light and the hall starts talking.
+	wall(F.SideRoom, "KeepWall", "Z", KEEP_Z, -W, SIDE_X, FLOOR_Y, GREAT_H, C.brick, { { -100, -70 } })
+	box(F.SideRoom, "KeepCeiling", -W, SIDE_X, LANDING_H - 2, LANDING_H, KEEP_Z, CORRIDOR_Z, C.timber, Enum.Material.WoodPlanks)
+	lamp(F.SideRoom, "KeepLamp", -85, LANDING_H - 12, (KEEP_Z + CORRIDOR_Z) / 2, true)
+
+	-- Shelved and named. Each plinth is tagged and numbered so the gameplay
+	-- side can put a relic on one and write the plaque; the map only provides
+	-- the shelf.
+	-- Four plinths, two each side of the corridor door. Five evenly spaced
+	-- across this wall stood shoulder to shoulder over the doorway with
+	-- four-stud slots between them, and the dark corridor became unreachable.
+	for i, x in ipairs({ -124, -110, -62, -48 }) do
+		box(F.Fixtures, `Plinth_{i}`, x - 6, x + 6, FLOOR_Y, FLOOR_Y + 13, CORRIDOR_Z - 9, CORRIDOR_Z - 1, C.stone, Enum.Material.Concrete)
+		local slot = box(F.Fixtures, `RelicSlot_{i}`, x - 5, x + 5, FLOOR_Y + 13, FLOOR_Y + 13.6, CORRIDOR_Z - 8, CORRIDOR_Z - 2, C.brass, Enum.Material.Metal)
+		slot.CanCollide = false
+		slot:SetAttribute("Slot", i)
+		CollectionService:AddTag(slot, "RelicPlinth")
+		local plate = box(F.Fixtures, `Plaque_{i}`, x - 6, x + 6, FLOOR_Y + 7, FLOOR_Y + 11, CORRIDOR_Z - 9.8, CORRIDOR_Z - 9.2, C.brass, Enum.Material.Metal)
+		label(plate, "UNNAMED", Enum.NormalId.Front, 22)
+	end
+
+	-- The case that will never be filled. The order's earliest records burned
+	-- long before any flood, so nothing brought back from a run can go in here.
+	-- Building the empty case on purpose is the point: the oldest things in the
+	-- room are the ones nobody can name, and they stay that way.
+	box(F.Fixtures, "BurntCase", -126, -114, FLOOR_Y, FLOOR_Y + 3, KEEP_Z + 6, KEEP_Z + 28, C.stone, Enum.Material.Concrete)
+	box(F.Fixtures, "BurntCaseGlass", -126, -114, FLOOR_Y + 3, FLOOR_Y + 20, KEEP_Z + 6, KEEP_Z + 28, C.glass, Enum.Material.Glass, 0.72)
+	local burnt = box(F.Fixtures, "BurntCasePlaque", -113.8, -113.2, FLOOR_Y + 9, FLOOR_Y + 15, KEEP_Z + 8, KEEP_Z + 26, C.timber, Enum.Material.WoodPlanks)
+	label(burnt, "THE YEARS BEFORE THE FIRE — NOTHING RECOVERED", Enum.NormalId.Right, 20)
 
 	-- Past the side room it stops being finished. A corridor with no lamps in
 	-- it, and a door at the end that does not open.
@@ -255,7 +317,7 @@ function LanternholdBuilder.Build(): Model
 	local shut = box(F.SideRoom, "ShutDoor", -100, -74, FLOOR_Y, FLOOR_Y + DOOR_H, HALL_Z1 - 3.2, HALL_Z1 - 2, C.timber, Enum.Material.WoodPlanks)
 	label(shut, "NO LAMPS BEYOND THIS DOOR", Enum.NormalId.Front, 24)
 	for i = 0, 2 do
-		lamp(F.SideRoom, `DeadCorridorLamp_{i}`, -85, LANDING_H - 12, CORRIDOR_Z + 14 + i * 16, false)
+		lamp(F.SideRoom, `DeadCorridorLamp_{i}`, -85, LANDING_H - 12, CORRIDOR_Z + 12 + i * 16, false)
 	end
 
 	-- ---------------------------------------------------------------- lamp wall
@@ -299,6 +361,24 @@ function LanternholdBuilder.Build(): Model
 	shop.CanCollide = false
 	label(shop, "WORKSHOP", Enum.NormalId.Top, 30)
 	CollectionService:AddTag(shop, "WorkshopPlot")
+
+	-- The workshop corner. Per-player and persistent when it is wired; the map
+	-- furnishes it and marks it. It sits in the Landing rather than off in a
+	-- private room on purpose - the handoff sells belonging and identity, and
+	-- neither works if nobody walks past your bench.
+	box(F.Fixtures, "Bench", -124, -84, FLOOR_Y + 11, FLOOR_Y + 13, 16, 30, C.timber, Enum.Material.WoodPlanks)
+	for _, x in ipairs({ -120, -88 }) do
+		part(F.Fixtures, `BenchLeg_{x}`, Vector3.new(4, 11, 4), CFrame.new(x, FLOOR_Y + 5.5, 23), C.timber, Enum.Material.WoodPlanks)
+	end
+	local vice = box(F.Fixtures, "Vice", -92, -86, FLOOR_Y + 13, FLOOR_Y + 18, 20, 26, C.brass, Enum.Material.Metal)
+	vice:SetAttribute("Station", "bench")
+	CollectionService:AddTag(vice, "WorkshopBench")
+	-- A rack of lantern glass, which is what this corner is for.
+	box(F.Fixtures, "LensRack", -124, -100, FLOOR_Y + 18, FLOOR_Y + 32, 14, 16, C.timber, Enum.Material.WoodPlanks)
+	for i = 0, 3 do
+		part(F.Fixtures, `Lens_{i}`, Vector3.new(5, 5, 1.5), CFrame.new(-120 + i * 6, FLOOR_Y + 25, 15), C.glass, Enum.Material.Glass, 0.45)
+	end
+	part(F.Fixtures, "Stool", Vector3.new(7, 9, 7), CFrame.new(-104, FLOOR_Y + 4.5, 36), C.timber, Enum.Material.WoodPlanks)
 
 	-- Light in the Landing itself, so arriving is warm. Four lamps, shadows off.
 	for i = -1, 1, 2 do
