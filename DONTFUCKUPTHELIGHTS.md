@@ -86,6 +86,29 @@ blew out the end of the hall, and dropping them to 1.2 and 1.4 read better.
 Shadows stay off on lamps: a lantern that casts them strobes as you walk past
 a row of posts.
 
+## The carried lantern is not a lamp
+
+`KeeperLantern.Lens.Lantern` is **brightness 2.4, range 34** — brighter than
+anything in either map, and that is deliberate. It is the light the game is
+about.
+
+Which means it sets the ceiling on how pale a surface can be. Stand next to a
+column or a wall and a 2.4 light at a few studs will saturate any surface with
+a high albedo — that is what "the centre area is all white" turned out to be
+the second time, long after the Lighting block was correct. The court ring
+tested 80 of 80 points walkable and 80 of 80 legs pathable at the time; the
+geometry was fine and the surface next to the player was simply blown.
+
+**The lantern and the palette have to be tuned against each other.** If you
+lower the lantern the world goes further away; if you keep it, the surfaces it
+stands next to cannot be near-white. The mall tile has already come down once
+from 232,228,217 to 166,161,150 for this reason. Plaster at 238,232,222 and
+terrazzo at 196,186,164 are the next candidates if close-range blowout is
+still a complaint.
+
+Do not "fix" this by raising exposure or dropping `Brightness`: those are
+global, and they will take the dark parts with them.
+
 ## The protocol
 
 1. Change one number.
