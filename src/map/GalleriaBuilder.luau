@@ -1113,25 +1113,32 @@ function GalleriaBuilder.Build(): Model
 		-- is intentionally assigned by LootService once tonight's active exit
 		-- is selected.  Do not hand-place "rare" near one fixed door: either
 		-- endpoint can be the way home on a given raid.
+		--
+		-- So the names say WHERE, never WHAT. They used to say what, and a run
+		-- that picked Boswell's as the exit left a part called
+		-- "Relic_SayersEnd" holding RestorationCrates and "Relic_BoswellsEnd"
+		-- holding Supplies - correct behaviour, unreadable in the explorer.
+		-- The tier in this table is only the fallback for a run with no active
+		-- extraction at all.
 		for _, d in ipairs({
-			{ "Supplies_WestArm", -6, 0, 3, "Supplies" },
-			{ "Components_WestMid", -12, 0, 3, "Components" },
-			{ "Relic_BoswellsEnd", -19, 0, 3, "Relics" },
+			{ "Cache_WestArm", -6, 0, 3, "Supplies" },
+			{ "Cache_WestMid", -12, 0, 3, "Components" },
+			{ "Cache_BoswellsEnd", -19, 0, 3, "Relics" },
 			-- Off the centreline: the middle of a concourse carries the kiosks,
 			-- planters and benches, and this one was spawning inside Kiosk2_2.
 			-- The walking lane either side of the furniture is where a shopper
 			-- is anyway.
-			{ "Components_CourtSE", 4.36, 5.64, 3, "Components" },
-			{ "RestorationCrate_FoodCourt", 11, 11, 3, "RestorationCrates" },
-			{ "Relic_SayersEnd", 15, 15, 3, "Relics" },
+			{ "Cache_CourtSE", 4.36, 5.64, 3, "Components" },
+			{ "Cache_FoodCourt", 11, 11, 3, "RestorationCrates" },
+			{ "Cache_SayersEnd", 15, 15, 3, "Relics" },
 			-- On the BALCONY, not on the arm centreline. The centreline at this
 			-- height is the well - the hole the escalators climb through - so
 			-- both of these were hanging in mid-air over the atrium and
 			-- pathfinding refused them. The balcony runs at 1.15 model units
 			-- off the centreline (HALL - BAL/2), which is where a shopper
 			-- actually walks on the upper floor.
-			{ "Relic_UpperWest", -9, 1.15, F2F + 3, "Relics" },
-			{ "Supplies_UpperSE", 7.19, 8.81, F2F + 3, "Supplies" },
+			{ "Cache_UpperWest", -9, 1.15, F2F + 3, "Relics" },
+			{ "Cache_UpperSE", 7.19, 8.81, F2F + 3, "Supplies" },
 		}) do
 			local loot = marker(d[1] :: string, d[2] :: number, d[3] :: number, d[4] :: number)
 			loot.Size = Vector3.new(2.6, 1.25, 2.1)
