@@ -607,7 +607,7 @@ function LanternholdBuilder.Build(): Model
 		{ text = "THE LAMP WALL", tx = 120, tz = 42 },
 		{ text = "THE WORKSHOP", tx = 23, tz = 26 },
 		{ text = "THE GOOD CHEER CLUB", tx = -92, tz = 142 },
-		{ text = "THE KEEPING ROOM", tx = -71, tz = 76 },
+		{ text = "THE KEEPING ROOM", tx = 60, tz = 49 },
 	})
 
 	-- The line from where you land to the way out, drawn on the floor. You
@@ -708,15 +708,23 @@ function LanternholdBuilder.Build(): Model
 	for i = 0, 2 do
 		lamp(F.Museum, `MuseumLamp_{i}`, 20, HEADS[4] - 5, 30 + i * 34, true)
 	end
+	-- The plinths stand on the HUB floor, not up here. Shelving a relic is
+	-- something a keeper does between runs, and up here it cost 568 studs of
+	-- walking for 112 of distance - a detour of 5.1, by far the worst thing in
+	-- the building and most of what Chris meant by "lots of nooks and crannies
+	-- that are awkward". Everything else in the hall walks at 1.0 to 1.2.
+	--
+	-- The museum keeps the burnt case below, and keeps being worth the climb
+	-- for its own sake. It just stops being on the critical path.
 	for i = 0, 3 do
-		local z = 26 + i * 24
-		box(F.Fixtures, `Plinth_{i}`, 60, 72, MU, MU + 4, z, z + 10, C.trim, Enum.Material.Concrete)
-		local slot = box(F.Fixtures, `RelicSlot_{i}`, 61, 71, MU + 4, MU + 4.4, z + 1, z + 9, C.brass, Enum.Material.Metal)
+		local x = 36 + i * 16
+		box(F.Fixtures, `Plinth_{i}`, x, x + 12, B, B + 4, 44, 54, C.trim, Enum.Material.Concrete)
+		local slot = box(F.Fixtures, `RelicSlot_{i}`, x + 1, x + 11, B + 4, B + 4.4, 45, 53, C.brass, Enum.Material.Metal)
 		slot.CanCollide = false
 		slot:SetAttribute("Slot", i)
 		CollectionService:AddTag(slot, "RelicPlinth")
-		local plate = box(F.Fixtures, `Plaque_{i}`, 59.2, 59.8, MU + 1.6, MU + 3.4, z + 1, z + 9, C.brass, Enum.Material.Metal)
-		label(plate, "UNNAMED", Enum.NormalId.Left, 18)
+		local plate = box(F.Fixtures, `Plaque_{i}`, x + 1, x + 11, B + 1.6, B + 2.2, 43.2, 43.8, C.brass, Enum.Material.Metal)
+		label(plate, "UNNAMED", Enum.NormalId.Front, 18)
 	end
 	-- The case that can never be filled: the order's earliest records burned
 	-- long before any flood, so nothing from a run goes in here. The oldest
