@@ -423,6 +423,14 @@ function LanternholdBuilder.Build(): Model
 	-- you can see three unlit landings above you.
 	for i = 2, #LEVELS do
 		local up = i % 2 == 0
+		-- Do NOT widen this to the full depth of the core. Running it
+		-- CORE_Z0 + 2 to CORE_Z1 - 2 does flatten the flights - 40 degrees on
+		-- the ballroom-to-lodge run drops to 33, and all three land between 24
+		-- and 33 - but it also pushes each head pad far enough that the upper
+		-- flights stop connecting: CoreLanding_3, CoreLanding_4 and the whole
+		-- museum went unreachable on pathfinding. The 8 stud inset is what
+		-- keeps the pads inside the core and the landings linked. Tried and
+		-- reverted; the steep flight is the price.
 		flight(F.Core, `Stair_{i}`, CORE_X0 + 6, CORE_X0 + 32, if up then CORE_Z0 + 8 else CORE_Z1 - 8, if up then CORE_Z1 - 8 else CORE_Z0 + 8, LEVELS[i - 1], LEVELS[i])
 	end
 	-- No full-height wall down the east side of the core. Each floor already
