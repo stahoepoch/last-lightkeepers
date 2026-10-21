@@ -244,3 +244,51 @@ blurry here.
   modules in by hand. Rojo itself is installed and serving on 34872; it is the
   Studio side that is not attached. That is Codex's lane and it is worth fixing
   before the by-hand pushes diverge from the repo.
+
+## 2026-10-21 - What has actually RUN, and what has not
+
+Established by asking rather than assuming, after the gameplay session reported
+"nothing in src/server or src/client has ever actually run", which contradicted
+its own earlier playtest. It corrected itself: that line was wrong, the earlier
+playtest report is the accurate one, and it corrected me in the other direction
+too. Recorded here because Chris is being shown a lot of work and the honest
+line between verified and merely written is not obvious from the commit log.
+
+**Has executed, in a live Studio session while Rojo was syncing:**
+RunStateService, LootService, EnemyService, InteractionService,
+PlayerDataService, the lantern and HUD client controllers, and the Sweeper
+rig's audio. The measurements from that run stand: Storm Charge at 1.0/s dark,
+the lantern at 2.5x draining 0.0342 per 5s against 0.0333 predicted, a
+LoadingDock extraction paying Supplies x4, the teammate revive at 4.04s
+measured client-side with GetServerTimeNow, and per-player relic visibility
+proved with two real clients.
+
+**Has never executed:** HubService, LiftService, the fall-damage change in
+RunStateService, ExpeditionService and the Expedition client controller. All
+written after the Rojo sync stopped.
+
+**The map builders have executed many times** - injected through the Studio MCP
+and run in a live datamodel. The pathfinding figures quoted for the mall and
+Lanternhold are real measurements against real geometry, which is how the
+escalator orientation, the sign band across the upper doorways and the stair
+landing-pad lip were each found. I had called this "geometry that merely
+exists" and that understated it. What it has *not* been is walked by a player,
+and it has never run alongside the gameplay code, because the two cannot
+currently be in the same place at once.
+
+**Why the split exists:** the Rojo sync broke at an unknown point. The
+signature was Workspace.Map holding the baked FloodedMall and GalleriaDetails
+models with no GalleriaBuilder - Rojo not attached.
+
+### Blocking, and it is Chris's
+
+`RojoManagedPlugin.rbxm` is in `%LOCALAPPDATA%\Roblox\Plugins` (12:08, installed
+with `rojo plugin install`, a local file drop - no Roblox account touched). It
+has **not** loaded: the Plugins tab showed only the Terrain group at 12:10,
+despite the Studio process having started 12:08:15. Studio also has a modal
+"Studio is unable to connect, check your network connection" dialog open that
+the session could not dismiss.
+
+So the restart is still outstanding, and Chris has unsaved work in the place.
+Until Studio restarts with the plugin loaded and Rojo is connected, nothing
+written since the sync broke can run at all.
