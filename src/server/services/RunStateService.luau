@@ -23,6 +23,10 @@ local SNAPSHOT_INTERVAL = 0.25
 -- workspace.FallenPartsDestroyHeight, far below this.
 local VOID_HEIGHT = -100
 
+-- Floor to floor in the Galleria is 32 studs, so this downs you for a balcony
+-- drop while leaving a jump, a kerb or a bench harmless.
+local LETHAL_FALL_STUDS = 26
+
 local RunStateService = {}
 
 local run: Types.RunState? = nil
@@ -47,8 +51,6 @@ local function newLightkeeper(userId: number): Types.LightkeeperState
 		haul = emptyHaul(),
 		contactHits = 0,
 		lastContactAt = nil,
-		reviveProgress = 0,
-		reviveBy = nil,
 	}
 end
 
@@ -145,6 +147,35 @@ function RunStateService.guardCharacter(player: Player, character: Model)
 		-- Pull them back off the floor and down them instead.
 		humanoid.Health = 1
 		RunStateService.knockDown(player)
+	end)
+
+	-- A drop between floors has to cost you. Chris, on the mall: "the height
+	-- from top to bottom should be devastating, you shouldn't be able to jump
+	-- from floor to floor without dying, i want to force you to use the
+	-- stairs." Roblox applies no fall damage of its own, so a balcony was a
+	-- shortcut rather than a danger.
+	--
+	-- This measures the actual drop rather than the impact speed, because the
+	-- question being asked is "did you come down a storey", and a storey is a
+	-- distance. Landing hard enough goes through the knockdown above, so a fall
+	-- downs you exactly as a Sweeper would - it does not kill outright.
+	local peak: number? = nil
+	humanoid.StateChanged:Connect(function(_old, new)
+		local root = character:FindFirstChild("HumanoidRootPart")
+		if not root or not root:IsA("BasePart") then
+			return
+		end
+		if new == Enum.HumanoidStateType.Freefall then
+			-- Keep the highest point of the fall: a jump at the lip of a
+			-- balcony enters freefall twice and the second entry is lower.
+			peak = math.max(peak or -math.huge, (root :: BasePart).Position.Y)
+		elseif new == Enum.HumanoidStateType.Landed then
+			local from = peak
+			peak = nil
+			if from and from - (root :: BasePart).Position.Y >= LETHAL_FALL_STUDS then
+				humanoid.Health = 0
+			end
+		end
 	end)
 end
 
@@ -301,8 +332,6 @@ function RunStateService.knockDown(player: Player)
 	end
 	state.knockedDown = true
 	state.contactHits = 0
-	state.reviveProgress = 0
-	state.reviveBy = nil
 	if Config.Lantern.knockdown.lanternForcedOffWhenDowned then
 		state.lanternOn = false
 	end
@@ -342,8 +371,6 @@ end
 
 local function stand(state: Types.LightkeeperState)
 	state.knockedDown = false
-	state.reviveProgress = 0
-	state.reviveBy = nil
 	state.contactHits = 0
 	applyDownedMovement(state.userId, false)
 end
@@ -382,10 +409,12 @@ function RunStateService.anchorRevive(player: Player): boolean
 	return true
 end
 
---- A teammate starts a revive. It is a hold, advanced in the tick while the
---- rescuer stays close; walking away cancels it. Reviving has to cost the
---- rescuer's attention, or carrying and distracting stop mattering.
-function RunStateService.beginRevive(rescuer: Player, target: Player): boolean
+--- A teammate has completed the engine-managed proximity hold. The prompt
+--- supplies the visible 4-second progress ring; this method supplies the
+--- authority, re-checking both players and their distance at the moment the
+--- revive actually lands. Keeping one timer avoids turning a 4-second hold
+--- into an accidental eight-second interaction.
+function RunStateService.completeRevive(rescuer: Player, target: Player): boolean
 	if not run or run.finished or rescuer == target then
 		return false
 	end
@@ -406,54 +435,8 @@ function RunStateService.beginRevive(rescuer: Player, target: Player): boolean
 		return false
 	end
 
-	targetState.reviveBy = rescuer.UserId
+	stand(targetState)
 	return true
-end
-
---- A rescuer let go of the prompt. Clears only their own claim, so one player
---- releasing cannot cancel another's revive on the same target.
-function RunStateService.cancelRevive(target: Player)
-	if not run then
-		return
-	end
-	local state = run.lightkeepers[target.UserId]
-	if state and state.knockedDown then
-		state.reviveProgress = 0
-		state.reviveBy = nil
-	end
-end
-
---- Advances every in-progress revive. Called from the tick.
-local function stepRevives(dt: number)
-	if not run then
-		return
-	end
-	local hold = Config.Lantern.revive.teammateHoldSeconds
-	local maxDistance = Config.Lantern.revive.maxReviveDistance
-
-	for _, state in pairs(run.lightkeepers) do
-		if not state.knockedDown or not state.reviveBy then
-			continue
-		end
-
-		local rescuerState = run.lightkeepers[state.reviveBy]
-		local a, b = rootOf(state.reviveBy), rootOf(state.userId)
-		local inRange = a ~= nil
-			and b ~= nil
-			and (a.Position - b.Position).Magnitude <= maxDistance
-
-		if not rescuerState or rescuerState.knockedDown or not inRange then
-			-- Cancelled: the rescuer went down, left, or walked away.
-			state.reviveProgress = 0
-			state.reviveBy = nil
-			continue
-		end
-
-		state.reviveProgress += dt
-		if state.reviveProgress >= hold then
-			stand(state)
-		end
-	end
 end
 
 --- Moves carried loot into the bank. Banked loot survives a wipe outright.
@@ -502,8 +485,6 @@ function RunStateService.wipe()
 		state.lanternOn = false
 		-- They wake in Lanternhold, on their feet.
 		state.knockedDown = false
-		state.reviveBy = nil
-		state.reviveProgress = 0
 		applyDownedMovement(userId, false)
 		local payout = RunStateService.resolveHaul(state, false)
 		local player = Players:GetPlayerByUserId(userId)
@@ -612,8 +593,6 @@ function RunStateService.start_tick()
 				state.lastContactAt = now
 			end
 		end
-
-		stepRevives(dt)
 
 		snapshotAccumulator += dt
 		if snapshotAccumulator >= SNAPSHOT_INTERVAL then

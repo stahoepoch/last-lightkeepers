@@ -34,9 +34,15 @@ local Workspace = game:GetService("Workspace")
 
 local GalleriaBuilder = {}
 
-local S = 26 -- studs per model unit
-local F2F = 22 -- floor to floor
-local STORE_H = 18
+local S = 26 -- studs per model unit, roughly a foot
+
+-- Floor to floor is deliberately taller than a real mall's twenty feet. Chris:
+-- "the height from top to bottom should be devastating, you shouldn't be able
+-- to jump from floor to floor without dying, i want to force you to use the
+-- stairs." A thirty-two stud drop reads as three storeys from the balcony and
+-- is well past the lethal threshold the run state service applies.
+local F2F = 32
+local STORE_H = 26
 local HALL = 1.7 -- concourse half-width
 local DEPTH = 3.2 -- shop depth
 
@@ -54,13 +60,13 @@ local WELL = HALL - BAL -- half-width of the open well
 -- of nothing on the outside of the corner. Stopping the arms short also keeps
 -- the two concourse floors from overlapping at the bend, which would have put
 -- two tiled surfaces in the same plane and set them fighting.
-local COURT_R = 2.55 -- how far back from the bend each arm starts
-local COURT_OUT = 2.85 -- outer radius of the court floor
-local LIFT = 0.4 -- the court stands this much proud of the concourse
--- The court's void is wider than the arms' well. A centre court whose hole is
--- the same width as the corridor that feeds it does not read as a court at
--- all - from the balcony it looks like a solid disc with a slot in it.
-local COURT_WELL = 1.45
+local COURT_R = 3.6 -- how far back from the bend each arm starts
+local COURT_OUT = 3.9 -- outer radius of the court floor
+local LIFT = 0.5 -- the court stands this much proud of the concourse
+-- The court's void is far wider than the arms' well. Chris: "that whole center
+-- area where the fountain is should all be opened up." At 2.4 the hole is a
+-- hundred and twenty five studs across and the fountain sits in daylight.
+local COURT_WELL = 2.4
 
 local C = {
 	tile = Color3.fromRGB(232, 228, 217),
@@ -82,9 +88,15 @@ local C = {
 -- with the Google Maps image. Boscov's closes the west arm, Sears the
 -- south-east arm, and the court is the bend between them.
 local BEND = Vector2.new(0, 0)
+-- Lengthened from sixteen units an arm. Chris: "the scale of the mall is too
+-- small basically, to go from one end to the other should take at least 1 min."
+-- At sixteen the whole dogleg was 820 studs, which is under a minute at a
+-- walk. It is now about 1340 end to end, and the real Galleria is roughly
+-- twelve hundred feet long, so the longer arms are also closer to the plan -
+-- the stubby version was wrong twice over.
 local ARMS = {
-	{ a = BEND, b = Vector2.new(-16, 0) }, -- west, to Boscov's
-	{ a = BEND, b = Vector2.new(11, 11) }, -- south-east, to Sears
+	{ a = BEND, b = Vector2.new(-25.5, 0) }, -- west, to Boscov's
+	{ a = BEND, b = Vector2.new(18, 18) }, -- south-east, to Sears
 }
 
 local L1_NAMES = {
@@ -136,7 +148,7 @@ function GalleriaBuilder.Build(): Model
 	local M = Instance.new("Model")
 	M.Name = "ClaudeGalleria"
 	local F: { [string]: Folder } = {}
-	for _, n in ipairs({ "Floors", "Shops", "Structure", "Anchors", "Roof", "Court", "Escalators" }) do
+	for _, n in ipairs({ "Floors", "Shops", "Structure", "Anchors", "Roof", "Court", "Escalators", "Fixtures" }) do
 		local f = Instance.new("Folder")
 		f.Name, f.Parent = n, M
 		F[n] = f
@@ -150,26 +162,35 @@ function GalleriaBuilder.Build(): Model
 		return p
 	end
 
+	-- The columns are round and salmon. With the teal trusses that is most of
+	-- what makes a photograph of this place recognisable; square posts read as
+	-- any mall anywhere. Takes world studs, not model units.
+	local function pillar(folder: Instance, name: string, wx: number, wz: number, y: number, h: number, dia: number, colour: Color3): Part
+		local p = part(folder, name, Vector3.new(h, dia, dia), CFrame.new(wx, y, wz) * CFrame.Angles(0, 0, math.pi / 2), colour, Enum.Material.Concrete)
+		p.Shape = Enum.PartType.Cylinder
+		return p
+	end
+
 	-- Escalators are one sloped deck with treads drawn on it, not a stack of
 	-- steps. Discrete step boxes do not produce a navmesh a Sweeper can path
 	-- over - that was learned on the other mall's stairs, where
 	-- PathfindingService returned NoPath at every attempt.
-	local ESC_W = 16
-	local function escalator(name: string, x1: number, z1: number, x2: number, z2: number, yaw: number)
+	local ESC_W = 14
+	local function escalator(folder: Instance, name: string, x1: number, z1: number, x2: number, z2: number, yaw: number, base: number)
 		local run = Vector2.new(x2 - x1, z2 - z1).Magnitude * S
 		local hyp = math.sqrt(run * run + F2F * F2F)
 		local pitch = math.atan2(F2F, run)
-		local cf = CFrame.new((x1 + x2) / 2 * S, F2F / 2 - 1, (z1 + z2) / 2 * S)
+		local cf = CFrame.new((x1 + x2) / 2 * S, base + F2F / 2 - 1, (z1 + z2) / 2 * S)
 			* CFrame.Angles(0, -yaw, 0)
 			* CFrame.Angles(0, 0, pitch)
-		part(F.Escalators, `Deck_{name}`, Vector3.new(hyp, 2, ESC_W), cf, C.shell, Enum.Material.Metal)
-		for k = 1, 12 do
-			local t = ((k - 0.5) / 12 - 0.5) * hyp
-			local tread = part(F.Escalators, `Tread_{name}_{k}`, Vector3.new(1.1, 0.5, ESC_W - 1), cf * CFrame.new(t, 1.2, 0), C.teal, Enum.Material.Metal)
+		part(folder, `Deck_{name}`, Vector3.new(hyp, 2, ESC_W), cf, C.shell, Enum.Material.Metal)
+		for k = 1, 16 do
+			local t = ((k - 0.5) / 16 - 0.5) * hyp
+			local tread = part(folder, `Tread_{name}_{k}`, Vector3.new(1.2, 0.5, ESC_W - 1), cf * CFrame.new(t, 1.2, 0), C.teal, Enum.Material.Metal)
 			tread.CanCollide = false
 		end
-		for s = -1, 1, 2 do
-			part(F.Escalators, `Balustrade_{name}_{s}`, Vector3.new(hyp, 7, 1.4), cf * CFrame.new(0, 4.5, s * (ESC_W / 2 + 0.7)), C.teal, Enum.Material.Metal)
+		for sgn = -1, 1, 2 do
+			part(folder, `Balustrade_{name}_{sgn}`, Vector3.new(hyp, 8, 1.4), cf * CFrame.new(0, 5, sgn * (ESC_W / 2 + 0.7)), C.teal, Enum.Material.Metal)
 		end
 	end
 
@@ -206,15 +227,65 @@ function GalleriaBuilder.Build(): Model
 		-- Two escalators per arm, on opposite sides. Each sits in the well with
 		-- its upper edge flush to the balcony edge, so the top of the run lands
 		-- on the balcony with nothing to bridge.
-		for k, frac in ipairs({ 0.32, 0.7 }) do
-			local side = if k == 1 then 1 else -1
+		for k, frac in ipairs({ 0.3, 0.68 }) do
 			local centre = -len / 2 + len * frac
-			local run = 1.7
-			local off = (WELL - ESC_W / (2 * S)) * side
-			local x1, z1 = at(centre - run / 2, off)
-			local x2, z2 = at(centre + run / 2, off)
-			escalator(`{ai}_{k}`, x1, z1, x2, z2, ang)
-			table.insert(landings, { arm = ai, side = side, from = centre - run / 2 - 0.15, to = centre + run / 2 + 0.15 })
+			local run = 2.0
+			-- A pair side by side in the middle of the well, which is how every
+			-- photograph of this place shows them, with a landing at the head
+			-- wide enough to reach both balconies. That landing doubles as the
+			-- bridge across the well. The earlier single deck hugged one edge
+			-- and there was no way to cross.
+			local sense = if k == 1 then 1 else -1
+			for e = -1, 1, 2 do
+				local off = e * (ESC_W / 2 + 0.8) / S
+				local x1, z1 = at(centre - sense * run / 2, off)
+				local x2, z2 = at(centre + sense * run / 2, off)
+				escalator(F.Escalators, `{ai}_{k}_{e}`, x1, z1, x2, z2, ang, 0)
+			end
+			local head = centre + sense * (run / 2 + 0.45)
+			local hx, hz = at(head, 0)
+			part(F.Floors, `Landing{ai}_{k}`, Vector3.new(0.95 * S, 2, WELL * 2 * S), CFrame.new(hx * S, F2F - 1, hz * S) * rot, C.tile, Enum.Material.Pebble)
+			-- The far end of the landing is a two storey drop into the well.
+			local ex, ez = at(head + sense * 0.5, 0)
+			part(F.Structure, `LandingRail{ai}_{k}`, Vector3.new(1, 3.4, WELL * 2 * S), CFrame.new(ex * S, F2F + 1.7, ez * S) * rot, C.fascia)
+			part(F.Structure, `LandingCap{ai}_{k}`, Vector3.new(1.8, 1.2, WELL * 2 * S), CFrame.new(ex * S, F2F + 4, ez * S) * rot, C.teal, Enum.Material.Metal)
+			for side = -1, 1, 2 do
+				local lo = math.min(centre - run / 2, head) - 0.55
+				local hi = math.max(centre + run / 2, head) + 0.55
+				table.insert(landings, { arm = ai, side = side, from = lo, to = hi })
+			end
+		end
+
+		-- The food court: upper level, decked right across the well, counters
+		-- down one flank and the tables out over the drop. Chris: "we aint got
+		-- no food court". The Galleria's own sits exactly like this, up a level
+		-- and open to the court below.
+		if ai == 2 then
+			local fcAt = -len / 2 + len * 0.49
+			local fcLen = 4.0
+			local fx, fz = at(fcAt, 0)
+			part(F.Floors, "FoodCourtDeck", Vector3.new(fcLen * S, 2, WELL * 2 * S), CFrame.new(fx * S, F2F - 1, fz * S) * rot, C.tile, Enum.Material.Pebble)
+			for side = -1, 1, 2 do
+				table.insert(landings, { arm = ai, side = side, from = fcAt - fcLen / 2 - 0.1, to = fcAt + fcLen / 2 + 0.1 })
+			end
+			for e = -1, 1, 2 do
+				local ex, ez = at(fcAt + e * (fcLen / 2 + 0.03), 0)
+				part(F.Structure, `FCRail_{e}`, Vector3.new(1, 3.4, WELL * 2 * S), CFrame.new(ex * S, F2F + 1.7, ez * S) * rot, C.fascia)
+				part(F.Structure, `FCCap_{e}`, Vector3.new(1.8, 1.2, WELL * 2 * S), CFrame.new(ex * S, F2F + 4, ez * S) * rot, C.teal, Enum.Material.Metal)
+			end
+			local seats = 5
+			for i = 0, seats - 1 do
+				local t = fcAt - fcLen / 2 + fcLen * ((i + 0.5) / seats)
+				for j = -1, 1, 2 do
+					local tx, tz = at(t, j * 0.3)
+					part(F.Fixtures, `FCTable_{i}_{j}`, Vector3.new(17, 1.8, 17), CFrame.new(tx * S, F2F + 7, tz * S) * rot, C.fascia, Enum.Material.WoodPlanks)
+					part(F.Fixtures, `FCPedestal_{i}_{j}`, Vector3.new(4, 7, 4), CFrame.new(tx * S, F2F + 3.5, tz * S) * rot, C.teal, Enum.Material.Metal)
+					for c = -1, 1, 2 do
+						local sx, sz = at(t + c * 0.27, j * 0.3)
+						part(F.Fixtures, `FCChair_{i}_{j}_{c}`, Vector3.new(8, 4, 9), CFrame.new(sx * S, F2F + 4, sz * S) * rot, C.column, Enum.Material.WoodPlanks)
+					end
+				end
+			end
 		end
 
 		-- The balcony rail runs the length of the well except where an escalator
@@ -231,8 +302,13 @@ function GalleriaBuilder.Build(): Model
 					end
 				end
 				if not blocked then
+					-- A pale panel under a teal cap, not a slab of teal. The cap
+					-- is the line that reads along the whole balcony in the
+					-- photographs.
 					local rx, rz = at((t0 + t1) / 2, WELL * side)
-					part(F.Structure, `Rail{ai}_{side}_{i}`, Vector3.new((t1 - t0) * S + 0.4, 3.5, 1), CFrame.new(rx * S, F2F + 1.75, rz * S) * rot, C.teal, Enum.Material.Metal)
+					local wlen = (t1 - t0) * S + 0.4
+					part(F.Structure, `RailPanel{ai}_{side}_{i}`, Vector3.new(wlen, 3.4, 0.9), CFrame.new(rx * S, F2F + 1.7, rz * S) * rot, C.fascia)
+					part(F.Structure, `RailCap{ai}_{side}_{i}`, Vector3.new(wlen, 1.2, 1.8), CFrame.new(rx * S, F2F + 4, rz * S) * rot, C.teal, Enum.Material.Metal)
 				end
 			end
 		end
@@ -285,7 +361,11 @@ function GalleriaBuilder.Build(): Model
 						n = suite2
 						suite2 += 2
 					end
-					label(fascia, `{list[((i + ai * 3) % #list) + 1]}   {n}`, if side == 1 then Enum.NormalId.Back else Enum.NormalId.Front)
+					-- Front is a part's -Z face and the fascia's local +Z points away
+					-- from the concourse, so the side that faces a shopper is -Z on
+					-- the positive flank and +Z on the negative one. This was the
+					-- wrong way round, which put every sign inside its own shop.
+					label(fascia, `{list[((i + ai * 3) % #list) + 1]}   {n}`, if side == 1 then Enum.NormalId.Front else Enum.NormalId.Back)
 					part(F.Shops, `Trim_{tag}`, Vector3.new(bw * S, 1.2, 1.8), CFrame.new(fx * S, y + STORE_H - 5.2, fz * S) * rot, C.teal)
 				end
 			end
@@ -297,17 +377,46 @@ function GalleriaBuilder.Build(): Model
 			local along = -len / 2 + len * (i / cols)
 			for side = -1, 1, 2 do
 				local cx, cz = at(along, (HALL - 0.18) * side)
-				part(F.Structure, `Column{ai}_{i}_{side}`, Vector3.new(7, F2F * 2 - 2, 7), CFrame.new(cx * S, F2F - 1, cz * S), C.column, Enum.Material.Concrete)
+				pillar(F.Structure, `Column{ai}_{i}_{side}`, cx * S, cz * S, F2F - 1, F2F * 2 - 2, 10, C.column)
+				-- The teal uplighter bowl near the head of each column.
+				part(F.Structure, `Uplight{ai}_{i}_{side}`, Vector3.new(15, 3, 15), CFrame.new(cx * S, F2F * 2 - 11, cz * S), C.teal, Enum.Material.Metal)
 			end
 			local tx, tz = at(along, 0)
 			part(F.Roof, `Truss{ai}_{i}`, Vector3.new(2.2, 2.2, HALL * 2 * S), CFrame.new(tx * S, F2F * 2 + 10, tz * S) * rot, C.teal, Enum.Material.Metal)
 		end
 
-		-- Planters down the middle of the concourse, under the well.
-		local plants = math.max(1, math.floor(len / 3))
-		for i = 0, plants - 1 do
-			local px, pz = at(-len / 2 + len * ((i + 0.5) / plants), 0)
-			part(F.Structure, `Planter{ai}_{i}`, Vector3.new(26, 7, 16), CFrame.new(px * S, 2.5, pz * S) * rot, C.column, Enum.Material.Concrete)
+		-- Planters, benches and kiosks down the middle of the concourse. The
+		-- photographs are full of them, and an empty corridor reads as a
+		-- corridor rather than as a mall.
+		local props = math.max(2, math.floor(len / 2.2))
+		for i = 0, props - 1 do
+			local t = -len / 2 + len * ((i + 0.5) / props)
+			-- Keep the middle of the concourse clear at the ends, where the
+			-- department store doors are, and under the escalators, whose feet
+			-- land on this floor. A kiosk had parked itself squarely in
+			-- Boscov's entrance.
+			local clear = math.abs(t) < len / 2 - 1.8
+			for _, l in ipairs(landings) do
+				if l.arm == ai and t > l.from - 0.6 and t < l.to + 0.6 then
+					clear = false
+				end
+			end
+			local px, pz = at(t, 0)
+			local kind = i % 3
+			if clear then
+			if kind == 0 then
+				part(F.Fixtures, `Planter{ai}_{i}`, Vector3.new(30, 7, 18), CFrame.new(px * S, 2.5, pz * S) * rot, C.column, Enum.Material.Concrete)
+				part(F.Fixtures, `Shrub{ai}_{i}`, Vector3.new(25, 10, 14), CFrame.new(px * S, 10, pz * S) * rot, Color3.fromRGB(74, 112, 72), Enum.Material.Grass)
+			elseif kind == 1 then
+				for b = -1, 1, 2 do
+					local bx, bz = at(t, b * 0.3)
+					part(F.Fixtures, `Bench{ai}_{i}_{b}`, Vector3.new(36, 3, 11), CFrame.new(bx * S, 4.5, bz * S) * rot, C.fascia, Enum.Material.WoodPlanks)
+				end
+			else
+				part(F.Fixtures, `Kiosk{ai}_{i}`, Vector3.new(46, 15, 27), CFrame.new(px * S, 7.5, pz * S) * rot, C.fascia)
+				part(F.Fixtures, `KioskRoof{ai}_{i}`, Vector3.new(54, 2, 35), CFrame.new(px * S, 16, pz * S) * rot, C.teal, Enum.Material.Metal)
+			end
+			end
 		end
 
 		for s = -1, 1, 2 do
@@ -374,14 +483,31 @@ function GalleriaBuilder.Build(): Model
 	part(F.Court, "FountainStem", Vector3.new(6, 15, 6), CFrame.new(0, 10, 0), C.column, Enum.Material.Concrete)
 
 	-- The same deck carried round the court, open in the middle so the court
-	-- keeps its skylight.
+	-- keeps its skylight. The opening has to be at least as wide as the court
+	-- void, or the atrium is roofed over just outside the rail and the fountain
+	-- sits under a ceiling.
 	for i = 0, 19 do
 		local th = 2 * math.pi * (i + 0.5) / 20
-		local rr = (1.95 + COURT_OUT + 0.2) / 2
+		local rr = (COURT_WELL + 0.1 + COURT_OUT + 0.2) / 2
 		local p = Vector2.new(math.cos(th), math.sin(th)) * rr
 		local w = 2 * math.pi * rr / 20 * 1.4
-		part(F.Roof, `CourtDeck_{i}`, Vector3.new(w * S, 2, (COURT_OUT + 0.2 - 1.95) * S), CFrame.new(p.X * S, F2F * 2 + 1 + (i % 2) * 0.05, p.Y * S) * CFrame.Angles(0, -(th + math.pi / 2), 0), C.shell, Enum.Material.Concrete)
+		part(F.Roof, `CourtDeck_{i}`, Vector3.new(w * S, 2, (COURT_OUT + 0.2 - COURT_WELL - 0.1) * S), CFrame.new(p.X * S, F2F * 2 + 1 + (i % 2) * 0.05, p.Y * S) * CFrame.Angles(0, -(th + math.pi / 2), 0), C.shell, Enum.Material.Concrete)
 	end
+
+	-- The clock. It is in half the photographs of this place, standing at the
+	-- edge of the court where both arms can see it.
+	do
+		local a = math.pi * 0.78
+		local kx, kz = math.cos(a) * (COURT_WELL + 0.5) * S, math.sin(a) * (COURT_WELL + 0.5) * S
+		pillar(F.Court, "ClockPost", kx, kz, F2F * 0.95, F2F * 1.9, 11, C.column)
+		local face = part(F.Court, "ClockFace", Vector3.new(6, 26, 26), CFrame.new(kx, F2F * 1.85, kz) * CFrame.Angles(0, 0, math.pi / 2), C.fascia)
+		face.Shape = Enum.PartType.Cylinder
+		part(F.Court, "ClockRim", Vector3.new(4, 30, 30), CFrame.new(kx, F2F * 1.85, kz) * CFrame.Angles(0, 0, math.pi / 2), C.teal, Enum.Material.Metal).Shape = Enum.PartType.Cylinder
+	end
+
+	-- A dark band of tile round the fountain, the way the floor pattern rings
+	-- it in the photographs.
+	disc(F.Court, "FountainBand", 0.95, -1 + LIFT + 0.05, 2, Color3.fromRGB(58, 60, 64), Enum.Material.Pebble)
 
 	disc(F.Roof, "CourtSkylight", COURT_OUT - 0.15, F2F * 2 + 20, 1.2, C.glass, Enum.Material.Glass, 0.55)
 	-- Stepped, not stacked: eight full-diameter bars at one height all
@@ -391,23 +517,167 @@ function GalleriaBuilder.Build(): Model
 		part(F.Roof, `CourtTruss_{i}`, Vector3.new(COURT_OUT * 2 * S, 2.2, 2.2), CFrame.new(0, F2F * 2 + 17 + i * 0.25, 0) * CFrame.Angles(0, -math.pi * i / 8, 0), C.teal, Enum.Material.Metal)
 	end
 
-	-- Anchors are buildings hung off the mall, not signs on the end of a
-	-- corridor. Chris, reading the printed plan and the aerial: "those anchor
-	-- stores need to be anchors... bon ton is like inside the mall, and sears
-	-- is sideways." Two storeys of brick with a parapet, squared to whichever
-	-- arm they meet, and glazed mall entrances cut into the face that touches
-	-- the concourse.
-	local function anchor(name: string, cx: number, cz: number, w: number, d: number, yaw: number, doors: { { number } })
-		local rot = CFrame.Angles(0, -yaw, 0)
-		local h = F2F * 2
-		part(F.Anchors, `Anchor_{name}`, Vector3.new(w * S, h, d * S), CFrame.new(cx * S, h / 2, cz * S) * rot, C.brick, Enum.Material.Brick)
-		part(F.Anchors, `Parapet_{name}`, Vector3.new(w * S + 3, 5, d * S + 3), CFrame.new(cx * S, h + 2, cz * S) * rot, C.shell, Enum.Material.Concrete)
-		local band = part(F.Anchors, `Sign_{name}`, Vector3.new(w * S * 0.55, 20, d * S * 0.55), CFrame.new(cx * S, h - 16, cz * S) * rot, C.teal)
-		for _, f in ipairs({ Enum.NormalId.Front, Enum.NormalId.Back, Enum.NormalId.Left, Enum.NormalId.Right }) do
-			label(band, name, f)
+	-- A glass lift in the court. Chris asked for one by the fountain; it is
+	-- scenery for now, in that the car does not travel - making it carry a
+	-- player properly is gameplay code, not geometry, and a lift that looks
+	-- rideable and is not would be worse than no lift at all.
+	do
+		local lx, lz = -1.3, -1.3
+		local shaft = 1.0
+		for i = 0, 3 do
+			local a = math.pi / 2 * i
+			local ox, oz = math.cos(a) * shaft / 2, math.sin(a) * shaft / 2
+			local wide = if i % 2 == 0 then 0.08 else shaft
+			local deep = if i % 2 == 0 then shaft else 0.08
+			part(F.Court, `LiftGlass_{i}`, Vector3.new(wide * S, F2F + 14, deep * S), CFrame.new((lx + ox) * S, (F2F + 14) / 2, (lz + oz) * S), C.glass, Enum.Material.Glass, 0.6)
 		end
-		for i, e in ipairs(doors) do
-			part(F.Anchors, `Entry_{name}_{i}`, Vector3.new(36, 26, 3), CFrame.new(e[1] * S, 13, e[2] * S) * CFrame.Angles(0, -e[3], 0), C.glass, Enum.Material.Glass, 0.35)
+		for i = 0, 3 do
+			local a = math.pi / 2 * i + math.pi / 4
+			part(F.Court, `LiftPost_{i}`, Vector3.new(3, F2F + 16, 3), CFrame.new((lx + math.cos(a) * shaft * 0.72) * S, (F2F + 16) / 2, (lz + math.sin(a) * shaft * 0.72) * S), C.teal, Enum.Material.Metal)
+		end
+		part(F.Court, "LiftCar", Vector3.new(shaft * S - 5, 2, shaft * S - 5), CFrame.new(lx * S, 2, lz * S), C.shell, Enum.Material.Metal)
+		part(F.Court, "LiftHead", Vector3.new(shaft * S + 5, 4, shaft * S + 5), CFrame.new(lx * S, F2F + 16, lz * S), C.teal, Enum.Material.Metal)
+	end
+
+	-- Department stores. They were solid brick blocks, which is what Chris hit:
+	-- "i can't go into any of the dept stores, but when i can, they should also
+	-- be highly populated, those are the primary areas, they should be huge,
+	-- like a real dept. store. with escalators in there too."
+	--
+	-- So each one is now a building: two floors, a perimeter wall with a real
+	-- opening onto the mall, its own escalator pair through a void in the upper
+	-- slab, a column grid and rows of fixtures. At fourteen by fifteen units
+	-- that is about 130,000 square feet a floor, which is a true Boscov's.
+	local WALL_T = 3 / S -- wall thickness, in model units
+	local DOORW = 2.2 -- mall entrance width, in model units
+	local DOOR_H = 26
+
+	local function department(name: string, cx: number, cz: number, w: number, d: number, yaw: number, front: string, doors: { number })
+		local H = F2F * 2
+		local rot = CFrame.Angles(0, -yaw, 0)
+		local cos, sin = math.cos(yaw), math.sin(yaw)
+		-- Local plan coordinates, so each store can be written as though it were
+		-- square to the page and then turned to meet whichever arm it serves.
+		local function at(lx: number, lz: number): (number, number)
+			return cx + lx * cos - lz * sin, cz + lx * sin + lz * cos
+		end
+		local function box(folder: Instance, nm: string, lx: number, lz: number, sx: number, sz: number, y: number, h: number, colour: Color3, mat: Enum.Material?, trans: number?): Part
+			local wx, wz = at(lx, lz)
+			return part(folder, nm, Vector3.new(sx * S, h, sz * S), CFrame.new(wx * S, y, wz * S) * rot, colour, mat, trans)
+		end
+
+		-- The void in the upper slab that the escalators rise through.
+		local vw, vd = 3.2, 3.0
+
+		box(F.Anchors, `Floor1_{name}`, 0, 0, w, d, -1, 2, C.tile, Enum.Material.Pebble)
+		-- Level two is four slabs around the void rather than one slab, because
+		-- an escalator needs somewhere to come up.
+		box(F.Anchors, `Floor2_{name}_W`, -(w + vw) / 4, 0, (w - vw) / 2, d, F2F - 1, 2, C.tile, Enum.Material.Pebble)
+		box(F.Anchors, `Floor2_{name}_E`, (w + vw) / 4, 0, (w - vw) / 2, d, F2F - 1, 2, C.tile, Enum.Material.Pebble)
+		box(F.Anchors, `Floor2_{name}_N`, 0, -(d + vd) / 4, vw, (d - vd) / 2, F2F - 1, 2, C.tile, Enum.Material.Pebble)
+		box(F.Anchors, `Floor2_{name}_S`, 0, (d + vd) / 4, vw, (d - vd) / 2, F2F - 1, 2, C.tile, Enum.Material.Pebble)
+		box(F.Anchors, `Roof_{name}`, 0, 0, w, d, H + 1, 2, C.shell, Enum.Material.Concrete)
+
+		-- Rails round the void, so the drop is guarded but visible.
+		for sgn = -1, 1, 2 do
+			box(F.Anchors, `VoidRail_{name}_X{sgn}`, sgn * vw / 2, 0, 0.06, vd, F2F + 1.75, 3.5, C.teal, Enum.Material.Metal)
+			box(F.Anchors, `VoidRail_{name}_Z{sgn}`, 0, sgn * vd / 2, vw, 0.06, F2F + 1.75, 3.5, C.teal, Enum.Material.Metal)
+		end
+
+		-- Perimeter. Only the face that meets the mall is cut for doors.
+		for _, face in ipairs({ { "X", 1 }, { "X", -1 }, { "Z", 1 }, { "Z", -1 } }) do
+			local axis, sgn = face[1] :: string, face[2] :: number
+			local along = if axis == "X" then d else w
+			local gaps = if front == (if sgn > 0 then "+" else "-") .. axis then doors else {}
+			local cuts = table.clone(gaps)
+			table.sort(cuts)
+			local runs = {}
+			local cursor = -along / 2
+			for _, g in ipairs(cuts) do
+				if g - DOORW / 2 > cursor then
+					table.insert(runs, { cursor, g - DOORW / 2 })
+				end
+				cursor = math.max(cursor, g + DOORW / 2)
+			end
+			if cursor < along / 2 then
+				table.insert(runs, { cursor, along / 2 })
+			end
+			for i, run in ipairs(runs) do
+				local mid, len = (run[1] + run[2]) / 2, run[2] - run[1]
+				if axis == "X" then
+					box(F.Anchors, `Wall_{name}_{axis}{sgn}_{i}`, sgn * w / 2, mid, WALL_T, len, H / 2, H, C.brick, Enum.Material.Brick)
+				else
+					box(F.Anchors, `Wall_{name}_{axis}{sgn}_{i}`, mid, sgn * d / 2, len, WALL_T, H / 2, H, C.brick, Enum.Material.Brick)
+				end
+			end
+			-- A lintel over each opening, so a door is a door and not a slot.
+			for i, g in ipairs(gaps) do
+				if axis == "X" then
+					box(F.Anchors, `Lintel_{name}_{i}`, sgn * w / 2, g, WALL_T, DOORW, (DOOR_H + H) / 2, H - DOOR_H, C.brick, Enum.Material.Brick)
+				else
+					box(F.Anchors, `Lintel_{name}_{i}`, g, sgn * d / 2, DOORW, WALL_T, (DOOR_H + H) / 2, H - DOOR_H, C.brick, Enum.Material.Brick)
+				end
+			end
+		end
+
+		box(F.Anchors, `Parapet_{name}`, 0, 0, w + 0.12, d + 0.12, H + 5, 6, C.shell, Enum.Material.Concrete)
+
+		-- Sign band on the face that meets the mall.
+		do
+			local isX = front:sub(2) == "X"
+			local sgn = if front:sub(1, 1) == "+" then 1 else -1
+			local bandLen = (if isX then d else w) * 0.5
+			local band
+			if isX then
+				band = box(F.Anchors, `Sign_{name}`, sgn * (w / 2 + 0.06), 0, 0.08, bandLen, H - 18, 22, C.teal)
+			else
+				band = box(F.Anchors, `Sign_{name}`, 0, sgn * (d / 2 + 0.06), bandLen, 0.08, H - 18, 22, C.teal)
+			end
+			for _, f in ipairs({ Enum.NormalId.Front, Enum.NormalId.Back, Enum.NormalId.Left, Enum.NormalId.Right }) do
+				label(band, name, f)
+			end
+		end
+
+		-- One escalator up and one down, through the void, along the store's
+		-- long axis so each run lands on the slab rather than in the hole.
+		for k, sgn in ipairs({ -1, 1 }) do
+			local z = sgn * 0.62
+			local ax, az = at(-sgn * vw / 2, z)
+			local bx, bz = at(sgn * vw / 2, z)
+			escalator(F.Escalators, `{name}_{k}`, ax, az, bx, bz, yaw, 0)
+		end
+
+		-- Column grid, skipping the void.
+		local gx, gz = math.max(2, math.floor(w / 3.2)), math.max(2, math.floor(d / 3.2))
+		for i = 0, gx do
+			for j = 0, gz do
+				local lx = -w / 2 + w * (i / gx)
+				local lz = -d / 2 + d * (j / gz)
+				if math.abs(lx) > vw / 2 + 0.3 or math.abs(lz) > vd / 2 + 0.3 then
+					local px, pz = at(lx, lz)
+					pillar(F.Structure, `DeptColumn_{name}_{i}_{j}`, px * S, pz * S, H / 2, H, 10, C.column)
+				end
+			end
+		end
+
+		-- Fixtures: rows of racks and counters on both floors. A department
+		-- store that is an empty shed reads as a car park, and these are the
+		-- rooms the run is actually about.
+		local rows = math.max(3, math.floor(d / 1.1))
+		for lvl = 0, 1 do
+			local y = lvl * F2F
+			for r = 0, rows - 1 do
+				local lz = -d / 2 + d * ((r + 0.5) / rows)
+				if math.abs(lz) > vd / 2 + 0.25 or lvl == 0 then
+					for c = 0, 3 do
+						local lx = -w / 2 + w * ((c + 0.5) / 4)
+						if math.abs(lx) > vw / 2 + 0.25 or math.abs(lz) > vd / 2 + 0.25 then
+							local tall = (r + c) % 3 == 0
+							box(F.Fixtures, `Rack_{name}_{lvl}_{r}_{c}`, lx, lz, w / 5.4, 0.28, y + (if tall then 7 else 3.5), if tall then 14 else 7, if tall then C.shop else C.fascia, Enum.Material.Metal)
+						end
+					end
+				end
+			end
 		end
 	end
 
@@ -415,36 +685,32 @@ function GalleriaBuilder.Build(): Model
 	local seAng = math.atan2(se.Y, se.X)
 	local seNE = Vector2.new(se.Y, -se.X) -- north-east flank of the Sears arm
 
-	-- Every anchor is placed from the mall's own geometry rather than from a
+	-- Every store is placed from the mall's own geometry rather than from a
 	-- hand-typed centre, because hand-typed centres drift the moment HALL or
-	-- DEPTH changes. EDGE is the outer face of the shop band; an anchor that
-	-- flanks an arm puts its near face there, and an anchor that closes an arm
-	-- puts its near face on the arm's end. Chris: "it looks like boscov's is
+	-- DEPTH changes. EDGE is the outer face of the shop band; a store that
+	-- flanks an arm puts its near face there, and one that closes an arm puts
+	-- its near face on the arm's end. Chris: "it looks like boscov's is
 	-- detached lol" - it was, by two units, and shrinking DEPTH from 3.4 to 3.2
 	-- had quietly opened a smaller gap at JCPenney too while burying Bon-Ton
 	-- inside the shops.
 	local EDGE = HALL + DEPTH
 
 	-- Boscov's closes the west arm, so its east face is the arm's end.
-	local bosc = Vector2.new(ARMS[1].b.X - 13 / 2, 0)
-	anchor("BOSCOVS", bosc.X, bosc.Y, 13, 14, 0, { { ARMS[1].b.X, 0, -math.pi / 2 } })
+	department("BOSCOVS", ARMS[1].b.X - 14 / 2, 0, 14, 15, 0, "+X", { 0 })
 
 	-- Sears closes the south-east arm the same way, squared to it.
-	local sears = ARMS[2].b + se * (14 / 2)
-	local searsDoor = ARMS[2].b + se * 0.3
-	anchor("SEARS", sears.X, sears.Y, 14, 13, seAng, { { searsDoor.X, searsDoor.Y, seAng - math.pi / 2 } })
+	local sears = ARMS[2].b + se * (15 / 2)
+	department("SEARS", sears.X, sears.Y, 15, 14, seAng, "-X", { 0 })
 
 	-- JCPenney and Bon-Ton both sit on the NORTH side, on opposite arms, with
 	-- the bend between them. Three earlier versions had one or both on the
 	-- south, which is what Chris kept seeing as wrong: on the aerial there is
 	-- open ground between them right at the court, and putting them on the same
 	-- flank closed that gap up.
-	local jcpZ = -(EDGE + 11 / 2)
-	anchor("JCPENNEY", -6, jcpZ, 14, 11, 0, { { -9, -EDGE, 0 }, { -3, -EDGE, 0 } })
+	department("JCPENNEY", -10, -(EDGE + 12 / 2), 15, 12, 0, "+Z", { -3, 3 })
 
-	local bt = BEND + se * 5.0 + seNE * (EDGE + 10 / 2)
-	local btDoor = BEND + se * 5.0 + seNE * EDGE
-	anchor("BON-TON", bt.X, bt.Y, 12, 10, seAng, { { btDoor.X, btDoor.Y, seAng + math.pi / 2 } })
+	local bt = BEND + se * 8 + seNE * (EDGE + 11 / 2)
+	department("BON-TON", bt.X, bt.Y, 13, 11, seAng, "+Z", { 0 })
 
 	M.Parent = map
 	return M
