@@ -53,8 +53,12 @@
       "$className": "Lighting",
       "$properties": {
         "Ambient": [0, 0, 0],
-        "OutdoorAmbient": [10, 14, 26],
-        "Brightness": 0.5,
+        "OutdoorAmbient": [28, 34, 48],
+        "Brightness": 0.45,
+        "ExposureCompensation": -0.05,
+        "EnvironmentDiffuseScale": 0,
+        "EnvironmentSpecularScale": 0,
+        "ShadowSoftness": 0.35,
         "ClockTime": 2,
         "GlobalShadows": true,
         "Technology": "Future"

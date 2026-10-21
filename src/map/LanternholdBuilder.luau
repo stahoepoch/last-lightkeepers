@@ -558,14 +558,20 @@ function LanternholdBuilder.Build(): Model
 	-- stalling on a step until a small icon was put over the thing they were
 	-- meant to use. This is that icon.
 	do
+		-- Brightness 1.4 and range 42, the same as every other lamp in the
+		-- building. These were 2.2 and 2.6 at range 52, which is nearly twice
+		-- the house lamp, and the Lighting block was tuned for a hall lit by
+		-- house lamps. Marking the way out does not require out-shouting the
+		-- room: the posts and the pad read as the departure because they are
+		-- the only lit thing outside the doors, not because they are hot.
 		local glow = Instance.new("PointLight")
-		glow.Color, glow.Brightness, glow.Range, glow.Shadows = Color3.fromRGB(255, 206, 140), 2.2, 40, false
+		glow.Color, glow.Brightness, glow.Range, glow.Shadows = Color3.fromRGB(255, 206, 140), 1.2, 34, false
 		glow.Parent = departure
 		for _, x in ipairs({ -20, 20 }) do
 			box(F.Markers, `RoadLampPost_{x}`, x - 1.2, x + 1.2, B, B + 9, -18, -14, C.iron, Enum.Material.Metal)
 			local head = box(F.Markers, `RoadLamp_{x}`, x - 2.6, x + 2.6, B + 9, B + 12, -18.6, -13.4, C.gilt, Enum.Material.Metal)
 			local lamp = Instance.new("PointLight")
-			lamp.Color, lamp.Brightness, lamp.Range, lamp.Shadows = Color3.fromRGB(255, 196, 120), 2.6, 52, false
+			lamp.Color, lamp.Brightness, lamp.Range, lamp.Shadows = Color3.fromRGB(255, 196, 120), 1.4, 42, false
 			lamp.Parent = head
 		end
 	end
@@ -599,12 +605,19 @@ function LanternholdBuilder.Build(): Model
 		local beam = Instance.new("Beam")
 		beam.Name = "RoadBeam"
 		beam.Attachment0, beam.Attachment1 = a0, a1
+		-- LightInfluence 1, not 0. At 0 a Beam is drawn at full brightness no
+		-- matter what the lighting says - it ignores Brightness, exposure and
+		-- every lamp in the room - so this one lay across the hall floor as a
+		-- hard white strip and no lighting change would touch it. It was a
+		-- large part of why the hub looked blown out and why turning the lights
+		-- off changed nothing. At 1 it is lit like everything else, and it is
+		-- thinner and fainter besides: a line on the floor, not a light source.
 		beam.Color = ColorSequence.new(Color3.fromRGB(255, 206, 140))
-		beam.Width0, beam.Width1 = 3, 6
-		beam.LightInfluence, beam.FaceCamera = 0, false
+		beam.Width0, beam.Width1 = 1.6, 3
+		beam.LightInfluence, beam.FaceCamera = 1, false
 		beam.Transparency = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 0.55),
-			NumberSequenceKeypoint.new(1, 0.15),
+			NumberSequenceKeypoint.new(0, 0.75),
+			NumberSequenceKeypoint.new(1, 0.5),
 		})
 		beam.Parent = ret
 	end
