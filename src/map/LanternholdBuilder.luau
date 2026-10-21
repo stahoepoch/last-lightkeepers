@@ -290,8 +290,15 @@ local function flight(parent: Instance, name: string, x0: number, x1: number, zL
 	part(parent, `{name}_Deck`, Vector3.new(x1 - x0, 2, hyp), cf, C.trim, Enum.Material.Concrete)
 	for k = 1, 14 do
 		local t = ((k - 0.5) / 14 - 0.5) * hyp
-		local tread = part(parent, `{name}_Tread_{k}`, Vector3.new(x1 - x0 - 1, 0.4, 1), cf * CFrame.new(0, 1.2, t), C.stone, Enum.Material.Concrete)
-		tread.CanCollide = false
+		-- Flush with the ramp, not standing on it. At 1.2 they were 0.4 studs
+		-- proud and non-colliding, so you walked the smooth deck underneath
+		-- while your legs passed through every visible step - the same ghost
+		-- step the Galleria escalators had, and the likeliest reading of
+		-- Chris's "the stairs going up are all weird". Either they are real
+		-- geometry you stand on or they are paint; they cannot be a raised
+		-- thing you pass through.
+		local tread = part(parent, `{name}_Tread_{k}`, Vector3.new(x1 - x0 - 1, 0.4, 1), cf * CFrame.new(0, 0.82, t), C.stone, Enum.Material.Concrete)
+		tread.CanCollide, tread.CanTouch, tread.CanQuery = false, false, false
 	end
 	-- One handrail, on the outer side only. Railed on both, the flight is a
 	-- walled corridor and the rail on the landing side stands between the top
