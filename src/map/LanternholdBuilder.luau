@@ -153,13 +153,27 @@ end
 --- A flight as one ramp with treads drawn on it. Discrete steps do not produce
 --- a navmesh anything can path over - that fault has kept the other map's
 --- stairs unusable since the first playtest.
+--- A flight as one ramp with treads drawn on it, and a flat pad at each end.
+--- Discrete steps do not produce a navmesh anything can path over, which is
+--- the fault that has kept the other map's stairs unusable since the first
+--- playtest. The pads matter just as much: a ramp ends in a tilted wedge, and
+--- the navmesh will not generate on that last sliver.
+---
+--- The pads butt against the ramp rather than overlapping it. Overlapped, the
+--- pad's flat top stood a stud and a third proud of the sloping deck beneath
+--- it, and pathfinding walked three quarters of the way up every flight and
+--- stopped dead at that lip.
 local function flight(parent: Instance, name: string, x0: number, x1: number, zLow: number, zHigh: number, yLow: number, yHigh: number)
-	local run = math.abs(zHigh - zLow)
+	local dirZ = if zHigh > zLow then 1 else -1
+	local PAD = 14
+	-- The ramp stops short of the nominal top; the head pad covers the rest.
+	local zTop = zHigh - dirZ * PAD
+	local run = math.abs(zTop - zLow)
 	local rise = yHigh - yLow
 	local hyp = math.sqrt(run * run + rise * rise)
 	local pitch = math.atan2(rise, run)
-	local cf = CFrame.new((x0 + x1) / 2, (yLow + yHigh) / 2 - 1, (zLow + zHigh) / 2)
-		* CFrame.Angles(0, if zHigh > zLow then 0 else math.pi, 0)
+	local cf = CFrame.new((x0 + x1) / 2, (yLow + yHigh) / 2 - 1, (zLow + zTop) / 2)
+		* CFrame.Angles(0, if dirZ > 0 then 0 else math.pi, 0)
 		* CFrame.Angles(-pitch, 0, 0)
 	part(parent, `{name}_Deck`, Vector3.new(x1 - x0, 2, hyp), cf, C.trim, Enum.Material.Concrete)
 	for k = 1, 14 do
@@ -168,18 +182,15 @@ local function flight(parent: Instance, name: string, x0: number, x1: number, zL
 		tread.CanCollide = false
 	end
 	-- One handrail, on the outer side only. Railed on both, the flight is a
-	-- walled corridor: the rail on the landing side stood between the top of
-	-- the stair and the floor it arrives at, and no storey connected to any
-	-- other. The inner side opens onto the landing, which is the point of it.
+	-- walled corridor and the rail on the landing side stands between the top
+	-- of the stair and the floor it arrives at.
 	part(parent, `{name}_Rail`, Vector3.new(0.8, 3.4, hyp), cf * CFrame.new(-((x1 - x0) / 2 - 0.4), 2.6, 0), C.brass, Enum.Material.Metal)
 
-	-- A flat pad at each end, level with the floor it meets. A ramp ends in a
-	-- tilted wedge, and a navmesh will not generate on that last sliver: the
-	-- flights were geometrically correct, joined the landings at exactly the
-	-- right height, and still connected no storey to any other.
-	local dirZ = if zHigh > zLow then 1 else -1
-	box(parent, `{name}_Foot`, x0, x1, yLow - 2, yLow, zLow - dirZ * 9, zLow + dirZ * 3, C.trim, Enum.Material.Concrete)
-	box(parent, `{name}_Head`, x0, x1, yHigh - 2, yHigh, zHigh - dirZ * 3, zHigh + dirZ * 9, C.trim, Enum.Material.Concrete)
+	local function pad(nm: string, y: number, za: number, zb: number)
+		box(parent, nm, x0, x1, y - 2, y, math.min(za, zb), math.max(za, zb), C.trim, Enum.Material.Concrete)
+	end
+	pad(`{name}_Foot`, yLow, zLow - dirZ * PAD, zLow)
+	pad(`{name}_Head`, yHigh, zTop, zTop + dirZ * (PAD + 6))
 end
 
 function LanternholdBuilder.Build(): Model
