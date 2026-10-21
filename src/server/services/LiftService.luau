@@ -47,6 +47,47 @@ local function ridersOn(car: BasePart): { Model }
 	return riders
 end
 
+--- The heights this car serves, lowest first. A `Stops` attribute carries a
+--- comma separated list, because Lanternhold's lift calls at four floors and
+--- the Galleria's at two; a pair of attributes only ever described the second.
+local function stopsOf(car: BasePart): { number }
+	local raw = car:GetAttribute("Stops")
+	local out: { number } = {}
+	if type(raw) == "string" then
+		for piece in string.gmatch(raw, "[^,%s]+") do
+			local n = tonumber(piece)
+			if n then
+				table.insert(out, n)
+			end
+		end
+	else
+		local low, high = car:GetAttribute("LowY"), car:GetAttribute("HighY")
+		if type(low) == "number" and type(high) == "number" then
+			out = { low, high }
+		end
+	end
+	table.sort(out)
+	return out
+end
+
+--- The next floor in the direction of travel, turning round at either end.
+local function nextStop(stops: { number }, at: number, rising: boolean): (number, boolean)
+	local nearest, index = math.huge, 1
+	for i, y in ipairs(stops) do
+		if math.abs(y - at) < nearest then
+			nearest, index = math.abs(y - at), i
+		end
+	end
+	if rising and index < #stops then
+		return stops[index + 1], true
+	elseif rising then
+		return stops[index - 1] or stops[index], false
+	elseif index > 1 then
+		return stops[index - 1], false
+	end
+	return stops[index + 1] or stops[index], true
+end
+
 local function travel(car: BasePart, to: number)
 	local from = car.Position.Y
 	local riders = ridersOn(car)
@@ -73,9 +114,8 @@ function LiftService.init()
 		if not car:IsA("BasePart") then
 			continue
 		end
-		local low = car:GetAttribute("LowY")
-		local high = car:GetAttribute("HighY")
-		if type(low) ~= "number" or type(high) ~= "number" then
+		local stops = stopsOf(car)
+		if #stops < 2 then
 			continue
 		end
 
@@ -90,14 +130,14 @@ function LiftService.init()
 			prompt.Parent = car
 		end
 
-		local busy = false
+		local busy, rising = false, true
 		prompt.Triggered:Connect(function()
 			if busy then
 				return
 			end
 			busy = true
-			-- Whichever end it is not at.
-			local to = if math.abs(car.Position.Y - low) < math.abs(car.Position.Y - high) then high else low
+			local to, nowRising = nextStop(stops, car.Position.Y, rising)
+			rising = nowRising
 			prompt.Enabled = false
 			travel(car, to)
 			prompt.Enabled = true

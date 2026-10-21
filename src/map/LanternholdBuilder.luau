@@ -1,65 +1,74 @@
 --!strict
--- Lanternhold — the hub, and the lobby you arrive in.
+-- Lanternhold — the hub, built as the four-storey hall it is taken from.
 --
--- Built from docs/LANTERNHOLD.md. Three ideas from that document do all the
--- work here, and none of them is decoration:
+-- Chris went and stood in the real building and sent back its programme:
+-- basement, then floors one, two and three, with a lift inside. The basement
+-- is the kitchen and food rooms, one floor is a giant ballroom, the second has
+-- the lodge rooms - an Egyptian room and a Gothic chapel - and the third is a
+-- museum and storage. "We can make basement the lobby beginning."
 --
---   1. MOST OF THE HALL IS DARK, AND VISIBLY SO. Not missing - there, and
---      unlit. The order laid its cornerstone in 1931 and did not finish the
---      main room until 1948; they moved in with one hall done, got caught by
---      the Depression, and met in a side room for twenty years. So the Great
---      Hall is built, full size, and black. You can see into it from the
---      Landing and you cannot go in. That single arch answers "why am I going
---      back out there" every time a player turns round, with no dialogue and
---      almost no content.
+-- That is better than anything invented, so the hub is the building now rather
+-- than a hall with rooms off it:
 --
---   2. THE LAMP WALL. One lantern per Lightkeeper currently out. Yours burns
---      here while you are away; it comes down when you extract and goes out in
---      front of the whole hall when you wipe. The hall is inhabited even when
---      nobody is standing in it.
+--   BASEMENT  the Landing you arrive in, the Community Kitchen, the Lamp Wall
+--             and your workshop corner. Lit, warm, lived in.
+--   FLOOR 1   the ballroom. Eight thousand square feet, built, roofed, unlit.
+--   FLOOR 2   the lodge rooms. Egyptian and Norman Gothic, both dark and shut.
+--   FLOOR 3   the museum - the Keeping Room, where relics are named - and the
+--             storage rooms, which are not lit either.
 --
---   3. YOU ARE SAFE BECAUSE YOU ARE FAR. The road arrives from the south out
---      of the farms, and the building is too big for the people in it.
+-- The dark was always the point and now it has four floors to be dark on. From
+-- the basement you see up the stair well past three unlit landings, which is
+-- the argument for going back out there, made without a word.
 --
--- The geometry here is in studs, not the model units the Galleria uses. That
--- mall was traced off a real floor plan and needed a scale factor; this is one
--- building and reads better in the units it is walked in.
+-- The building is real, so the detail is checkable: J. C. Fulton and Son of
+-- Uniontown designed it for the Johnstown masons in the mid-1920s, in Moxham.
+-- The ballroom is about 8,000 square feet, the Egyptian room is original, and
+-- the castle-styled room has wood beams and slate floors. Chris puts the lodge
+-- rooms on the second floor; the Society of Architectural Historians puts the
+-- Egyptian room on the third. He is in the building and I am not.
 --
--- Run from the command bar:
+-- Geometry is in studs. A player is about five studs tall, so a table top is
+-- two and a bit and a door is eight. The previous version had tables at nine
+-- studs and doors at twenty-two, which is what Chris meant by "some of the
+-- stuff in lanternhold is huge and not to scale with players."
+--
 --   require(workspace.Map.LanternholdBuilder).Build()
--- Builds Workspace.Lanternhold. Deliberately NOT inside Workspace.Map:
--- FloodedMallBuilder clears every child of Map except itself on the first line
--- of its build, so anything parented there is destroyed when the server starts.
+-- Builds Workspace.Lanternhold. Deliberately NOT under Workspace.Map, because
+-- FloodedMallBuilder clears every child of Map on the first line of its build.
 
 local CollectionService = game:GetService("CollectionService")
 local Workspace = game:GetService("Workspace")
 
 local LanternholdBuilder = {}
 
--- The plan. South is -Z: the road comes up from the farms and meets the hall.
-local W = 130 -- the hall's half-width
-local LANDING_Z0, LANDING_Z1 = 0, 80 -- the lobby
-local HALL_Z1 = 230 -- the back wall
-local SIDE_X = -40 -- divide: side room west of this, Great Hall east
-local KEEP_Z = 136 -- the kitchen gives way to the Keeping Room here
-local CORRIDOR_Z = 170 -- where the lit side room gives out to the dark
+-- The plan. South is -Z: the road arrives from the farms.
+local W = 130 -- half-width
+local Z0, Z1 = 0, 230 -- south and north walls
+local CORE_X0, CORE_X1 = -126, -72 -- the stair and lift core, west side
+local CORE_Z0, CORE_Z1 = 16, 92
 
-local FLOOR_Y = 0
-local LANDING_H = 34
-local GREAT_H = 58
+-- Floor levels, as the height you stand on, and the ceiling over each.
+local LEVELS = { 0, 26, 64, 92 }
+local HEADS = { 24, 62, 90, 118 }
+local TOP = 126
+
 local WALL_T = 4
-local DOOR_H = 22
+local DOOR_H = 8 -- a door a person walks through
+local DOOR_W = 14
 
 local C = {
-	brick = Color3.fromRGB(150, 108, 92),
-	stone = Color3.fromRGB(206, 198, 186),
+	stone = Color3.fromRGB(206, 196, 176), -- cast stone, not brick. See the photograph.
+	trim = Color3.fromRGB(176, 166, 148),
 	timber = Color3.fromRGB(120, 84, 56),
 	board = Color3.fromRGB(168, 150, 128),
-	dark = Color3.fromRGB(38, 36, 40),
+	dark = Color3.fromRGB(34, 32, 36),
 	brass = Color3.fromRGB(198, 160, 92),
 	glass = Color3.fromRGB(196, 214, 212),
 	cloth = Color3.fromRGB(122, 74, 62),
 	grass = Color3.fromRGB(94, 104, 74),
+	egypt = Color3.fromRGB(150, 116, 58),
+	gothic = Color3.fromRGB(86, 90, 104),
 }
 local WARM = Color3.fromRGB(255, 214, 160)
 
@@ -74,16 +83,13 @@ local function part(parent: Instance, name: string, size: Vector3, cf: CFrame, c
 	return p
 end
 
--- Everything in this file is an axis-aligned slab between two corners, which is
--- how a building is actually described. Bounds in, part out.
 local function box(parent: Instance, name: string, x0: number, x1: number, y0: number, y1: number, z0: number, z1: number, colour: Color3, mat: Enum.Material?, trans: number?): Part
 	return part(parent, name, Vector3.new(x1 - x0, y1 - y0, z1 - z0), CFrame.new((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2), colour, mat, trans)
 end
 
--- A wall with doorways cut in it. `gaps` are ranges along the run; each gets a
--- lintel over it so an opening is a doorway and not a slot to the roof.
-local function wall(parent: Instance, name: string, axis: string, at: number, from: number, to: number, y0: number, y1: number, colour: Color3, gaps: { { number } }, headY: number?)
-	local head = headY or (y0 + DOOR_H)
+--- A wall with doorways cut in it, each with a lintel over it.
+local function wall(parent: Instance, name: string, axis: string, at: number, from: number, to: number, y0: number, y1: number, colour: Color3, gaps: { { number } })
+	local head = math.min(y0 + DOOR_H, y1)
 	local cuts = table.clone(gaps)
 	table.sort(cuts, function(a, b)
 		return a[1] < b[1]
@@ -98,20 +104,22 @@ local function wall(parent: Instance, name: string, axis: string, at: number, fr
 	if cursor < to then
 		table.insert(runs, { cursor, to })
 	end
-	local half = WALL_T / 2
+	local h = WALL_T / 2
 	for i, r in ipairs(runs) do
-		if axis == "X" then
-			box(parent, `{name}_{i}`, at - half, at + half, y0, y1, r[1], r[2], colour, Enum.Material.Brick)
-		else
-			box(parent, `{name}_{i}`, r[1], r[2], y0, y1, at - half, at + half, colour, Enum.Material.Brick)
+		if r[2] - r[1] > 0.01 then
+			if axis == "X" then
+				box(parent, `{name}_{i}`, at - h, at + h, y0, y1, r[1], r[2], colour, Enum.Material.Concrete)
+			else
+				box(parent, `{name}_{i}`, r[1], r[2], y0, y1, at - h, at + h, colour, Enum.Material.Concrete)
+			end
 		end
 	end
 	for i, g in ipairs(cuts) do
 		if y1 > head then
 			if axis == "X" then
-				box(parent, `{name}_Lintel_{i}`, at - half, at + half, head, y1, g[1], g[2], colour, Enum.Material.Brick)
+				box(parent, `{name}_Head_{i}`, at - h, at + h, head, y1, g[1], g[2], colour, Enum.Material.Concrete)
 			else
-				box(parent, `{name}_Lintel_{i}`, g[1], g[2], head, y1, at - half, at + half, colour, Enum.Material.Brick)
+				box(parent, `{name}_Head_{i}`, g[1], g[2], head, y1, at - h, at + h, colour, Enum.Material.Concrete)
 			end
 		end
 	end
@@ -123,24 +131,55 @@ local function label(host: BasePart, text: string, face: Enum.NormalId, size: nu
 	local l = Instance.new("TextLabel")
 	l.Size, l.BackgroundTransparency = UDim2.fromScale(1, 1), 1
 	l.Font, l.TextScaled = Enum.Font.GothamBold, true
-	l.TextSize = size or 40
+	l.TextSize = size or 34
 	l.TextColor3, l.Text = Color3.fromRGB(240, 226, 200), text
 	l.Parent = g
 end
 
 local function lamp(parent: Instance, name: string, x: number, y: number, z: number, lit: boolean): Part
-	local glass = part(parent, name, Vector3.new(6, 9, 6), CFrame.new(x, y, z), if lit then WARM else C.dark, Enum.Material.Glass, 0.35)
-	part(parent, `{name}_Bracket`, Vector3.new(2, 2, 7), CFrame.new(x, y + 5, z), C.brass, Enum.Material.Metal)
+	local glass = part(parent, name, Vector3.new(3, 4.5, 3), CFrame.new(x, y, z), if lit then WARM else C.dark, Enum.Material.Glass, 0.35)
+	part(parent, `{name}_Bracket`, Vector3.new(1, 1, 3.5), CFrame.new(x, y + 2.6, z), C.brass, Enum.Material.Metal)
 	if lit then
 		local light = Instance.new("PointLight")
-		light.Color, light.Brightness, light.Range = WARM, 1.4, 34
-		-- Shadows off everywhere in this build. A lantern that casts shadows
-		-- strobes as the player walks past the posts; Chris hit exactly that in
-		-- the mall and his words were "there is a ton of flickering when i walk".
+		light.Color, light.Brightness, light.Range = WARM, 1.5, 42
+		-- Shadows off everywhere. A lantern that casts them strobes as you walk
+		-- past the posts, which is the flicker Chris hit in the mall.
 		light.Shadows = false
 		light.Parent = glass
 	end
 	return glass
+end
+
+--- A flight as one ramp with treads drawn on it. Discrete steps do not produce
+--- a navmesh anything can path over - that fault has kept the other map's
+--- stairs unusable since the first playtest.
+local function flight(parent: Instance, name: string, x0: number, x1: number, zLow: number, zHigh: number, yLow: number, yHigh: number)
+	local run = math.abs(zHigh - zLow)
+	local rise = yHigh - yLow
+	local hyp = math.sqrt(run * run + rise * rise)
+	local pitch = math.atan2(rise, run)
+	local cf = CFrame.new((x0 + x1) / 2, (yLow + yHigh) / 2 - 1, (zLow + zHigh) / 2)
+		* CFrame.Angles(0, if zHigh > zLow then 0 else math.pi, 0)
+		* CFrame.Angles(-pitch, 0, 0)
+	part(parent, `{name}_Deck`, Vector3.new(x1 - x0, 2, hyp), cf, C.trim, Enum.Material.Concrete)
+	for k = 1, 14 do
+		local t = ((k - 0.5) / 14 - 0.5) * hyp
+		local tread = part(parent, `{name}_Tread_{k}`, Vector3.new(x1 - x0 - 1, 0.4, 1), cf * CFrame.new(0, 1.2, t), C.stone, Enum.Material.Concrete)
+		tread.CanCollide = false
+	end
+	-- One handrail, on the outer side only. Railed on both, the flight is a
+	-- walled corridor: the rail on the landing side stood between the top of
+	-- the stair and the floor it arrives at, and no storey connected to any
+	-- other. The inner side opens onto the landing, which is the point of it.
+	part(parent, `{name}_Rail`, Vector3.new(0.8, 3.4, hyp), cf * CFrame.new(-((x1 - x0) / 2 - 0.4), 2.6, 0), C.brass, Enum.Material.Metal)
+
+	-- A flat pad at each end, level with the floor it meets. A ramp ends in a
+	-- tilted wedge, and a navmesh will not generate on that last sliver: the
+	-- flights were geometrically correct, joined the landings at exactly the
+	-- right height, and still connected no storey to any other.
+	local dirZ = if zHigh > zLow then 1 else -1
+	box(parent, `{name}_Foot`, x0, x1, yLow - 2, yLow, zLow - dirZ * 9, zLow + dirZ * 3, C.trim, Enum.Material.Concrete)
+	box(parent, `{name}_Head`, x0, x1, yHigh - 2, yHigh, zHigh - dirZ * 3, zHigh + dirZ * 9, C.trim, Enum.Material.Concrete)
 end
 
 function LanternholdBuilder.Build(): Model
@@ -152,240 +191,227 @@ function LanternholdBuilder.Build(): Model
 	local M = Instance.new("Model")
 	M.Name = "Lanternhold"
 	local F: { [string]: Folder } = {}
-	for _, n in ipairs({ "Ground", "Shell", "Landing", "GreatHall", "SideRoom", "LampWall", "Fixtures", "Markers" }) do
+	for _, n in ipairs({ "Ground", "Shell", "Core", "Basement", "Ballroom", "Lodge", "Museum", "Fixtures", "Markers" }) do
 		local f = Instance.new("Folder")
 		f.Name, f.Parent = n, M
 		F[n] = f
 	end
 
-	-- ---------------------------------------------------------------- outside
-	-- Ground enough to arrive across, and the road up out of the farms. The
-	-- approach is a ramp rather than steps: discrete steps do not generate a
-	-- navmesh anything can path over, which is the fault that has kept the
-	-- other map's stairs unusable since the first playtest.
-	box(F.Ground, "Ground", -360, 360, -8, -2, -220, 330, C.grass, Enum.Material.Grass)
-	-- Road, porch and hall floor all top out at the same height. The first
-	-- version had a tilted approach slab bridging a one-stud rise and the road
-	-- would not path to the Landing at all; a ramp solving a step that does not
-	-- exist is just an obstacle laid across the front door.
-	box(F.Ground, "Road", -34, 34, -2, FLOOR_Y, -220, -34, C.stone, Enum.Material.Concrete)
-	box(F.Ground, "Porch", -70, 70, -2, FLOOR_Y, -34, LANDING_Z0, C.stone, Enum.Material.Concrete)
+	-- ------------------------------------------------------------- outside
+	box(F.Ground, "Ground", -420, 420, -8, -2, -260, 400, C.grass, Enum.Material.Grass)
+	box(F.Ground, "Road", -30, 30, -2, 0, -260, -30, C.trim, Enum.Material.Concrete)
+	box(F.Ground, "Porch", -60, 60, -2, 0, -30, Z0, C.trim, Enum.Material.Concrete)
 
-	-- ---------------------------------------------------------------- shell
-	box(F.Shell, "Floor", -W, W, -2, FLOOR_Y, LANDING_Z0, HALL_Z1, C.board, Enum.Material.WoodPlanks)
-	wall(F.Shell, "WallWest", "X", -W, LANDING_Z0, HALL_Z1, FLOOR_Y, GREAT_H, C.brick, {})
-	wall(F.Shell, "WallEast", "X", W, LANDING_Z0, HALL_Z1, FLOOR_Y, GREAT_H, C.brick, {})
-	wall(F.Shell, "WallNorth", "Z", HALL_Z1, -W, W, FLOOR_Y, GREAT_H, C.brick, {})
-	-- The front, with the door in it.
-	wall(F.Shell, "WallSouth", "Z", LANDING_Z0, -W, W, FLOOR_Y, LANDING_H, C.brick, { { -15, 15 } })
-	box(F.Shell, "Cornice", -W - 4, W + 4, GREAT_H, GREAT_H + 6, LANDING_Z0 - 4, HALL_Z1 + 4, C.stone, Enum.Material.Concrete)
-	box(F.Shell, "RoofGreat", -W, W, GREAT_H, GREAT_H + 2, LANDING_Z1, HALL_Z1, C.dark, Enum.Material.Slate)
-	box(F.Shell, "RoofLanding", -W, W, LANDING_H, LANDING_H + 2, LANDING_Z0, LANDING_Z1, C.dark, Enum.Material.Slate)
+	-- ------------------------------------------------------------- the shell
+	-- Pale cast stone, tall recessed window slots between flat pilasters, a
+	-- carved band under a plain parapet, and a blank stair tower at one end.
+	-- That is the building in Chris's photograph, and nothing like the brick
+	-- box this used to be.
+	-- Every slab above the basement is built around the stair well rather than
+	-- across it. Laid solid, the flights ran straight up into the underside of
+	-- the floor above and no route between storeys existed at all - the hall
+	-- had four floors and no way between them.
+	for i, lvl in ipairs(LEVELS) do
+		if i == 1 then
+			box(F.Shell, `Slab_{i}`, -W, W, lvl - 2, lvl, Z0, Z1, C.board, Enum.Material.WoodPlanks)
+		else
+			box(F.Shell, `Slab_{i}_E`, CORE_X1, W, lvl - 2, lvl, Z0, Z1, C.board, Enum.Material.WoodPlanks)
+			box(F.Shell, `Slab_{i}_W`, -W, CORE_X0, lvl - 2, lvl, Z0, Z1, C.board, Enum.Material.WoodPlanks)
+			box(F.Shell, `Slab_{i}_S`, CORE_X0, CORE_X1, lvl - 2, lvl, Z0, CORE_Z0, C.board, Enum.Material.WoodPlanks)
+			box(F.Shell, `Slab_{i}_N`, CORE_X0, CORE_X1, lvl - 2, lvl, CORE_Z1, Z1, C.board, Enum.Material.WoodPlanks)
+		end
+	end
+	box(F.Shell, "Roof", -W, W, TOP, TOP + 2, Z0, Z1, C.dark, Enum.Material.Slate)
+	wall(F.Shell, "WallWest", "X", -W, Z0, Z1, 0, TOP, C.stone, {})
+	wall(F.Shell, "WallEast", "X", W, Z0, Z1, 0, TOP, C.stone, {})
+	wall(F.Shell, "WallNorth", "Z", Z1, -W, W, 0, TOP, C.stone, {})
+	wall(F.Shell, "WallSouth", "Z", Z0, -W, W, 0, TOP, C.stone, { { -DOOR_W, DOOR_W } })
 
-	-- The name over the door, cut in stone.
-	local stone = box(F.Shell, "NameStone", -46, 46, LANDING_H - 14, LANDING_H - 2, LANDING_Z0 - 3.2, LANDING_Z0 - 2, C.stone, Enum.Material.Concrete)
-	label(stone, "LANTERNHOLD", Enum.NormalId.Front)
+	for i = 0, 8 do
+		local z = Z0 + 14 + i * 24
+		for _, x in ipairs({ -W - 2, W + 2 }) do
+			box(F.Shell, `Pilaster_{i}_{x}`, x - 2, x + 2, 0, TOP, z - 5, z + 5, C.stone, Enum.Material.Concrete)
+		end
+		if i < 8 then
+			for _, x in ipairs({ -W - 1, W + 1 }) do
+				-- One tall recessed slot per bay: in the photograph the glazing
+				-- runs most of the height rather than floor by floor.
+				box(F.Shell, `Glazing_{i}_{x}`, x - 1, x + 1, 30, TOP - 16, z + 7, z + 22, C.glass, Enum.Material.Glass, 0.45)
+			end
+		end
+	end
+	box(F.Shell, "Frieze", -W - 4, W + 4, TOP - 14, TOP - 8, Z0 - 4, Z1 + 4, C.trim, Enum.Material.Concrete)
+	box(F.Shell, "Parapet", -W - 4, W + 4, TOP, TOP + 8, Z0 - 4, Z1 + 4, C.stone, Enum.Material.Concrete)
+	box(F.Shell, "Tower", -W - 10, -W + 16, 0, TOP + 22, Z0 + 6, Z0 + 44, C.stone, Enum.Material.Concrete)
 
-	-- ---------------------------------------------------------------- landing
-	box(F.Landing, "Ceiling", -W, W, LANDING_H - 2, LANDING_H, LANDING_Z0, LANDING_Z1, C.timber, Enum.Material.WoodPlanks)
+	local name = box(F.Shell, "NameStone", -40, 40, 15, 23, Z0 - 3.2, Z0 - 2, C.trim, Enum.Material.Concrete)
+	label(name, "LANTERNHOLD", Enum.NormalId.Front)
+
+	-- ------------------------------------------------------------- the core
+	-- Stairs and the lift in one well, open the whole height. From the basement
+	-- you can see three unlit landings above you.
+	for i = 2, #LEVELS do
+		local up = i % 2 == 0
+		flight(F.Core, `Stair_{i}`, CORE_X0 + 6, CORE_X0 + 32, if up then CORE_Z0 + 8 else CORE_Z1 - 8, if up then CORE_Z1 - 8 else CORE_Z0 + 8, LEVELS[i - 1], LEVELS[i])
+	end
+	wall(F.Core, "CoreEast", "X", CORE_X1, CORE_Z0, CORE_Z1, 0, TOP, C.stone, {})
+	for i, lvl in ipairs(LEVELS) do
+		box(F.Core, `CoreLanding_{i}`, CORE_X0 + 32, CORE_X1, lvl - 2, lvl, CORE_Z0, CORE_Z1, C.board, Enum.Material.WoodPlanks)
+	end
+
+	local LIFT_X0, LIFT_X1 = CORE_X1 + 6, CORE_X1 + 34
+	local LIFT_Z0, LIFT_Z1 = CORE_Z0 + 10, CORE_Z0 + 38
+	wall(F.Core, "LiftWallW", "X", LIFT_X0, LIFT_Z0, LIFT_Z1, 0, TOP, C.trim, {})
+	wall(F.Core, "LiftWallE", "X", LIFT_X1, LIFT_Z0, LIFT_Z1, 0, TOP, C.trim, {})
+	wall(F.Core, "LiftWallN", "Z", LIFT_Z1, LIFT_X0, LIFT_X1, 0, TOP, C.trim, {})
+	local car = box(F.Core, "LiftCar", LIFT_X0 + 2, LIFT_X1 - 2, -2, 0, LIFT_Z0 + 2, LIFT_Z1 - 2, C.trim, Enum.Material.Metal)
+	car:SetAttribute("Stops", "0,26,64,92")
+	CollectionService:AddTag(car, "Lift")
+
+	-- ------------------------------------------------------------- basement
+	local B = LEVELS[1]
+	wall(F.Basement, "LandingNorth", "Z", 86, CORE_X1, W, B, HEADS[1], C.stone, { { -30, -2 } })
+	-- Stops at the core. Carried across it, this ceiling capped the stair well
+	-- and the first flight rose straight into its underside, which is why no
+	-- floor above the basement could be reached.
+	box(F.Basement, "LandingCeiling", CORE_X1, W, HEADS[1], HEADS[1] + 2, Z0, 86, C.timber, Enum.Material.WoodPlanks)
 	for i = -1, 1, 2 do
 		for j = 0, 1 do
-			local x = i * 62
-			local z = 22 + j * 34
-			part(F.Landing, `Post_{i}_{j}`, Vector3.new(9, LANDING_H - 2, 9), CFrame.new(x, (LANDING_H - 2) / 2, z), C.timber, Enum.Material.WoodPlanks)
-		end
-	end
-	-- Doors, standing open. You are expected.
-	for i = -1, 1, 2 do
-		box(F.Landing, `Door_{i}`, i * 15 - (if i > 0 then 0 else 14), i * 15 + (if i > 0 then 14 else 0), FLOOR_Y, FLOOR_Y + DOOR_H, LANDING_Z0 - 1, LANDING_Z0 + 1, C.timber, Enum.Material.WoodPlanks)
-	end
-
-	-- ---------------------------------------------------------------- the dark
-	-- The Great Hall. Full size, built, and black. The arch is wide enough to
-	-- show the whole volume from the Landing and barred low enough that nobody
-	-- mistakes it for a way through.
-	wall(F.GreatHall, "ArchWall", "Z", LANDING_Z1, SIDE_X, W, FLOOR_Y, GREAT_H, C.brick, { { 10, 100 } }, FLOOR_Y + 40)
-	wall(F.GreatHall, "SideWall", "X", SIDE_X, LANDING_Z1, HALL_Z1, FLOOR_Y, GREAT_H, C.brick, {})
-	box(F.GreatHall, "DarkFloor", SIDE_X, W, -2, FLOOR_Y, LANDING_Z1, HALL_Z1, C.dark, Enum.Material.WoodPlanks)
-	-- Unlit fixtures hanging in it: the room is finished enough to have had
-	-- lights fitted and never switched on.
-	for i = 0, 3 do
-		local z = LANDING_Z1 + 28 + i * 32
-		part(F.GreatHall, `DeadChandelier_{i}`, Vector3.new(22, 3, 22), CFrame.new(45, GREAT_H - 16, z), C.dark, Enum.Material.Metal)
-		part(F.GreatHall, `DeadChain_{i}`, Vector3.new(1.4, 16, 1.4), CFrame.new(45, GREAT_H - 7, z), C.dark, Enum.Material.Metal)
-	end
-	-- The bar across the arch, and a board saying why.
-	-- A barrier you cannot walk under and cannot jump onto. The first version
-	-- was a brass rail at thirteen studs, which is above head height: it looked
-	-- like a barrier and pathfinding strolled straight underneath it into the
-	-- Great Hall. Ten studs of solid balustrade stops that without closing the
-	-- view - you stand back from it, and you see over it into the dark.
-	box(F.GreatHall, "ArchBarrier", 10, 100, FLOOR_Y, FLOOR_Y + 10, LANDING_Z1 - 1.5, LANDING_Z1 + 1.5, C.timber, Enum.Material.WoodPlanks)
-	box(F.GreatHall, "ArchRail", 9, 101, FLOOR_Y + 10.5, FLOOR_Y + 13, LANDING_Z1 - 2, LANDING_Z1 + 2, C.brass, Enum.Material.Metal)
-	for _, x in ipairs({ 12, 98 }) do
-		part(F.GreatHall, `ArchPost_{x}`, Vector3.new(3, 13, 3), CFrame.new(x, FLOOR_Y + 6.5, LANDING_Z1), C.brass, Enum.Material.Metal)
-	end
-	local notice = box(F.GreatHall, "ArchNotice", 38, 72, FLOOR_Y + 14, FLOOR_Y + 26, LANDING_Z1 - 2.2, LANDING_Z1 - 1.6, C.timber, Enum.Material.WoodPlanks)
-	label(notice, "THE GREAT HALL — NOT YET LIT", Enum.NormalId.Front, 28)
-
-	-- ---------------------------------------------------------------- the lit
-	-- The side room: where the order actually met for twenty years, and where
-	-- the Kitchen and the workshop corner go when they are built.
-	wall(F.SideRoom, "SideDoorWall", "Z", LANDING_Z1, -W, SIDE_X, FLOOR_Y, GREAT_H, C.brick, { { -100, -70 } })
-	box(F.SideRoom, "KitchenCeiling", -W, SIDE_X, LANDING_H - 2, LANDING_H, LANDING_Z1, KEEP_Z, C.timber, Enum.Material.WoodPlanks)
-	for i = 0, 1 do
-		lamp(F.SideRoom, `KitchenLamp_{i}`, -85, LANDING_H - 12, LANDING_Z1 + 18 + i * 30, true)
-	end
-
-	-- The Community Kitchen. v1's shared landmark and the Good Cheer Club's
-	-- first project: long tables and a servery, church-basement energy. The
-	-- hall has a kitchen before it has an armoury, which is the whole tone of
-	-- the place - a town that has done this before and knows the drill.
-	-- Two tables side by side across the room rather than stacked down it. The
-	-- kitchen is only fifty-six studs deep; stacked, the second table's benches
-	-- ran through the servery and out through the Keeping Room wall.
-	for i = 0, 1 do
-		local x0 = -122 + i * 42
-		local x1 = x0 + 36
-		local z = LANDING_Z1 + 22
-		box(F.Fixtures, `Table_{i}`, x0, x1, FLOOR_Y + 9, FLOOR_Y + 11, z - 7, z + 7, C.timber, Enum.Material.WoodPlanks)
-		for _, x in ipairs({ x0 + 5, x1 - 5 }) do
-			part(F.Fixtures, `TableLeg_{i}_{x}`, Vector3.new(3, 9, 3), CFrame.new(x, FLOOR_Y + 4.5, z), C.timber, Enum.Material.WoodPlanks)
-		end
-		for _, dz in ipairs({ -12, 12 }) do
-			box(F.Fixtures, `Bench_{i}_{dz}`, x0 + 3, x1 - 3, FLOOR_Y + 5, FLOOR_Y + 6.5, z + dz - 4, z + dz + 4, C.timber, Enum.Material.WoodPlanks)
+			lamp(F.Basement, `LandingLamp_{i}_{j}`, i * 54, HEADS[1] - 5, 26 + j * 36, true)
 		end
 	end
 
-	-- The servery along the far wall, and the hatch a crew hands its haul over
-	-- at. Contributing is a counter you walk up to, not a menu: the Club has a
-	-- ledger and a board, and this is where a restoration crate stops being
-	-- yours and starts being the next room's lighting.
-	box(F.Fixtures, "Servery", -124, -56, FLOOR_Y, FLOOR_Y + 12, KEEP_Z - 12, KEEP_Z - 4, C.timber, Enum.Material.WoodPlanks)
-	box(F.Fixtures, "ServeryTop", -126, -54, FLOOR_Y + 12, FLOOR_Y + 13.2, KEEP_Z - 13, KEEP_Z - 3, C.stone, Enum.Material.Concrete)
-	local hatch = box(F.Fixtures, "KitchenContribution", -108, -80, FLOOR_Y + 13.2, FLOOR_Y + 13.8, KEEP_Z - 13, KEEP_Z - 5, C.brass, Enum.Material.Metal)
-	hatch.CanCollide = false
-	label(hatch, "HAND IT IN", Enum.NormalId.Top, 26)
-	CollectionService:AddTag(hatch, "KitchenContribution")
-
-	-- Crates already handed in, stacked where they were put down. Evidence that
-	-- other people have been doing this, which is most of what makes a hub feel
-	-- lived in.
-	for i, spec in ipairs({ { -124, 98, 0 }, { -124, 98, 9 }, { -112, 100, 0 }, { -124, 110, 0 } }) do
-		local x, z, dy = spec[1], spec[2], spec[3]
-		box(F.Fixtures, `HandedIn_{i}`, x - 7, x + 7, FLOOR_Y + dy, FLOOR_Y + dy + 9, z - 7, z + 7, C.cloth, Enum.Material.WoodPlanks)
-	end
-
-	-- ---------------------------------------------------------------- keeping
-	-- The Keeping Room: the order's vault, and the game's lore engine. Relics
-	-- are the lantern-only tier, so the only way the story arrives is by
-	-- somebody taking the dangerous choice. Play it safe and you finish runs
-	-- and learn nothing; burn light and the hall starts talking.
-	wall(F.SideRoom, "KeepWall", "Z", KEEP_Z, -W, SIDE_X, FLOOR_Y, GREAT_H, C.brick, { { -100, -70 } })
-	box(F.SideRoom, "KeepCeiling", -W, SIDE_X, LANDING_H - 2, LANDING_H, KEEP_Z, CORRIDOR_Z, C.timber, Enum.Material.WoodPlanks)
-	lamp(F.SideRoom, "KeepLamp", -85, LANDING_H - 12, (KEEP_Z + CORRIDOR_Z) / 2, true)
-
-	-- Shelved and named. Each plinth is tagged and numbered so the gameplay
-	-- side can put a relic on one and write the plaque; the map only provides
-	-- the shelf.
-	-- Four plinths, two each side of the corridor door. Five evenly spaced
-	-- across this wall stood shoulder to shoulder over the doorway with
-	-- four-stud slots between them, and the dark corridor became unreachable.
-	for i, x in ipairs({ -124, -110, -62, -48 }) do
-		box(F.Fixtures, `Plinth_{i}`, x - 6, x + 6, FLOOR_Y, FLOOR_Y + 13, CORRIDOR_Z - 9, CORRIDOR_Z - 1, C.stone, Enum.Material.Concrete)
-		local slot = box(F.Fixtures, `RelicSlot_{i}`, x - 5, x + 5, FLOOR_Y + 13, FLOOR_Y + 13.6, CORRIDOR_Z - 8, CORRIDOR_Z - 2, C.brass, Enum.Material.Metal)
-		slot.CanCollide = false
-		slot:SetAttribute("Slot", i)
-		CollectionService:AddTag(slot, "RelicPlinth")
-		local plate = box(F.Fixtures, `Plaque_{i}`, x - 6, x + 6, FLOOR_Y + 7, FLOOR_Y + 11, CORRIDOR_Z - 9.8, CORRIDOR_Z - 9.2, C.brass, Enum.Material.Metal)
-		label(plate, "UNNAMED", Enum.NormalId.Front, 22)
-	end
-
-	-- The case that will never be filled. The order's earliest records burned
-	-- long before any flood, so nothing brought back from a run can go in here.
-	-- Building the empty case on purpose is the point: the oldest things in the
-	-- room are the ones nobody can name, and they stay that way.
-	box(F.Fixtures, "BurntCase", -126, -114, FLOOR_Y, FLOOR_Y + 3, KEEP_Z + 6, KEEP_Z + 28, C.stone, Enum.Material.Concrete)
-	box(F.Fixtures, "BurntCaseGlass", -126, -114, FLOOR_Y + 3, FLOOR_Y + 20, KEEP_Z + 6, KEEP_Z + 28, C.glass, Enum.Material.Glass, 0.72)
-	local burnt = box(F.Fixtures, "BurntCasePlaque", -113.8, -113.2, FLOOR_Y + 9, FLOOR_Y + 15, KEEP_Z + 8, KEEP_Z + 26, C.timber, Enum.Material.WoodPlanks)
-	label(burnt, "THE YEARS BEFORE THE FIRE — NOTHING RECOVERED", Enum.NormalId.Right, 20)
-
-	-- Past the side room it stops being finished. A corridor with no lamps in
-	-- it, and a door at the end that does not open.
-	wall(F.SideRoom, "CorridorWall", "Z", CORRIDOR_Z, -W, SIDE_X, FLOOR_Y, GREAT_H, C.brick, { { -100, -74 } })
-	box(F.SideRoom, "CorridorCeiling", -W, SIDE_X, LANDING_H - 2, LANDING_H, CORRIDOR_Z, HALL_Z1, C.dark, Enum.Material.WoodPlanks)
-	local shut = box(F.SideRoom, "ShutDoor", -100, -74, FLOOR_Y, FLOOR_Y + DOOR_H, HALL_Z1 - 3.2, HALL_Z1 - 2, C.timber, Enum.Material.WoodPlanks)
-	label(shut, "NO LAMPS BEYOND THIS DOOR", Enum.NormalId.Front, 24)
-	for i = 0, 2 do
-		lamp(F.SideRoom, `DeadCorridorLamp_{i}`, -85, LANDING_H - 12, CORRIDOR_Z + 12 + i * 16, false)
-	end
-
-	-- ---------------------------------------------------------------- lamp wall
-	-- One lantern per Lightkeeper out. The gameplay side binds a lamp to a
-	-- player and puts it out when they wipe; the map's job is to provide the
-	-- slots and make them legible, so each is tagged and numbered.
-	box(F.LampWall, "LampWallFace", W - WALL_T - 3, W - WALL_T, FLOOR_Y, FLOOR_Y + 30, 8, 72, C.timber, Enum.Material.WoodPlanks)
-	local plaque = box(F.LampWall, "LampWallPlaque", W - WALL_T - 4, W - WALL_T - 3.2, FLOOR_Y + 31, FLOOR_Y + 40, 20, 60, C.timber, Enum.Material.WoodPlanks)
-	label(plaque, "KEEPERS OUT", Enum.NormalId.Left, 34)
+	-- The Lamp Wall: one lantern per Lightkeeper out, tagged and numbered.
+	box(F.Fixtures, "LampWallFace", W - WALL_T - 3, W - WALL_T, B, B + 20, 14, 70, C.timber, Enum.Material.WoodPlanks)
+	local plaque = box(F.Fixtures, "LampWallPlaque", W - WALL_T - 4, W - WALL_T - 3.2, B + 21, B + 27, 24, 60, C.timber, Enum.Material.WoodPlanks)
+	label(plaque, "KEEPERS OUT", Enum.NormalId.Left, 30)
 	for i = 0, 7 do
-		local z = 12 + i * 8
-		-- Lit by default so the hall reads as inhabited on a first arrival;
-		-- whoever wires this owns which are actually burning.
-		local g = lamp(F.LampWall, `KeeperLamp_{i}`, W - WALL_T - 8, FLOOR_Y + 16, z, i % 3 ~= 2)
+		local g = lamp(F.Fixtures, `KeeperLamp_{i}`, W - WALL_T - 6, B + 11, 18 + i * 7, i % 3 ~= 2)
 		g:SetAttribute("Slot", i)
 		CollectionService:AddTag(g, "LampWallSlot")
 	end
 
-	-- The Good Cheer Club roll: the hub's contribution ledger, by name. The
-	-- handoff requires landmark contributions to be credited and impossible to
-	-- undo or monopolise, and a club roll is that requirement as furniture.
-	local roll = box(F.Fixtures, "ClubBoard", -W + WALL_T + 3.2, -W + WALL_T + 4, FLOOR_Y + 10, FLOOR_Y + 34, 16, 64, C.timber, Enum.Material.WoodPlanks)
-	label(roll, "THE GOOD CHEER CLUB", Enum.NormalId.Right, 34)
+	-- The Community Kitchen and, behind it, the food room. This is what the
+	-- floor was for, which is why the hall has a kitchen before an armoury.
+	wall(F.Basement, "KitchenNorth", "Z", 150, -W, CORE_X1, B, HEADS[1], C.stone, { { -96, -68 } })
+	box(F.Basement, "KitchenCeiling", -W, CORE_X1, HEADS[1], HEADS[1] + 2, CORE_Z1, 150, C.timber, Enum.Material.WoodPlanks)
+	for i = 0, 1 do
+		lamp(F.Basement, `KitchenLamp_{i}`, -98, HEADS[1] - 5, 102 + i * 30, true)
+	end
+	for i = 0, 1 do
+		local x0 = -120 + i * 42
+		box(F.Fixtures, `Table_{i}`, x0, x0 + 34, B + 2.2, B + 3, 98, 130, C.timber, Enum.Material.WoodPlanks)
+		for _, z in ipairs({ 101, 127 }) do
+			box(F.Fixtures, `TableLeg_{i}_{z}`, x0 + 3, x0 + 5, B, B + 2.2, z - 1, z + 1, C.timber, Enum.Material.WoodPlanks)
+		end
+		for _, dx in ipairs({ -4, 38 }) do
+			box(F.Fixtures, `Bench_{i}_{dx}`, x0 + dx - 2, x0 + dx + 2, B + 1.4, B + 2, 100, 128, C.timber, Enum.Material.WoodPlanks)
+		end
+	end
+	box(F.Fixtures, "Servery", -124, -60, B, B + 3, 138, 146, C.timber, Enum.Material.WoodPlanks)
+	box(F.Fixtures, "ServeryTop", -126, -58, B + 3, B + 3.6, 137, 147, C.trim, Enum.Material.Concrete)
+	local hatch = box(F.Fixtures, "KitchenContribution", -104, -80, B + 3.6, B + 4, 139, 145, C.brass, Enum.Material.Metal)
+	hatch.CanCollide = false
+	label(hatch, "HAND IT IN", Enum.NormalId.Top, 24)
+	CollectionService:AddTag(hatch, "KitchenContribution")
+	local roll = box(F.Fixtures, "ClubBoard", -W + WALL_T + 3.2, -W + WALL_T + 4, B + 4, B + 16, 96, 132, C.timber, Enum.Material.WoodPlanks)
+	label(roll, "THE GOOD CHEER CLUB", Enum.NormalId.Right, 30)
 	CollectionService:AddTag(roll, "ClubBoard")
 
-	-- ---------------------------------------------------------------- markers
-	-- Everything the gameplay side needs to find, tagged rather than guessed at
-	-- by position. None of these are wired here: this file is the map.
-	local departure = box(F.Markers, "Departure", -22, 22, FLOOR_Y, FLOOR_Y + 0.6, -30, -6, C.brass, Enum.Material.Metal)
-	departure.CanCollide = false -- a slab this thin reads as an obstacle, not ground
-	label(departure, "TO THE ROAD", Enum.NormalId.Top, 30)
-	CollectionService:AddTag(departure, "Departure")
+	-- Your workshop corner, where visitors walk past it.
+	-- East of the core. It was sitting in the stairwell, across the foot of the
+	-- first flight.
+	box(F.Fixtures, "WorkBench", -64, -32, B + 2.4, B + 3.2, 20, 30, C.timber, Enum.Material.WoodPlanks)
+	for _, x in ipairs({ -61, -35 }) do
+		box(F.Fixtures, `WBLeg_{x}`, x - 1, x + 1, B, B + 2.4, 24, 26, C.timber, Enum.Material.WoodPlanks)
+	end
+	local vice = box(F.Fixtures, "Vice", -38, -34, B + 3.2, B + 4.6, 23, 27, C.brass, Enum.Material.Metal)
+	CollectionService:AddTag(vice, "WorkshopBench")
+	local shop = box(F.Markers, "WorkshopPlot", -66, -30, B, B + 0.4, 16, 40, C.cloth, Enum.Material.Fabric)
+	shop.CanCollide = false
+	CollectionService:AddTag(shop, "WorkshopPlot")
 
-	local ret = box(F.Markers, "ReturnPoint", -22, 22, FLOOR_Y, FLOOR_Y + 0.6, 14, 38, C.brass, Enum.Material.Metal)
+	local departure = box(F.Markers, "Departure", -16, 16, B, B + 0.4, -26, -6, C.brass, Enum.Material.Metal)
+	departure.CanCollide = false
+	label(departure, "TO THE ROAD", Enum.NormalId.Top, 26)
+	CollectionService:AddTag(departure, "Departure")
+	local ret = box(F.Markers, "ReturnPoint", -16, 16, B, B + 0.4, 12, 32, C.brass, Enum.Material.Metal)
 	ret.CanCollide = false
 	CollectionService:AddTag(ret, "ReturnPoint")
 
-	-- The workshop corner, reserved and empty. Per-player and persistent when
-	-- it is built; for now it is a marked floor so the space is not taken.
-	local shop = box(F.Markers, "WorkshopPlot", -124, -76, FLOOR_Y, FLOOR_Y + 0.6, 10, 58, C.cloth, Enum.Material.Fabric)
-	shop.CanCollide = false
-	label(shop, "WORKSHOP", Enum.NormalId.Top, 30)
-	CollectionService:AddTag(shop, "WorkshopPlot")
+	box(F.Basement, "StoreFloorDark", -W, CORE_X1, B - 2, B, 150, Z1, C.dark, Enum.Material.WoodPlanks)
 
-	-- The workshop corner. Per-player and persistent when it is wired; the map
-	-- furnishes it and marks it. It sits in the Landing rather than off in a
-	-- private room on purpose - the handoff sells belonging and identity, and
-	-- neither works if nobody walks past your bench.
-	box(F.Fixtures, "Bench", -124, -84, FLOOR_Y + 11, FLOOR_Y + 13, 16, 30, C.timber, Enum.Material.WoodPlanks)
-	for _, x in ipairs({ -120, -88 }) do
-		part(F.Fixtures, `BenchLeg_{x}`, Vector3.new(4, 11, 4), CFrame.new(x, FLOOR_Y + 5.5, 23), C.timber, Enum.Material.WoodPlanks)
+	-- ------------------------------------------------------------- ballroom
+	-- Eight thousand square feet, built and unlit, with its chandeliers fitted
+	-- and never switched on. From the landing you see the whole volume and a
+	-- rope across the doorway.
+	local BR = LEVELS[2]
+	box(F.Ballroom, "BallroomFloor", CORE_X1, W, BR - 2, BR, Z0, Z1, C.dark, Enum.Material.WoodPlanks)
+	wall(F.Ballroom, "BallroomWest", "X", CORE_X1, Z0, Z1, BR, HEADS[2], C.stone, { { 30, 30 + DOOR_W * 2 } })
+	box(F.Ballroom, "BallroomCeiling", CORE_X1, W, HEADS[2], HEADS[2] + 2, Z0, Z1, C.dark, Enum.Material.WoodPlanks)
+	for i = 0, 4 do
+		local z = 30 + i * 42
+		part(F.Ballroom, `DeadChandelier_{i}`, Vector3.new(14, 2, 14), CFrame.new(20, HEADS[2] - 10, z), C.dark, Enum.Material.Metal)
+		part(F.Ballroom, `DeadChain_{i}`, Vector3.new(0.8, 10, 0.8), CFrame.new(20, HEADS[2] - 4, z), C.dark, Enum.Material.Metal)
 	end
-	local vice = box(F.Fixtures, "Vice", -92, -86, FLOOR_Y + 13, FLOOR_Y + 18, 20, 26, C.brass, Enum.Material.Metal)
-	vice:SetAttribute("Station", "bench")
-	CollectionService:AddTag(vice, "WorkshopBench")
-	-- A rack of lantern glass, which is what this corner is for.
-	box(F.Fixtures, "LensRack", -124, -100, FLOOR_Y + 18, FLOOR_Y + 32, 14, 16, C.timber, Enum.Material.WoodPlanks)
+	box(F.Ballroom, "BallroomBar", CORE_X1 - 1, CORE_X1 + 1, BR, BR + 3.4, 30, 30 + DOOR_W * 2, C.brass, Enum.Material.Metal)
+	local bn = box(F.Ballroom, "BallroomNotice", CORE_X1 - 1.6, CORE_X1 - 1, BR + 4, BR + 8, 32, 56, C.timber, Enum.Material.WoodPlanks)
+	label(bn, "THE BALLROOM — NOT YET LIT", Enum.NormalId.Left, 18)
+
+	-- ------------------------------------------------------------- lodge
+	-- The two lodge rooms, shut and dark and visible through their doorways.
+	-- The Egyptian room in ochre; the Norman Gothic chapel in grey stone with
+	-- timber beams and a slate floor. These are the rooms worth lighting.
+	local LD = LEVELS[3]
+	box(F.Lodge, "EgyptFloor", CORE_X1, W, LD - 2, LD, Z0, 120, C.egypt, Enum.Material.Slate)
+	box(F.Lodge, "GothicFloor", CORE_X1, W, LD - 2, LD, 120, Z1, C.gothic, Enum.Material.Slate)
+	wall(F.Lodge, "LodgeSpine", "Z", 120, CORE_X1, W, LD, HEADS[3], C.stone, {})
+	wall(F.Lodge, "LodgeWest", "X", CORE_X1, Z0, Z1, LD, HEADS[3], C.stone, { { 40, 40 + DOOR_W }, { 150, 150 + DOOR_W } })
+	box(F.Lodge, "LodgeCeiling", CORE_X1, W, HEADS[3], HEADS[3] + 2, Z0, Z1, C.dark, Enum.Material.WoodPlanks)
 	for i = 0, 3 do
-		part(F.Fixtures, `Lens_{i}`, Vector3.new(5, 5, 1.5), CFrame.new(-120 + i * 6, FLOOR_Y + 25, 15), C.glass, Enum.Material.Glass, 0.45)
+		local z = 24 + i * 24
+		box(F.Lodge, `EgyptColumn_{i}`, 30, 38, LD, HEADS[3], z, z + 8, C.egypt, Enum.Material.Concrete)
 	end
-	part(F.Fixtures, "Stool", Vector3.new(7, 9, 7), CFrame.new(-104, FLOOR_Y + 4.5, 36), C.timber, Enum.Material.WoodPlanks)
+	for i = 0, 3 do
+		local z = 136 + i * 22
+		box(F.Lodge, `GothicBeam_{i}`, CORE_X1, W, HEADS[3] - 6, HEADS[3] - 3, z, z + 4, C.timber, Enum.Material.WoodPlanks)
+	end
+	for _, spec in ipairs({ { "Egypt", 40, "THE EGYPTIAN ROOM — SHUT" }, { "Gothic", 150, "THE CHAPEL — SHUT" } }) do
+		local nm, z, text = spec[1] :: string, spec[2] :: number, spec[3] :: string
+		box(F.Lodge, `{nm}Bar`, CORE_X1 - 1, CORE_X1 + 1, LD, LD + 3.4, z, z + DOOR_W, C.brass, Enum.Material.Metal)
+		local n = box(F.Lodge, `{nm}Notice`, CORE_X1 - 1.6, CORE_X1 - 1, LD + 4, LD + 8, z, z + DOOR_W, C.timber, Enum.Material.WoodPlanks)
+		label(n, text, Enum.NormalId.Left, 16)
+	end
 
-	-- Light in the Landing itself, so arriving is warm. Four lamps, shadows off.
-	for i = -1, 1, 2 do
-		for j = 0, 1 do
-			lamp(F.Landing, `LandingLamp_{i}_{j}`, i * 62, LANDING_H - 11, 22 + j * 34, true)
-		end
+	-- ------------------------------------------------------------- museum
+	-- The Keeping Room. Relics are the lantern-only tier, so the only way the
+	-- story arrives is by somebody taking the dangerous choice.
+	local MU = LEVELS[4]
+	box(F.Museum, "MuseumFloor", CORE_X1, W, MU - 2, MU, Z0, 120, C.board, Enum.Material.WoodPlanks)
+	box(F.Museum, "StorageFloor", CORE_X1, W, MU - 2, MU, 120, Z1, C.dark, Enum.Material.WoodPlanks)
+	wall(F.Museum, "MuseumWest", "X", CORE_X1, Z0, Z1, MU, HEADS[4], C.stone, { { 30, 30 + DOOR_W } })
+	wall(F.Museum, "MuseumNorth", "Z", 120, CORE_X1, W, MU, HEADS[4], C.stone, { { 20, 20 + DOOR_W } })
+	box(F.Museum, "MuseumCeiling", CORE_X1, W, HEADS[4], HEADS[4] + 2, Z0, Z1, C.timber, Enum.Material.WoodPlanks)
+	for i = 0, 2 do
+		lamp(F.Museum, `MuseumLamp_{i}`, 20, HEADS[4] - 5, 30 + i * 34, true)
 	end
+	for i = 0, 3 do
+		local z = 26 + i * 24
+		box(F.Fixtures, `Plinth_{i}`, 60, 72, MU, MU + 4, z, z + 10, C.trim, Enum.Material.Concrete)
+		local slot = box(F.Fixtures, `RelicSlot_{i}`, 61, 71, MU + 4, MU + 4.4, z + 1, z + 9, C.brass, Enum.Material.Metal)
+		slot.CanCollide = false
+		slot:SetAttribute("Slot", i)
+		CollectionService:AddTag(slot, "RelicPlinth")
+		local plate = box(F.Fixtures, `Plaque_{i}`, 59.2, 59.8, MU + 1.6, MU + 3.4, z + 1, z + 9, C.brass, Enum.Material.Metal)
+		label(plate, "UNNAMED", Enum.NormalId.Left, 18)
+	end
+	-- The case that can never be filled: the order's earliest records burned
+	-- long before any flood, so nothing from a run goes in here. The oldest
+	-- things in the room are the ones nobody can name, and they stay that way.
+	box(F.Fixtures, "BurntCase", 96, 112, MU, MU + 1, 30, 70, C.trim, Enum.Material.Concrete)
+	box(F.Fixtures, "BurntCaseGlass", 96, 112, MU + 1, MU + 7, 30, 70, C.glass, Enum.Material.Glass, 0.72)
+	local burnt = box(F.Fixtures, "BurntCasePlaque", 94.8, 95.4, MU + 2, MU + 5, 34, 66, C.timber, Enum.Material.WoodPlanks)
+	label(burnt, "THE YEARS BEFORE THE FIRE — NOTHING RECOVERED", Enum.NormalId.Left, 16)
 
 	M.Parent = Workspace
 	return M
