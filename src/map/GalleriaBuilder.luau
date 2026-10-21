@@ -57,6 +57,10 @@ local WELL = HALL - BAL -- half-width of the open well
 local COURT_R = 2.55 -- how far back from the bend each arm starts
 local COURT_OUT = 2.85 -- outer radius of the court floor
 local LIFT = 0.4 -- the court stands this much proud of the concourse
+-- The court's void is wider than the arms' well. A centre court whose hole is
+-- the same width as the corridor that feeds it does not read as a court at
+-- all - from the balcony it looks like a solid disc with a slot in it.
+local COURT_WELL = 1.45
 
 local C = {
 	tile = Color3.fromRGB(232, 228, 217),
@@ -304,18 +308,28 @@ function GalleriaBuilder.Build(): Model
 			local gx, gz = at(0, HALL * 0.5 * s)
 			part(F.Roof, `Glass{ai}_{s}`, Vector3.new(len * S, 1.2, HALL * 1.25 * S), CFrame.new(gx * S, F2F * 2 + 16, gz * S) * rot * CFrame.Angles(math.rad(s * 24), 0, 0), C.glass, Enum.Material.Glass, 0.55)
 		end
+		-- A flat deck over the shop bands. The gable only spans the concourse,
+		-- so without this every bay is open to the sky and the mall reads from
+		-- above as two rows of topless boxes beside a glass tube.
+		for side = -1, 1, 2 do
+			local dx, dz = at(0, (HALL + DEPTH / 2) * side)
+			part(F.Roof, `Deck{ai}_{side}`, Vector3.new(len * S, 2, DEPTH * S), CFrame.new(dx * S, F2F * 2 + 1, dz * S) * rot, C.shell, Enum.Material.Concrete)
+		end
 		part(F.Roof, `Ridge{ai}`, Vector3.new(len * S, 2.6, 2.6), CFrame.new(midX * S, F2F * 2 + 24, midZ * S) * rot, C.teal, Enum.Material.Metal)
 	end
 
 	-- The court.
-	disc(F.Court, "CourtRim", COURT_OUT + 0.06, -1 + LIFT / 2, 2 + LIFT, C.teal, Enum.Material.Metal)
+	-- The rim is a skirt below the floor, not a disc level with it. Sized to
+	-- the same top it would z-fight the floor across the whole court, which
+	-- is the striping that showed up the moment the court was first built.
+	disc(F.Court, "CourtRim", COURT_OUT + 0.06, -1, 2.4, C.teal, Enum.Material.Metal)
 	disc(F.Court, "CourtFloor", COURT_OUT, -1 + LIFT, 2, C.tile, Enum.Material.Pebble)
 
 	-- The balcony carries round the court as two arcs. It stops where each arm's
 	-- well opens into the court's, because that opening is the point of a court:
 	-- one continuous void from the skylight down to the fountain.
-	local RING = 20
-	local rMid = (WELL + COURT_OUT) / 2
+	local RING = 30
+	local rMid = (COURT_WELL + COURT_OUT) / 2
 	for i = 0, RING - 1 do
 		local th = 2 * math.pi * (i + 0.5) / RING
 		local p = Vector2.new(math.cos(th), math.sin(th)) * rMid
@@ -328,21 +342,47 @@ function GalleriaBuilder.Build(): Model
 			end
 		end
 		if not blocked then
-			local w = 2 * math.pi * rMid / RING * 1.35
+			-- Sized on the OUTER chord, not the mid radius: a box sized for the
+			-- middle leaves a wedge of nothing at the outer edge of every joint,
+			-- and the court comes out looking like a saw blade.
+			local w = 2 * math.pi * COURT_OUT / RING * 1.08
+			-- Neighbouring segments overlap, because a box sized to the outer
+			-- chord has to. Overlapping boxes that share a top plane stripe
+			-- against each other, so every other one is lifted by a hair -
+			-- invisible underfoot, and enough that nothing fights.
+			local jitter = (i % 2) * 0.05
 			local yaw = CFrame.Angles(0, -(th + math.pi / 2), 0)
-			part(F.Court, `CourtBalcony_{i}`, Vector3.new(w * S, 2, (COURT_OUT - WELL) * S), CFrame.new(p.X * S, F2F - 1 + LIFT, p.Y * S) * yaw, C.tile, Enum.Material.Pebble)
-			local r = Vector2.new(math.cos(th), math.sin(th)) * WELL
-			part(F.Court, `CourtRail_{i}`, Vector3.new(2 * math.pi * WELL / RING * S * 1.4, 3.5, 1), CFrame.new(r.X * S, F2F + 1.75 + LIFT, r.Y * S) * yaw, C.teal, Enum.Material.Metal)
+			part(F.Court, `CourtBalcony_{i}`, Vector3.new(w * S, 2, (COURT_OUT - COURT_WELL) * S), CFrame.new(p.X * S, F2F - 1 + LIFT + jitter, p.Y * S) * yaw, C.tile, Enum.Material.Pebble)
+			-- The court is wider than the concourse, so the arms' outer walls do
+			-- not reach round it. Without this the court is open to the sky on
+			-- both flanks and you can see straight out of the building.
+			local wp = Vector2.new(math.cos(th), math.sin(th)) * (COURT_OUT + 0.1)
+			part(F.Court, `CourtWall_{i}`, Vector3.new(w * S, F2F * 2, 2), CFrame.new(wp.X * S, F2F, wp.Y * S) * yaw, C.shell, Enum.Material.Concrete)
+			local r = Vector2.new(math.cos(th), math.sin(th)) * COURT_WELL
+			part(F.Court, `CourtRail_{i}`, Vector3.new(2 * math.pi * COURT_WELL / RING * S * 1.25, 3.5, 1), CFrame.new(r.X * S, F2F + 1.75 + LIFT + jitter, r.Y * S) * yaw, C.teal, Enum.Material.Metal)
 		end
 	end
 
 	disc(F.Court, "FountainBasin", 0.5, 3, 8, C.teal, Enum.Material.Marble)
-	disc(F.Court, "FountainWater", 0.44, 6.4, 0.8, C.glass, Enum.Material.Glass, 0.35)
+	disc(F.Court, "FountainWater", 0.44, 6.9, 0.8, C.glass, Enum.Material.Glass, 0.35)
 	part(F.Court, "FountainStem", Vector3.new(6, 15, 6), CFrame.new(0, 10, 0), C.column, Enum.Material.Concrete)
 
+	-- The same deck carried round the court, open in the middle so the court
+	-- keeps its skylight.
+	for i = 0, 19 do
+		local th = 2 * math.pi * (i + 0.5) / 20
+		local rr = (1.95 + COURT_OUT + 0.2) / 2
+		local p = Vector2.new(math.cos(th), math.sin(th)) * rr
+		local w = 2 * math.pi * rr / 20 * 1.4
+		part(F.Roof, `CourtDeck_{i}`, Vector3.new(w * S, 2, (COURT_OUT + 0.2 - 1.95) * S), CFrame.new(p.X * S, F2F * 2 + 1 + (i % 2) * 0.05, p.Y * S) * CFrame.Angles(0, -(th + math.pi / 2), 0), C.shell, Enum.Material.Concrete)
+	end
+
 	disc(F.Roof, "CourtSkylight", COURT_OUT - 0.15, F2F * 2 + 20, 1.2, C.glass, Enum.Material.Glass, 0.55)
+	-- Stepped, not stacked: eight full-diameter bars at one height all
+	-- cross at the hub and fight there. A couple of studs of rise each turns
+	-- the crossing into a lattice instead.
 	for i = 0, 7 do
-		part(F.Roof, `CourtTruss_{i}`, Vector3.new(COURT_OUT * 2 * S, 2.2, 2.2), CFrame.new(0, F2F * 2 + 17, 0) * CFrame.Angles(0, -math.pi * i / 8, 0), C.teal, Enum.Material.Metal)
+		part(F.Roof, `CourtTruss_{i}`, Vector3.new(COURT_OUT * 2 * S, 2.2, 2.2), CFrame.new(0, F2F * 2 + 17 + i * 0.25, 0) * CFrame.Angles(0, -math.pi * i / 8, 0), C.teal, Enum.Material.Metal)
 	end
 
 	-- Anchors are buildings hung off the mall, not signs on the end of a
