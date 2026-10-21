@@ -70,7 +70,12 @@ local LIFT = 0.5 -- the court stands this much proud of the concourse
 local COURT_WELL = 2.4
 
 local C = {
-	tile = Color3.fromRGB(232, 228, 217),
+	-- Was 232,228,217. A near-white floor is right for a lit shopping mall and
+	-- wrong for this one: with GlobalShadows back on it takes the full sky and
+	-- blows out, which is most of what "the lighting is terrible" was. This is
+	-- the same terrazzo gone damp and unpolished, and it gives the lamps
+	-- something to read against. One constant to put back if it reads too dark.
+	tile = Color3.fromRGB(166, 161, 150),
 	teal = Color3.fromRGB(62, 142, 138),
 	column = Color3.fromRGB(228, 180, 172),
 	shop = Color3.fromRGB(42, 42, 46),
@@ -126,6 +131,18 @@ local function part(parent: Instance, name: string, size: Vector3, cf: CFrame, c
 	p.Transparency = trans or 0
 	p.TopSurface, p.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
 	p.Parent = parent
+	return p
+end
+
+--- Pattern on a floor is paint, not a kerb. These strips sat 0.3 studs proud
+--- of the concourse and collidable, so walking the mall meant stepping up and
+--- down over every band in it - Chris: "floor looked uneven too". It is the
+--- same mistake the extraction pads made: anything laid on a floor has to stop
+--- being geometry. Sunk flush and left non-colliding, with a sliver showing so
+--- it does not z-fight the slab it lies on.
+local function paint(p: Part): Part
+	p.CanCollide = false
+	p.CanTouch, p.CanQuery = false, false
 	return p
 end
 
@@ -212,8 +229,15 @@ function GalleriaBuilder.Build(): Model
 		part(folder, `Deck_{name}`, Vector3.new(hyp, 2, ESC_W), cf, C.shell, Enum.Material.Metal)
 		for k = 1, 16 do
 			local t = ((k - 0.5) / 16 - 0.5) * hyp
-			local tread = part(folder, `Tread_{name}_{k}`, Vector3.new(1.2, 0.5, ESC_W - 1), cf * CFrame.new(t, 1.2, 0), C.teal, Enum.Material.Metal)
-			tread.CanCollide = false
+			-- Flush with the deck, not standing on it. The treads were 0.45
+			-- studs proud and non-colliding, so you walked the smooth deck
+			-- underneath while your legs passed through every visible step -
+			-- Chris: "clipping on escalators". They have to be either real
+			-- geometry you stand on or paint; a raised ghost step is the one
+			-- thing they cannot be. Paint is right here, because real steps on
+			-- a 27 degree ramp make the climb jerky.
+			local tread = part(folder, `Tread_{name}_{k}`, Vector3.new(1.2, 0.5, ESC_W - 1), cf * CFrame.new(t, 0.78, 0), C.teal, Enum.Material.Metal)
+			tread.CanCollide, tread.CanTouch, tread.CanQuery = false, false, false
 		end
 		for sgn = -1, 1, 2 do
 			part(folder, `Balustrade_{name}_{sgn}`, Vector3.new(hyp, 8, 1.4), cf * CFrame.new(0, 5, sgn * (ESC_W / 2 + 0.7)), C.teal, Enum.Material.Metal)
@@ -334,7 +358,7 @@ function GalleriaBuilder.Build(): Model
 						local a0 = fcAt - fcLen / 2 + (i + 0.5) * 13 / S
 						local o0 = -WELL + (j + 0.5) * 13 / S
 						local tx, tz = at(a0, o0)
-						part(F.Floors, `FCTile_{i}_{j}`, Vector3.new(13, 0.4, 13), CFrame.new(tx * S, F2F + 0.1, tz * S) * rot, C.shop, Enum.Material.Pebble)
+						paint(part(F.Floors, `FCTile_{i}_{j}`, Vector3.new(13, 0.4, 13), CFrame.new(tx * S, F2F - 0.18, tz * S) * rot, C.shop, Enum.Material.Pebble))
 					end
 				end
 			end
@@ -599,12 +623,12 @@ function GalleriaBuilder.Build(): Model
 		-- a flat floor is what makes a greybox read as a car park.
 		for side = -1, 1, 2 do
 			local bx, bz = at(0, (HALL - 0.12) * side)
-			part(F.Floors, `FloorBorder{ai}_{side}`, Vector3.new(len * S, 0.4, 5), CFrame.new(bx * S, 0.1, bz * S) * rot, C.shop, Enum.Material.Pebble)
+			paint(part(F.Floors, `FloorBorder{ai}_{side}`, Vector3.new(len * S, 0.4, 5), CFrame.new(bx * S, -0.18, bz * S) * rot, C.shop, Enum.Material.Pebble))
 		end
 		local bands = math.floor(len / 2.2)
 		for i = 0, bands - 1 do
 			local bx, bz = at(-len / 2 + len * ((i + 0.5) / bands), 0)
-			part(F.Floors, `FloorBand{ai}_{i}`, Vector3.new(5, 0.4, HALL * 2 * S), CFrame.new(bx * S, 0.1, bz * S) * rot, C.shop, Enum.Material.Pebble)
+			paint(part(F.Floors, `FloorBand{ai}_{i}`, Vector3.new(5, 0.4, HALL * 2 * S), CFrame.new(bx * S, -0.18, bz * S) * rot, C.shop, Enum.Material.Pebble))
 		end
 
 		-- Banners hung off the trusses. Cheap, and they fill the volume that
@@ -615,6 +639,33 @@ function GalleriaBuilder.Build(): Model
 				local bx, bz = at(-len / 2 + len * ((i + 0.5) / banners), (HALL - 0.45) * side)
 				part(F.Fixtures, `Banner{ai}_{i}_{side}`, Vector3.new(0.6, 16, 11), CFrame.new(bx * S, F2F * 2 - 4, bz * S) * rot, if i % 2 == 0 then C.teal else C.column, Enum.Material.Fabric)
 			end
+		end
+
+		-- The mall had no light fixtures at all - every bit of it was lit by the
+		-- sky, which is why it read as glare rather than as a room. Chris: "the
+		-- lighting is terrible". These are the emergency circuit, not the shop
+		-- lighting: a dim warm pool every few bays at balcony height, hung low
+		-- enough to light the walk and leave the ceiling dark. Deliberately
+		-- sparse and deliberately weak, because the lantern is the light that
+		-- is supposed to matter and a well-lit mall takes that away.
+		local lamps = math.max(2, math.floor(len / 2.8))
+		for i = 0, lamps - 1 do
+			local lx, lz = at(-len / 2 + len * ((i + 0.5) / lamps), 0)
+			local can = part(F.Fixtures, `Downlight{ai}_{i}`, Vector3.new(7, 1.2, 7), CFrame.new(lx * S, F2F + 14, lz * S) * rot, C.shop, Enum.Material.Metal)
+			-- NOT Neon. A Neon surface is fully emissive and blooms, and fourteen
+			-- 5.4 stud panels of it washed the whole mall to white - Chris, who
+			-- could not see past it: "i cant see anything its so bright". The
+			-- PointLight below is what should light the room; the lens only has
+			-- to look like frosted glass with something behind it. The Sweeper
+			-- and Glimmer eyes stay Neon because they are small and meant to
+			-- glow at you in the dark.
+			local lens = part(F.Fixtures, `DownlightLens{ai}_{i}`, Vector3.new(5.4, 0.5, 5.4), CFrame.new(lx * S, F2F + 13.4, lz * S) * rot, Color3.fromRGB(255, 244, 222), Enum.Material.Glass, 0.35)
+			lens.CanCollide, lens.CanQuery = false, false
+			can.CanCollide = false
+			local light = Instance.new("PointLight")
+			light.Color = Color3.fromRGB(255, 226, 184)
+			light.Brightness, light.Range, light.Shadows = 0.85, 46, true
+			light.Parent = lens
 		end
 
 		part(F.Roof, `Ridge{ai}`, Vector3.new(len * S, 2.6, 2.6), CFrame.new(midX * S, F2F * 2 + 24, midZ * S) * rot, C.teal, Enum.Material.Metal)
@@ -1058,24 +1109,52 @@ function GalleriaBuilder.Build(): Model
 		CollectionService:AddTag(relay, "RelayBank")
 
 		-- Loot down both arms, and two upstairs so the balcony is worth the
-		-- stairs rather than scenery you look at from below.
+		-- stairs rather than scenery you look at from below.  Their final tier
+		-- is intentionally assigned by LootService once tonight's active exit
+		-- is selected.  Do not hand-place "rare" near one fixed door: either
+		-- endpoint can be the way home on a given raid.
 		for _, d in ipairs({
 			{ "Supplies_WestArm", -6, 0, 3, "Supplies" },
 			{ "Components_WestMid", -12, 0, 3, "Components" },
 			{ "Relic_BoswellsEnd", -19, 0, 3, "Relics" },
-			{ "Components_CourtSE", 5, 5, 3, "Components" },
+			-- Off the centreline: the middle of a concourse carries the kiosks,
+			-- planters and benches, and this one was spawning inside Kiosk2_2.
+			-- The walking lane either side of the furniture is where a shopper
+			-- is anyway.
+			{ "Components_CourtSE", 4.36, 5.64, 3, "Components" },
 			{ "RestorationCrate_FoodCourt", 11, 11, 3, "RestorationCrates" },
 			{ "Relic_SayersEnd", 15, 15, 3, "Relics" },
-			{ "Relic_UpperWest", -9, 0, F2F + 3, "Relics" },
-			{ "Supplies_UpperSE", 8, 8, F2F + 3, "Supplies" },
+			-- On the BALCONY, not on the arm centreline. The centreline at this
+			-- height is the well - the hole the escalators climb through - so
+			-- both of these were hanging in mid-air over the atrium and
+			-- pathfinding refused them. The balcony runs at 1.15 model units
+			-- off the centreline (HALL - BAL/2), which is where a shopper
+			-- actually walks on the upper floor.
+			{ "Relic_UpperWest", -9, 1.15, F2F + 3, "Relics" },
+			{ "Supplies_UpperSE", 7.19, 8.81, F2F + 3, "Supplies" },
 		}) do
 			local loot = marker(d[1] :: string, d[2] :: number, d[3] :: number, d[4] :: number)
-			loot:SetAttribute("Tier", d[5] :: string)
+			loot.Size = Vector3.new(2.6, 1.25, 2.1)
+			loot.Material, loot.Transparency, loot.CanCollide = Enum.Material.Metal, 0, false
+			loot:SetAttribute("Tier", d[5] :: string) -- preview/default before a run ranks it
+			loot:SetAttribute("PlacementTier", d[5] :: string)
 			CollectionService:AddTag(loot, "Loot")
 		end
 
-		for i, p in ipairs({ { -16, 0 }, { -4, 0 }, { 8, 8 }, { 16, 16 } }) do
-			CollectionService:AddTag(marker(`SweeperSpawn_{i}`, p[1], p[2], 3), "SweeperSpawn")
+		-- A spawn point is a coordinate, not a prop. These used the same visible
+		-- marker as the loot and the Sweepers were arriving inside a translucent
+		-- teal cube - Chris: "did they spawn in little boxes? lol". The loot
+		-- markers stay visible because you are meant to find and press them;
+		-- nobody is meant to see one of these.
+		-- Also off the centreline, and for the same reason the loot is: the
+		-- middle of the concourse is where the kiosks stand, and SweeperSpawn_4
+		-- was inside Kiosk2_14. A Sweeper that spawns inside a kiosk is stuck
+		-- in it. Offsets are along each arm's normal, 0.9 units into the
+		-- walking lane.
+		for i, p in ipairs({ { -16, 0.9 }, { -4, -0.9 }, { 7.36, 8.64 }, { 15.36, 16.64 } }) do
+			local post = marker(`SweeperSpawn_{i}`, p[1], p[2], 3)
+			post.Transparency = 1
+			CollectionService:AddTag(post, "SweeperSpawn")
 		end
 
 		-- All four anchor-store back doors keep ExtractCandidate, but only two
@@ -1103,6 +1182,41 @@ function GalleriaBuilder.Build(): Model
 	end
 
 	M.Parent = map
+
+	-- A landing rail is there because the far end of a landing is normally a
+	-- two storey drop into the well. On the south-east arm it is not: the food
+	-- court deck butts straight onto the landing, so the rail stood as a wall
+	-- across the only way in and pathfinding could not reach the food court at
+	-- all. Decide it from the world instead of from a span the builder would
+	-- have to keep in step by hand - a rail with solid floor on BOTH sides at
+	-- its own height is not guarding anything.
+	do
+		local params = RaycastParams.new()
+		params.FilterType = Enum.RaycastFilterType.Exclude
+		params.FilterDescendantsInstances = { F.Structure, F.Fixtures, F.Gameplay, F.Escalators }
+		local removed = 0
+		for _, rail in ipairs(F.Structure:GetChildren()) do
+			if rail:IsA("BasePart") and string.sub(rail.Name, 1, 11) == "LandingRail" then
+				local solid = 0
+				for s = -1, 1, 2 do
+					local probe = (rail.CFrame * CFrame.new(s * 6, 0, 0)).Position
+					local hit = workspace:Raycast(probe + Vector3.new(0, 7, 0), Vector3.new(0, -14, 0), params)
+					if hit and math.abs(hit.Position.Y - F2F) < 1.5 then
+						solid += 1
+					end
+				end
+				if solid == 2 then
+					local cap = F.Structure:FindFirstChild(`LandingCap{string.sub(rail.Name, 12)}`)
+					if cap then
+						cap:Destroy()
+					end
+					rail:Destroy()
+					removed += 1
+				end
+			end
+		end
+	end
+
 	return M
 end
 
