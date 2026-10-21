@@ -3,7 +3,7 @@
 Status: **proposed**, 2026-10-20. Agreed in conversation with Chris; not yet in
 the handoff PDF. Nothing here changes a rule — see "What this does not change".
 
-Read `docs/LANTERNHOLD.md` next for the hub this implies.
+Read `docs/LANTERNHOLD.md` for the hub and `docs/ZONES.md` for the ladder.
 
 ## The question
 
@@ -53,53 +53,75 @@ wrong.
 
 ## Who the Lightkeepers are
 
-**An order, not a job.**
+**An order, not a job.** Inherited. Its work, since the first flood, has been
+keeping the records and keeping a light burning.
 
-Not scavengers who happen to carry lamps — an inherited fraternity whose work,
-since the first flood, has been keeping the records and keeping a light
-burning. The hall that survived became the hospital; the people who kept the
-vault kept going.
+### The two halls
 
-This explains several things that were previously just mechanics:
+This is the spine of the whole setting, and it is taken from something real.
 
-- Why contributions to landmarks are **credited by name and cannot be undone**
-  — that is what an order's ledger is.
-- Why the Keeping Room exists at all, and why it is a **vault** rather than a
-  trophy shelf.
-- Why the town is **calm**. It has an institution, and the institution has done
-  this before.
-- The title. A Last Lightkeeper is not the last person alive. It is the last of
-  an order.
+**The old hall, downtown.** The order rented the top floor of the tallest
+building in town. When the first flood came, that building was one of a handful
+that held — and it filled with strangers who lived through the night inside it.
+Members of the order died anyway.
+
+The records survived *because the building survived*. Not because anyone saved
+them. Because the walls stayed up.
+
+That is the order's founding fact, and it is the moral thesis of the game:
+**build things that hold.** It is why these people keep walking back into the
+dark. It is what they are for.
+
+**The new hall, out past the farms.** Decades later the order moved out of the
+valley to a building of its own — too large, and unfinished when they moved in.
+Money ran out. They used it anyway, meeting in a side room for years while the
+main hall stood incomplete, finishing it a room at a time as they could afford
+to, funded by name.
+
+That building is Lanternhold. See `docs/LANTERNHOLD.md`.
+
+### What is missing from the archive
+
+Two separate losses, and the difference matters. The *earliest* records burned,
+long before any flood. The later ones came through the water intact.
+
+So the gap in the order's memory is not from the storm. It is from a fire
+nobody alive remembers, and nothing brought back from a run will ever fill it.
+The oldest things in the Keeping Room are the ones nobody can name.
 
 ## The valley
 
-Corrected 2026-10-20 after Chris pointed out the real geography; an earlier
-version of this had the crew descending to scavenge, which was wrong.
+Corrected twice, which is worth recording. An early version had the crew
+descending from a hilltop hub to scavenge; then it had Lanternhold underground
+in mine workings. Both wrong — Chris pointed out that the seams there are small
+and nobody has an underground base.
 
-- **Lanternhold is cut into the valley wall** — old mine entries, above the
-  waterline, below the heights.
-- **The Incline runs up** from it to the hilltops, which is what an incline is
-  for: getting out of a valley in a hurry.
-- **The places worth robbing are up there**, on the high ground. The Galleria
-  sits on a hill.
+The actual shape:
 
-So the crew climbs to scavenge and comes down to warmth. Home is downhill.
+- **Lanternhold is rural**, out past the farms, well outside the city.
+- **Danger scales with how close to the city you get.** That is the entire
+  progression, and it needs no explanation to be legible.
+- **The mall is the outskirts** — a hilltop site near the airport, the first
+  thing worth robbing.
+- **The city is the end of the road**, down in the valley where the water went.
 
 ## Real-world inspiration, and the naming rule
 
 The valley is modelled on Johnstown, Pennsylvania — three floods, a steel and
-coal town, an inclined plane built after the first disaster, a mall up on a
-hill, and a hall downtown that survived the water and became a hospital with
-the records still vaulted inside it.
+coal town, an inclined plane built after the first disaster, ridge wind farms,
+a mall up on a hill near the airport, and a fraternal hall downtown that
+survived the water and sheltered survivors while the order's records survived
+with it.
 
 **Decided by Chris, 2026-10-20: do not name Johnstown, and do not name any real
 fraternal order.** Keep the texture, invent the names. The real places and the
 real dead stay out of the game; what we take is the shape of a town that is
-good at rebuilding, because it has had to be.
+good at rebuilding, because it has had to be — and the shape of an institution
+that finished its own building a room at a time.
 
 This matters most around the Keeping Room. Objects getting their names back
-sits very close to a real cemetery full of unidentified dead. That is powerful
-when it is deliberate and ugly when it is careless.
+sits very close to a real disaster with real unidentified dead. That is
+powerful when it is deliberate and ugly when it is careless.
 
 ## Open questions
 
