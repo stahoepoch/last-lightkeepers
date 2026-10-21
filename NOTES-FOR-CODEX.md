@@ -662,3 +662,85 @@ I first reported this as "the rename never happened", because I grepped
 case-sensitively for `Boswell` while the sign text is `BOSWELL'S`. The rename
 is real and correct. Counting matches is not reading them, and I nearly raised
 a false alarm on a count.
+
+---
+
+# Integration: where the map and the game meet
+
+Chris asked for this explicitly — "share with codex what's going on, I need
+integration". This is the whole surface between what I build and what anyone
+else has to wire. Nothing below needs agreeing; it is a description of what is
+in the repo today.
+
+## Rojo is installed now
+
+`rojo plugin install` put `RojoManagedPlugin.rbxm` in
+`%LOCALAPPDATA%\Roblox\Plugins`. That is the local install, not a Creator Store
+one, so no Roblox account was touched. **Studio loads plugins at startup, so it
+has to be restarted before the Rojo button appears.** Until that happens
+nothing in `src/server` or `src/client` reaches the running game at all, which
+is why none of the gameplay below has ever been run.
+
+The server is already listening: `rojo serve --port 34872`.
+
+## Two builders, and where they put things
+
+| Builder | Builds | Where |
+| --- | --- | --- |
+| `src/map/GalleriaBuilder.luau` | `Workspace.ClaudeGalleria` | zone one, the mall |
+| `src/map/LanternholdBuilder.luau` | `Workspace.Lanternhold` | the hub |
+
+**Both parent to `Workspace`, not `Workspace.Map`, and that is not a
+preference.** `FloodedMallBuilder` opens its build with
+
+    for _, child in ipairs(map:GetChildren()) do
+        if child.Name ~= "FloodedMallBuilder" then child:Destroy() end
+    end
+
+which destroys every child of `Map` on every server start and every expedition
+restart. Anything parented there is gone before a player spawns. Narrowing that
+wipe to `GeneratedFloodedMall` would make `Map` usable for authored content
+again, for both of us.
+
+## What the map offers the game, by tag
+
+The map places and tags; it never wires. Everything is found by
+`CollectionService` tag, so nothing has to be located by position.
+
+| Tag | Where | Attributes | Means |
+| --- | --- | --- | --- |
+| `ExtractCandidate` | one per department store, on the face away from the mall | `Store` | candidate extractions; the run picks one |
+| `Lift` | Galleria court, Lanternhold core | `Stops` (comma list of heights) | a lift car `LiftService` drives |
+| `Departure` / `ReturnPoint` | Lanternhold basement | — | where a run leaves from and comes back to |
+| `LampWallSlot` | Lanternhold basement, eight of them | `Slot` | one lantern per Lightkeeper out |
+| `KitchenContribution` | Lanternhold basement, on the servery | — | hand restoration crates to the Club |
+| `ClubBoard` | Lanternhold basement | — | the Good Cheer Club roll, written by name |
+| `RelicPlinth` | Lanternhold museum, four of them | `Slot` | shelve a relic, name the keeper |
+| `WorkshopPlot` / `WorkshopBench` | Lanternhold basement | — | the per-player corner |
+
+## The services, and the seams they hang off
+
+`HubService` and `LiftService` own none of the run lifecycle. They hang off it,
+and **every one of these fails silently** — nothing errors, the fixture simply
+stops updating:
+
+- `HubService.init()` once the hall exists
+- `HubService.lightFor` on `PlayerAdded` and after each restart
+- `HubService.takeDown` in `LootService.onExtracted`
+- `HubService.putOut` in `RunStateService.onRunEnded`
+- `LiftService.init()` beside it **and again on every expedition restart**,
+  because the mall is rebuilt each run
+
+If `ExpeditionService` takes over launch and return, these belong inside it.
+
+## What is still true and awkward
+
+`src/server/init.server.luau` holds those call sites and is **uncommitted**,
+because it requires `ExpeditionService`, which is untracked. Committing it
+alone gives a checkout that requires a module the repo does not contain.
+
+## What the map does not decide
+
+Which extraction goes live, what handing in a crate does, whose lamp is whose,
+and what a relic plaque says. The relic's own name is deliberately unwritten —
+`docs/LANTERNHOLD.md` has it as an open question and it is Chris's call.
