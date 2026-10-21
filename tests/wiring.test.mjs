@@ -215,6 +215,7 @@ console.log("\nCross-module calls");
   const interaction = byName.get("InteractionService");
   const loot = byName.get("LootService");
   const enemy = byName.get("EnemyService");
+  const hud = byName.get("HUDController");
 
   if (runState) {
     // A solo knockdown used to wipe the run inside the same call, so the
@@ -233,6 +234,40 @@ console.log("\nCross-module calls");
       "snapshot carries the Anchor Revive reason",
       runState.src.includes("yourCanAnchorRevive") && runState.src.includes("yourAnchorRevivesLeft"),
       "the client cannot explain a refused R without these",
+    );
+    check(
+      "teammate revive completes once after the prompt hold",
+      runState.src.includes("function RunStateService.completeRevive") &&
+        !runState.src.includes("function RunStateService.beginRevive") &&
+        !runState.src.includes("stepRevives"),
+      "a prompt hold plus a second server timer turns the promised 4-second revive into 8 seconds",
+    );
+  }
+
+  if (interaction) {
+    const downWatcher = interaction.src.slice(interaction.src.indexOf("local function watchForDowns"));
+    check(
+      "revive prompt keeps the configured hold ring",
+      /makePrompt[(]root, "Revive", player[.]DisplayName, hold[)]/.test(downWatcher),
+      "the visible hold ring is the player feedback for the configured revive time",
+    );
+    check(
+      "revive prompt finishes through server validation",
+      downWatcher.includes("RunStateService.completeRevive") && !downWatcher.includes("RunStateService.beginRevive"),
+      "the prompt must not begin a second hidden countdown",
+    );
+  }
+
+  if (hud) {
+    check(
+      "HUD explains PatrolsAlert",
+      hud.src.includes('snapshot.highestThreshold == "PatrolsAlert"'),
+      "a changed Sweeper radius without player-facing feedback reads as random behaviour",
+    );
+    check(
+      "HUD explains PatrolsHunt",
+      hud.src.includes('snapshot.highestThreshold == "PatrolsHunt"'),
+      "a Glimmer scan must be introduced before it surprises the player",
     );
   }
 
@@ -268,6 +303,27 @@ console.log("\nCross-module calls");
       "server builds the tagged mall before interactions initialize",
       buildAt >= 0 && interactionsAt > buildAt,
       "Rojo clears Workspace.Map.GeneratedFloodedMall on sync; starting services first leaves no prompts",
+    );
+  }
+
+  if (loot) {
+    check(
+      "LootService chooses one active extraction per run",
+      loot.src.includes("function LootService.beginRun") && loot.src.includes('SetAttribute("ActiveThisRun", active)'),
+      "every tagged exit was left active; a run needs one server-selected route",
+    );
+    check(
+      "LootService rejects inactive extraction requests",
+      loot.src.includes("candidate == activeExtraction"),
+      "a client could request an extraction id for a different tagged exit",
+    );
+  }
+
+  if (interaction) {
+    check(
+      "inactive extraction prompts stay hidden",
+      interaction.src.includes('prompt.Enabled = instance:GetAttribute("ActiveThisRun") == true'),
+      "all candidate exit prompts were visible despite only one route being active",
     );
   }
 }
@@ -307,10 +363,12 @@ console.log("\nCross-module calls");
   }
 }
 
-// ---- 8. the Sweeper rig and its telegraph ----------------------------------
+// ---- 8. enemy rigs and their telegraphs ------------------------------------
 {
   const byName = new Map(files.map((f) => [f.name, f]));
   const rig = byName.get("SweeperRig");
+  const glimmerRig = byName.get("GlimmerRig");
+  const walkerRig = byName.get("WindowWalkerRig");
   const enemy = byName.get("EnemyService");
 
   check("SweeperRig exists", rig !== undefined, "EnemyService clones a template that must be built somewhere");
@@ -367,6 +425,138 @@ console.log("\nCross-module calls");
       "contact is gated on audioTelegraphSeconds",
       /audioTelegraphSeconds[\s\S]{0,200}registerContact/.test(enemy.src),
       "an enemy must telegraph with sound before it can hit you",
+    );
+    check(
+      "EnemyService builds the Glimmer rig before spawning",
+      /function EnemyService[.]init[\s\S]*?GlimmerRig[.]ensure/.test(enemy.src),
+      "PatrolsHunt clones the Glimmer template, so it must exist first",
+    );
+    check(
+      "PatrolsHunt spawns a Glimmer",
+      /threshold[.]id == "PatrolsHunt"[\s\S]{0,120}spawnGlimmerForLitTarget/.test(enemy.src),
+      "the scan enemy needs to enter the run at the hunt threshold",
+    );
+    check(
+      "PatrolsAlert widens Sweeper pressure",
+      /threshold[.]id == "PatrolsAlert"[\s\S]{0,120}patrolsAlerted = true/.test(enemy.src) &&
+        /patrolsAlerted[\s\S]{0,160}def[.]swarmCallRadius/.test(enemy.src),
+      "the first threshold must affect a dark crew, not only announce an empty state change",
+    );
+    check(
+      "PatrolsAlert spawns a Window Walker",
+      /threshold[.]id == "PatrolsAlert"[\s\S]{0,180}spawnWindowWalkerForPlayer/.test(enemy.src),
+      "the mannequin should enter the run at Alert rather than stay concept art",
+    );
+    check(
+      "Window Walker wakes from lit line of sight",
+      /function EnemyService[.]driveWindowWalker[\s\S]*?pickWalkerTarget[\s\S]*?def[.]wakeRange/.test(enemy.src) &&
+        /wakeRequiresActiveLantern/.test(enemy.src),
+      "the Walker should remain scenery until nearby lantern light catches it",
+    );
+    check(
+      "Glimmer scan rechecks active lantern light",
+      /state and state[.]lanternOn and not state[.]knockedDown/.test(enemy.src),
+      "going dark during the scan is its required counterplay",
+    );
+  }
+
+  check("GlimmerRig exists", glimmerRig !== undefined, "PatrolsHunt needs a cloneable Glimmer template");
+  if (glimmerRig) {
+    check(
+      "the rig builds ReplicatedStorage.Enemies.Glimmer",
+      /FOLDER_NAME = "Enemies"/.test(glimmerRig.src) && /RIG_NAME = "Glimmer"/.test(glimmerRig.src),
+      "EnemyService looks the template up by that exact path",
+    );
+    check(
+      "the Glimmer scan has an asset id",
+      /SCAN_SOUND_ID = "rbxassetid:\/\/\d+"/.test(glimmerRig.src),
+      "a scan must announce itself before the tag can land",
+    );
+    check(
+      "the Glimmer rolls off at its scan range",
+      /sound[.]RollOffMaxDistance = def[.]scanRange/.test(glimmerRig.src),
+      "the telegraph should be local to the nearby encounter",
+    );
+  }
+
+  check("WindowWalkerRig exists", walkerRig !== undefined, "a real mannequin needs a cloneable rig");
+  if (walkerRig) {
+    check(
+      "the rig builds ReplicatedStorage.Enemies.WindowWalker",
+      /FOLDER_NAME = "Enemies"/.test(walkerRig.src) && /RIG_NAME = "WindowWalker"/.test(walkerRig.src),
+      "EnemyService looks the template up by that exact path",
+    );
+    check(
+      "the Window Walker has an audible wake-up",
+      /TELEGRAPH_SOUND_ID = "rbxassetid:\/\/\d+"/.test(walkerRig.src),
+      "a mannequin must warn a player before it contributes contact damage",
+    );
+  }
+}
+
+// ---- asset provenance ------------------------------------------------------
+//
+// docs/ASSETS.md: an rbxassetid is a pointer, not an asset. One that points at
+// somebody else's upload cannot port to the Steam build, because the file lives
+// on Roblox's servers under their licence. assets/MANIFEST.md is the ledger.
+// These checks turn that document into something that fails, which is the only
+// version of a policy that survives a busy week.
+{
+  const manifestPath = join(root, "assets", "MANIFEST.md");
+  const manifest = existsSync(manifestPath) ? readFileSync(manifestPath, "utf8") : "";
+  check(
+    "assets/MANIFEST.md exists",
+    manifest !== "",
+    "docs/ASSETS.md makes it the ledger for every id the project references",
+  );
+
+  const used = new Map();
+  for (const f of files) {
+    for (const m of all(/rbxassetid:\/\/(\d+)/g, f.src)) {
+      if (!used.has(m[1])) used.set(m[1], []);
+      if (!used.get(m[1]).includes(f.name)) used.get(m[1]).push(f.name);
+    }
+  }
+  for (const [id, where] of used) {
+    check(
+      `asset ${id} is in the manifest`,
+      manifest.includes(id),
+      `used by ${where.join(", ")} — an id in src/ and not in the manifest is an unlicensed dependency`,
+    );
+  }
+
+  // Placeholders are allowed. Silent ones are not: an unmarked borrowed id
+  // reaches a build by being forgotten.
+  const owed = [
+    ...(manifest.split(/^## Owed/m)[1] || "").matchAll(/rbxassetid:\/\/(\d+)/g),
+  ].map((m) => m[1]);
+  for (const id of owed) {
+    for (const f of files.filter((f) => f.src.includes(id))) {
+      check(
+        `${f.name} marks ${id} as a placeholder`,
+        /PLACEHOLDER/.test(f.src),
+        "docs/ASSETS.md allows placeholders but not silent ones",
+      );
+    }
+  }
+
+  // Accessibility, not polish: sound before sight only works if the sounds can
+  // be told apart. The same sample at the same pitch in two rigs is one cue
+  // wearing two hats.
+  const cues = new Map();
+  for (const f of files.filter((f) => /Rig$/.test(f.name))) {
+    const id = (f.src.match(/rbxassetid:\/\/(\d+)/) || [])[1];
+    if (!id) continue;
+    const pitch = (f.src.match(/CUE_PITCH = ([\d.]+)/) || [, "unset"])[1];
+    const key = `${id}@${pitch}`;
+    if (!cues.has(key)) cues.set(key, []);
+    cues.get(key).push(f.name);
+  }
+  for (const [key, rigs] of cues) {
+    check(
+      `cue ${key} belongs to one enemy`,
+      rigs.length === 1,
+      `${rigs.join(" and ")} share it — a player who cannot see the screen must still tell them apart`,
     );
   }
 }

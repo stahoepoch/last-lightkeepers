@@ -39,7 +39,17 @@ local TELEGRAPH_MIN_DISTANCE = 8
 --
 -- Swap the id if Chris wants a different voice for the Sweepers; everything
 -- around it - timing, falloff, range - is independent of the choice.
+-- PLACEHOLDER. This id is not ours: it points at somebody else's upload, so it
+-- cannot port to the Steam build and must be replaced with a master we own.
+-- Listed in assets/MANIFEST.md under "Owed"; the rule is in docs/ASSETS.md.
+--
+-- CUE_PITCH is what currently tells this enemy apart from the others by ear.
+-- All three rigs play the same sample at different pitches, which is a stopgap:
+-- "telegraph every enemy with sound before sight" is an accessibility rule, and
+-- it is properly met by three distinct recordings, not one sample pitched three
+-- ways. Keep the pitches distinct until those exist.
 local TELEGRAPH_SOUND_ID = "rbxassetid://9118959688"
+local CUE_PITCH = 1
 local TELEGRAPH_SOUND_NAME = "Servo Motor 7 (SFX), Pro Sound Effects"
 local TELEGRAPH_MEASURED_SECONDS = 1.11
 
@@ -70,6 +80,7 @@ local function addTelegraph(root: BasePart): Sound
 	sound.SoundId = TELEGRAPH_SOUND_ID
 	sound.Looped = false
 	sound.Volume = 0.6
+	sound.PlaybackSpeed = CUE_PITCH
 	sound.RollOffMode = Enum.RollOffMode.InverseTapered
 	sound.RollOffMinDistance = TELEGRAPH_MIN_DISTANCE
 	sound.RollOffMaxDistance = sweeper.aggroRadiusLit
