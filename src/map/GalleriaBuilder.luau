@@ -27,7 +27,7 @@
 --
 -- Run from the command bar:
 --   require(workspace.Map.GalleriaBuilder).Build()
--- Builds Workspace.Map.ClaudeGalleria and touches nothing else, so it can sit
+-- Builds Workspace.ClaudeGalleria and touches nothing else, so it can sit
 -- beside the other mall for comparison.
 
 local Workspace = game:GetService("Workspace")
@@ -121,7 +121,13 @@ local function label(host: BasePart, text: string, face: Enum.NormalId)
 end
 
 function GalleriaBuilder.Build(): Model
-	local map = Workspace:FindFirstChild("Map") or Workspace
+	-- Deliberately NOT inside Workspace.Map. FloodedMallBuilder clears every
+	-- child of Map except itself on the first line of its build, so anything
+	-- parented there is destroyed the moment the server starts - this mall
+	-- included, along with Codex's own FloodedMall and GalleriaDetails models.
+	-- Until that is sorted out between the two builders, this one sits beside
+	-- Map rather than in it, so it survives a Play session.
+	local map = Workspace
 	local old = map:FindFirstChild("ClaudeGalleria")
 	if old then
 		old:Destroy()

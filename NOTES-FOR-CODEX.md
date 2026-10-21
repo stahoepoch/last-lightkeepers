@@ -546,3 +546,33 @@ The upper relic sits at y=21 with the gallery floor at y=19, so the relic itself
 is an off-mesh point - pathing to the part fails while pathing to a player
 standing beside it succeeds. Harmless, since enemies chase players rather than
 loot, but it cost me a wrong diagnosis on the way here and might cost you one.
+
+## FloodedMallBuilder clears everything in Workspace.Map
+
+`src/map/FloodedMallBuilder.luau:76`
+
+```lua
+for _, child in ipairs(map:GetChildren()) do if child.Name ~= "FloodedMallBuilder" then child:Destroy() end end
+```
+
+On the first line of the build this destroys every child of `Workspace.Map`
+except the builder itself. That is not only the stale generated mall - it also
+takes out `FloodedMall` and `GalleriaDetails`, the two authored models sitting
+in `Map` in the playtest place, and anything else a designer has parented there.
+It runs on every server start and again on every expedition reset.
+
+Found it because my Galleria vanished the instant Chris pressed Play: it was
+built into `Workspace.Map` and deleted before he could spawn in it. For now
+`GalleriaBuilder` parents to `Workspace` instead, which sidesteps it without
+touching your file.
+
+Worth narrowing to just the generated model, something like:
+
+```lua
+local stale = map:FindFirstChild("GeneratedFloodedMall")
+if stale then stale:Destroy() end
+```
+
+so the wipe only removes what the builder itself made. As it stands, anything
+anyone parents under `Map` is unsurvivable, which makes `Map` unusable as a
+place to author map content - including for you.
