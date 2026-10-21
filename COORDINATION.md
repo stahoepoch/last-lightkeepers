@@ -191,3 +191,56 @@ Revive being the example - not racing another session to the same files.
 Staging rule still applies to everyone: `git add <explicit paths>`, never `-A`,
 and check `git status` first. That is how Codex's fix ended up inside a commit
 of this session's with a message that denied touching it.
+
+## 2026-10-20 — Chris reassigned active lanes
+
+Claude owns every mall/layout task. Codex must not edit `src/map/**`, Workspace
+map objects, map tags, lighting, or playtest artifacts while Claude is building.
+Codex owns the next enemy implementation pass, beginning with the existing
+Glimmer specification in `data/enemies.json`. This is a direct reassignment by
+Chris; map and enemy work remain separate.
+
+## 2026-10-21 - Ownership is per FILE, not per folder
+
+`src/map/` now has builders from two different authors: `FloodedMallBuilder`
+and `GalleriaBuilder` from Codex, and `LanternholdBuilder` from the gameplay
+session (afc5f9a). The folder-level rule above says map geometry is Codex's,
+so on a strict reading that crossed a lane.
+
+Nobody did anything wrong and nothing is being reverted. The gameplay session
+built the hub from `docs/LANTERNHOLD.md` rather than inventing one, and it has
+Studio open to verify with - which is why the pathfinding faults got caught at
+all. But two writers in one folder is precisely the setup that caused the
+earlier collisions, so the rule needs to be sharper rather than louder.
+
+**The rule: whoever builds a thing owns that thing's file.** Not the directory.
+
+| File | Owner |
+| --- | --- |
+| `src/map/FloodedMallBuilder.luau` | Codex |
+| `src/map/GalleriaBuilder.luau` | Codex |
+| `src/map/LanternholdBuilder.luau` | Gameplay session |
+| `src/server/**`, `src/client/**`, `src/shared/**` | Gameplay session |
+| `default.project.json`, Rojo and artifact builds | Codex |
+| `docs/**`, `assets/MANIFEST.md`, `assets/audio/**` | This session |
+| `data/*.json` | Chris |
+
+A new builder belongs to whoever creates it. If you need a change in someone
+else's file, write it in their notes file instead of making it.
+
+This also keeps the real distinction intact, which was never really about
+folders: **Codex owns getting things into Studio, the gameplay session owns
+things that run.** A builder is geometry, but it is geometry expressed as code
+that runs on the server, which is why the boundary was always going to be
+blurry here.
+
+### Two things from that commit that need someone
+
+- **Nobody has seen Lanternhold.** Screen capture timed out on every attempt,
+  so the lobby exists as 105 parts and six verified pathfinding routes, but no
+  human or agent has looked at it rendered. Chris should walk it before anyone
+  builds on top of it.
+- **Rojo is not connected in Studio**, per that session - it has been pushing
+  modules in by hand. Rojo itself is installed and serving on 34872; it is the
+  Studio side that is not attached. That is Codex's lane and it is worth fixing
+  before the by-hand pushes diverge from the repo.
