@@ -30,6 +30,7 @@
 -- Builds Workspace.ClaudeGalleria and touches nothing else, so it can sit
 -- beside the other mall for comparison.
 
+local CollectionService = game:GetService("CollectionService")
 local Workspace = game:GetService("Workspace")
 
 local GalleriaBuilder = {}
@@ -176,10 +177,17 @@ function GalleriaBuilder.Build(): Model
 	-- over - that was learned on the other mall's stairs, where
 	-- PathfindingService returned NoPath at every attempt.
 	local ESC_W = 14
-	local function escalator(folder: Instance, name: string, x1: number, z1: number, x2: number, z2: number, yaw: number, base: number)
+	-- (x1, z1) is the foot and (x2, z2) is the head. The yaw is taken from that
+	-- vector rather than passed in, because the deck's pitch always lifts its
+	-- own +X end: given the arm's yaw instead, a run asked to climb back down
+	-- the arm was built climbing the other way, and its landing ended up at the
+	-- foot, hanging a storey above the floor with the deck rising away from it.
+	-- That is why nothing on level two could be reached after the rescale.
+	local function escalator(folder: Instance, name: string, x1: number, z1: number, x2: number, z2: number, base: number)
 		local run = Vector2.new(x2 - x1, z2 - z1).Magnitude * S
 		local hyp = math.sqrt(run * run + F2F * F2F)
 		local pitch = math.atan2(F2F, run)
+		local yaw = math.atan2(z2 - z1, x2 - x1)
 		local cf = CFrame.new((x1 + x2) / 2 * S, base + F2F / 2 - 1, (z1 + z2) / 2 * S)
 			* CFrame.Angles(0, -yaw, 0)
 			* CFrame.Angles(0, 0, pitch)
@@ -193,6 +201,21 @@ function GalleriaBuilder.Build(): Model
 			part(folder, `Balustrade_{name}_{sgn}`, Vector3.new(hyp, 8, 1.4), cf * CFrame.new(0, 5, sgn * (ESC_W / 2 + 0.7)), C.teal, Enum.Material.Metal)
 		end
 	end
+
+	-- Where a flanking department store cuts through the shop band. Boscov's
+	-- and Sears close an arm, so their doors open straight onto the end of the
+	-- concourse. JCPenney and Bon-Ton do not - they sit alongside an arm, and
+	-- their mall-facing wall lands on the OUTSIDE of the inline shops. Without
+	-- opening the band here their entrances face the back of a shoe shop, which
+	-- is what pathfinding found: every route into JCPenney failed while
+	-- Boscov's was fine.
+	local PORTAL_W = 2.6
+	local seUnit = (ARMS[2].b - ARMS[2].a).Unit
+	local portals = {
+		{ arm = 1, side = 1, at = Vector2.new(-13, 0) },
+		{ arm = 1, side = 1, at = Vector2.new(-7, 0) },
+		{ arm = 2, side = -1, at = seUnit * 8 },
+	}
 
 	local suite1, suite2 = 100, 200
 	local landings: { { arm: number, side: number, from: number, to: number } } = {}
@@ -240,7 +263,7 @@ function GalleriaBuilder.Build(): Model
 				local off = e * (ESC_W / 2 + 0.8) / S
 				local x1, z1 = at(centre - sense * run / 2, off)
 				local x2, z2 = at(centre + sense * run / 2, off)
-				escalator(F.Escalators, `{ai}_{k}_{e}`, x1, z1, x2, z2, ang, 0)
+				escalator(F.Escalators, `{ai}_{k}_{e}`, x1, z1, x2, z2, 0)
 			end
 			local head = centre + sense * (run / 2 + 0.45)
 			local hx, hz = at(head, 0)
@@ -273,17 +296,19 @@ function GalleriaBuilder.Build(): Model
 				part(F.Structure, `FCRail_{e}`, Vector3.new(1, 3.4, WELL * 2 * S), CFrame.new(ex * S, F2F + 1.7, ez * S) * rot, C.fascia)
 				part(F.Structure, `FCCap_{e}`, Vector3.new(1.8, 1.2, WELL * 2 * S), CFrame.new(ex * S, F2F + 4, ez * S) * rot, C.teal, Enum.Material.Metal)
 			end
-			local seats = 5
+			-- One row of tables down the middle, not two rows across. The deck
+			-- is only the width of the well - about thirty studs - and tables
+			-- seventeen studs wide set either side of the centre overhung both
+			-- edges and sealed the deck off from the balcony entirely.
+			local seats = 6
 			for i = 0, seats - 1 do
 				local t = fcAt - fcLen / 2 + fcLen * ((i + 0.5) / seats)
-				for j = -1, 1, 2 do
-					local tx, tz = at(t, j * 0.3)
-					part(F.Fixtures, `FCTable_{i}_{j}`, Vector3.new(17, 1.8, 17), CFrame.new(tx * S, F2F + 7, tz * S) * rot, C.fascia, Enum.Material.WoodPlanks)
-					part(F.Fixtures, `FCPedestal_{i}_{j}`, Vector3.new(4, 7, 4), CFrame.new(tx * S, F2F + 3.5, tz * S) * rot, C.teal, Enum.Material.Metal)
-					for c = -1, 1, 2 do
-						local sx, sz = at(t + c * 0.27, j * 0.3)
-						part(F.Fixtures, `FCChair_{i}_{j}_{c}`, Vector3.new(8, 4, 9), CFrame.new(sx * S, F2F + 4, sz * S) * rot, C.column, Enum.Material.WoodPlanks)
-					end
+				local tx, tz = at(t, 0)
+				part(F.Fixtures, `FCPedestal_{i}`, Vector3.new(4, 4, 4), CFrame.new(tx * S, F2F + 2, tz * S) * rot, C.teal, Enum.Material.Metal)
+				part(F.Fixtures, `FCTable_{i}`, Vector3.new(12, 1.2, 12), CFrame.new(tx * S, F2F + 4.6, tz * S) * rot, C.fascia, Enum.Material.WoodPlanks)
+				for c = -1, 1, 2 do
+					local sx, sz = at(t + c * 0.26, 0)
+					part(F.Fixtures, `FCChair_{i}_{c}`, Vector3.new(7, 3, 9), CFrame.new(sx * S, F2F + 1.5, sz * S) * rot, C.column, Enum.Material.WoodPlanks)
 				end
 			end
 		end
@@ -314,16 +339,84 @@ function GalleriaBuilder.Build(): Model
 		end
 
 		local bays = math.floor(len / 1.55)
+		local function portalAt(t: number, sideOf: number): boolean
+			for _, p in ipairs(portals) do
+				if p.arm == ai and p.side == sideOf then
+					local a0 = (p.at - Vector2.new(midX, midZ)):Dot(dir)
+					if math.abs(t - a0) < PORTAL_W / 2 then
+						return true
+					end
+				end
+			end
+			return false
+		end
+
 		for side = -1, 1, 2 do
-			-- One outer shell per side. The bays have gaps between them, so
-			-- without this the mall is a row of free-standing boxes with daylight
-			-- between every pair rather than a building with an outside wall.
-			local sx, sz = at(0, (HALL + DEPTH) * side)
-			part(F.Shops, `Shell{ai}_{side}`, Vector3.new(len * S, F2F * 2, 2), CFrame.new(sx * S, F2F, sz * S) * rot, C.shell, Enum.Material.Concrete)
+			-- Snap each portal to the bays it actually swallows. Sizing the
+			-- corridor to the nominal portal width instead left a strip of
+			-- missing floor at each jamb, and the three-stud slot between two
+			-- adjacent bays became a hole straight through to level one.
+			local corridors = {}
+			for _, p in ipairs(portals) do
+				if p.arm == ai and p.side == side then
+					local a0 = (p.at - Vector2.new(midX, midZ)):Dot(dir)
+					local lo, hi = math.huge, -math.huge
+					for i = 0, bays - 1 do
+						local bAt = -len / 2 + len * ((i + 0.5) / bays)
+						local bw = (len / bays) - 0.12
+						if math.abs(bAt - a0) < PORTAL_W / 2 then
+							lo = math.min(lo, bAt - bw / 2 - 0.06)
+							hi = math.max(hi, bAt + bw / 2 + 0.06)
+						end
+					end
+					if lo < hi then
+						table.insert(corridors, { lo = lo, hi = hi })
+					end
+				end
+			end
+			table.sort(corridors, function(p, q)
+				return p.lo < q.lo
+			end)
+
+			-- One outer shell per side, in runs, with a hole at each corridor.
+			local spans, cursor = {}, -len / 2
+			for _, c in ipairs(corridors) do
+				if c.lo > cursor then
+					table.insert(spans, { cursor, c.lo })
+				end
+				cursor = math.max(cursor, c.hi)
+			end
+			if cursor < len / 2 then
+				table.insert(spans, { cursor, len / 2 })
+			end
+			for si, sp in ipairs(spans) do
+				local smid, slen = (sp[1] + sp[2]) / 2, sp[2] - sp[1]
+				local sx, sz = at(smid, (HALL + DEPTH) * side)
+				part(F.Shops, `Shell{ai}_{side}_{si}`, Vector3.new(slen * S, F2F * 2, 2), CFrame.new(sx * S, F2F, sz * S) * rot, C.shell, Enum.Material.Concrete)
+			end
+
+			-- The corridor itself: one unbroken floor and ceiling per level,
+			-- with a jamb each side.
+			for ci, c in ipairs(corridors) do
+				local cmid, clen = (c.lo + c.hi) / 2, c.hi - c.lo
+				for lvl = 1, 2 do
+					local y = (lvl - 1) * F2F
+					local px, pz = at(cmid, (HALL + DEPTH / 2) * side)
+					part(F.Shops, `PortalFloor_{ai}_{side}_{ci}_{lvl}`, Vector3.new(clen * S, 2, DEPTH * S), CFrame.new(px * S, y - 1, pz * S) * rot, C.tile, Enum.Material.Pebble)
+					part(F.Shops, `PortalCeil_{ai}_{side}_{ci}_{lvl}`, Vector3.new(clen * S, 1, DEPTH * S), CFrame.new(px * S, y + STORE_H, pz * S) * rot, C.fascia)
+					for e = -1, 1, 2 do
+						local jx, jz = at(cmid + e * clen / 2, (HALL + DEPTH / 2) * side)
+						part(F.Shops, `PortalJamb_{ai}_{side}_{ci}_{lvl}_{e}`, Vector3.new(2, STORE_H, DEPTH * S), CFrame.new(jx * S, y + STORE_H / 2, jz * S) * rot, C.fascia)
+					end
+				end
+			end
 
 			for i = 0, bays - 1 do
 				local along = -len / 2 + len * ((i + 0.5) / bays)
 				local bw = (len / bays) - 0.12
+				if portalAt(along, side) then
+					continue
+				end
 				for lvl = 1, 2 do
 					local y = (lvl - 1) * F2F
 					local tag = `L{lvl}_{ai}_{side}_{i}`
@@ -339,7 +432,7 @@ function GalleriaBuilder.Build(): Model
 						part(F.Shops, `Divider_{tag}_{e}`, Vector3.new(1.5, STORE_H, DEPTH * S), CFrame.new(dx * S, y + STORE_H / 2, dz * S) * rot, C.shop, Enum.Material.Slate)
 					end
 
-					local fx, fz = at(along, (HALL + 0.08) * side)
+						local fx, fz = at(along, (HALL + 0.08) * side)
 					if (i + ai + lvl) % 3 == 0 then
 						local doorW = 14
 						local paneW = (bw * S - doorW) / 2
@@ -552,7 +645,7 @@ function GalleriaBuilder.Build(): Model
 	local DOORW = 2.2 -- mall entrance width, in model units
 	local DOOR_H = 26
 
-	local function department(name: string, cx: number, cz: number, w: number, d: number, yaw: number, front: string, doors: { number })
+	local function department(name: string, cx: number, cz: number, w: number, d: number, yaw: number, front: string, doors: { number }, doorsUp: { number })
 		local H = F2F * 2
 		local rot = CFrame.Angles(0, -yaw, 0)
 		local cos, sin = math.cos(yaw), math.sin(yaw)
@@ -569,6 +662,27 @@ function GalleriaBuilder.Build(): Model
 		-- The void in the upper slab that the escalators rise through.
 		local vw, vd = 3.2, 3.0
 
+		-- Keep an aisle clear in line with every door, front, upper and rear.
+		-- A tall clothes rack had planted itself directly inside Boscov's back
+		-- door, which is the one the extraction picker may choose, and no route
+		-- to it existed.
+		local aisleAcross: { number } = { 0 } -- the rear door is always centred
+		local frontIsX = front:sub(2) == "X"
+		for _, list in ipairs({ doors, doorsUp }) do
+			for _, g in ipairs(list) do
+				table.insert(aisleAcross, g)
+			end
+		end
+		local function onAisle(lx: number, lz: number): boolean
+			local v = if frontIsX then lz else lx
+			for _, a in ipairs(aisleAcross) do
+				if math.abs(v - a) < 0.85 then
+					return true
+				end
+			end
+			return false
+		end
+
 		box(F.Anchors, `Floor1_{name}`, 0, 0, w, d, -1, 2, C.tile, Enum.Material.Pebble)
 		-- Level two is four slabs around the void rather than one slab, because
 		-- an escalator needs somewhere to come up.
@@ -579,45 +693,95 @@ function GalleriaBuilder.Build(): Model
 		box(F.Anchors, `Roof_{name}`, 0, 0, w, d, H + 1, 2, C.shell, Enum.Material.Concrete)
 
 		-- Rails round the void, so the drop is guarded but visible.
+		-- The rail round the void has to break where each escalator arrives.
+		-- Run continuously it stands squarely across the head of the run, and
+		-- no route to a store's upper floor exists at all - which is what
+		-- pathfinding found for all four of them.
+		local ESC_GAP = ESC_W / S / 2 + 0.12
 		for sgn = -1, 1, 2 do
-			box(F.Anchors, `VoidRail_{name}_X{sgn}`, sgn * vw / 2, 0, 0.06, vd, F2F + 1.75, 3.5, C.teal, Enum.Material.Metal)
+			local land = sgn * 0.62 -- where this side's escalator comes up
+			for _, seg in ipairs({ { -vd / 2, land - ESC_GAP }, { land + ESC_GAP, vd / 2 } }) do
+				local lo, hi = seg[1], seg[2]
+				if hi - lo > 0.05 then
+					box(F.Anchors, `VoidRail_{name}_X{sgn}_{math.floor(lo * 100)}`, sgn * vw / 2, (lo + hi) / 2, 0.06, hi - lo, F2F + 1.75, 3.5, C.teal, Enum.Material.Metal)
+				end
+			end
 			box(F.Anchors, `VoidRail_{name}_Z{sgn}`, 0, sgn * vd / 2, vw, 0.06, F2F + 1.75, 3.5, C.teal, Enum.Material.Metal)
 		end
 
 		-- Perimeter. Only the face that meets the mall is cut for doors.
+		-- The wall is built in four horizontal bands rather than one slab with
+		-- lintels punched through it, because the two floors do not want their
+		-- doors in the same place. A store that closes an arm meets the
+		-- concourse at level one on the centreline, but at level two the middle
+		-- is the open well - the balconies run either side of it. Boscov's
+		-- upper entrance was a doorway onto thin air, two storeys above the
+		-- tile, which is why nothing could reach its first floor.
+		local bands = {
+			{ 0, DOOR_H, doors },
+			{ DOOR_H, F2F, {} },
+			{ F2F, F2F + DOOR_H, doorsUp },
+			{ F2F + DOOR_H, H, {} },
+		}
+		-- The face opposite the mall gets a ground-floor way out. Chris, on the
+		-- run shape: every match activates one extraction, "selected from
+		-- far-side exits, never near the active spawn", and each store should
+		-- offer "at least one viable path through it toward the randomized
+		-- far-side exit". These are the candidates; which one goes live on a
+		-- given run is the run logic's call, not the map's.
+		local backFace = (if front:sub(1, 1) == "+" then "-" else "+") .. front:sub(2)
 		for _, face in ipairs({ { "X", 1 }, { "X", -1 }, { "Z", 1 }, { "Z", -1 } }) do
 			local axis, sgn = face[1] :: string, face[2] :: number
 			local along = if axis == "X" then d else w
-			local gaps = if front == (if sgn > 0 then "+" else "-") .. axis then doors else {}
-			local cuts = table.clone(gaps)
-			table.sort(cuts)
-			local runs = {}
-			local cursor = -along / 2
-			for _, g in ipairs(cuts) do
-				if g - DOORW / 2 > cursor then
-					table.insert(runs, { cursor, g - DOORW / 2 })
+			local here = (if sgn > 0 then "+" else "-") .. axis
+			local isFront = front == here
+			local isBack = backFace == here
+			for bi, band in ipairs(bands) do
+				local y0, y1 = band[1] :: number, band[2] :: number
+				local gaps = if isFront then band[3] :: { number } elseif isBack and bi == 1 then { 0 } else {}
+				local cuts = table.clone(gaps)
+				table.sort(cuts)
+				local runs = {}
+				local cursor = -along / 2
+				for _, g in ipairs(cuts) do
+					if g - DOORW / 2 > cursor then
+						table.insert(runs, { cursor, g - DOORW / 2 })
+					end
+					cursor = math.max(cursor, g + DOORW / 2)
 				end
-				cursor = math.max(cursor, g + DOORW / 2)
-			end
-			if cursor < along / 2 then
-				table.insert(runs, { cursor, along / 2 })
-			end
-			for i, run in ipairs(runs) do
-				local mid, len = (run[1] + run[2]) / 2, run[2] - run[1]
-				if axis == "X" then
-					box(F.Anchors, `Wall_{name}_{axis}{sgn}_{i}`, sgn * w / 2, mid, WALL_T, len, H / 2, H, C.brick, Enum.Material.Brick)
-				else
-					box(F.Anchors, `Wall_{name}_{axis}{sgn}_{i}`, mid, sgn * d / 2, len, WALL_T, H / 2, H, C.brick, Enum.Material.Brick)
+				if cursor < along / 2 then
+					table.insert(runs, { cursor, along / 2 })
+				end
+				for i, run in ipairs(runs) do
+					local mid, rlen = (run[1] + run[2]) / 2, run[2] - run[1]
+					if rlen <= 0.001 then
+						continue
+					end
+					if axis == "X" then
+						box(F.Anchors, `Wall_{name}_{axis}{sgn}_{bi}_{i}`, sgn * w / 2, mid, WALL_T, rlen, (y0 + y1) / 2, y1 - y0, C.brick, Enum.Material.Brick)
+					else
+						box(F.Anchors, `Wall_{name}_{axis}{sgn}_{bi}_{i}`, mid, sgn * d / 2, rlen, WALL_T, (y0 + y1) / 2, y1 - y0, C.brick, Enum.Material.Brick)
+					end
 				end
 			end
-			-- A lintel over each opening, so a door is a door and not a slot.
-			for i, g in ipairs(gaps) do
-				if axis == "X" then
-					box(F.Anchors, `Lintel_{name}_{i}`, sgn * w / 2, g, WALL_T, DOORW, (DOOR_H + H) / 2, H - DOOR_H, C.brick, Enum.Material.Brick)
-				else
-					box(F.Anchors, `Lintel_{name}_{i}`, g, sgn * d / 2, DOORW, WALL_T, (DOOR_H + H) / 2, H - DOOR_H, C.brick, Enum.Material.Brick)
-				end
-			end
+		end
+
+		-- A landing outside the back door, flush with the shop floor, carrying
+		-- the marker the extraction picker reads.
+		do
+			local isX = backFace:sub(2) == "X"
+			local sgn = if backFace:sub(1, 1) == "+" then 1 else -1
+			local ox = if isX then sgn * (w / 2 + 1.1) else 0
+			local oz = if isX then 0 else sgn * (d / 2 + 1.1)
+			box(F.Anchors, `ExitApron_{name}`, ox, oz, if isX then 2.4 else 3.0, if isX then 3.0 else 2.4, -1, 2, C.shell, Enum.Material.Concrete)
+			-- The marker does not carry anyone: a raised slab this thin is not
+			-- picked up as ground, and every route that ended standing on it
+			-- came back NoPath while the apron an inch away was reachable. It
+			-- is paint on the floor, and the apron underneath is the floor.
+			local pad = box(F.Anchors, `Exit_{name}`, ox, oz, 1.5, 1.5, 0.3, 0.6, C.teal, Enum.Material.Metal)
+			pad.CanCollide = false
+			pad:SetAttribute("Store", name)
+			CollectionService:AddTag(pad, "ExtractCandidate")
 		end
 
 		box(F.Anchors, `Parapet_{name}`, 0, 0, w + 0.12, d + 0.12, H + 5, 6, C.shell, Enum.Material.Concrete)
@@ -644,7 +808,7 @@ function GalleriaBuilder.Build(): Model
 			local z = sgn * 0.62
 			local ax, az = at(-sgn * vw / 2, z)
 			local bx, bz = at(sgn * vw / 2, z)
-			escalator(F.Escalators, `{name}_{k}`, ax, az, bx, bz, yaw, 0)
+			escalator(F.Escalators, `{name}_{k}`, ax, az, bx, bz, 0)
 		end
 
 		-- Column grid, skipping the void.
@@ -653,7 +817,17 @@ function GalleriaBuilder.Build(): Model
 			for j = 0, gz do
 				local lx = -w / 2 + w * (i / gx)
 				local lz = -d / 2 + d * (j / gz)
-				if math.abs(lx) > vw / 2 + 0.3 or math.abs(lz) > vd / 2 + 0.3 then
+				-- The circulation zone is the void PLUS an apron either side of
+				-- it, because that apron is where the escalators land. Keeping
+				-- things out of the void alone was not enough: a clothes rack
+				-- stood at the head of both of Sears' runs and nothing could
+				-- reach its upper floor.
+				-- Columns keep off the door aisles too. One stood dead centre in
+				-- Boscov's rear doorway, splitting a fifty-seven stud opening
+				-- into two slots that nothing would path through.
+				local inWay = (math.abs(lx) < vw / 2 + 1.4 and math.abs(lz) < vd / 2 + 0.3)
+					or onAisle(lx, lz)
+				if not inWay then
 					local px, pz = at(lx, lz)
 					pillar(F.Structure, `DeptColumn_{name}_{i}_{j}`, px * S, pz * S, H / 2, H, 10, C.column)
 				end
@@ -671,7 +845,9 @@ function GalleriaBuilder.Build(): Model
 				if math.abs(lz) > vd / 2 + 0.25 or lvl == 0 then
 					for c = 0, 3 do
 						local lx = -w / 2 + w * ((c + 0.5) / 4)
-						if math.abs(lx) > vw / 2 + 0.25 or math.abs(lz) > vd / 2 + 0.25 then
+						local inWay = (math.abs(lx) < vw / 2 + 1.4 and math.abs(lz) < vd / 2 + 0.3)
+							or onAisle(lx, lz)
+						if not inWay then
 							local tall = (r + c) % 3 == 0
 							box(F.Fixtures, `Rack_{name}_{lvl}_{r}_{c}`, lx, lz, w / 5.4, 0.28, y + (if tall then 7 else 3.5), if tall then 14 else 7, if tall then C.shop else C.fascia, Enum.Material.Metal)
 						end
@@ -696,21 +872,21 @@ function GalleriaBuilder.Build(): Model
 	local EDGE = HALL + DEPTH
 
 	-- Boscov's closes the west arm, so its east face is the arm's end.
-	department("BOSCOVS", ARMS[1].b.X - 14 / 2, 0, 14, 15, 0, "+X", { 0 })
+	department("BOSCOVS", ARMS[1].b.X - 14 / 2, 0, 14, 15, 0, "+X", { 0 }, { -(HALL + WELL) / 2, (HALL + WELL) / 2 })
 
 	-- Sears closes the south-east arm the same way, squared to it.
 	local sears = ARMS[2].b + se * (15 / 2)
-	department("SEARS", sears.X, sears.Y, 15, 14, seAng, "-X", { 0 })
+	department("SEARS", sears.X, sears.Y, 15, 14, seAng, "-X", { 0 }, { -(HALL + WELL) / 2, (HALL + WELL) / 2 })
 
 	-- JCPenney and Bon-Ton both sit on the NORTH side, on opposite arms, with
 	-- the bend between them. Three earlier versions had one or both on the
 	-- south, which is what Chris kept seeing as wrong: on the aerial there is
 	-- open ground between them right at the court, and putting them on the same
 	-- flank closed that gap up.
-	department("JCPENNEY", -10, -(EDGE + 12 / 2), 15, 12, 0, "+Z", { -3, 3 })
+	department("JCPENNEY", -10, -(EDGE + 12 / 2), 15, 12, 0, "+Z", { -3, 3 }, { -3, 3 })
 
 	local bt = BEND + se * 8 + seNE * (EDGE + 11 / 2)
-	department("BON-TON", bt.X, bt.Y, 13, 11, seAng, "+Z", { 0 })
+	department("BON-TON", bt.X, bt.Y, 13, 11, seAng, "+Z", { 0 }, { 0 })
 
 	M.Parent = map
 	return M
