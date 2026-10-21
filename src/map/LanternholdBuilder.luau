@@ -176,9 +176,28 @@ end
 local function fingerpost(parent: Instance, name: string, x: number, z: number, base: number, arms: { { text: string, tx: number, tz: number } })
 	part(parent, `{name}_Post`, Vector3.new(2.2, 15, 2.2), CFrame.new(x, base + 7.5, z), C.iron, Enum.Material.Metal)
 	part(parent, `{name}_Finial`, Vector3.new(3.4, 1, 3.4), CFrame.new(x, base + 15.2, z), C.gilt, Enum.Material.Metal)
+	-- Stack the arms so the ones pointing nearly the same way sit furthest
+	-- apart vertically. Two of these rooms are both away to the west, only 12
+	-- degrees apart, and at even spacing their boards overlapped into an
+	-- unreadable pile - Chris: "signs don't match up". Sorting by bearing and
+	-- then dealing the heights out from the two ends inward puts angular
+	-- neighbours at opposite ends of the post.
+	table.sort(arms, function(a, b)
+		return math.atan2(a.tz - z, a.tx - x) < math.atan2(b.tz - z, b.tx - x)
+	end)
+	local slot, lo, hi = {}, 1, #arms
+	for i = 1, #arms do
+		if i % 2 == 1 then
+			slot[i] = lo
+			lo += 1
+		else
+			slot[i] = hi
+			hi -= 1
+		end
+	end
 	for i, arm in ipairs(arms) do
 		local yaw = math.atan2(arm.tz - z, arm.tx - x)
-		local y = base + 13 - (i - 1) * 2.9
+		local y = base + 14.5 - (slot[i] - 1) * 4.1
 		local board = part(
 			parent,
 			`{name}_Arm{i}`,
