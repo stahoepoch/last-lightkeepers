@@ -786,16 +786,20 @@ function GalleriaBuilder.Build(): Model
 
 		box(F.Anchors, `Parapet_{name}`, 0, 0, w + 0.12, d + 0.12, H + 5, 6, C.shell, Enum.Material.Concrete)
 
-		-- Sign band on the face that meets the mall.
+		-- Sign band, mounted on the parapet above the roofline rather than on
+		-- the face. It used to sit at 35 to 57 studs, which is exactly where
+		-- the upper doorway is - Chris, after walking it: "signs are blocking
+		-- entry to major anchor stores". A department store's sign belongs over
+		-- the roof anyway.
 		do
 			local isX = front:sub(2) == "X"
 			local sgn = if front:sub(1, 1) == "+" then 1 else -1
 			local bandLen = (if isX then d else w) * 0.5
 			local band
 			if isX then
-				band = box(F.Anchors, `Sign_{name}`, sgn * (w / 2 + 0.06), 0, 0.08, bandLen, H - 18, 22, C.teal)
+				band = box(F.Anchors, `Sign_{name}`, sgn * (w / 2 + 0.06), 0, 0.08, bandLen, H + 11, 20, C.teal)
 			else
-				band = box(F.Anchors, `Sign_{name}`, 0, sgn * (d / 2 + 0.06), bandLen, 0.08, H - 18, 22, C.teal)
+				band = box(F.Anchors, `Sign_{name}`, 0, sgn * (d / 2 + 0.06), bandLen, 0.08, H + 11, 20, C.teal)
 			end
 			for _, f in ipairs({ Enum.NormalId.Front, Enum.NormalId.Back, Enum.NormalId.Left, Enum.NormalId.Right }) do
 				label(band, name, f)
