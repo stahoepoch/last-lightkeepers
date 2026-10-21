@@ -37,12 +37,27 @@ local PROFILE = {
 	ShadowSoftness = 0.35,
 	ClockTime = 2,
 	GlobalShadows = true,
-	Technology = Enum.Technology.Future,
+	-- Technology is deliberately NOT here. A normal script cannot write it -
+	-- "The current thread cannot write 'Technology' (lacking capability
+	-- RobloxScript)" - and the throw took out the whole of init.server.luau
+	-- at the call site, so ExpeditionService, HubService and LiftService never
+	-- initialised. No departure prompt, no reply on the launch remote, no way
+	-- into a raid. default.project.json sets Technology to Future already.
 }
 
 function LightingService.init()
+	-- Applied one at a time, each guarded. pairs() has no defined order, so a
+	-- single property that throws used to leave a RANDOM SUBSET of the profile
+	-- applied and then kill the caller - which is why the lighting looked
+	-- different on every playtest and why none of it was reproducible. One bad
+	-- property must never take the server's startup with it.
 	for property, value in pairs(PROFILE) do
-		(Lighting :: any)[property] = value
+		local ok, err = pcall(function()
+			(Lighting :: any)[property] = value
+		end)
+		if not ok then
+			warn(`[LightingService] could not set {property}: {err}`)
+		end
 	end
 	-- Bloom or a colour-correction effect left enabled in the place turns the
 	-- same calibrated lamps into a white-out. Disable them for play rather than
