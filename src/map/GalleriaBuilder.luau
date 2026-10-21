@@ -648,7 +648,12 @@ function GalleriaBuilder.Build(): Model
 		-- enough to light the walk and leave the ceiling dark. Deliberately
 		-- sparse and deliberately weak, because the lantern is the light that
 		-- is supposed to matter and a well-lit mall takes that away.
-		local lamps = math.max(2, math.floor(len / 2.8))
+		-- One every 1.6 units rather than 2.8. Fifteen lights across a mall
+		-- measuring 1983 by 1344 studs is one per 130 studs of concourse, and
+		-- Chris walked it: "right now its too dark in some places". Still the
+		-- same weak 0.85 lamp - the answer to a dark patch is another pool of
+		-- light, never a brighter one, and never Ambient.
+		local lamps = math.max(2, math.floor(len / 1.6))
 		for i = 0, lamps - 1 do
 			local lx, lz = at(-len / 2 + len * ((i + 0.5) / lamps), 0)
 			local can = part(F.Fixtures, `Downlight{ai}_{i}`, Vector3.new(7, 1.2, 7), CFrame.new(lx * S, F2F + 14, lz * S) * rot, C.shop, Enum.Material.Metal)
