@@ -155,7 +155,7 @@ function GalleriaBuilder.Build(): Model
 	local M = Instance.new("Model")
 	M.Name = "ClaudeGalleria"
 	local F: { [string]: Folder } = {}
-	for _, n in ipairs({ "Floors", "Shops", "Structure", "Anchors", "Roof", "Court", "Escalators", "Fixtures" }) do
+	for _, n in ipairs({ "Floors", "Shops", "Structure", "Anchors", "Roof", "Court", "Escalators", "Fixtures", "Gameplay" }) do
 		local f = Instance.new("Folder")
 		f.Name, f.Parent = n, M
 		F[n] = f
@@ -1026,6 +1026,81 @@ function GalleriaBuilder.Build(): Model
 
 	local bt = BEND + se * 8 + seNE * (EDGE + 11 / 2)
 	department("BELLEVUE", bt.X, bt.Y, 13, 11, seAng, "+Z", { 0 }, { 0 })
+
+	-- ------------------------------------------------------------- gameplay
+	-- Everything a run needs, emitted by the mall the run actually happens in.
+	-- All of this used to come from FloodedMallBuilder: the spawn, the loot,
+	-- the Sweeper posts, the relay and the extractions lived in Codex's
+	-- generated mall, so launching a raid dropped you into that mall whatever
+	-- the crew was meant to be raiding. Chris: "starting the raid still sends
+	-- me to codex's old mall". Deriving these from this builder's own arms is
+	-- what lets the old one go.
+	do
+		local G = F.Gameplay
+
+		local function marker(name: string, mx: number, mz: number, y: number): Part
+			local p = part(G, name, Vector3.new(4, 4, 4), CFrame.new(mx * S, y, mz * S), C.teal, Enum.Material.Metal)
+			p.CanCollide, p.Transparency = false, 0.55
+			return p
+		end
+
+		-- Spawn in the court rather than at a door: the crew arrives where
+		-- every arm is in sight and has to choose a direction.
+		local spawn = Instance.new("SpawnLocation")
+		spawn.Name = "GalleriaSpawn"
+		spawn.Size = Vector3.new(12, 1, 12)
+		spawn.CFrame = CFrame.new(0, 1.5, 2.2 * S)
+		spawn.Anchored, spawn.Neutral, spawn.Transparency = true, true, 0.55
+		spawn.Parent = G
+
+		local relay = part(G, "RelayBank_Court", Vector3.new(5, 4, 5), CFrame.new(2 * S, 2, -2 * S), C.teal, Enum.Material.Metal)
+		relay:SetAttribute("InteractionLabel", "Bank Haul")
+		CollectionService:AddTag(relay, "RelayBank")
+
+		-- Loot down both arms, and two upstairs so the balcony is worth the
+		-- stairs rather than scenery you look at from below.
+		for _, d in ipairs({
+			{ "Supplies_WestArm", -6, 0, 3, "Supplies" },
+			{ "Components_WestMid", -12, 0, 3, "Components" },
+			{ "Relic_BoswellsEnd", -19, 0, 3, "Relics" },
+			{ "Components_CourtSE", 5, 5, 3, "Components" },
+			{ "RestorationCrate_FoodCourt", 11, 11, 3, "RestorationCrates" },
+			{ "Relic_SayersEnd", 15, 15, 3, "Relics" },
+			{ "Relic_UpperWest", -9, 0, F2F + 3, "Relics" },
+			{ "Supplies_UpperSE", 8, 8, F2F + 3, "Supplies" },
+		}) do
+			local loot = marker(d[1] :: string, d[2] :: number, d[3] :: number, d[4] :: number)
+			loot:SetAttribute("Tier", d[5] :: string)
+			CollectionService:AddTag(loot, "Loot")
+		end
+
+		for i, p in ipairs({ { -16, 0 }, { -4, 0 }, { 8, 8 }, { 16, 16 } }) do
+			CollectionService:AddTag(marker(`SweeperSpawn_{i}`, p[1], p[2], 3), "SweeperSpawn")
+		end
+
+		-- All four anchor-store back doors keep ExtractCandidate, but only two
+		-- can be real extractions: data/loot.json defines LoadingDock and
+		-- FreightLift and nothing else, and LootService.beginRun drops any
+		-- candidate whose ExtractionId is not in that config - tag a door
+		-- "Exit_BOSWELL'S" and it is silently never selectable. Balance data is
+		-- Chris's call, so the map bends to it rather than the other way round.
+		-- The two arm-closing anchors take them, which puts the pair as far
+		-- apart as the plan allows; beginRun then picks whichever lies far from
+		-- the spawn.
+		local EXITS = { ["BOSWELL'S"] = "LoadingDock", ["SAYERS"] = "FreightLift" }
+		for _, p in ipairs(F.Anchors:GetChildren()) do
+			if p:IsA("BasePart") and string.sub(p.Name, 1, 5) == "Exit_" then
+				local id = EXITS[string.sub(p.Name, 6)]
+				if id then
+					p:SetAttribute("ExtractionId", id)
+					if id == "FreightLift" then
+						p:SetAttribute("RequiresBreaker", true)
+					end
+					CollectionService:AddTag(p, "Extraction")
+				end
+			end
+		end
+	end
 
 	M.Parent = map
 	return M
