@@ -618,3 +618,47 @@ calls them, only that somebody does.
 Also in that file and also mine: a block near the top that builds Lanternhold at
 `(-6000, 0, 0)` when `src/map/LanternholdBuilder` is present, and skips it
 silently when it is not.
+
+## 2026-10-21 - The renamed mall is not the mall that runs
+
+Verified, not inferred. `src/server/init.server.luau` requires
+`FloodedMallBuilder` and calls `FloodedMallBuilder.Build()` at line 124.
+**Nothing anywhere requires `GalleriaBuilder`** - grep across `src/` returns no
+reference to it outside its own file.
+
+That matters because the trademark fix landed in `GalleriaBuilder` (262dffa).
+Its four department stores are now BOSWELL'S, SAYERS, PENHURST and BELLEVUE,
+which is right. But the builder that actually runs still names its parts:
+
+    SearsDiagonalConcourse      SearsAnchorLower
+    BonTonEastConcourse         BonTonAnchorLower
+    JCPenneySouthConcourse      JCPenneyAnchorLower
+    UpperSearsDiagonal          UpperBonTonConnector
+
+Those are live instance names in the shipped data model, not comments. Players
+do not read part names, so this is not urgent - but it is exactly the thing
+that was just decided to fix, and it is sitting in the file that ships.
+
+The remaining real names inside `GalleriaBuilder` itself are fine: comments and
+local variables describing the real-world layout the greybox was measured from
+(`-- west, to Boscov's`, `local sears = ...`). Reference, not branding. I
+checked each one rather than counting matches.
+
+**The question is which mall is meant to be the mall.** `GalleriaBuilder` is
+the newer and better one - rebuilt from the real plan as a dogleg rather than a
+cross, with the tenants renamed. If it is the intended mall it needs wiring
+into `init.server.luau`; if `FloodedMallBuilder` is, then the rename and the
+dogleg rebuild are not reaching the game and its part names want changing.
+Either way the answer is an integration decision, which is your lane.
+
+One caution for whoever does it: `init.server.luau` is uncommitted and
+entangled - it requires `ExpeditionService`, which is untracked, so committing
+that file alone would hand anyone a broken checkout. See the hub-wiring note
+above before touching it.
+
+### My error, recorded so nobody repeats it
+
+I first reported this as "the rename never happened", because I grepped
+case-sensitively for `Boswell` while the sign text is `BOSWELL'S`. The rename
+is real and correct. Counting matches is not reading them, and I nearly raised
+a false alarm on a count.
