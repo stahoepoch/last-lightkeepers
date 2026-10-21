@@ -109,6 +109,33 @@ still a complaint.
 Do not "fix" this by raising exposure or dropping `Brightness`: those are
 global, and they will take the dark parts with them.
 
+## Rojo will lie to you about this file
+
+**`rojo serve` reads `default.project.json` once, when it starts.** Editing the
+`Lighting` block and saving does nothing to a running server — it keeps serving
+the values it loaded at startup, and the plugin keeps applying those to the
+place. The repo says one thing, the game does another, and every measurement
+you take in Studio is of the old numbers.
+
+This is how the lights came back wrong after being fixed: the file on disk had
+`Ambient 0,0,0` and `EnvironmentDiffuseScale 0`, `tests/lighting.test.mjs`
+passed 58 of 58 against it, and the live place still had `46,52,64` and `0.72`
+because the server had been up since before the edit.
+
+So, after changing anything inside `default.project.json`:
+
+```bash
+# from the repo root
+taskkill /IM rojo.exe /F ; rojo serve --port 34872
+```
+
+then reconnect the Rojo plugin in Studio. Changing a `.luau` file under a
+`$path` is fine and hot-reloads normally — this applies only to the project
+file itself.
+
+If the game disagrees with this document, check the server's age before you
+change a single number.
+
 ## The protocol
 
 1. Change one number.
