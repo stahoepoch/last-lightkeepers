@@ -660,8 +660,15 @@ function GalleriaBuilder.Build(): Model
 			-- both flanks and you can see straight out of the building.
 			local wp = Vector2.new(math.cos(th), math.sin(th)) * (COURT_OUT + 0.1)
 			part(F.Court, `CourtWall_{i}`, Vector3.new(w * S, F2F * 2, 2), CFrame.new(wp.X * S, F2F, wp.Y * S) * yaw, C.shell, Enum.Material.Concrete)
-			local r = Vector2.new(math.cos(th), math.sin(th)) * COURT_WELL
-			part(F.Court, `CourtRail_{i}`, Vector3.new(2 * math.pi * COURT_WELL / RING * S * 1.25, 3.5, 1), CFrame.new(r.X * S, F2F + 1.75 + LIFT + jitter, r.Y * S) * yaw, C.teal, Enum.Material.Metal)
+			-- No rail where the lift lands, or it arrives at level two and lets
+			-- you off against a fence.
+			local toLift = math.abs(((math.deg(th) - 225 + 180) % 360) - 180)
+			if toLift >= 14 then
+				local r = Vector2.new(math.cos(th), math.sin(th)) * COURT_WELL
+				local railW = 2 * math.pi * COURT_WELL / RING * S * 1.25
+				part(F.Court, `CourtRailPanel_{i}`, Vector3.new(railW, 3.4, 0.9), CFrame.new(r.X * S, F2F + 1.7 + LIFT + jitter, r.Y * S) * yaw, C.fascia)
+				part(F.Court, `CourtRailCap_{i}`, Vector3.new(railW, 1.2, 1.8), CFrame.new(r.X * S, F2F + 4 + LIFT + jitter, r.Y * S) * yaw, C.teal, Enum.Material.Metal)
+			end
 		end
 	end
 
@@ -733,18 +740,30 @@ function GalleriaBuilder.Build(): Model
 	do
 		local lx, lz = -1.3, -1.3
 		local shaft = 1.0
+		-- Two openings, and they face along the radius rather than along the
+		-- axes: in toward the fountain, where you board at court level, and out
+		-- toward the ring, where you step off at level two. The first version
+		-- was glazed on all four sides - "the elevator does nothing" was
+		-- literally true before any code existed - and the second opened the
+		-- wrong side, so the car arrived upstairs behind glass.
+		for k, a in ipairs({ math.rad(135), math.rad(315) }) do
+			local ox, oz = math.cos(a) * shaft / 2, math.sin(a) * shaft / 2
+			part(F.Court, `LiftGlass_{k}`, Vector3.new(shaft * S, F2F + 14, 2), CFrame.new((lx + ox) * S, (F2F + 14) / 2, (lz + oz) * S) * CFrame.Angles(0, -(a + math.pi / 2), 0), C.glass, Enum.Material.Glass, 0.6)
+		end
 		for i = 0, 3 do
 			local a = math.pi / 2 * i
-			local ox, oz = math.cos(a) * shaft / 2, math.sin(a) * shaft / 2
-			local wide = if i % 2 == 0 then 0.08 else shaft
-			local deep = if i % 2 == 0 then shaft else 0.08
-			part(F.Court, `LiftGlass_{i}`, Vector3.new(wide * S, F2F + 14, deep * S), CFrame.new((lx + ox) * S, (F2F + 14) / 2, (lz + oz) * S), C.glass, Enum.Material.Glass, 0.6)
-		end
-		for i = 0, 3 do
-			local a = math.pi / 2 * i + math.pi / 4
 			part(F.Court, `LiftPost_{i}`, Vector3.new(3, F2F + 16, 3), CFrame.new((lx + math.cos(a) * shaft * 0.72) * S, (F2F + 16) / 2, (lz + math.sin(a) * shaft * 0.72) * S), C.teal, Enum.Material.Metal)
 		end
-		part(F.Court, "LiftCar", Vector3.new(shaft * S - 5, 2, shaft * S - 5), CFrame.new(lx * S, 2, lz * S), C.shell, Enum.Material.Metal)
+		-- The car. LiftService drives it between these two heights; the map
+		-- states where they are rather than the service guessing.
+		-- The car's deck is flush with the court floor at the bottom and with
+		-- the ring at the top. Parked two studs proud of the tile it looked
+		-- fine and could not be walked onto at all: the navmesh will not climb
+		-- a step that size, so the lift was unreachable before it was unwired.
+		local car = part(F.Court, "LiftCar", Vector3.new(shaft * S - 5, 2, shaft * S - 5), CFrame.new(lx * S, -1 + LIFT, lz * S), C.shell, Enum.Material.Metal)
+		car:SetAttribute("LowY", -1 + LIFT)
+		car:SetAttribute("HighY", F2F - 1 + LIFT)
+		CollectionService:AddTag(car, "Lift")
 		part(F.Court, "LiftHead", Vector3.new(shaft * S + 5, 4, shaft * S + 5), CFrame.new(lx * S, F2F + 16, lz * S), C.teal, Enum.Material.Metal)
 	end
 

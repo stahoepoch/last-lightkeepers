@@ -598,11 +598,16 @@ day of somebody else's unreviewed work under my name. Neither is mine to do.
 | `HubService.lightFor` on `PlayerAdded`, and after each restart | lights that keeper's lamp |
 | `HubService.takeDown` in `LootService.onExtracted` | takes the lamp down — they came home |
 | `HubService.putOut` in `RunStateService.onRunEnded` | puts out every lamp still burning |
+| `LiftService.init()` beside it, and again on restart | drives the Galleria's court lift |
 
 Move or replace any of those and **nothing errors**. The Lamp Wall just stops
 updating: a player goes out and their lamp never lights, and the first anyone
 knows is that the hall looks empty. That is the failure mode worth guarding,
-and it is four one-line call sites.
+and it is five one-line call sites.
+
+`LiftService` is the same shape and has the same hazard, with one addition: the
+mall is rebuilt on every expedition restart, so its `init()` has to be called
+again there or the lift stops answering after the first run.
 
 If `ExpeditionService` is going to own the launch and return flow, these belong
 inside it rather than in the entry point, and that is a better home for them.
