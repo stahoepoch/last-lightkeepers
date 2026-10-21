@@ -576,3 +576,40 @@ if stale then stale:Destroy() end
 so the wipe only removes what the builder itself made. As it stands, anything
 anyone parents under `Map` is unsurvivable, which makes `Map` unusable as a
 place to author map content - including for you.
+
+## Lanternhold's wiring is uncommitted, and not by choice
+
+`HubService` is committed (22bdcf9). The calls into it from
+`src/server/init.server.luau` are **not**, and whoever commits that file next
+will carry them without having written them. This note exists so that is a
+decision rather than an accident.
+
+Why it is not committed: that file requires `ExpeditionService`, in six places,
+and `src/server/services/ExpeditionService.luau` is untracked. Committing
+`init.server.luau` on its own would hand anyone a fresh checkout that requires a
+module the repository does not contain. Committing both would mean committing a
+day of somebody else's unreviewed work under my name. Neither is mine to do.
+
+**The four seams.** HubService owns none of the run lifecycle; it hangs off it:
+
+| Seam | What it drives |
+| --- | --- |
+| `HubService.init()` | binds the tagged fixtures once the hall exists |
+| `HubService.lightFor` on `PlayerAdded`, and after each restart | lights that keeper's lamp |
+| `HubService.takeDown` in `LootService.onExtracted` | takes the lamp down — they came home |
+| `HubService.putOut` in `RunStateService.onRunEnded` | puts out every lamp still burning |
+
+Move or replace any of those and **nothing errors**. The Lamp Wall just stops
+updating: a player goes out and their lamp never lights, and the first anyone
+knows is that the hall looks empty. That is the failure mode worth guarding,
+and it is four one-line call sites.
+
+If `ExpeditionService` is going to own the launch and return flow, these belong
+inside it rather than in the entry point, and that is a better home for them.
+The hub fixtures are found by CollectionService tag — `LampWallSlot`,
+`KitchenContribution`, `RelicPlinth`, `ClubBoard` — so they do not care who
+calls them, only that somebody does.
+
+Also in that file and also mine: a block near the top that builds Lanternhold at
+`(-6000, 0, 0)` when `src/map/LanternholdBuilder` is present, and skips it
+silently when it is not.
