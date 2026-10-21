@@ -1120,26 +1120,36 @@ function GalleriaBuilder.Build(): Model
 		-- holding Supplies - correct behaviour, unreadable in the explorer.
 		-- The tier in this table is only the fallback for a run with no active
 		-- extraction at all.
-		for _, d in ipairs({
-			{ "Cache_WestArm", -6, 0, 3, "Supplies" },
-			{ "Cache_WestMid", -12, 0, 3, "Components" },
-			{ "Cache_BoswellsEnd", -19, 0, 3, "Relics" },
-			-- Off the centreline: the middle of a concourse carries the kiosks,
-			-- planters and benches, and this one was spawning inside Kiosk2_2.
-			-- The walking lane either side of the furniture is where a shopper
-			-- is anyway.
-			{ "Cache_CourtSE", 4.36, 5.64, 3, "Components" },
-			{ "Cache_FoodCourt", 11, 11, 3, "RestorationCrates" },
-			{ "Cache_SayersEnd", 15, 15, 3, "Relics" },
-			-- On the BALCONY, not on the arm centreline. The centreline at this
-			-- height is the well - the hole the escalators climb through - so
-			-- both of these were hanging in mid-air over the atrium and
-			-- pathfinding refused them. The balcony runs at 1.15 model units
-			-- off the centreline (HALL - BAL/2), which is where a shopper
-			-- actually walks on the upper floor.
-			{ "Cache_UpperWest", -9, 1.15, F2F + 3, "Relics" },
-			{ "Cache_UpperSE", 7.19, 8.81, F2F + 3, "Supplies" },
-		}) do
+		-- Generated along the arms rather than hand-listed. Eight caches in a
+		-- mall measuring 1983 by 1344 studs is one per 330,000 square studs,
+		-- which is why Chris walked it and said "all the places look empty".
+		-- Hand-typing more is also how two of the eight ended up inside
+		-- kiosks, so these come off the arm geometry and are checked against
+		-- the built world afterwards.
+		--
+		-- Offsets are the walking lane, not the centreline: the middle of a
+		-- concourse carries the kiosks, planters and benches. Upstairs they sit
+		-- at 1.15 units off centre, on the balcony, because the centreline at
+		-- that height is the well the escalators climb through.
+		local placements = {}
+		for ai, arm in ipairs(ARMS) do
+			local dir = (arm.b - arm.a).Unit
+			local nrm = Vector2.new(-dir.Y, dir.X)
+			local len = (arm.b - arm.a).Magnitude
+			local k, t = 0, COURT_R + 2.2
+			while t < len - 1.6 do
+				local side = if k % 2 == 0 then 1 else -1
+				local gp = arm.a + dir * t + nrm * (0.95 * side)
+				table.insert(placements, { `Cache_A{ai}_{k}`, gp.X, gp.Y, 3, "Components" })
+				if k % 2 == 0 then
+					local up = arm.a + dir * t + nrm * (1.15 * -side)
+					table.insert(placements, { `Cache_A{ai}_{k}_Up`, up.X, up.Y, F2F + 3, "Supplies" })
+				end
+				t += 2.6
+				k += 1
+			end
+		end
+		for _, d in ipairs(placements) do
 			local loot = marker(d[1] :: string, d[2] :: number, d[3] :: number, d[4] :: number)
 			loot.Size = Vector3.new(2.6, 1.25, 2.1)
 			loot.Material, loot.Transparency, loot.CanCollide = Enum.Material.Metal, 0, false
@@ -1158,10 +1168,25 @@ function GalleriaBuilder.Build(): Model
 		-- was inside Kiosk2_14. A Sweeper that spawns inside a kiosk is stuck
 		-- in it. Offsets are along each arm's normal, 0.9 units into the
 		-- walking lane.
-		for i, p in ipairs({ { -16, 0.9 }, { -4, -0.9 }, { 7.36, 8.64 }, { 15.36, 16.64 } }) do
-			local post = marker(`SweeperSpawn_{i}`, p[1], p[2], 3)
-			post.Transparency = 1
-			CollectionService:AddTag(post, "SweeperSpawn")
+		-- Four Sweepers in a mall this size meant you could cross it and meet
+		-- nothing. Generated off the arms too, on the opposite walking lane to
+		-- the caches so you are not always finding both together.
+		local posts = 0
+		for ai, arm in ipairs(ARMS) do
+			local dir = (arm.b - arm.a).Unit
+			local nrm = Vector2.new(-dir.Y, dir.X)
+			local len = (arm.b - arm.a).Magnitude
+			local k, t = 0, COURT_R + 3.6
+			while t < len - 2 do
+				local side = if k % 2 == 0 then -1 else 1
+				local p = arm.a + dir * t + nrm * (1.0 * side)
+				posts += 1
+				local post = marker(`SweeperSpawn_{ai}_{k}`, p.X, p.Y, 3)
+				post.Transparency = 1
+				CollectionService:AddTag(post, "SweeperSpawn")
+				t += 4.4
+				k += 1
+			end
 		end
 
 		-- All four anchor-store back doors keep ExtractCandidate, but only two
@@ -1189,6 +1214,42 @@ function GalleriaBuilder.Build(): Model
 	end
 
 	M.Parent = map
+
+	-- Every generated cache and Sweeper post, checked against the world it
+	-- actually landed in. Generating positions from the arm geometry is right,
+	-- but the arms carry kiosks, planters, columns and escalator landings, and
+	-- a marker inside one of those is loot you cannot reach or a Sweeper that
+	-- spawns stuck. Hand-placed ones had both faults twice over, so nothing is
+	-- trusted: anything without floor under it, or with something solid
+	-- sitting in it, is dropped here rather than shipped.
+	do
+		local params = RaycastParams.new()
+		params.FilterType = Enum.RaycastFilterType.Exclude
+		params.FilterDescendantsInstances = { F.Gameplay }
+		local dropped, kept = 0, 0
+		for _, marker in ipairs(F.Gameplay:GetChildren()) do
+			local tagged = CollectionService:HasTag(marker, "Loot") or CollectionService:HasTag(marker, "SweeperSpawn")
+			if marker:IsA("BasePart") and tagged then
+				local floor = workspace:Raycast(marker.Position + Vector3.new(0, 6, 0), Vector3.new(0, -22, 0), params)
+				local standing = floor ~= nil and (marker.Position.Y - floor.Position.Y) < 8
+				local blocked = false
+				for _, other in ipairs(workspace:GetPartBoundsInRadius(marker.Position, 2.4)) do
+					if other.CanCollide and other:IsDescendantOf(M) and other.Parent ~= F.Gameplay then
+						blocked = true
+						break
+					end
+				end
+				if standing and not blocked then
+					kept += 1
+				else
+					dropped += 1
+					marker:Destroy()
+				end
+			end
+		end
+		M:SetAttribute("MarkersKept", kept)
+		M:SetAttribute("MarkersDropped", dropped)
+	end
 
 	-- A landing rail is there because the far end of a landing is normally a
 	-- two storey drop into the well. On the south-east arm it is not: the food
