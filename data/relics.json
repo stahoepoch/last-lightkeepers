@@ -1,0 +1,130 @@
+{
+  "_comment": "Relic plaque text for the Keeping Room. This file is WRITING, not balance - it deliberately contains no spawn rates, values or weights, so nothing in it is Chris's to tune. Add those elsewhere.",
+
+  "_rules": "Two sentences. Never three. About a person, not about the world. Never explain a mechanic - a plaque is not a tutorial. Some are unknown and stay unknown: the order's earliest records burned long before any storm, and nothing brought back from a run will fill that shelf. See docs/HOW-THE-PLAYER-LEARNS.md.",
+
+  "_howItReads": "A relic is the lantern-only loot tier, so it costs a real decision to find one. Hand it in at a plinth and it gets named. That is the whole lore-delivery system: the risky choice is the only way to learn what happened here.",
+
+  "relics": [
+    {
+      "id": "pretzel-lanyard",
+      "name": "Counter lanyard, laminated",
+      "found": "Food court",
+      "text": "Teodora ran the pretzel counter for nine years and was proud of never once calling in sick. The morning of the storm she finally did."
+    },
+    {
+      "id": "pharmacy-ledger",
+      "name": "Ledger, water-swollen",
+      "found": "Penhurst pharmacy",
+      "text": "Somebody kept writing in the back of this after the registers died. The last page is a list of who still had insulin."
+    },
+    {
+      "id": "layaway-ring",
+      "name": "Ring, still boxed",
+      "found": "Sayers, jewellery counter",
+      "text": "Bought on layaway: eleven payments of forty dollars, each one initialled. The twelfth was due the week the sky went out."
+    },
+    {
+      "id": "pedometer",
+      "name": "Pedometer, strap perished",
+      "found": "Upper concourse",
+      "text": "Harold walked four laps of the upper floor every morning before the shops opened. It reads two thousand eight hundred and forty-seven miles."
+    },
+    {
+      "id": "till-drawing",
+      "name": "Child's drawing, taped",
+      "found": "Boswell's, register four",
+      "text": "A house, a dog, and four stick figures under a hard yellow sun. We have never worked out which cashier taped it inside her drawer."
+    },
+    {
+      "id": "arcade-tokens",
+      "name": "Arcade tokens, six hundred",
+      "found": "Bellevue arcade",
+      "text": "Worth nothing outside this building then, and nothing anywhere now. Someone in the order counted all six hundred anyway, and wrote the number down."
+    },
+    {
+      "id": "door-radio",
+      "name": "Security handset",
+      "found": "Loading dock",
+      "text": "It still cycles through the night door-checks on a loop, in order, politely. Nobody has managed to switch it off and nobody has quite wanted to."
+    },
+    {
+      "id": "burnt-one",
+      "name": "Unknown",
+      "found": "The old hall, vault",
+      "text": "Recovered from the first hall after the water went down. Whatever its label said, the fire had already taken it."
+    },
+    {
+      "id": "swim-badge",
+      "name": "Swimming badge, 25 yards",
+      "found": "Food court, under a bench",
+      "text": "Sewn on, picked off, and kept in a wallet for forty years. The valley has flooded three times and somebody here learned to swim late."
+    },
+    {
+      "id": "shift-rota",
+      "name": "Shift rota, laminated",
+      "found": "Staff corridor",
+      "text": "Twenty-two names, and beside four of them somebody has pencilled a small tick. We do not know what the ticks meant and we no longer ask."
+    },
+    {
+      "id": "incline-ticket",
+      "name": "Incline ticket, unpunched",
+      "found": "Rooftop stage",
+      "text": "A return fare up the hill, bought and never used. Whoever held it chose to stay down in the valley that day."
+    },
+    {
+      "id": "mill-badge",
+      "name": "Works badge, number 4471",
+      "found": "Sub-basement",
+      "text": "His grandfather poured steel, his father poured steel, and he sold shoes on the upper floor. He kept the badge in his till all the same."
+    },
+    {
+      "id": "burnt-two",
+      "name": "Unknown",
+      "found": "The old hall, vault",
+      "text": "The card beneath it survived and reads only a date. Everything that date referred to burned with the rest."
+    },
+    {
+      "id": "photo-booth-strip",
+      "name": "Photo strip, four frames",
+      "found": "Bellevue arcade",
+      "text": "Two girls, aged about fifteen, getting progressively less serious. Somebody tore it down the middle and kept both halves."
+    },
+    {
+      "id": "kitchen-ladle",
+      "name": "Ladle, handle rewrapped",
+      "found": "Food court, back kitchen",
+      "text": "It was rewrapped with tape four separate times rather than replaced. The Good Cheer Club uses it at the long table most evenings."
+    },
+    {
+      "id": "lost-child-card",
+      "name": "Lost child card, blank",
+      "found": "Information desk",
+      "text": "The top of the pad, never filled in, from a stack of a hundred. Every card under it had been used."
+    },
+    {
+      "id": "lantern-lens",
+      "name": "Lens, hand-ground",
+      "found": "Penhurst, optical counter",
+      "text": "Ground by somebody who had done it a long time and was in no hurry. Three of the order's lanterns still carry lenses from this counter."
+    },
+    {
+      "id": "burnt-three",
+      "name": "Unknown",
+      "found": "The old hall, vault",
+      "text": "Small, heavy, and nobody living has ever known what it is. It is kept on the shelf because it was kept on the shelf."
+    },
+    {
+      "id": "cafe-mug",
+      "name": "Mug, chipped at the lip",
+      "found": "Staff corridor",
+      "text": "Marguerite's, and everyone knew it was Marguerite's, and nobody else used it. She carried it home in her coat pocket for thirty years and then back again."
+    },
+    {
+      "id": "closing-notice",
+      "name": "Closing notice, unposted",
+      "found": "Sayers, management office",
+      "text": "Printed, signed, and never put up in the window. The storm closed the store eleven days before the company meant to."
+    }
+  ]
+}
