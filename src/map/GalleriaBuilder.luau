@@ -524,6 +524,34 @@ function GalleriaBuilder.Build(): Model
 							local mx, mz = at(along + e * (doorW / 2 + paneW / 2) / S, (HALL + 0.55) * side)
 							mannequin(F.Fixtures, `Dummy_{tag}_{e}`, mx * S, mz * S, ang, y)
 						end
+
+						-- The inside of the shop. Every open bay was a lit
+						-- shopfront in front of eighty-three studs of nothing -
+						-- Chris: "all the places look empty", and he was looking
+						-- into a hundred of these. Shuttered bays stay empty
+						-- because you cannot see into them.
+						--
+						-- No light in here on purpose. A shop interior is where
+						-- the lantern earns its keep, and adding thirty more
+						-- light sources is exactly what whited the mall out
+						-- before. Geometry first; light only if it reads dead.
+						do
+							local function fit(nm: string, dAlong: number, dAcross: number, sw: number, h: number, sd: number, col: Color3, mat: Enum.Material?)
+								local px, pz = at(along + dAlong, (HALL + dAcross) * side)
+								local p = part(F.Shops, `{nm}_{tag}`, Vector3.new(sw * S, h, sd * S), CFrame.new(px * S, y + h / 2, pz * S) * rot, col, mat)
+								p.CanCollide = true
+								return p
+							end
+							-- Shelving against the back wall and down one side.
+							fit("ShelfBack", 0, DEPTH - 0.18, bw * 0.92, 13, 0.34, C.shop, Enum.Material.Metal)
+							fit("ShelfSide", -bw * 0.4, DEPTH * 0.56, 0.22, 11, DEPTH * 0.6, C.shop, Enum.Material.Metal)
+							-- A till counter set back from the glass, and two
+							-- free-standing units in the middle of the floor.
+							fit("Till", bw * 0.26, 0.72, bw * 0.4, 4.6, 0.3, C.fascia, Enum.Material.WoodPlanks)
+							for r = 0, 1 do
+								fit(`Unit{r}`, (r - 0.5) * bw * 0.44, DEPTH * (0.38 + r * 0.22), bw * 0.3, if r == 0 then 8 else 4.4, 0.26, if r == 0 then C.fascia else C.teal, Enum.Material.Metal)
+							end
+						end
 					else
 						part(F.Shops, `Shutter_{tag}`, Vector3.new(bw * S, STORE_H - 5, 1.2), CFrame.new(fx * S, y + (STORE_H - 5) / 2, fz * S) * rot, C.shop, Enum.Material.DiamondPlate)
 					end
