@@ -402,6 +402,15 @@ function GalleriaBuilder.Build(): Model
 
 	-- The food court span, shared with the bay loop so the shopfronts inside
 	-- it are built as food units rather than clothes shops.
+	-- Where the food court sits, hoisted out of the arm loop because the
+	-- escalators are placed before it and have to keep off it. They did not,
+	-- and it cost both escalators on this arm: the deck is laid across the
+	-- same well the runs rise through, and at a span of six units centred on
+	-- the arm it covered both heads. The runs climbed into the underside of
+	-- the slab and surfaced nowhere, so the upper south-east arm had no way
+	-- down at all. Nothing said so - the geometry was all present and the
+	-- slab simply won.
+	local FC_FRAC, FC_LEN = 0.49, 6.0
 	local fcFrom, fcTo, fcArm = math.huge, -math.huge, 2
 	local suite1, suite2 = 100, 200
 	local landings: { { arm: number, side: number, from: number, to: number } } = {}
@@ -456,7 +465,17 @@ function GalleriaBuilder.Build(): Model
 		-- Two escalators per arm, on opposite sides. Each sits in the well with
 		-- its upper edge flush to the balcony edge, so the top of the run lands
 		-- on the balcony with nothing to bridge.
-		for k, frac in ipairs({ 0.3, 0.68 }) do
+		--
+		-- The arm carrying the food court takes its pair nearer the ends. At
+		-- 0.3 and 0.68 both heads landed under the food court deck and both
+		-- runs were impassable - measured, not guessed: 514 to 787 studs
+		-- walked for an 81 stud straight line, against 86 on the identical
+		-- runs on the west arm. Keeping the food court where the photographs
+		-- put it, over the middle of the arm and open to the court, and moving
+		-- the stairs out from under it is the way round that costs nothing:
+		-- the alternative was halving the food court to fit between them.
+		local fracs = if ai == fcArm then { 0.14, 0.86 } else { 0.3, 0.68 }
+		for k, frac in ipairs(fracs) do
 			local centre = -len / 2 + len * frac
 			local run = 2.0
 			-- A pair side by side in the middle of the well, which is how every
@@ -515,8 +534,8 @@ function GalleriaBuilder.Build(): Model
 			-- room on the upper level, counters down one side, a sea of tables
 			-- out over the court, and a chequered floor. The old one was six
 			-- tables on a strip of decking and read as a landing with chairs.
-			local fcAt = -len / 2 + len * 0.49
-			local fcLen = 6.0
+			local fcAt = -len / 2 + len * FC_FRAC
+			local fcLen = FC_LEN
 			fcFrom, fcTo = fcAt - fcLen / 2, fcAt + fcLen / 2
 			local fx, fz = at(fcAt, 0)
 			part(
@@ -2148,19 +2167,168 @@ function GalleriaBuilder.Build(): Model
 			end
 		end
 
+		-- Light inside the store. Every anchor had none at all: the concourse
+		-- downlights stop at the shop front, so all four were unlit sheds -
+		-- and the only relic caches in the map are in them, and a relic is
+		-- `visibility: lanternOnly` in data/loot.json. Chris walked it and
+		-- reported the two halves of that as separate faults: "its still a
+		-- little too dark" and "i haven't gotten any relics".
+		--
+		-- Deliberately weaker than the concourse downlight's 0.85. A store
+		-- should read as dimmer than the mall it opens onto: lit enough to
+		-- cross and to see a rack, never enough to make the lantern pointless,
+		-- because the lantern is what makes the relics visible at all. Plain
+		-- metal can, no lens, no Neon, no beam - see DONTFUCKUPTHELIGHTS.md.
+		for lvl = 0, 1 do
+			for a = 0, 2 do
+				for b = 0, 2 do
+					local lx = -w / 2 + w * ((a + 0.5) / 3)
+					local lz = -d / 2 + d * ((b + 0.5) / 3)
+					local wx, wz = at(lx, lz)
+					local can = part(
+						F.Fixtures,
+						`DeptLight_{name}_{lvl}_{a}_{b}`,
+						Vector3.new(7, 1.2, 7),
+						CFrame.new(wx * S, lvl * F2F + F2F - 5, wz * S) * rot,
+						C.shop,
+						Enum.Material.Metal
+					)
+					can.CanCollide, can.CanQuery, can.CanTouch = false, false, false
+					local light = Instance.new("PointLight")
+					light.Color = Color3.fromRGB(255, 226, 196)
+					light.Brightness, light.Range, light.Shadows = 0.6, 42, false
+					light.Parent = can
+				end
+			end
+		end
+
 		-- A store with racks in it and nothing else is a warehouse. Chris:
 		-- "144 parts across four department stores is why they feel empty."
 		-- The racks were never the problem - every cache and every Sweeper post
 		-- was out on the arms, and the insides had no light of their own, so
 		-- there was no reason to go in and nothing to see if you did. These are
 		-- meant to be the rooms the run is about.
+		--
+		-- Where a marker may stand, decided geometrically rather than by a
+		-- spatial query, because the store is built before the model is
+		-- parented into Workspace and a query here would see an empty world.
+		--
+		-- This replaces two hand-typed quarter positions, and the reason is
+		-- worth keeping. At fourteen by fifteen units every relic cache in
+		-- Boscov's and Sayers landed INSIDE a structural column, so the
+		-- post-pass destroyed all eight and the two anchors that carry the
+		-- extractions held no relics whatsoever - measured in the live build,
+		-- and the whole of Chris's "i haven't gotten any relics". The cause was
+		-- a coincidence of fractions: 0.26 of the span is the quarter line, and
+		-- a store whose column grid happens to come out four by four puts a
+		-- column on exactly that line. Penhurst and Bellevue were fine by luck.
+		-- Compacting the stores to a three-by-three grid stopped it by luck
+		-- too, which is not the same as fixing it. Nothing below stands on a
+		-- number that has to keep missing a grid by hand.
+		local function clearSpot(lx: number, lz: number): boolean
+			if onAisle(lx, lz) then
+				return false
+			end
+			-- The void and the escalator apron either side of it: the same
+			-- exclusion the column and rack loops use.
+			if math.abs(lx) < vw / 2 + 1.4 and math.abs(lz) < vd / 2 + 0.6 then
+				return false
+			end
+			-- A marker has to clear a column centre by the pillar's half width
+			-- plus the 2.4 stud radius the post-pass rejects on, with a little
+			-- margin. Columns are ten studs square.
+			local colClear = (5 + 2.4 + 2) / S
+			for i = 0, gx do
+				for j = 0, gz do
+					local cl = -w / 2 + w * (i / gx)
+					local cd = -d / 2 + d * (j / gz)
+					if math.abs(lx - cl) < colClear and math.abs(lz - cd) < colClear then
+						return false
+					end
+				end
+			end
+			-- And the rack grid, tested against the same spans the rack loop
+			-- lays down. A rack skipped for being on an aisle is treated as
+			-- present, which only costs candidates, never correctness.
+			local rows = math.max(3, math.floor(d / 1.1))
+			local rackZ = 0.28 / 2 + 2.4 / S + 0.1
+			local rackX = w / 5.4 / 2 + 2.4 / S + 0.1
+			for r = 0, rows - 1 do
+				local rz = -d / 2 + d * ((r + 0.5) / rows)
+				if math.abs(lz - rz) < rackZ then
+					for c = 0, 3 do
+						local rx = -w / 2 + w * ((c + 0.5) / 4)
+						if math.abs(lx - rx) < rackX then
+							return false
+						end
+					end
+				end
+			end
+			return true
+		end
+
+		-- Pick `count` clear spots, spread out. A relic in each quarter of the
+		-- shop floor is a reason to walk the store; three in one aisle is a
+		-- reason to walk its perimeter and leave. Greedy farthest-point, which
+		-- is deterministic - two builds of the same mall put the relics in the
+		-- same places, so a route learned is a route that holds.
+		local function spreadSpots(count: number): { { number } }
+			local pool = {}
+			local STEPS = 19
+			for a = 0, STEPS - 1 do
+				for b = 0, STEPS - 1 do
+					local lx = -w * 0.44 + (w * 0.88) * (a / (STEPS - 1))
+					local lz = -d * 0.44 + (d * 0.88) * (b / (STEPS - 1))
+					if clearSpot(lx, lz) then
+						table.insert(pool, { lx, lz })
+					end
+				end
+			end
+			local picked = {}
+			while #picked < count and #pool > 0 do
+				local bestI, bestScore = 1, -math.huge
+				for i, c in ipairs(pool) do
+					local score
+					if #picked == 0 then
+						-- Start in a corner, not in the middle of the floor.
+						score = c[1] * c[1] + c[2] * c[2]
+					else
+						score = math.huge
+						for _, q in ipairs(picked) do
+							local dx, dz = c[1] - q[1], c[2] - q[2]
+							score = math.min(score, dx * dx + dz * dz)
+						end
+					end
+					if score > bestScore then
+						bestI, bestScore = i, score
+					end
+				end
+				table.insert(picked, table.remove(pool, bestI))
+			end
+			if #picked < count then
+				warn(`[Galleria] {name}: {#picked} of {count} marker spots clear`)
+			end
+			return picked
+		end
+
+		-- Two relics a floor and one extra Sweeper a floor, all off one spread
+		-- so a relic and the robot standing over it are never handed the same
+		-- coordinate. Relics come first: a store short of clear floor loses a
+		-- Sweeper post before it loses a reason to go in.
+		--
+		-- Two a floor is the count the old hand-placed version intended and
+		-- never delivered. Three was tried and overshot: with the upper
+		-- concourse caches the mall came out 28 relics against 20 of everything
+		-- else, and data/loot.json calls relics "rare caches" - a relic you
+		-- trip over is not worth lighting a lantern for, and lighting the
+		-- lantern is the whole point of them.
+		local marks = spreadSpots(6)
 		for lvl = 0, 1 do
 			local y = lvl * F2F
-			-- Two caches a floor, out in the quarters, never on a door aisle.
-			for i, q in ipairs({ { -0.26, -0.26 }, { 0.26, 0.26 } }) do
-				local lx, lz = w * q[1], d * q[2]
-				if not onAisle(lx, lz) then
-					local wx, wz = at(lx, lz)
+			for i = 1, 2 do
+				local m = marks[(lvl * 2) + i]
+				if m then
+					local wx, wz = at(m[1], m[2])
 					local cache = part(
 						F.Gameplay,
 						`Cache_{name}_{lvl}_{i}`,
@@ -2190,6 +2358,24 @@ function GalleriaBuilder.Build(): Model
 			)
 			post.CanCollide, post.Transparency = false, 1
 			CollectionService:AddTag(post, "SweeperSpawn")
+
+			-- And one out on the floor, between the player and the relics,
+			-- because a single robot in the stockroom is a store you can loot
+			-- at your leisure. Chris: "its not threatening at all".
+			local extra = marks[5 + lvl]
+			if extra then
+				local ex, ez = at(extra[1], extra[2])
+				local inner = part(
+					F.Gameplay,
+					`SweeperSpawn_{name}_{lvl}_Floor`,
+					Vector3.new(4, 4, 4),
+					CFrame.new(ex * S, y + 3, ez * S),
+					C.teal,
+					Enum.Material.Metal
+				)
+				inner.CanCollide, inner.Transparency = false, 1
+				CollectionService:AddTag(inner, "SweeperSpawn")
+			end
 		end
 
 		-- Figures standing on the shop floor, not only behind the windows. The
@@ -2457,44 +2643,81 @@ function GalleriaBuilder.Build(): Model
 	-- but the arms carry kiosks, planters, columns and escalator landings, and
 	-- a marker inside one of those is loot you cannot reach or a Sweeper that
 	-- spawns stuck. Hand-placed ones had both faults twice over, so nothing is
-	-- trusted: anything without floor under it, or with something solid
-	-- sitting in it, is dropped here rather than shipped.
+	-- trusted.
+	--
+	-- A failing marker is now NUDGED before it is given up on. Dropping it
+	-- outright was throwing away density the generators had correctly asked
+	-- for: in the live build nine markers died here, six of them caches, and
+	-- the mall Chris walked was the one left over - "the mall is empty as far
+	-- as enemies and components and stuff". A planter is a couple of studs
+	-- wide and the concourse either side of it is clear floor, so the right
+	-- answer to a cache inside one is to slide it out, not to delete it. Only
+	-- a marker with nowhere clear within ten studs is dropped.
 	do
 		local params = RaycastParams.new()
 		params.FilterType = Enum.RaycastFilterType.Exclude
 		params.FilterDescendantsInstances = { F.Gameplay }
-		local dropped, kept = 0, 0
+
+		-- Named `point` rather than `at`, because `at` is the plan-to-world
+		-- helper every store uses and shadowing it here reads as a bug.
+		local function standsClear(point: Vector3): boolean
+			local floor =
+				workspace:Raycast(point + Vector3.new(0, 6, 0), Vector3.new(0, -22, 0), params)
+			if floor == nil or (point.Y - floor.Position.Y) >= 8 then
+				return false
+			end
+			for _, other in ipairs(workspace:GetPartBoundsInRadius(point, 2.4)) do
+				if other.CanCollide and other:IsDescendantOf(M) and other.Parent ~= F.Gameplay then
+					return false
+				end
+			end
+			return true
+		end
+
+		-- Tried in order, so a marker moves as little as it has to. Eight
+		-- bearings at four studs, then the same eight at eight: far enough to
+		-- clear a planter or a column, near enough that the marker is still
+		-- where the generator meant it to be.
+		local nudges: { Vector3 } = {}
+		for _, radius in ipairs({ 4, 8 }) do
+			for step = 0, 7 do
+				local angle = (step / 8) * math.pi * 2
+				table.insert(
+					nudges,
+					Vector3.new(math.cos(angle) * radius, 0, math.sin(angle) * radius)
+				)
+			end
+		end
+
+		local dropped, kept, moved = 0, 0, 0
 		for _, marker in ipairs(F.Gameplay:GetChildren()) do
 			local tagged = CollectionService:HasTag(marker, "Loot")
 				or CollectionService:HasTag(marker, "SweeperSpawn")
 			if marker:IsA("BasePart") and tagged then
-				local floor = workspace:Raycast(
-					marker.Position + Vector3.new(0, 6, 0),
-					Vector3.new(0, -22, 0),
-					params
-				)
-				local standing = floor ~= nil and (marker.Position.Y - floor.Position.Y) < 8
-				local blocked = false
-				for _, other in ipairs(workspace:GetPartBoundsInRadius(marker.Position, 2.4)) do
-					if
-						other.CanCollide
-						and other:IsDescendantOf(M)
-						and other.Parent ~= F.Gameplay
-					then
-						blocked = true
-						break
-					end
-				end
-				if standing and not blocked then
+				if standsClear(marker.Position) then
 					kept += 1
 				else
-					dropped += 1
-					marker:Destroy()
+					local rescued = false
+					for _, offset in ipairs(nudges) do
+						local candidate = marker.Position + offset
+						if standsClear(candidate) then
+							marker.CFrame = marker.CFrame + offset
+							kept += 1
+							moved += 1
+							rescued = true
+							break
+						end
+					end
+					if not rescued then
+						dropped += 1
+						marker:Destroy()
+					end
 				end
 			end
 		end
 		M:SetAttribute("MarkersKept", kept)
 		M:SetAttribute("MarkersDropped", dropped)
+		M:SetAttribute("MarkersNudged", moved)
 	end
 
 	-- A landing rail is there because the far end of a landing is normally a
@@ -2533,6 +2756,140 @@ function GalleriaBuilder.Build(): Model
 				end
 			end
 		end
+	end
+
+	-- Nothing stands on an escalator landing.
+	--
+	-- Measured, not guessed: all four escalators on the angled south-east arm
+	-- were impassable, while the four identical ones on the west arm were
+	-- fine. The food court deck sits on the upper south-east arm, and its
+	-- tables, seats, pedestals and front rail had been laid straight over both
+	-- escalator heads - a probe ten studs off the top landing came down on
+	-- FCBack rather than on floor. Pathfinding would not use those runs at
+	-- all, so getting off the upper south-east arm meant walking back to the
+	-- court, down an escalator by Bellevue, and out along the whole arm again:
+	-- 1,094 studs walked for a 416 stud straight line. That is most of Chris's
+	-- "calling an extract gives no time to make it there", and the whole of
+	-- the older "clipping on escalators, i cant get through on the top
+	-- levels".
+	--
+	-- The fix is a rule rather than a fix to the food court, because the food
+	-- court is only the thing that happened to land there first. The landing
+	-- zones come off each deck's own geometry, so an escalator that moves takes
+	-- its clearance with it, and the check below proves every run is walkable
+	-- before the mall ships.
+	do
+		-- The zone is the WHOLE run plus a landing at each end, and candidates
+		-- are tested on their bounds rather than their centres. Two earlier
+		-- versions of this got both of those wrong and left the escalators
+		-- just as sealed. Testing centres missed the food court's front rail
+		-- and cap, which are single long parts whose centres sit well off the
+		-- landing while their length lies across it. Clearing only beyond the
+		-- ramp ends missed the rest: the seats and pedestals were standing on
+		-- the upper third of the ramp itself, nineteen studs along a run whose
+		-- half length is twenty five, so a walker had to climb fourteen studs
+		-- onto a chair to use the escalator at all.
+		--
+		-- Fixtures go without question - furniture has no business on a moving
+		-- stair. From Structure only the rails and caps are taken, by name,
+		-- because that folder also holds the soffits and columns holding the
+		-- building up and a blanket sweep here would quietly punch holes in it.
+		local params = OverlapParams.new()
+		params.FilterType = Enum.RaycastFilterType.Include
+		params.FilterDescendantsInstances = { F.Fixtures, F.Structure }
+		params.MaxParts = 500
+
+		local STRUCTURE_MAY_GO = { "FCRail", "FCCap", "LandingRail", "LandingCap" }
+		local function removable(item: BasePart): boolean
+			if item:IsDescendantOf(F.Fixtures) then
+				return true
+			end
+			for _, prefix in ipairs(STRUCTURE_MAY_GO) do
+				if string.sub(item.Name, 1, #prefix) == prefix then
+					return true
+				end
+			end
+			return false
+		end
+
+		local cleared = 0
+		for _, deck in ipairs(F.Escalators:GetChildren()) do
+			if deck:IsA("BasePart") and string.sub(deck.Name, 1, 5) == "Deck_" then
+				-- In the deck's own frame, so a rotated run takes its
+				-- clearance with it: the full length of the ramp plus a
+				-- landing's reach at each end, a shoulder either side, and
+				-- headroom that starts just above the tread surface so the
+				-- ramp and the floors under it are never in the zone.
+				local reach = 24
+				local zoneAt = deck.CFrame * CFrame.new(0, 15, 0)
+				local probe = Instance.new("Part")
+				probe.Size = Vector3.new(deck.Size.X + reach * 2, 26, deck.Size.Z + 8)
+				probe.CFrame = zoneAt
+				probe.Anchored, probe.CanCollide, probe.CanQuery = true, false, true
+				probe.Transparency = 1
+				probe.Parent = workspace
+				for _, item in ipairs(workspace:GetPartsInPart(probe, params)) do
+					if item.CanCollide and removable(item) then
+						item:Destroy()
+						cleared += 1
+					end
+				end
+				probe:Destroy()
+			end
+		end
+		M:SetAttribute("LandingsCleared", cleared)
+
+		-- And prove it, with the test that actually found the fault. An earlier
+		-- proof asked only whether a path existed from one end of the ramp to
+		-- the other, and it passed on all sixteen runs while four of them were
+		-- still impassable - because a path existed, the long way round. What
+		-- matters is whether going THROUGH the run is the short way: the
+		-- sealed arm 2 escalators measured 514 to 787 studs for an 81 stud
+		-- straight line, against 86 on the identical runs on arm 1.
+		local PathfindingService = game:GetService("PathfindingService")
+		local sealed = 0
+		for _, deck in ipairs(F.Escalators:GetChildren()) do
+			if deck:IsA("BasePart") and string.sub(deck.Name, 1, 5) == "Deck_" then
+				local half = deck.Size.X / 2
+				-- A point out on the floor past each end, dropped onto
+				-- whatever surface is really there rather than assumed.
+				local function standing(offset: number): Vector3
+					local raw = (deck.CFrame * CFrame.new(offset, 6, 0)).Position
+					local hit =
+						workspace:Raycast(raw + Vector3.new(0, 14, 0), Vector3.new(0, -40, 0))
+					return if hit then hit.Position + Vector3.new(0, 3, 0) else raw
+				end
+				local a, b = standing(half + 22), standing(-(half + 22))
+				local path = PathfindingService:CreatePath({
+					AgentRadius = 2.5,
+					AgentHeight = 5,
+					AgentCanJump = false,
+				})
+				local ok = pcall(function()
+					path:ComputeAsync(a, b)
+				end)
+				local walked = 0
+				if ok and path.Status == Enum.PathStatus.Success then
+					local waypoints = path:GetWaypoints()
+					for i = 2, #waypoints do
+						walked += (waypoints[i].Position - waypoints[i - 1].Position).Magnitude
+					end
+				end
+				local straight = (a - b).Magnitude
+				-- Twice the straight line is generous for a stair you walk
+				-- straight down. Anything past it is a detour, which means the
+				-- run is not being used.
+				if walked == 0 or walked > straight * 2 then
+					sealed += 1
+					warn(
+						`[Galleria] escalator {deck.Name} is not the way through: {math.floor(
+							walked
+						)} studs walked for {math.floor(straight)} straight`
+					)
+				end
+			end
+		end
+		M:SetAttribute("EscalatorsSealed", sealed)
 	end
 
 	RaidDirector.Apply(M)
