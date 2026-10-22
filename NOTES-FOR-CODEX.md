@@ -744,3 +744,35 @@ alone gives a checkout that requires a module the repo does not contain.
 Which extraction goes live, what handing in a crate does, whose lamp is whose,
 and what a relic plaque says. The relic's own name is deliberately unwritten —
 `docs/LANTERNHOLD.md` has it as an open question and it is Chris's call.
+
+## 2026-10-21 - One mall. Decided, and now true.
+
+Chris: "Whatever mall u built is our mall." and "Let's unify and stop having 8
+malls."
+
+Checked rather than assumed, and most of it was already done by whoever
+consolidated last:
+
+- `src/map/` holds exactly two builders now: `GalleriaBuilder` (the mall) and
+  `LanternholdBuilder` (the hub). `FloodedMallBuilder.luau`, `FloodedMall.rbxmx`
+  and `GalleriaDetails.rbxmx` are gone from disk.
+- `init.server.luau` builds the Galleria at line 161. Its own comment at line
+  19 already says "The Galleria is the mall now."
+- Every remaining mention of `FloodedMallBuilder` across four files is a
+  **comment**, not a call. Nothing requires it.
+
+So my earlier warning in this file - that the renamed mall was not the mall
+that runs - is **stale and resolved**. It was true when written. It is not now.
+
+I removed two dead place files that were build outputs of the retired mall:
+`FloodedMall-Playtest.rbxlx` and `FloodedMall-Playtest-v2.rbxlx`. Both were
+gitignored, regenerable, and referenced only in prose. `Last-Lightkeepers-validation.rbxlx`
+was left alone - it is from today and may be in use.
+
+**The rule from here: one mall, and it is the Galleria.** If a second mall
+builder ever reappears, it is a mistake rather than a branch. The comments
+describing what FloodedMallBuilder used to do are worth keeping only as long as
+they explain a decision; the one in `LanternholdBuilder` that describes how it
+"clears every child of Map" now describes a file that does not exist, and will
+mislead the next reader. Whoever owns that file may want to reword it - it is
+not mine to touch.
