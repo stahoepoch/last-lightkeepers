@@ -76,6 +76,13 @@ local LIFT = 0.5 -- the court stands this much proud of the concourse
 -- hundred and twenty five studs across and the fountain sits in daylight.
 local COURT_WELL = 2.4
 
+-- Where the court lift stands, in plan units, hoisted out of the lift block
+-- because the court's bench and planter ring has to keep off it. It did not:
+-- CourtPlanter_5 and CourtShrub_5 were built standing on the lift car -
+-- Chris: "there is a shrub on the elevator."
+local LIFT_PLAN = Vector2.new(-1.3, -1.3)
+local LIFT_SHAFT = 1.0
+
 local C = {
 	-- Was 232,228,217. A near-white floor is right for a lit shopping mall and
 	-- wrong for this one: with GlobalShadows back on it takes the full sky and
@@ -330,7 +337,14 @@ function GalleriaBuilder.Build(): Model
 		head.Shape = Enum.PartType.Ball
 	end
 
-	local ESC_W = 14
+	-- 10 studs, down from 14. A player is five studs tall and needs about
+	-- five of clear width to path, so this is two of them abreast - which is
+	-- what a mall escalator is. At 14 the pair read as a road: 28 studs of
+	-- tread side by side, nearly six player-widths, and it is most of why
+	-- Chris said "the mall is still weird with the structures being out of
+	-- proportion, escalators and whatnot". Going narrower than 10 is not
+	-- available: pathfinding needs the room.
+	local ESC_W = 10
 	-- (x1, z1) is the foot and (x2, z2) is the head. The yaw is taken from that
 	-- vector rather than passed in, because the deck's pitch always lifts its
 	-- own +X end: given the arm's yaw instead, a run asked to climb back down
@@ -1655,6 +1669,14 @@ function GalleriaBuilder.Build(): Model
 			local a = (k / SEATS) * math.pi * 2
 			local bx, bz = math.cos(a) * RING * S, math.sin(a) * RING * S
 			local face = CFrame.new(bx, 0, bz) * CFrame.Angles(0, -a + math.pi / 2, 0)
+			-- Nothing on the lift. The ring is a circle of eight and the lift
+			-- stands inside that circle, so one of the eight always landed on
+			-- the car - a planter and a shrub, riding up and down with it.
+			local onLift = (Vector2.new(bx / S, bz / S) - LIFT_PLAN).Magnitude
+				< LIFT_SHAFT / 2 + 0.6
+			if onLift then
+				continue
+			end
 			if k % 2 == 0 then
 				part(
 					F.Fixtures,
@@ -1811,8 +1833,8 @@ function GalleriaBuilder.Build(): Model
 	-- player properly is gameplay code, not geometry, and a lift that looks
 	-- rideable and is not would be worse than no lift at all.
 	do
-		local lx, lz = -1.3, -1.3
-		local shaft = 1.0
+		local lx, lz = LIFT_PLAN.X, LIFT_PLAN.Y
+		local shaft = LIFT_SHAFT
 		-- Two openings, and they face along the radius rather than along the
 		-- axes: in toward the fountain, where you board at court level, and out
 		-- toward the ring, where you step off at level two. The first version
@@ -1853,11 +1875,19 @@ function GalleriaBuilder.Build(): Model
 		-- the ring at the top. Parked two studs proud of the tile it looked
 		-- fine and could not be walked onto at all: the navmesh will not climb
 		-- a step that size, so the lift was unreachable before it was unwired.
+		-- Turned 45 degrees. Chris: "the square for the platform should rotate
+		-- by at least 30 degrees or more." The car was axis-aligned while its
+		-- own two glass panels sit at 135 and -45, because the openings face
+		-- along the radius toward the fountain and out toward the ring - so
+		-- the box was square to the world and crooked to everything attached
+		-- to it. 45 puts its faces parallel to the glass and square to the
+		-- south-east arm.
+		local carTurn = CFrame.Angles(0, math.rad(45), 0)
 		local car = part(
 			F.Court,
 			"LiftCar",
 			Vector3.new(shaft * S - 5, 2, shaft * S - 5),
-			CFrame.new(lx * S, -1 + LIFT, lz * S),
+			CFrame.new(lx * S, -1 + LIFT, lz * S) * carTurn,
 			C.shell,
 			Enum.Material.Metal
 		)
@@ -1868,7 +1898,7 @@ function GalleriaBuilder.Build(): Model
 			F.Court,
 			"LiftHead",
 			Vector3.new(shaft * S + 5, 4, shaft * S + 5),
-			CFrame.new(lx * S, F2F + 16, lz * S),
+			CFrame.new(lx * S, F2F + 16, lz * S) * carTurn,
 			C.teal,
 			Enum.Material.Metal
 		)
@@ -2721,9 +2751,8 @@ function GalleriaBuilder.Build(): Model
 			C.teal,
 			Enum.Material.Metal
 		)
-		relay:SetAttribute("InteractionLabel", "Bank Haul — Lanterns Required")
-		relay:SetAttribute("RequiresLanternLit", true)
-		relay:SetAttribute("BanksCrewInRange", true)
+		relay:SetAttribute("InteractionLabel", "Read active extraction route")
+		relay:SetAttribute("RouteBoard", true)
 		CollectionService:AddTag(relay, "RelayBank")
 
 		local relaySign = part(
@@ -2735,8 +2764,8 @@ function GalleriaBuilder.Build(): Model
 			Enum.Material.Metal
 		)
 		relaySign.CanCollide, relaySign.CanTouch, relaySign.CanQuery = false, false, false
-		label(relaySign, "RELAY ANNEX  •  LANTERNS REQUIRED", Enum.NormalId.Front)
-		label(relaySign, "RELAY ANNEX  •  LANTERNS REQUIRED", Enum.NormalId.Back)
+		label(relaySign, "RELAY ANNEX  •  ACTIVE ROUTE", Enum.NormalId.Front)
+		label(relaySign, "RELAY ANNEX  •  ACTIVE ROUTE", Enum.NormalId.Back)
 
 		-- Loot down both arms, and two upstairs so the balcony is worth the
 		-- stairs rather than scenery you look at from below.  Their final tier
