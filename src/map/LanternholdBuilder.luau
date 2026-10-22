@@ -829,7 +829,21 @@ function LanternholdBuilder.Build(): Model
 				end
 			end
 			slab(`Slab_{i}_E`, CORE_X1, W, Z0, Z1)
-			slab(`Slab_{i}_W`, -W, CORE_X0, Z0, Z1)
+			-- Carried east to the stair's own west edge rather than stopping
+			-- at CORE_X0.
+			--
+			-- Chris asked for "the remaining west slab (x -130..-126)" to be
+			-- made into something. Measured, it is not a room and never could
+			-- be: WallWest occupies -132 to -128, so that slab left a two stud
+			-- ledge - a player needs five - and then a six stud VOID between
+			-- its east edge and the foot of the stair, open the full height.
+			-- Standing at x -124 on the ballroom floor dropped you twenty six
+			-- studs onto the basement, and further from the floors above.
+			--
+			-- So it is a fall, not a wing. Filling it to the stair closes the
+			-- hole and leaves an eight stud service margin down the west side
+			-- of the core, which is what the gap was always pretending to be.
+			slab(`Slab_{i}_W`, -W, CORE_X0 + 6, Z0, Z1)
 			slab(`Slab_{i}_S`, CORE_X0, CORE_X1, Z0, CORE_Z0)
 			slab(`Slab_{i}_N`, CORE_X0, CORE_X1, CORE_Z1, Z1)
 			-- The north wing and the south strip are bare slab on every upper
@@ -1997,6 +2011,83 @@ function LanternholdBuilder.Build(): Model
 			for j = 0, 1 do
 				column(folder, `WingColumn_{i}_{j}`, -108 + j * 40, 140 + j * 50, lvl, ceil, 8)
 			end
+		end
+
+		-- The south galleries. Each upper floor's strip between the front
+		-- wall and the core landing: 76 by 16, already joined to the landing
+		-- at z = 16, and bare slab on all three floors. Sixteen studs deep is
+		-- a gallery, not a room, so it is finished as one - floor, skirting, a
+		-- bench run against the front wall and its name - rather than having
+		-- furniture invented for it.
+		for i = 2, #LEVELS do
+			local lvl, ceil = LEVELS[i], HEADS[i]
+			local folder = if i == 2 then F.Ballroom elseif i == 3 then F.Lodge else F.Museum
+			finish(
+				folder,
+				`GalleryFloor_{i}`,
+				CORE_X0,
+				CORE_X1,
+				Z0,
+				CORE_Z0,
+				lvl,
+				C.terrazzo,
+				Enum.Material.Concrete
+			)
+			baseband(folder, `GalleryBase_{i}`, CORE_X0, CORE_X1, Z0, CORE_Z0, lvl)
+			coffers(
+				folder,
+				`GalleryCeiling_{i}`,
+				CORE_X0,
+				CORE_X1,
+				Z0,
+				CORE_Z0,
+				ceil,
+				38,
+				C.plaster
+			)
+			-- The bench starts at -108, not at the gallery's west end: the
+			-- shell's corner Tower fills x -140..-114, so the first twelve
+			-- studs of this strip are inside it. Three bench legs stood two
+			-- thirds buried in the tower on the first run, one per floor.
+			box(
+				F.Fixtures,
+				`GalleryBench_{i}`,
+				-108,
+				CORE_X1 - 8,
+				lvl + 1.4,
+				lvl + 2,
+				5,
+				11,
+				C.timber,
+				Enum.Material.WoodPlanks
+			)
+			for _, bx in ipairs({ -104, -84, CORE_X1 - 12 }) do
+				box(
+					F.Fixtures,
+					`GalleryBenchLeg_{i}_{bx}`,
+					bx,
+					bx + 3,
+					lvl,
+					lvl + 1.4,
+					6,
+					10,
+					C.timber,
+					Enum.Material.WoodPlanks
+				)
+			end
+			local plate = box(
+				F.Fixtures,
+				`GalleryPlate_{i}`,
+				-96,
+				-64,
+				lvl + 6,
+				lvl + 9,
+				2.2,
+				2.8,
+				C.board,
+				Enum.Material.WoodPlanks
+			)
+			label(plate, `THE SOUTH GALLERY — FLOOR {i - 1}`, Enum.NormalId.Back, 16)
 		end
 
 		-- Level two, over the ballroom: the Muster Room. Where a crew forms up
