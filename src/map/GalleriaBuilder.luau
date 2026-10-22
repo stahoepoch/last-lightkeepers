@@ -2290,16 +2290,46 @@ function GalleriaBuilder.Build(): Model
 		spawn.Enabled = false
 		spawn.Parent = G
 
+		-- The relay deliberately is not in the court. A centre-court bank is
+		-- something a crew trips over while taking the efficient route; banking
+		-- then becomes free insurance rather than a choice. This one is upstairs
+		-- on the west balcony: visible from the court, but a real trip up an
+		-- escalator and off the direct route to either arm-ending extraction.
+		--
+		-- These attributes are map contract, not bank logic. Gameplay owns the
+		-- transfer: it must require a lit lantern for its whole hold and bank all
+		-- nearby Lightkeepers together. Keeping the intent on the physical relay
+		-- prevents a later prompt rewrite from quietly turning it back into a
+		-- solo, instant safe-room action.
+		local westArm = ARMS[1]
+		local westDirection = (westArm.b - westArm.a).Unit
+		local westNormal = Vector2.new(-westDirection.Y, westDirection.X)
+		local westMidpoint = (westArm.a + westDirection * COURT_R + westArm.b) / 2
+		local relayPoint = westMidpoint + westNormal * ((HALL + WELL) / 2)
 		local relay = part(
 			G,
-			"RelayBank_Court",
+			"RelayBank_WestBalcony",
 			Vector3.new(5, 4, 5),
-			CFrame.new(2 * S, 2, -2 * S),
+			CFrame.new(relayPoint.X * S, F2F + 2, relayPoint.Y * S),
 			C.teal,
 			Enum.Material.Metal
 		)
-		relay:SetAttribute("InteractionLabel", "Bank Haul")
+		relay:SetAttribute("InteractionLabel", "Bank Haul — Lanterns Required")
+		relay:SetAttribute("RequiresLanternLit", true)
+		relay:SetAttribute("BanksCrewInRange", true)
 		CollectionService:AddTag(relay, "RelayBank")
+
+		local relaySign = part(
+			G,
+			"RelayBankSign",
+			Vector3.new(22, 5, 1),
+			CFrame.new(relayPoint.X * S, F2F + 10, relayPoint.Y * S),
+			C.shop,
+			Enum.Material.Metal
+		)
+		relaySign.CanCollide, relaySign.CanTouch, relaySign.CanQuery = false, false, false
+		label(relaySign, "RELAY ANNEX  •  LANTERNS REQUIRED", Enum.NormalId.Front)
+		label(relaySign, "RELAY ANNEX  •  LANTERNS REQUIRED", Enum.NormalId.Back)
 
 		-- Loot down both arms, and two upstairs so the balcony is worth the
 		-- stairs rather than scenery you look at from below.  Their final tier
