@@ -36,7 +36,13 @@ local RaidDirector = require(script.Parent:WaitForChild("RaidDirector"))
 
 local GalleriaBuilder = {}
 
-local S = 26 -- studs per model unit, roughly a foot
+-- The first pass used 26 studs per plan unit and literal department-store
+-- footprints. In play that made a 1,983 by 1,344-stud arena: a teammate could
+-- call an exit from the far end and everyone else simply had no chance to get
+-- there. This is a raid space, not a survey drawing. Twenty studs preserves
+-- the recognizable dogleg and two-storey atrium while making a cross-mall push
+-- a decision rather than dead travel.
+local S = 20
 
 -- Floor to floor is deliberately taller than a real mall's twenty feet. Chris:
 -- "the height from top to bottom should be devastating, you shouldn't be able
@@ -95,15 +101,14 @@ local C = {
 -- with the Google Maps image. Boscov's closes the west arm, Sears the
 -- south-east arm, and the court is the bend between them.
 local BEND = Vector2.new(0, 0)
--- Lengthened from sixteen units an arm. Chris: "the scale of the mall is too
--- small basically, to go from one end to the other should take at least 1 min."
--- At sixteen the whole dogleg was 820 studs, which is under a minute at a
--- walk. It is now about 1340 end to end, and the real Galleria is roughly
--- twelve hundred feet long, so the longer arms are also closer to the plan -
--- the stubby version was wrong twice over.
+-- The dogleg needs enough room for a dangerous deep push, but not a literal
+-- one-to-one copy of a twelve-hundred-foot building. The prior arms plus
+-- anchor-store footprints made the walk to a called extraction longer than its
+-- arrival window. These retain the long west arm and angled south-east arm at
+-- compact, playable scale.
 local ARMS = {
-	{ a = BEND, b = Vector2.new(-25.5, 0) }, -- west, to Boscov's
-	{ a = BEND, b = Vector2.new(18, 18) }, -- south-east, to Sears
+	{ a = BEND, b = Vector2.new(-21, 0) }, -- west, to Boscov's
+	{ a = BEND, b = Vector2.new(15, 15) }, -- south-east, to Sears
 }
 
 -- Invented tenants. Chris: "we should change the names of almost all the
@@ -390,9 +395,9 @@ function GalleriaBuilder.Build(): Model
 	local PORTAL_W = 2.6
 	local seUnit = (ARMS[2].b - ARMS[2].a).Unit
 	local portals = {
-		{ arm = 1, side = 1, at = Vector2.new(-13, 0) },
-		{ arm = 1, side = 1, at = Vector2.new(-7, 0) },
-		{ arm = 2, side = -1, at = seUnit * 8 },
+		{ arm = 1, side = 1, at = Vector2.new(-11, 0) },
+		{ arm = 1, side = 1, at = Vector2.new(-5, 0) },
+		{ arm = 2, side = -1, at = seUnit * 7 },
 	}
 
 	-- The food court span, shared with the bay loop so the shopfronts inside
@@ -1249,10 +1254,9 @@ function GalleriaBuilder.Build(): Model
 		-- enough to light the walk and leave the ceiling dark. Deliberately
 		-- sparse and deliberately weak, because the lantern is the light that
 		-- is supposed to matter and a well-lit mall takes that away.
-		-- One every 1.6 units rather than 2.8. Fifteen lights across a mall
-		-- measuring 1983 by 1344 studs is one per 130 studs of concourse, and
-		-- Chris walked it: "right now its too dark in some places". Still the
-		-- same weak 0.85 lamp - the answer to a dark patch is another pool of
+		-- One every 2.1 plan units. The old code said 1.6 but actually emitted
+		-- one every 2.8, leaving long black stretches between pools of light.
+		-- Still the same weak 0.85 lamp - the answer to a dark patch is another pool of
 		-- light, never a brighter one, and never Ambient.
 		-- The upper concourse had no furniture of any kind. The street
 		-- furniture loop above only ever ran at ground level, so the balcony
@@ -1322,7 +1326,7 @@ function GalleriaBuilder.Build(): Model
 			end
 		end
 
-		local lamps = math.max(2, math.floor(len / 2.8))
+		local lamps = math.max(2, math.floor(len / 2.1))
 		for i = 0, lamps - 1 do
 			local lx, lz = at(-len / 2 + len * ((i + 0.5) / lamps), 0)
 			local can = part(
@@ -1722,8 +1726,10 @@ function GalleriaBuilder.Build(): Model
 	--
 	-- So each one is now a building: two floors, a perimeter wall with a real
 	-- opening onto the mall, its own escalator pair through a void in the upper
-	-- slab, a column grid and rows of fixtures. At fourteen by fifteen units
-	-- that is about 130,000 square feet a floor, which is a true Boscov's.
+	-- slab, a column grid and rows of fixtures. The old fourteen-by-fifteen-unit
+	-- boxes were true department-store acreage, but too much empty traversal for
+	-- this raid. These are compact anchors: substantial rooms to loot and evade
+	-- in, not a second mall hidden behind every entrance.
 	local WALL_T = 3 / S -- wall thickness, in model units
 	local DOORW = 2.2 -- mall entrance width, in model units
 	local DOOR_H = 26
@@ -2219,10 +2225,10 @@ function GalleriaBuilder.Build(): Model
 	-- Boscov's closes the west arm, so its east face is the arm's end.
 	department(
 		"BOSWELL'S",
-		ARMS[1].b.X - 14 / 2,
+		ARMS[1].b.X - 11 / 2,
 		0,
-		14,
-		15,
+		11,
+		12,
 		0,
 		"+X",
 		{ 0 },
@@ -2230,13 +2236,13 @@ function GalleriaBuilder.Build(): Model
 	)
 
 	-- Sears closes the south-east arm the same way, squared to it.
-	local sears = ARMS[2].b + se * (15 / 2)
+	local sears = ARMS[2].b + se * (12 / 2)
 	department(
 		"SAYERS",
 		sears.X,
 		sears.Y,
-		15,
-		14,
+		12,
+		11,
 		seAng,
 		"-X",
 		{ 0 },
@@ -2248,10 +2254,10 @@ function GalleriaBuilder.Build(): Model
 	-- south, which is what Chris kept seeing as wrong: on the aerial there is
 	-- open ground between them right at the court, and putting them on the same
 	-- flank closed that gap up.
-	department("PENHURST", -10, -(EDGE + 12 / 2), 15, 12, 0, "+Z", { -3, 3 }, { -3, 3 })
+	department("PENHURST", -8, -(EDGE + 10 / 2), 12, 10, 0, "+Z", { -3, 3 }, { -3, 3 })
 
-	local bt = BEND + se * 8 + seNE * (EDGE + 11 / 2)
-	department("BELLEVUE", bt.X, bt.Y, 13, 11, seAng, "+Z", { 0 }, { 0 })
+	local bt = BEND + se * 7 + seNE * (EDGE + 9 / 2)
+	department("BELLEVUE", bt.X, bt.Y, 10, 9, seAng, "+Z", { 0 }, { 0 })
 
 	-- ------------------------------------------------------------- gameplay
 	-- Everything a run needs, emitted by the mall the run actually happens in.
@@ -2343,12 +2349,11 @@ function GalleriaBuilder.Build(): Model
 		-- holding Supplies - correct behaviour, unreadable in the explorer.
 		-- The tier in this table is only the fallback for a run with no active
 		-- extraction at all.
-		-- Generated along the arms rather than hand-listed. Eight caches in a
-		-- mall measuring 1983 by 1344 studs is one per 330,000 square studs,
-		-- which is why Chris walked it and said "all the places look empty".
-		-- Hand-typing more is also how two of the eight ended up inside
-		-- kiosks, so these come off the arm geometry and are checked against
-		-- the built world afterwards.
+		-- Generated along the arms rather than hand-listed. The previous mall
+		-- began with only 29 tagged finds across a 1,983-by-1,344 footprint, and
+		-- runtime validation dropped more. It looked and played empty. Compact
+		-- spacing here guarantees something to discover during a push while the
+		-- final collision check still rejects markers inside kiosks or scenery.
 		--
 		-- Offsets are the walking lane, not the centreline: the middle of a
 		-- concourse carries the kiosks, planters and benches. Upstairs they sit
@@ -2366,12 +2371,17 @@ function GalleriaBuilder.Build(): Model
 				table.insert(placements, { `Cache_A{ai}_{k}`, gp.X, gp.Y, 3, "Components" })
 				if k % 2 == 0 then
 					local up = arm.a + dir * t + nrm * (1.15 * -side)
+					-- A relic must be encountered during an ordinary route, not be
+					-- hidden exclusively in a department-store back room. The lantern
+					-- gate still controls whether it can be taken; this makes that
+					-- decision visible on the first run.
+					local upperTier = if k % 4 == 0 then "Relics" else "Supplies"
 					table.insert(
 						placements,
-						{ `Cache_A{ai}_{k}_Up`, up.X, up.Y, F2F + 3, "Supplies" }
+						{ `Cache_A{ai}_{k}_Up`, up.X, up.Y, F2F + 3, upperTier }
 					)
 				end
-				t += 2.6
+				t += 1.9
 				k += 1
 			end
 		end
@@ -2394,9 +2404,10 @@ function GalleriaBuilder.Build(): Model
 		-- was inside Kiosk2_14. A Sweeper that spawns inside a kiosk is stuck
 		-- in it. Offsets are along each arm's normal, 0.9 units into the
 		-- walking lane.
-		-- Four Sweepers in a mall this size meant you could cross it and meet
-		-- nothing. Generated off the arms too, on the opposite walking lane to
-		-- the caches so you are not always finding both together.
+		-- Sparse posts made the mall read as a museum: in the live build sixteen
+		-- Sweepers were dispersed over nearly two million square studs. Posts
+		-- are closer now, but alternate lanes so an encounter is a navigation
+		-- problem rather than a wall across the route.
 		local posts = 0
 		for ai, arm in ipairs(ARMS) do
 			local dir = (arm.b - arm.a).Unit
@@ -2410,7 +2421,7 @@ function GalleriaBuilder.Build(): Model
 				local post = marker(`SweeperSpawn_{ai}_{k}`, p.X, p.Y, 3)
 				post.Transparency = 1
 				CollectionService:AddTag(post, "SweeperSpawn")
-				t += 4.4
+				t += 2.8
 				k += 1
 			end
 		end
