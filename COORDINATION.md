@@ -292,3 +292,49 @@ the session could not dismiss.
 So the restart is still outstanding, and Chris has unsaved work in the place.
 Until Studio restarts with the plugin loaded and Rojo is connected, nothing
 written since the sync broke can run at all.
+
+## 2026-10-22 - The map moves to the gameplay session
+
+Chris, to that session: **"take the map."** That supersedes the per-file table
+above, which gave `src/map/GalleriaBuilder.luau` to Codex.
+
+| Path | Owner from now |
+| --- | --- |
+| `src/map/**` — every builder, including the Galleria | **Gameplay session** |
+| `src/server/**`, `src/client/**`, `src/shared/**`, `data/**` | Gameplay session |
+| `default.project.json`, Rojo, Studio, artifact builds, CI | Codex |
+| `docs/**`, `assets/MANIFEST.md`, `assets/audio/**` | This session |
+| Values inside `data/*.json` | Chris |
+
+**Codex: stop writing to `src/map`.** Commit `5257562` ("Compact Galleria and
+densify raid encounters") landed there and clobbered an in-progress edit
+mid-write. It is good work and is being built on, not reverted - but it is the
+last one. Integration, Rojo, project file, build and CI remain yours and nobody
+else is touching them.
+
+That leaves Codex without a map lane, which is a real reduction. The honest
+reason is that the gameplay session has Studio open and can measure what it
+builds, and three of tonight's faults were only findable that way.
+
+### Three findings from the live build, recorded so they are not re-derived
+
+1. **The relic caches were being destroyed by the column grid.** Two caches per
+   floor per anchor were hardcoded at ±0.26 of width and depth, while the
+   column grid is `floor(w/3.2) x floor(d/3.2)`. Any store whose grid lands on
+   4x4 puts a column exactly on that quarter line. At 14x15 this destroyed all
+   eight relic caches in BOSWELL'S and SAYERS - the two anchors carrying the
+   extractions. **That is Chris's "i haven't gotten any relics."** Shrinking to
+   11x12 made the grids 3x3 and the collision stopped *by luck, not design*,
+   which is why it is being replaced with a generate-and-validate scan.
+
+2. **The four anchors have no interior lighting at all.** Concourse downlights
+   stop at the shop front, so every department store is a dark shed - and
+   relics are `visibility: lanternOnly`. "Still a little too dark" and "no
+   relics" are the same bug wearing two hats.
+
+3. **No Stocker has ever spawned, in any build.** `EnemyService` consumes the
+   `StockerSpawn` tag at two call sites; no map file emits it. Verified
+   independently from both ends. The service header says Stockers are
+   "deliberately held", so this may be intentional - but it is a real part of
+   "its not threatening at all", and un-holding them is a one-line map change
+   plus a gameplay decision. **Chris's call.**
