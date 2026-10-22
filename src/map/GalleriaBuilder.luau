@@ -2440,6 +2440,14 @@ function GalleriaBuilder.Build(): Model
 	-- south, which is what Chris kept seeing as wrong: on the aerial there is
 	-- open ground between them right at the court, and putting them on the same
 	-- flank closed that gap up.
+	-- These stay mid-arm. They were pushed out once, to clear the extraction
+	-- picker's "at least 70% as far from the start as the farthest candidate"
+	-- filter, and it was the wrong move twice over: it only got them from 398
+	-- and 349 studs to 436 and 376 against a 464 cutoff, so they still did not
+	-- qualify, and it put Bellevue close enough to Sayers to break sixteen
+	-- relic-to-exit routes. An exit that is nearly as far away as the arm end
+	-- is not a nearer exit anyway. The filter is the thing that was wrong, and
+	-- it is fixed where it lives, in LootService.
 	department("PENHURST", -8, -(EDGE + 10 / 2), 12, 10, 0, "+Z", { -3, 3 }, { -3, 3 })
 
 	local bt = BEND + se * 7 + seNE * (EDGE + 9 / 2)
@@ -2481,6 +2489,15 @@ function GalleriaBuilder.Build(): Model
 		-- hub at random when a character respawned.
 		spawn.Enabled = false
 		spawn.Parent = G
+		-- The extraction picker measures "far from the start" from a part
+		-- tagged RunStart, and only falls back to hunting Workspace for the
+		-- first SpawnLocation it happens to find if nothing carries the tag.
+		-- Lanternhold's HallSpawn is also a SpawnLocation in Workspace and sits
+		-- six thousand studs away, so which one that search landed on decided
+		-- whether the picker measured from the mall or from the hub - and from
+		-- the hub every exit is the same distance away and the filter means
+		-- nothing. Saying it here costs one tag and removes the coin flip.
+		CollectionService:AddTag(spawn, "RunStart")
 
 		-- The relay deliberately is not in the court. A centre-court bank is
 		-- something a crew trips over while taking the efficient route; banking
@@ -2621,7 +2638,27 @@ function GalleriaBuilder.Build(): Model
 		-- The two arm-closing anchors take them, which puts the pair as far
 		-- apart as the plan allows; beginRun then picks whichever lies far from
 		-- the spawn.
-		local EXITS = { ["BOSWELL'S"] = "LoadingDock", ["SAYERS"] = "FreightLift" }
+		-- Four doors, not two. Chris: "calling an extract gives no time to make
+		-- it there". With only the two arm-closing anchors carrying ids, the
+		-- active exit was always at the end of an arm, so the worst case was
+		-- the full dogleg - 1,367 studs, which is 59 seconds sprinting and 102
+		-- laden against the twenty and thirty second windows in data/loot.json.
+		-- Penhurst and Bellevue sit mid-arm on the north flank, one per arm,
+		-- and halve that.
+		--
+		-- The ids are reused rather than invented: data/loot.json defines
+		-- LoadingDock and FreightLift and nothing else, and beginRun silently
+		-- drops a candidate whose id is not in that config. Balance data is
+		-- Chris's call, so the map bends to it. Each arm gets one of each, so
+		-- whichever end the picker chooses the run home is sometimes the
+		-- reliable dock and sometimes the breaker-gated lift, rather than one
+		-- character per direction.
+		local EXITS = {
+			["BOSWELL'S"] = "LoadingDock",
+			["PENHURST"] = "FreightLift",
+			["BELLEVUE"] = "LoadingDock",
+			["SAYERS"] = "FreightLift",
+		}
 		for _, p in ipairs(F.Anchors:GetChildren()) do
 			if p:IsA("BasePart") and string.sub(p.Name, 1, 5) == "Exit_" then
 				local id = EXITS[string.sub(p.Name, 6)]
