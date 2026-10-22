@@ -62,6 +62,7 @@ check(
 const lightingServicePath = join(root, "src", "server", "services", "LightingService.luau");
 if (existsSync(lightingServicePath)) {
   const svc = readFileSync(lightingServicePath, "utf8");
+  const profile = svc.match(/local PROFILE\s*=\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
   const amb = svc.match(/Ambient\s*=\s*Color3\.fromRGB\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/);
   check(
     "LightingService profile Ambient is black",
@@ -73,6 +74,16 @@ if (existsSync(lightingServicePath)) {
     "LightingService profile EnvironmentDiffuseScale is at or near zero",
     env !== null && Number(env[1]) <= 0.2,
     `got ${env ? env[1] : "unreadable"} — unconditional sky fill, applied on every playtest`,
+  );
+  check(
+    "LightingService runtime profile does not write protected Technology",
+    !/\bTechnology\s*=/.test(profile),
+    "Technology is RobloxScript-only in a normal server script; including it aborts startup before the hub and raid services initialize",
+  );
+  check(
+    "LightingService guards each runtime assignment",
+    /for\s+property\s*,\s*value\s+in\s+pairs\(PROFILE\)\s+do[\s\S]*?pcall\(/.test(svc),
+    "a rejected Lighting property must warn and continue, never leave startup half-initialized",
   );
 }
 
