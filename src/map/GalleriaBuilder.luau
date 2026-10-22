@@ -374,14 +374,40 @@ function GalleriaBuilder.Build(): Model
 			tread.CanCollide, tread.CanTouch, tread.CanQuery = false, false, false
 		end
 		for sgn = -1, 1, 2 do
+			-- 3.6 studs, not 8. A player is five studs tall, so the old
+			-- balustrade stood higher than their head and the escalator read
+			-- as a trench. A handrail is about a metre - call it 0.7 of a
+			-- player. Chris: "the mall is still weird with the structures
+			-- being out of proportion, escalators and whatnot."
 			part(
 				folder,
 				`Balustrade_{name}_{sgn}`,
-				Vector3.new(hyp, 8, 1.4),
-				cf * CFrame.new(0, 5, sgn * (ESC_W / 2 + 0.7)),
+				Vector3.new(hyp, 3.6, 1.4),
+				cf * CFrame.new(0, 2.3, sgn * (ESC_W / 2 + 0.7)),
 				C.teal,
 				Enum.Material.Metal
 			)
+		end
+
+		-- Emergency lighting lives on the escape routes, and a stair is the
+		-- first of them. One at each end of every run, which is also what
+		-- makes the escalators findable now that the floor between them is
+		-- dark.
+		for _, endSign in ipairs({ -1, 1 }) do
+			local lampAt = cf * CFrame.new(endSign * hyp / 2, 3.2, 0)
+			local can = part(
+				folder,
+				`EscLight_{name}_{endSign}`,
+				Vector3.new(3, 1, ESC_W - 2),
+				lampAt,
+				C.shop,
+				Enum.Material.Metal
+			)
+			can.CanCollide, can.CanQuery, can.CanTouch = false, false, false
+			local light = Instance.new("PointLight")
+			light.Color = Color3.fromRGB(216, 232, 236)
+			light.Brightness, light.Range, light.Shadows = 0.55, 30, false
+			light.Parent = can
 		end
 	end
 
@@ -477,7 +503,13 @@ function GalleriaBuilder.Build(): Model
 		local fracs = if ai == fcArm then { 0.14, 0.86 } else { 0.3, 0.68 }
 		for k, frac in ipairs(fracs) do
 			local centre = -len / 2 + len * frac
-			local run = 2.0
+			-- 2.8 plan units of horizontal run, not 2.0. The pitch is
+			-- atan2(F2F, run), so at 2.0 these climbed at 38.7 degrees - a
+			-- real escalator is 30, and the department store pairs already
+			-- were, because their run comes off the 3.2 unit void. Only the
+			-- concourse pairs were steep, which is why they read wrong next
+			-- to the ones inside the shops.
+			local run = 2.8
 			-- A pair side by side in the middle of the well, which is how every
 			-- photograph of this place shows them, with a landing at the head
 			-- wide enough to reach both balconies. That landing doubles as the
@@ -1354,7 +1386,12 @@ function GalleriaBuilder.Build(): Model
 			end
 		end
 
-		local lamps = math.max(2, math.floor(len / 2.1))
+		-- Emergency spacing. Chris: "imagine just the emergency lights are
+		-- on... like fire escape, stairwells". A building on emergency power
+		-- does not light its concourse, it lights the way out of it, so these
+		-- go from one every 2.1 plan units to one every 5 - and the dark
+		-- between them is the point, as DONTFUCKUPTHELIGHTS.md says.
+		local lamps = math.max(2, math.floor(len / 5))
 		for i = 0, lamps - 1 do
 			local lx, lz = at(-len / 2 + len * ((i + 0.5) / lamps), 0)
 			local can = part(
@@ -1371,10 +1408,9 @@ function GalleriaBuilder.Build(): Model
 			can.CanCollide, can.CanQuery = false, false
 			local light = Instance.new("PointLight")
 			light.Color = Color3.fromRGB(255, 232, 200)
-			-- 0.85 is the house lamp and does not move, and the range is back
-			-- at 46. Widening it to 54 was meant to close a dim band between
-			-- fittings; the band is supposed to be there.
-			light.Brightness, light.Range, light.Shadows = 0.85, 46, false
+			-- Below the house lamp now: these are the few fittings still fed
+			-- by the emergency circuit, not the mall's working lighting.
+			light.Brightness, light.Range, light.Shadows = 0.6, 42, false
 			light.Parent = can
 		end
 
@@ -1391,7 +1427,7 @@ function GalleriaBuilder.Build(): Model
 		--
 		-- These hang under the balcony soffit, over the walking lanes and the
 		-- shopfronts, which is where a mall puts them anyway.
-		local underPitch = 62
+		local underPitch = 150
 		local underCount = math.max(2, math.round(len * S / underPitch))
 		for i = 0, underCount - 1 do
 			for _, side in ipairs({ -1, 1 }) do
@@ -1411,7 +1447,7 @@ function GalleriaBuilder.Build(): Model
 				-- Dimmer than the roof downlights and shorter: this row exists
 				-- because the ground floor had almost nothing, not to match
 				-- the level above it.
-				light.Brightness, light.Range, light.Shadows = 0.65, 46, false
+				light.Brightness, light.Range, light.Shadows = 0.5, 38, false
 				light.Parent = can
 			end
 		end
@@ -1438,8 +1474,8 @@ function GalleriaBuilder.Build(): Model
 	-- the crew spawns - it was the single largest patch of unlit floor in the
 	-- mall. A ring under the level two balcony arcs, outside the open well so
 	-- the fittings have something to hang from.
-	for i = 0, 7 do
-		local th = 2 * math.pi * (i + 0.5) / 8
+	for i = 0, 5 do
+		local th = 2 * math.pi * (i + 0.5) / 6
 		local cp = Vector2.new(math.cos(th), math.sin(th)) * ((COURT_WELL + COURT_OUT) / 2)
 		local can = part(
 			F.Fixtures,
@@ -1452,10 +1488,12 @@ function GalleriaBuilder.Build(): Model
 		can.CanCollide, can.CanQuery, can.CanTouch = false, false, false
 		local light = Instance.new("PointLight")
 		light.Color = Color3.fromRGB(255, 232, 200)
-		-- The court stays the brightest thing in the mall - it is the spawn
-		-- and the crossroads and it should read as somewhere - but at 56 the
-		-- eight of them overlapped into one disc.
-		light.Brightness, light.Range, light.Shadows = 0.8, 50, false
+		-- The court stays the one place that reads as lit: it is the spawn
+		-- and the crossroads. Six, not the original eight - but at range 42
+		-- and four of them the ring reached neither the fountain nor the
+		-- spawn pad, both of which measured 0.00. A ring hung 23 studs up
+		-- spends most of its reach on the drop.
+		light.Brightness, light.Range, light.Shadows = 0.6, 56, false
 		light.Parent = can
 	end
 
@@ -2109,6 +2147,36 @@ function GalleriaBuilder.Build(): Model
 			pad.CanCollide = false
 			pad:SetAttribute("Store", name)
 			CollectionService:AddTag(pad, "ExtractCandidate")
+
+			-- A light over the door. Measured with the emergency scheme in
+			-- and every one of the four exits came out at 0.00 lux, which is
+			-- backwards: the exit is the one fitting a building on emergency
+			-- power always keeps. Cold white, because that is what an exit
+			-- fitting is and it reads as different from the warm house lamps.
+			--
+			-- NOTE the argument order. department()'s own box() takes
+			-- (lx, lz, sx, sz, y, h) in plan units with y and h in studs, not
+			-- the corner pairs the Lanternhold helper of the same name takes.
+			-- The first version of this used the other one and put four
+			-- fittings nowhere at all, which the audit caught because the
+			-- exits stayed at zero.
+			local exitCan = box(
+				F.Anchors,
+				`ExitLight_{name}`,
+				ox,
+				oz,
+				0.3,
+				0.3,
+				13,
+				1.2,
+				C.shop,
+				Enum.Material.Metal
+			)
+			exitCan.CanCollide, exitCan.CanQuery, exitCan.CanTouch = false, false, false
+			local exitLight = Instance.new("PointLight")
+			exitLight.Color = Color3.fromRGB(206, 230, 236)
+			exitLight.Brightness, exitLight.Range, exitLight.Shadows = 0.8, 40, false
+			exitLight.Parent = exitCan
 		end
 
 		box(
@@ -2273,9 +2341,14 @@ function GalleriaBuilder.Build(): Model
 		-- reaching further through the walls - with Shadows off, which they
 		-- are, every one of these shines straight through the shopfront into
 		-- the concourse, so a bigger range is not free.
-		local lightPitch = 62
-		local nx = math.max(2, math.round(w * S / lightPitch))
-		local nz = math.max(2, math.round(d * S / lightPitch))
+		-- Two a floor. This was a sixteen fitting grid, which lit a 220 by
+		-- 240 shop floor end to end - the opposite of a building running on
+		-- emergency power, and most of why Chris said the mall was too
+		-- bright twice over. What is left reads as the circuit that stayed
+		-- on, and the rest of the store is the lantern's job.
+		local lightPitch = 150
+		local nx = math.max(1, math.round(w * S / lightPitch))
+		local nz = math.max(1, math.round(d * S / lightPitch))
 		for lvl = 0, 1 do
 			for a = 0, nx - 1 do
 				for b = 0, nz - 1 do
@@ -2299,7 +2372,7 @@ function GalleriaBuilder.Build(): Model
 					-- shop floor, which is the thing DONTFUCKUPTHELIGHTS.md
 					-- says not to do: a lamp lights its own patch and the dark
 					-- between patches is the point.
-					light.Brightness, light.Range, light.Shadows = 0.55, 46, false
+					light.Brightness, light.Range, light.Shadows = 0.5, 42, false
 					light.Parent = can
 				end
 			end

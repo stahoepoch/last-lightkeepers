@@ -106,12 +106,41 @@ now."* Every single light in both maps has `Shadows = false`, so a hundred bay
 lights do not stay in their bays - they pour through the shopfronts into the
 concourse. The mall went milky.
 
-Numbers to aim at, as `MapAudit.darkFloor` reports them:
+### The Galleria runs on emergency power
+
+Chris settled it in one sentence after two rounds of me guessing at numbers:
+
+> *"imagine just the emergency lights are on... like fire escape, stairwells"*
+
+That is a **shape**, not a level, and it is why scaling everything down did not
+work. Emergency power does not dim a building evenly - it keeps a few circuits
+and drops the rest. So:
+
+- **Lit:** the exits, both ends of every escalator, the court, and a sparse run
+  down the concourse. The way out, in other words.
+- **Dark:** the shop bays, the department store floors, and most of the open
+  concourse between fittings.
+
+Measured, with `MapAudit.darkFloor`:
 
 | | unlit | median | p90 | over 1.2 |
 | --- | --- | --- | --- | --- |
-| Galleria | ~20% | ~0.3 | ~0.6 | 0% |
+| Galleria | ~80% | 0.00 | ~0.25 | 0% |
 | Lanternhold | 0% | ~0.7 | ~1.2 | watch it |
+
+The Galleria's median being zero is correct. Check the egress points instead,
+which is what the map is actually promising:
+
+| | lux |
+| --- | --- |
+| exit doors | ~0.6 |
+| escalator ends | ~0.7 |
+| court and spawn | ~0.3 |
+| open concourse | ~0.1 |
+| inside a shop | 0.00 |
+
+If you are ever tempted to raise the median here, you are turning the mall's
+lights back on.
 
 And the mechanism, because it decides which knob to turn: **brightness sets
 the general level, range sets the overlap.** A blown highlight is almost never
