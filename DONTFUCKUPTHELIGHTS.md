@@ -86,6 +86,42 @@ blew out the end of the hall, and dropping them to 1.2 and 1.4 read better.
 Shadows stay off on lamps: a lantern that casts them strobes as you walk past
 a row of posts.
 
+## The two maps want opposite things
+
+This cost a round trip on 2026-10-22 and it is the subtlest thing in this file.
+
+`MapAudit` can measure how much standable floor is unlit. It is tempting to
+drive that to zero. **Do not do that in the Galleria.**
+
+- **Lanternhold is a refuge.** Unlit floor there is a bug. It is where you
+  prepare, you are not under threat, and a hub you cannot cross is just three
+  quarters of a building nobody visits. Drive it to zero.
+- **The Galleria is the raid.** The dark between the pools *is the mechanic* -
+  it is the entire reason to carry a lantern, and relics are `lanternOnly`.
+  Unlit floor there is a feature. Twenty percent is about right.
+
+Chasing zero in the mall took it from 89 lights to 170, including one fitting
+in every shop bay, and Chris walked it: *"the mall lighting is too bright
+now."* Every single light in both maps has `Shadows = false`, so a hundred bay
+lights do not stay in their bays - they pour through the shopfronts into the
+concourse. The mall went milky.
+
+Numbers to aim at, as `MapAudit.darkFloor` reports them:
+
+| | unlit | median | p90 | over 1.2 |
+| --- | --- | --- | --- | --- |
+| Galleria | ~20% | ~0.3 | ~0.6 | 0% |
+| Lanternhold | 0% | ~0.7 | ~1.2 | watch it |
+
+And the mechanism, because it decides which knob to turn: **brightness sets
+the general level, range sets the overlap.** A blown highlight is almost never
+one lamp turned up, it is three or four reaching the same patch of floor
+through the walls between them. Reach for range first.
+
+The 1.2 ceiling is calibrated for the Galleria's look. Do not apply it to the
+hub - a refuge is allowed to be bright, and that mistake is just the first one
+running backwards.
+
 ## The carried lantern is not a lamp
 
 `KeeperLantern.Lens.Lantern` is **brightness 2.4, range 34** — brighter than

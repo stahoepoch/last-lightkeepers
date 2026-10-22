@@ -53,6 +53,12 @@ export type Finding = {
 -- lint needs. 0.08 is roughly "one house lamp at the far edge of its range".
 local DARK_THRESHOLD = 0.08
 
+-- And the other end. Summed this way a point directly under one house lamp
+-- comes out near 0.45, so past 1.2 is three or four fittings landing on the
+-- same patch of floor - which, with Shadows off as every light in both maps
+-- is, they do straight through the walls between them.
+local BRIGHT_CEILING = 1.2
+
 -- Sampling step across the floor, in studs. Twenty keeps a 260 by 230 hub
 -- under two hundred probes a floor, which runs in about a second.
 local FLOOR_STEP = 20
@@ -113,6 +119,7 @@ function MapAudit.darkFloor(model: Model): { Finding }
 	params.FilterDescendantsInstances = { model }
 
 	local findings: { Finding } = {}
+	local levels: { number } = {}
 	local sampled, dark = 0, 0
 	local x = -size.X / 2
 	while x <= size.X / 2 do
@@ -164,6 +171,7 @@ function MapAudit.darkFloor(model: Model): { Finding }
 					sampled += 1
 					local standing = hit.Position + Vector3.new(0, 3, 0)
 					local lux = illuminanceAt(standing, lights)
+					table.insert(levels, lux)
 					if lux < DARK_THRESHOLD then
 						dark += 1
 						table.insert(findings, {
@@ -182,12 +190,37 @@ function MapAudit.darkFloor(model: Model): { Finding }
 		x += FLOOR_STEP
 	end
 
+	-- The distribution, not just the dark count.
+	--
+	-- This check used to report only how much floor was unlit, and chasing
+	-- that to zero is how the Galleria ended up with 170 lights and Chris
+	-- saying "the mall lighting is too bright now". A one-sided instrument
+	-- gets optimised in one direction until it breaks the other way, and this
+	-- one had no way to say enough.
+	--
+	-- The two maps also want different answers and the audit cannot pick for
+	-- you. The Lanternhold is a refuge and wants no dark floor. The Galleria
+	-- is the raid, and the dark between the pools is the point of it - that is
+	-- what the lantern is for - so unlit floor there is a feature, and the
+	-- number to watch is the ceiling rather than the floor.
+	table.sort(levels)
+	local function pct(q: number): number
+		return levels[math.max(1, math.min(#levels, math.floor(#levels * q)))] or 0
+	end
+	local blown = 0
+	for _, v in ipairs(levels) do
+		if v > BRIGHT_CEILING then
+			blown += 1
+		end
+	end
+	local pctDark = string.format("%.0f", 100 * dark / math.max(sampled, 1))
+	local pctBlown = string.format("%.0f", 100 * blown / math.max(sampled, 1))
 	table.insert(findings, 1, {
 		kind = "summary",
-		detail = `{dark} of {sampled} floor samples unlit ({string.format(
-			"%.0f",
-			100 * dark / math.max(sampled, 1)
-		)}%), {#lights} lights`,
+		detail = `{dark}/{sampled} unlit ({pctDark}%), {blown} blown ({pctBlown}%) | median {string.format(
+			"%.2f",
+			pct(0.5)
+		)} p90 {string.format("%.2f", pct(0.9))} max {string.format("%.2f", levels[#levels] or 0)} | {#lights} lights`,
 	})
 	return findings
 end

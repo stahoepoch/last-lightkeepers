@@ -914,38 +914,20 @@ function GalleriaBuilder.Build(): Model
 						-- into a hundred of these. Shuttered bays stay empty
 						-- because you cannot see into them.
 						--
-						-- One weak fitting each. The note that used to be here
-						-- said no light on purpose, because a shop interior is
-						-- where the lantern earns its keep - and it ended
-						-- "light only if it reads dead". It read dead: with
-						-- the court, the concourse and the anchors lit, the
-						-- bays were all that was left in MapAudit's dark list.
+						-- No light in here, and this is the second time that has
+						-- been decided. A fitting per bay was added because
+						-- MapAudit listed the bay interiors as the last unlit
+						-- floor left - and Chris walked the result: "the mall
+						-- lighting is too bright now."
 						--
-						-- The objection behind that note turns out not to
-						-- hold. Relics are `visibility: lanternOnly`, and that
-						-- is enforced by LootService and the client, not by
-						-- how dark the room is - so a lit shop takes nothing
-						-- away from the lantern. At 0.5 these are the dimmest
-						-- fittings in the mall by a distance: enough to see
-						-- there is a shop here, not enough to read it.
+						-- Chasing unlit floor to zero was the wrong target for
+						-- this map. The Lanternhold is a refuge and wants none;
+						-- the Galleria is the raid, and the dark inside a shop
+						-- is what the lantern is for. A hundred bays each
+						-- bleeding a fitting through its own shopfront - every
+						-- light here has Shadows off - is most of what turned
+						-- the concourse milky.
 						do
-							local bx, bz = at(along, (HALL + DEPTH / 2) * side)
-							local shopCan = part(
-								F.Fixtures,
-								`BayLight_{tag}`,
-								Vector3.new(5, 1, 5),
-								CFrame.new(bx * S, y + 16, bz * S) * rot,
-								C.shop,
-								Enum.Material.Metal
-							)
-							shopCan.CanCollide, shopCan.CanQuery, shopCan.CanTouch =
-								false, false, false
-							local shopLight = Instance.new("PointLight")
-							shopLight.Color = Color3.fromRGB(255, 226, 196)
-							shopLight.Brightness, shopLight.Range, shopLight.Shadows =
-								0.5, 44, false
-							shopLight.Parent = shopCan
-
 							local function fit(
 								nm: string,
 								dAlong: number,
@@ -1389,9 +1371,10 @@ function GalleriaBuilder.Build(): Model
 			can.CanCollide, can.CanQuery = false, false
 			local light = Instance.new("PointLight")
 			light.Color = Color3.fromRGB(255, 232, 200)
-			-- 0.85 is the house lamp and does not move. The range does: at 46
-			-- there was a dim band halfway between every pair of fittings.
-			light.Brightness, light.Range, light.Shadows = 0.85, 54, false
+			-- 0.85 is the house lamp and does not move, and the range is back
+			-- at 46. Widening it to 54 was meant to close a dim band between
+			-- fittings; the band is supposed to be there.
+			light.Brightness, light.Range, light.Shadows = 0.85, 46, false
 			light.Parent = can
 		end
 
@@ -1425,7 +1408,10 @@ function GalleriaBuilder.Build(): Model
 				can.CanCollide, can.CanQuery, can.CanTouch = false, false, false
 				local light = Instance.new("PointLight")
 				light.Color = Color3.fromRGB(255, 232, 200)
-				light.Brightness, light.Range, light.Shadows = 0.8, 50, false
+				-- Dimmer than the roof downlights and shorter: this row exists
+				-- because the ground floor had almost nothing, not to match
+				-- the level above it.
+				light.Brightness, light.Range, light.Shadows = 0.65, 46, false
 				light.Parent = can
 			end
 		end
@@ -1466,7 +1452,10 @@ function GalleriaBuilder.Build(): Model
 		can.CanCollide, can.CanQuery, can.CanTouch = false, false, false
 		local light = Instance.new("PointLight")
 		light.Color = Color3.fromRGB(255, 232, 200)
-		light.Brightness, light.Range, light.Shadows = 0.85, 56, false
+		-- The court stays the brightest thing in the mall - it is the spawn
+		-- and the crossroads and it should read as somewhere - but at 56 the
+		-- eight of them overlapped into one disc.
+		light.Brightness, light.Range, light.Shadows = 0.8, 50, false
 		light.Parent = can
 	end
 
@@ -2304,7 +2293,13 @@ function GalleriaBuilder.Build(): Model
 					can.CanCollide, can.CanQuery, can.CanTouch = false, false, false
 					local light = Instance.new("PointLight")
 					light.Color = Color3.fromRGB(255, 226, 196)
-					light.Brightness, light.Range, light.Shadows = 0.7, 54, false
+					-- 0.45 at range 40, down from 0.7 at 54. The grid and the
+					-- low mount stay - those fixed real dark corners - but at
+					-- 54 the pools merged into one flood across the whole
+					-- shop floor, which is the thing DONTFUCKUPTHELIGHTS.md
+					-- says not to do: a lamp lights its own patch and the dark
+					-- between patches is the point.
+					light.Brightness, light.Range, light.Shadows = 0.55, 46, false
 					light.Parent = can
 				end
 			end
