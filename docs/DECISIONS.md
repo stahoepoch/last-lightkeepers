@@ -109,11 +109,25 @@ marked *proposed*. Lanternhold has been **built** from one of them. A proposal
 that is being built from is canon whether or not anyone said so. Chris to
 ratify or reject each.
 
-### O3. Does the relay bank cost anything?
+### O3. Does the relay bank cost anything? — ANSWERED
 
-The sharpest critique in `reports/`. If banking is free, instant and on the
-efficient route, it is auto-loot with extra steps — the cascade that hollowed
-out Badlanders. Assigned as worklist A2.
+**Keep the bank; its cost is exposure, and the exposure is light.** Banking
+requires the lantern lit for the transfer, so the safe act and the dangerous
+act become the same act. Full reasoning and evidence in `docs/BANKING.md`.
+
+Removing the bank would have been the opposite error: total loss drives Roblox
+players off outright, and loss aversion intensifies with stake, so a crew
+carrying a full haul would simply stop lighting the lantern for the rest of
+the run. The bank is what lets a player cash out and go back to being brave.
+
+Do **not** reach for cooldowns, limited uses or rarity — Blizzard tried all
+three on Diablo III's town portals and per Jay Wilson they "just changed the
+nature of it". Exposure is the one shape that survived.
+
+Two riders: the relay must bank for everyone in its radius, because Blizzard's
+second reason for cutting portals was that they "split players up a lot"; and
+no upgrade may ever remove or shorten the trip, which is how Dome Keeper's lift
+deleted its own central cost.
 
 ### O4. Who writes relic text?
 
