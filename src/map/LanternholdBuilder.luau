@@ -1964,6 +1964,243 @@ function LanternholdBuilder.Build(): Model
 	)
 	label(burnt, "THE YEARS BEFORE THE FIRE — NOTHING RECOVERED", Enum.NormalId.Left, 16)
 
+	-- ------------------------------------------------- the north wings
+	-- Chris: "do the north wings on the upper floors next."
+	--
+	-- Same fault as the back hall, three floors up and three times over. West
+	-- of the core and north of the stair, every upper level carried 76 by 138
+	-- studs of bare slab - floor you could walk onto, outside every room, with
+	-- nothing on it. Lit in an earlier commit, which made them lit empty
+	-- rooms.
+	--
+	-- Built as one loop rather than three hand-written rooms. The structure is
+	-- identical on every floor - the core is in the same place on all of them
+	-- - so the only thing that varies is what the room is for, and that is the
+	-- table below. Three copies of this written out by hand is three places
+	-- for the next change to the core to go stale.
+	--
+	-- Each room is entered from the core landing through one door, centred on
+	-- the landing's own width so the walk off the stair continues straight.
+	do
+		local WING_WALL = 100 -- the room's south wall, clear of stair and lift
+		local DOOR_AT = -80 -- door runs DOOR_AT .. DOOR_AT + DOOR_W
+
+		for i = 2, #LEVELS do
+			local lvl, ceil = LEVELS[i], HEADS[i]
+			local folder = if i == 2 then F.Ballroom elseif i == 3 then F.Lodge else F.Museum
+
+			wall(folder, `WingWall_{i}`, "Z", WING_WALL, CORE_X0, CORE_X1, lvl, ceil, C.stone, {
+				{ DOOR_AT, DOOR_AT + DOOR_W },
+			})
+			coffers(folder, `WingCeiling_{i}`, CORE_X0, CORE_X1, WING_WALL, Z1, ceil, 40, C.plaster)
+			baseband(folder, `WingBase_{i}`, CORE_X0, CORE_X1, WING_WALL, Z1, lvl)
+			for j = 0, 1 do
+				column(folder, `WingColumn_{i}_{j}`, -108 + j * 40, 140 + j * 50, lvl, ceil, 8)
+			end
+		end
+
+		-- Level two, over the ballroom: the Muster Room. Where a crew forms up
+		-- before going out - benches down both walls, pegs for kit, and a
+		-- board. The ballroom next door is for the town; this is for the
+		-- keepers, and the hub had no room that was.
+		do
+			local lvl = LEVELS[2]
+			finish(
+				F.Ballroom,
+				"MusterFloor",
+				CORE_X0,
+				CORE_X1,
+				WING_WALL,
+				Z1,
+				lvl,
+				C.timber,
+				Enum.Material.WoodPlanks
+			)
+			for _, x in ipairs({ CORE_X0 + 6, CORE_X1 - 12 }) do
+				box(
+					F.Fixtures,
+					`MusterBench_{x}`,
+					x,
+					x + 6,
+					lvl + 1.4,
+					lvl + 2,
+					112,
+					216,
+					C.timber,
+					Enum.Material.WoodPlanks
+				)
+				box(
+					F.Fixtures,
+					`MusterPegs_{x}`,
+					x,
+					x + 2,
+					lvl + 9,
+					lvl + 10,
+					112,
+					216,
+					C.iron,
+					Enum.Material.Metal
+				)
+			end
+			local board = box(
+				F.Fixtures,
+				"MusterBoard",
+				-100,
+				-62,
+				lvl + 5,
+				lvl + 13,
+				226,
+				227,
+				C.board,
+				Enum.Material.WoodPlanks
+			)
+			label(board, "THE MUSTER ROOM", Enum.NormalId.Front, 22)
+		end
+
+		-- Level three, beside the lodge rooms: the Workroom. Relics feed
+		-- SpecialCrafting in data/loot.json and there was no bench in the
+		-- building to do it at - the Keeping Room names a relic and the
+		-- workshop downstairs is for Supplies. A lodge keeps its preparation
+		-- room on the lodge floor, so this is where that goes.
+		do
+			local lvl = LEVELS[3]
+			finish(
+				F.Lodge,
+				"WorkroomFloor",
+				CORE_X0,
+				CORE_X1,
+				WING_WALL,
+				Z1,
+				lvl,
+				C.gothic,
+				Enum.Material.Slate
+			)
+			local bench = box(
+				F.Fixtures,
+				"RelicBench",
+				-112,
+				-96,
+				lvl,
+				lvl + 3.4,
+				120,
+				190,
+				C.timber,
+				Enum.Material.WoodPlanks
+			)
+			box(
+				F.Fixtures,
+				"RelicBenchTop",
+				-114,
+				-94,
+				lvl + 3.4,
+				lvl + 3.9,
+				120,
+				190,
+				C.brass,
+				Enum.Material.Metal
+			)
+			label(bench, "THE WORKROOM", Enum.NormalId.Right, 18)
+			CollectionService:AddTag(bench, "RelicBench")
+			for j = 0, 2 do
+				local z0 = 124 + j * 30
+				box(
+					F.Fixtures,
+					`WorkroomRack_{j}`,
+					-70,
+					-56,
+					lvl,
+					lvl + 12,
+					z0,
+					z0 + 20,
+					C.timber,
+					Enum.Material.WoodPlanks
+				)
+			end
+			box(
+				F.Fixtures,
+				"WorkroomStool",
+				-90,
+				-84,
+				lvl,
+				lvl + 2.4,
+				150,
+				156,
+				C.timber,
+				Enum.Material.WoodPlanks
+			)
+		end
+
+		-- Level four, beside the Keeping Room: the Archive. The museum names a
+		-- relic; this is where the naming is written down and kept. Shelving,
+		-- a reading desk under the lamp, and a map table.
+		do
+			local lvl = LEVELS[4]
+			finish(
+				F.Museum,
+				"ArchiveFloor",
+				CORE_X0,
+				CORE_X1,
+				WING_WALL,
+				Z1,
+				lvl,
+				C.timber,
+				Enum.Material.WoodPlanks
+			)
+			for j = 0, 3 do
+				local z0 = 116 + j * 28
+				box(
+					F.Fixtures,
+					`ArchiveShelf_{j}`,
+					-120,
+					-106,
+					lvl,
+					lvl + 13,
+					z0,
+					z0 + 20,
+					C.timber,
+					Enum.Material.WoodPlanks
+				)
+			end
+			local desk = box(
+				F.Fixtures,
+				"ArchiveDesk",
+				-92,
+				-62,
+				lvl,
+				lvl + 3,
+				136,
+				160,
+				C.timber,
+				Enum.Material.WoodPlanks
+			)
+			label(desk, "THE ARCHIVE", Enum.NormalId.Top, 18)
+			box(
+				F.Fixtures,
+				"ArchiveChair",
+				-80,
+				-74,
+				lvl,
+				lvl + 2.6,
+				164,
+				170,
+				C.timber,
+				Enum.Material.WoodPlanks
+			)
+			box(
+				F.Fixtures,
+				"ArchiveMapTable",
+				-100,
+				-60,
+				lvl + 2.6,
+				lvl + 3.2,
+				190,
+				216,
+				C.cloth,
+				Enum.Material.Fabric
+			)
+		end
+	end
+
 	M.Parent = Workspace
 	return M
 end

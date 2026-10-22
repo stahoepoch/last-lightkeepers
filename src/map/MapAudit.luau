@@ -122,7 +122,13 @@ function MapAudit.darkFloor(model: Model): { Finding }
 			-- an upper storey is audited as well as the ground.
 			local from = origin + Vector3.new(x, size.Y / 2, z)
 			local travelled = 0
-			for _ = 1, 8 do
+			-- Twenty surfaces per column, not eight. A four storey building
+			-- with coffered ceilings puts floor, ceiling and furniture in the
+			-- way of every probe, and at eight the budget ran out before the
+			-- lower floors: adding three rooms to the hub made the sample
+			-- count go DOWN, from 379 to 325, which is the tell. An audit that
+			-- quietly stops looking reports a clean building.
+			for _ = 1, 20 do
 				local hit = Workspace:Raycast(
 					from - Vector3.new(0, travelled, 0),
 					Vector3.new(0, -(size.Y - travelled), 0),
