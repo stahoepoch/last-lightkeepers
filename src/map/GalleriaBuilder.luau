@@ -681,6 +681,39 @@ function GalleriaBuilder.Build(): Model
 		-- Chris walked it: "right now its too dark in some places". Still the
 		-- same weak 0.85 lamp - the answer to a dark patch is another pool of
 		-- light, never a brighter one, and never Ambient.
+		-- The upper concourse had no furniture of any kind. The street
+		-- furniture loop above only ever ran at ground level, so the balcony
+		-- was a bare ring you walked round past shopfronts - half the mall's
+		-- walkable length with nothing on it. Benches face the void so you sit
+		-- looking down into the court, which is what people actually do.
+		do
+			local seats = math.max(3, math.floor(len / 2.1))
+			for k = 0, seats - 1 do
+				local t = -len / 2 + len * ((k + 0.7) / seats)
+				local onLanding = false
+				for _, l in ipairs(landings) do
+					if l.arm == ai and t > l.from - 0.35 and t < l.to + 0.35 then
+						onLanding = true
+					end
+				end
+				if not onLanding then
+					for sideU = -1, 1, 2 do
+						local ux, uz = at(t, (HALL - BAL / 2) * sideU)
+						if k % 2 == 0 then
+							part(F.Fixtures, `UpBench{ai}_{k}_{sideU}`, Vector3.new(15, 0.7, 4), CFrame.new(ux * S, F2F + 1.7, uz * S) * rot, C.fascia, Enum.Material.WoodPlanks)
+							part(F.Fixtures, `UpBenchBack{ai}_{k}_{sideU}`, Vector3.new(15, 2.6, 0.7), CFrame.new((ux + sideU * 0.07) * S, F2F + 3.2, uz * S) * rot, C.fascia, Enum.Material.WoodPlanks)
+							for e = -1, 1, 2 do
+								part(F.Fixtures, `UpBenchLeg{ai}_{k}_{sideU}_{e}`, Vector3.new(0.9, 1.7, 3.4), CFrame.new((ux + e * 0.24) * S, F2F + 0.85, uz * S) * rot, C.teal, Enum.Material.Metal)
+							end
+						else
+							part(F.Fixtures, `UpPlanter{ai}_{k}_{sideU}`, Vector3.new(12, 2.6, 9), CFrame.new(ux * S, F2F + 1.3, uz * S) * rot, C.column, Enum.Material.Concrete)
+							part(F.Fixtures, `UpShrub{ai}_{k}_{sideU}`, Vector3.new(9, 4.2, 7), CFrame.new(ux * S, F2F + 4.6, uz * S) * rot, Color3.fromRGB(74, 112, 72), Enum.Material.Grass)
+						end
+					end
+				end
+			end
+		end
+
 		local lamps = math.max(2, math.floor(len / 2.8))
 		for i = 0, lamps - 1 do
 			local lx, lz = at(-len / 2 + len * ((i + 0.5) / lamps), 0)
@@ -775,6 +808,38 @@ function GalleriaBuilder.Build(): Model
 	disc(F.Court, "FountainBasin", 0.5, 3, 8, C.teal, Enum.Material.Marble)
 	disc(F.Court, "FountainWater", 0.44, 6.9, 0.8, C.glass, Enum.Material.Glass, 0.35)
 	part(F.Court, "FountainStem", Vector3.new(6, 15, 6), CFrame.new(0, 10, 0), C.column, Enum.Material.Concrete)
+
+	-- The court is the middle of the mall and held a fountain, a lift and
+	-- nothing else - Chris: "it's empty everywhere", and this is the room
+	-- everyone passes through. A ring of benches facing the water, planters
+	-- between them, and bins: what actually sits round a mall fountain.
+	do
+		local RING = 1.55 -- model units out from the centre, clear of the basin
+		local SEATS = 8
+		for k = 0, SEATS - 1 do
+			local a = (k / SEATS) * math.pi * 2
+			local bx, bz = math.cos(a) * RING * S, math.sin(a) * RING * S
+			local face = CFrame.new(bx, 0, bz) * CFrame.Angles(0, -a + math.pi / 2, 0)
+			if k % 2 == 0 then
+				part(F.Fixtures, `CourtBench_{k}`, Vector3.new(16, 0.7, 4), face * CFrame.new(0, 1.7, 0), C.fascia, Enum.Material.WoodPlanks)
+				part(F.Fixtures, `CourtBenchBack_{k}`, Vector3.new(16, 2.6, 0.7), face * CFrame.new(0, 3.2, 1.6), C.fascia, Enum.Material.WoodPlanks)
+				for e = -1, 1, 2 do
+					part(F.Fixtures, `CourtBenchLeg_{k}_{e}`, Vector3.new(0.9, 1.7, 3.4), face * CFrame.new(e * 6.5, 0.85, 0), C.teal, Enum.Material.Metal)
+				end
+			else
+				part(F.Fixtures, `CourtPlanter_{k}`, Vector3.new(13, 2.6, 13), face * CFrame.new(0, 1.3, 0), C.column, Enum.Material.Concrete)
+				part(F.Fixtures, `CourtPlanterRim_{k}`, Vector3.new(14, 0.7, 14), face * CFrame.new(0, 2.9, 0), C.fascia, Enum.Material.Concrete)
+				part(F.Fixtures, `CourtShrub_{k}`, Vector3.new(10, 5, 10), face * CFrame.new(0, 5.2, 0), Color3.fromRGB(74, 112, 72), Enum.Material.Grass)
+			end
+		end
+		for k = 0, 3 do
+			local a = (k / 4) * math.pi * 2 + math.pi / 8
+			local bx, bz = math.cos(a) * 2.5 * S, math.sin(a) * 2.5 * S
+			local bin = part(F.Fixtures, `CourtBin_{k}`, Vector3.new(3, 3.4, 3), CFrame.new(bx, 1.7, bz), C.shop, Enum.Material.Metal)
+			bin.Shape = Enum.PartType.Cylinder
+			bin.CFrame = CFrame.new(bx, 1.7, bz) * CFrame.Angles(0, 0, math.pi / 2)
+		end
+	end
 
 	-- The same deck carried round the court, open in the middle so the court
 	-- keeps its skylight. The opening has to be at least as wide as the court
