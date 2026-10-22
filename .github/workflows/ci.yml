@@ -1,0 +1,33 @@
+name: Validate project
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Rokit
+        uses: CompeyDev/setup-rokit@v0.2.1
+      - name: Install pinned tools
+        run: rokit install
+      - name: Run static game checks
+        run: npm test
+      - name: Check Luau formatting
+        run: stylua --check src
+      - name: Lint Luau
+        run: selene src
+      - name: Analyze Luau
+        run: |
+          curl --fail --location --silent --show-error \
+            https://luau-lsp.pages.dev/type-definitions/globalTypes.None.d.luau \
+            --output globalTypes.d.luau
+          rojo sourcemap default.project.json --output sourcemap.json
+          luau-lsp analyze --definitions @roblox=globalTypes.d.luau --sourcemap sourcemap.json src
+      - name: Build Rojo artifact
+        run: rojo build default.project.json --output Last-Lightkeepers-validation.rbxlx

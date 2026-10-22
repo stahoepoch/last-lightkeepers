@@ -1,15 +1,9 @@
-# Toolchain manifest. Rojo is pinned to the version already installed on this
-# machine (verified 7.7.1). The rest are not pinned here because I won't guess
-# version numbers I haven't verified — add them with rokit, which resolves the
-# current release:
-#
-#   rokit add JohnnyMorganz/luau-lsp     # typechecking — the project has none
-#   rokit add Kampfkarren/selene         # linting
-#   rokit add JohnnyMorganz/StyLua       # formatting
-#   rokit add lune-org/lune              # run Luau outside Roblox, for real unit tests
-#
-# Then `rokit install` in this directory. That also puts rojo on PATH, which it
-# currently isn't for either agent.
+# Reproducible local and CI toolchain. Install with `rokit install` from the
+# repository root; Rokit places the pinned executables in ~/.rokit/bin.
 
 [tools]
 rojo = "rojo-rbx/rojo@7.7.1"
+luau-lsp = "JohnnyMorganz/luau-lsp@1.70.1"
+selene = "Kampfkarren/selene@0.32.0"
+StyLua = "JohnnyMorganz/StyLua@2.6.0"
+lune = "lune-org/lune@0.11.1"

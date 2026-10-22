@@ -32,6 +32,7 @@
 
 local CollectionService = game:GetService("CollectionService")
 local Workspace = game:GetService("Workspace")
+local RaidDirector = require(script.Parent:WaitForChild("RaidDirector"))
 
 local GalleriaBuilder = {}
 
@@ -157,12 +158,9 @@ local function label(host: BasePart, text: string, face: Enum.NormalId)
 end
 
 function GalleriaBuilder.Build(): Model
-	-- Deliberately NOT inside Workspace.Map. FloodedMallBuilder clears every
-	-- child of Map except itself on the first line of its build, so anything
-	-- parented there is destroyed the moment the server starts - this mall
-	-- included, along with Codex's own FloodedMall and GalleriaDetails models.
-	-- Until that is sorted out between the two builders, this one sits beside
-	-- Map rather than in it, so it survives a Play session.
+	-- Deliberately NOT inside Workspace.Map. Rojo owns that source-module
+	-- subtree and replaces its children during sync; runtime geometry belongs
+	-- beside it so a sync cannot delete the active mall.
 	local map = Workspace
 	local old = map:FindFirstChild("ClaudeGalleria")
 	if old then
@@ -640,8 +638,8 @@ function GalleriaBuilder.Build(): Model
 					local dx, dz = at(t, 0)
 					part(F.Fixtures, `DirectoryPost{ai}_{i}`, Vector3.new(1, 3, 1), CFrame.new(dx * S, 1.5, dz * S) * rot, C.teal, Enum.Material.Metal)
 					local board = part(F.Fixtures, `Directory{ai}_{i}`, Vector3.new(9, 5, 0.8), CFrame.new(dx * S, 5.2, dz * S) * rot, C.shop)
-					label(board, "GALLERIA  DIRECTORY", Enum.NormalId.Front, 26)
-					label(board, "GALLERIA  DIRECTORY", Enum.NormalId.Back, 26)
+					label(board, "GALLERIA  DIRECTORY", Enum.NormalId.Front)
+					label(board, "GALLERIA  DIRECTORY", Enum.NormalId.Back)
 				end
 			end
 		end
@@ -1423,6 +1421,7 @@ function GalleriaBuilder.Build(): Model
 		end
 	end
 
+	RaidDirector.Apply(M)
 	return M
 end
 
