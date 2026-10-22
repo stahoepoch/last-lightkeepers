@@ -439,7 +439,19 @@ function GalleriaBuilder.Build(): Model
 	local FC_FRAC, FC_LEN = 0.49, 6.0
 	local fcFrom, fcTo, fcArm = math.huge, -math.huge, 2
 	local suite1, suite2 = 100, 200
+	-- Two different spans, and conflating them cost a round of handrails.
+	--
+	-- `landings` is where FURNITURE is banned: the whole escalator footprint,
+	-- foot to head, because a kiosk under an escalator foot or a bench on its
+	-- head is something you walk into.
+	--
+	-- `railGaps` is where the BALCONY RAIL opens, which is only the landing
+	-- slab itself. The run sits in the middle of the well and never reaches
+	-- the balcony edge, so suppressing the rail along its whole length left a
+	-- two storey drop unguarded beside every escalator - Chris: "handrails
+	-- missing all over the top floor", measured at 14 of 34 edge points.
 	local landings: { { arm: number, side: number, from: number, to: number } } = {}
+	local railGaps: { { arm: number, side: number, from: number, to: number } } = {}
 
 	for ai, arm in ipairs(ARMS) do
 		local dir = (arm.b - arm.a).Unit
@@ -553,6 +565,14 @@ function GalleriaBuilder.Build(): Model
 				local lo = math.min(centre - run / 2, head) - 0.55
 				local hi = math.max(centre + run / 2, head) + 0.55
 				table.insert(landings, { arm = ai, side = side, from = lo, to = hi })
+				-- The rail only opens over the landing slab, which is the one
+				-- part of this that reaches the balcony edge.
+				table.insert(railGaps, {
+					arm = ai,
+					side = side,
+					from = head - 0.95 / 2 - 0.3,
+					to = head + 0.95 / 2 + 0.3,
+				})
 			end
 		end
 
@@ -579,10 +599,12 @@ function GalleriaBuilder.Build(): Model
 				Enum.Material.Pebble
 			)
 			for side = -1, 1, 2 do
-				table.insert(
-					landings,
-					{ arm = ai, side = side, from = fcFrom - 0.1, to = fcTo + 0.1 }
-				)
+				local span = { arm = ai, side = side, from = fcFrom - 0.1, to = fcTo + 0.1 }
+				table.insert(landings, span)
+				-- The food court deck really does run to both balcony edges,
+				-- so unlike an escalator it opens the rail along its whole
+				-- span.
+				table.insert(railGaps, span)
 			end
 			for e = -1, 1, 2 do
 				local ex, ez = at(fcAt + e * (fcLen / 2 + 0.03), 0)
@@ -688,7 +710,7 @@ function GalleriaBuilder.Build(): Model
 				local t0 = -len / 2 + len * (i / segs)
 				local t1 = -len / 2 + len * ((i + 1) / segs)
 				local blocked = false
-				for _, l in ipairs(landings) do
+				for _, l in ipairs(railGaps) do
 					if l.arm == ai and l.side == side and t1 > l.from and t0 < l.to then
 						blocked = true
 					end
