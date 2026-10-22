@@ -52,6 +52,15 @@ local Z0, Z1 = 0, 230 -- south and north walls
 local CORE_X0, CORE_X1 = -126, -50
 local CORE_Z0, CORE_Z1 = 16, 92
 
+-- The back hall, north of the landing. BH_SPINE is the wall across it, which
+-- leaves a corridor between the landing door and the two rooms behind; and
+-- BH_DIVIDE is the wall between those rooms. Named rather than typed into
+-- eight places, because the lighting grids are derived from the same numbers
+-- and a room whose lamps stop at a wall that has moved is the fault this
+-- building has had twice already.
+local BH_SPINE = 118
+local BH_DIVIDE = 34
+
 -- Floor levels, as the height you stand on, and the ceiling over each.
 local LEVELS = { 0, 26, 64, 92 }
 local HEADS = { 24, 62, 90, 118 }
@@ -1162,14 +1171,24 @@ function LanternholdBuilder.Build(): Model
 	-- walk onto.
 	lightRoom(
 		F.Basement,
-		"BackHallLamp",
+		"BackCorridorLamp",
 		CORE_X1,
 		W,
 		86,
-		Z1,
+		BH_SPINE,
 		HEADS[1],
-		{ Brightness = 0.9, Range = 38 }
+		{ Brightness = 0.95, Range = 38 }
 	)
+	-- Lit per room rather than as one grid over bare slab: the back hall is
+	-- rooms now, and a grid that straddles a wall leaves the far side dim.
+	lightRoom(F.Basement, "LongRoomLamp", CORE_X1, BH_DIVIDE, BH_SPINE, Z1, HEADS[1], {
+		Brightness = 1.1,
+		Range = 38,
+	})
+	lightRoom(F.Basement, "StoreLamp", BH_DIVIDE, W, BH_SPINE, Z1, HEADS[1], {
+		Brightness = 0.9,
+		Range = 38,
+	})
 	lightRoom(
 		F.Basement,
 		"StoreRoomLamp",
@@ -1404,6 +1423,212 @@ function LanternholdBuilder.Build(): Model
 	-- The lit lamp posts outside the open doors are the signpost now.
 
 	finish(F.Basement, "StoreFloorDark", -W, CORE_X1, 150, Z1, B, C.dark)
+
+	-- ------------------------------------------------- the back hall
+	-- Chris, asked which wing to make rooms of first: "Do the basement back
+	-- hall first - it's the floor people actually use."
+	--
+	-- Everything north of the landing was bare slab: 180 by 144 studs of real
+	-- floor you could walk onto, outside every room anybody had programmed.
+	-- It was lit in the last commit, and lighting an empty room only makes it
+	-- a lit empty room.
+	--
+	-- A corridor across the back of the landing, entered through the doorway
+	-- already cut in LandingNorth, with a room either side. Both are things
+	-- the hub needed and had nowhere to put: the Good Cheer Club has been
+	-- named on the fingerpost and on a board in the kitchen without ever
+	-- having a room, and the supply tiers in data/loot.json feed
+	-- WorkshopUpgrades with no counter in the building to hand anything over.
+	do
+		local CEIL = HEADS[1]
+		-- The Long Room's door lines up with the landing door at x -30..-2,
+		-- so the walk continues straight instead of crossing the corridor to
+		-- find a way on.
+		wall(F.Basement, "BackSpine", "Z", BH_SPINE, CORE_X1, W, B, CEIL, C.stone, {
+			{ -24, -24 + DOOR_W },
+			{ 72, 72 + DOOR_W },
+		})
+		wall(F.Basement, "BackDivide", "X", BH_DIVIDE, BH_SPINE, Z1, B, CEIL, C.stone, {
+			{ 168, 168 + DOOR_W },
+		})
+		coffers(F.Basement, "BackCorridorCeiling", CORE_X1, W, 86, BH_SPINE, CEIL, 40, C.plaster)
+		coffers(
+			F.Basement,
+			"LongRoomCeiling",
+			CORE_X1,
+			BH_DIVIDE,
+			BH_SPINE,
+			Z1,
+			CEIL,
+			44,
+			C.stencil
+		)
+		coffers(F.Basement, "StoreCeiling", BH_DIVIDE, W, BH_SPINE, Z1, CEIL, 40, C.plaster)
+		baseband(F.Basement, "BackCorridorBase", CORE_X1, W, 86, BH_SPINE, B)
+		baseband(F.Basement, "LongRoomBase", CORE_X1, BH_DIVIDE, BH_SPINE, Z1, B)
+		baseband(F.Basement, "StoreBase", BH_DIVIDE, W, BH_SPINE, Z1, B)
+		finish(
+			F.Basement,
+			"LongRoomFloor",
+			CORE_X1,
+			BH_DIVIDE,
+			BH_SPINE,
+			Z1,
+			B,
+			C.timber,
+			Enum.Material.WoodPlanks
+		)
+
+		-- Two columns a room, on the same grid the landing uses, so the back
+		-- of the building reads as the same building.
+		for i = 0, 1 do
+			column(F.Basement, `LongRoomColumn_{i}`, -28 + i * 44, 150 + i * 40, B, CEIL, 9)
+			column(F.Basement, `StoreColumn_{i}`, 58 + i * 44, 150 + i * 40, B, CEIL, 9)
+		end
+
+		-- ---- the Long Room ------------------------------------------------
+		-- The Good Cheer Club's actual hall: long tables down the middle, a
+		-- stove at the end, and the landmark footings along the west wall
+		-- where anyone walking past sees what the town is building.
+		for i = 0, 1 do
+			local z0 = 134 + i * 46
+			box(
+				F.Fixtures,
+				`ClubTable_{i}`,
+				-36,
+				20,
+				B + 2.2,
+				B + 3,
+				z0,
+				z0 + 30,
+				C.timber,
+				Enum.Material.WoodPlanks
+			)
+			for _, dx in ipairs({ -34, 18 }) do
+				box(
+					F.Fixtures,
+					`ClubTableLeg_{i}_{dx}`,
+					dx,
+					dx + 2,
+					B,
+					B + 2.2,
+					z0 + 2,
+					z0 + 28,
+					C.timber,
+					Enum.Material.WoodPlanks
+				)
+			end
+			for _, dx in ipairs({ -42, 24 }) do
+				box(
+					F.Fixtures,
+					`ClubBench_{i}_{dx}`,
+					dx,
+					dx + 6,
+					B + 1.4,
+					B + 2,
+					z0 + 2,
+					z0 + 28,
+					C.timber,
+					Enum.Material.WoodPlanks
+				)
+			end
+		end
+		local stove =
+			box(F.Fixtures, "ClubStove", 14, 28, B, B + 7, 214, 226, C.iron, Enum.Material.Metal)
+		box(F.Fixtures, "ClubFlue", 19, 23, B + 7, CEIL, 218, 222, C.iron, Enum.Material.Metal)
+		label(stove, "THE GOOD CHEER CLUB", Enum.NormalId.Front, 20)
+
+		-- Landmark footings. data/loot.json sends RestorationCrates to
+		-- LanternholdLandmarks and nothing in the building was that, so a
+		-- crate carried all the way home had nowhere to go. These are the
+		-- somewhere: three footings, named, with room to become something.
+		--
+		-- The tag is map contract offered to gameplay, exactly as
+		-- KitchenContribution and WorkshopPlot already are. Nothing consumes
+		-- it yet and nothing here assumes what it will do.
+		for i, nm in ipairs({ "THE WELL", "THE BELL TOWER", "THE LONG BRIDGE" }) do
+			local z0 = 124 + (i - 1) * 34
+			local site = box(
+				F.Markers,
+				`LandmarkSite_{i}`,
+				CORE_X1 + 4,
+				CORE_X1 + 22,
+				B,
+				B + 1.6,
+				z0,
+				z0 + 24,
+				C.terrazzo,
+				Enum.Material.Concrete
+			)
+			site:SetAttribute("Landmark", nm)
+			label(site, nm, Enum.NormalId.Top, 16)
+			CollectionService:AddTag(site, "LandmarkSite")
+		end
+
+		-- ---- the Quartermaster's store -------------------------------------
+		local counter = box(
+			F.Fixtures,
+			"QuartermasterCounter",
+			44,
+			48,
+			B,
+			B + 3.4,
+			126,
+			168,
+			C.timber,
+			Enum.Material.WoodPlanks
+		)
+		label(counter, "QUARTERMASTER", Enum.NormalId.Left, 20)
+		CollectionService:AddTag(counter, "Quartermaster")
+		box(
+			F.Fixtures,
+			"QuartermasterTop",
+			42,
+			52,
+			B + 3.4,
+			B + 3.9,
+			126,
+			168,
+			C.brass,
+			Enum.Material.Metal
+		)
+
+		-- Shelving with a gangway between the runs, so the room can be walked
+		-- rather than looked into.
+		for i = 0, 2 do
+			local x0 = 62 + i * 24
+			box(
+				F.Fixtures,
+				`StoreShelf_{i}`,
+				x0,
+				x0 + 10,
+				B,
+				B + 11,
+				128,
+				196,
+				C.timber,
+				Enum.Material.WoodPlanks
+			)
+		end
+		for i = 0, 3 do
+			local x0 = 58 + i * 18
+			-- Kept clear of the north shell wall, whose inner face is at 228.
+			-- The first run of these reached 232 and two of the four stood a
+			-- third of the way inside it.
+			box(
+				F.Fixtures,
+				`StoreCrate_{i}`,
+				x0,
+				x0 + 12,
+				B,
+				B + 6,
+				200 + (i % 2) * 12,
+				212 + (i % 2) * 12,
+				C.timber,
+				Enum.Material.WoodPlanks
+			)
+		end
+	end
 
 	-- ------------------------------------------------------------- ballroom
 	-- Eight thousand square feet, built and unlit, with its chandeliers fitted
