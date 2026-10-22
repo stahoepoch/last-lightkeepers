@@ -16,3 +16,6 @@ rojo-serve.err.log
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# Deep research working notes (regenerable, not source of truth)
+research_notes/
