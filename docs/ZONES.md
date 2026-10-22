@@ -197,4 +197,5 @@ at from three zones away.
 - Does the farm need its own locals in a first pass, or do staples plus the
   terrain inversion carry it?
 - Is the city one zone or several? It is the only entry here that might not fit
-  a 6-10 minute run.
+  a target run. See docs/DECISIONS.md O1: the target is 6-10 minutes, the
+  hard ceiling is 20, and those are different kinds of number.
