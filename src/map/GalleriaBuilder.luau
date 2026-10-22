@@ -49,6 +49,27 @@ local S = 20
 -- to jump from floor to floor without dying, i want to force you to use the
 -- stairs." A thirty-two stud drop reads as three storeys from the balcony and
 -- is well past the lethal threshold the run state service applies.
+-- Floor to floor is deliberately taller than a real mall's twenty feet. Chris:
+-- "the height from top to bottom should be devastating, you shouldn't be able
+-- to jump from floor to floor without dying, i want to force you to use the
+-- stairs." A thirty-two stud drop reads as three storeys from the balcony and
+-- is well past the lethal threshold the run state service applies.
+--
+-- TRIED AND REVERTED, 2026-10-22. Chris asked for this to come down - at 32 a
+-- storey is 6.4 player heights against about 2.5 for a real one - and 24 was
+-- tried, with LETHAL_FALL_STUDS moved 26 -> 19 to keep the drop fatal. It
+-- broke the building: ten of the sixteen escalators stopped being the short
+-- way between floors in a live session, including the department store pairs,
+-- which do not take their run length from anything I changed. Eight loot
+-- markers were dropped as well.
+--
+-- The cause is that F2F is not just a height. Every vertical thing in this
+-- file is scaled against it, and the things that are NOT - kiosks, racks,
+-- shopfront fascia, the roof trusses, the escalator void in the dept store
+-- slabs - were all sized against 32. Lowering it is a real piece of work that
+-- has to re-derive those together, not a constant to retune. Do it as its own
+-- change, with the escalator through-run check green before and after, and
+-- expect it to touch the void dimensions.
 local F2F = 32
 local STORE_H = 26
 local HALL = 1.7 -- concourse half-width
@@ -420,7 +441,7 @@ function GalleriaBuilder.Build(): Model
 			can.CanCollide, can.CanQuery, can.CanTouch = false, false, false
 			local light = Instance.new("PointLight")
 			light.Color = Color3.fromRGB(216, 232, 236)
-			light.Brightness, light.Range, light.Shadows = 0.55, 30, false
+			light.Brightness, light.Range, light.Shadows = 0.5, 28, false
 			light.Parent = can
 		end
 	end
@@ -1446,7 +1467,7 @@ function GalleriaBuilder.Build(): Model
 			light.Color = Color3.fromRGB(255, 232, 200)
 			-- Below the house lamp now: these are the few fittings still fed
 			-- by the emergency circuit, not the mall's working lighting.
-			light.Brightness, light.Range, light.Shadows = 0.6, 42, false
+			light.Brightness, light.Range, light.Shadows = 0.5, 38, false
 			light.Parent = can
 		end
 
@@ -1483,7 +1504,7 @@ function GalleriaBuilder.Build(): Model
 				-- Dimmer than the roof downlights and shorter: this row exists
 				-- because the ground floor had almost nothing, not to match
 				-- the level above it.
-				light.Brightness, light.Range, light.Shadows = 0.5, 38, false
+				light.Brightness, light.Range, light.Shadows = 0.42, 34, false
 				light.Parent = can
 			end
 		end
@@ -1529,7 +1550,7 @@ function GalleriaBuilder.Build(): Model
 		-- and four of them the ring reached neither the fountain nor the
 		-- spawn pad, both of which measured 0.00. A ring hung 23 studs up
 		-- spends most of its reach on the drop.
-		light.Brightness, light.Range, light.Shadows = 0.6, 56, false
+		light.Brightness, light.Range, light.Shadows = 0.5, 50, false
 		light.Parent = can
 	end
 
@@ -2227,7 +2248,7 @@ function GalleriaBuilder.Build(): Model
 			exitCan.CanCollide, exitCan.CanQuery, exitCan.CanTouch = false, false, false
 			local exitLight = Instance.new("PointLight")
 			exitLight.Color = Color3.fromRGB(206, 230, 236)
-			exitLight.Brightness, exitLight.Range, exitLight.Shadows = 0.8, 40, false
+			exitLight.Brightness, exitLight.Range, exitLight.Shadows = 0.75, 38, false
 			exitLight.Parent = exitCan
 		end
 
@@ -2424,7 +2445,7 @@ function GalleriaBuilder.Build(): Model
 					-- shop floor, which is the thing DONTFUCKUPTHELIGHTS.md
 					-- says not to do: a lamp lights its own patch and the dark
 					-- between patches is the point.
-					light.Brightness, light.Range, light.Shadows = 0.5, 42, false
+					light.Brightness, light.Range, light.Shadows = 0.42, 38, false
 					light.Parent = can
 				end
 			end
@@ -2586,6 +2607,34 @@ function GalleriaBuilder.Build(): Model
 			)
 			post.CanCollide, post.Transparency = false, 1
 			CollectionService:AddTag(post, "SweeperSpawn")
+
+			-- Department stores are hostile interiors, not big empty sheds. A
+			-- Stocker blocks a back aisle from the opening minute onward.
+			local sx, sz = at(-w / 4, d / 2 - 4.2)
+			local stocker = part(
+				F.Gameplay,
+				`StockerSpawn_{name}_{lvl}`,
+				Vector3.new(4, 4, 4),
+				CFrame.new(sx * S, y + 3, sz * S),
+				C.shop,
+				Enum.Material.Metal
+			)
+			stocker.CanCollide, stocker.Transparency = false, 1
+			CollectionService:AddTag(stocker, "StockerSpawn")
+
+			-- A ficus begins as believable store dressing. It only moves once a
+			-- lantern makes the player notice it.
+			local fx, fz = at(-w / 4, -d / 2 + 3.5)
+			local ficus = part(
+				F.Gameplay,
+				`FicusSpawn_{name}_{lvl}`,
+				Vector3.new(3, 3, 3),
+				CFrame.new(fx * S, y + 2, fz * S),
+				C.teal,
+				Enum.Material.Metal
+			)
+			ficus.CanCollide, ficus.Transparency = false, 1
+			CollectionService:AddTag(ficus, "FicusSpawn")
 
 			-- And one out on the floor, between the player and the relics,
 			-- because a single robot in the stockroom is a store you can loot
@@ -2943,7 +2992,13 @@ function GalleriaBuilder.Build(): Model
 		-- clear a planter or a column, near enough that the marker is still
 		-- where the generator meant it to be.
 		local nudges: { Vector3 } = {}
-		for _, radius in ipairs({ 4, 8 }) do
+		-- Three rings, not two. Dropping floor-to-floor from 32 to 24 shortened
+		-- the escalator runs, which moved every landing, which moved the
+		-- furniture that keeps off them - and eight markers that had been fine
+		-- for weeks suddenly had no clear spot inside eight studs. Reaching a
+		-- little further recovers them instead of deleting loot the generator
+		-- correctly asked for.
+		for _, radius in ipairs({ 4, 8, 13 }) do
 			for step = 0, 7 do
 				local angle = (step / 8) * math.pi * 2
 				table.insert(
@@ -2957,6 +3012,8 @@ function GalleriaBuilder.Build(): Model
 		for _, marker in ipairs(F.Gameplay:GetChildren()) do
 			local tagged = CollectionService:HasTag(marker, "Loot")
 				or CollectionService:HasTag(marker, "SweeperSpawn")
+				or CollectionService:HasTag(marker, "StockerSpawn")
+				or CollectionService:HasTag(marker, "FicusSpawn")
 			if marker:IsA("BasePart") and tagged then
 				if standsClear(marker.Position) then
 					kept += 1
