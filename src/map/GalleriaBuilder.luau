@@ -112,19 +112,57 @@ local ARMS = {
 -- in a mall. The building is what makes this the Galleria; the signage does not
 -- have to be, and a greybox is the cheap moment to get this right.
 local L1_NAMES = {
-	"VITA-MAX NUTRITION", "PAGE & HEARTH BOOKS", "STRIDE ATHLETIC", "HALLOWELL JEWELERS",
-	"ODDITY", "SOLE & CENT SHOES", "GLIMMER ACCESSORIES", "SIGNAL & WIRE",
-	"TWIST PRETZEL CO.", "WAXWORKS MUSIC", "GLOW ROLLER RINK", "ISLAND PLATE",
-	"MISTER JUNE'S", "TRANSISTOR ALLEY", "D. BARROW BOOKSELLERS", "KEEPSAKE & CO.",
+	"VITA-MAX NUTRITION",
+	"PAGE & HEARTH BOOKS",
+	"STRIDE ATHLETIC",
+	"HALLOWELL JEWELERS",
+	"ODDITY",
+	"SOLE & CENT SHOES",
+	"GLIMMER ACCESSORIES",
+	"SIGNAL & WIRE",
+	"TWIST PRETZEL CO.",
+	"WAXWORKS MUSIC",
+	"GLOW ROLLER RINK",
+	"ISLAND PLATE",
+	"MISTER JUNE'S",
+	"TRANSISTOR ALLEY",
+	"D. BARROW BOOKSELLERS",
+	"KEEPSAKE & CO.",
 }
 local L2_NAMES = {
-	"THE STONE OVEN", "JACOBY'S TAP", "CELLULAR POINT", "MERIDIAN APPAREL",
-	"OLYMPIA GYROS", "VESUVIO PIZZA", "ORCHARD CONFECTIONS", "DARK BREWS",
-	"VALLEY COLLEGE SHOP", "ARCADE OF THRONES", "ROSALINDA'S", "SENTINEL'S KEEP",
-	"VALLEY INK", "A.O.N. WRESTLING", "SWEATRX", "MORNING STAR",
+	"THE STONE OVEN",
+	"JACOBY'S TAP",
+	"CELLULAR POINT",
+	"MERIDIAN APPAREL",
+	"OLYMPIA GYROS",
+	"VESUVIO PIZZA",
+	"ORCHARD CONFECTIONS",
+	"DARK BREWS",
+	"VALLEY COLLEGE SHOP",
+	"ARCADE OF THRONES",
+	"ROSALINDA'S",
+	"SENTINEL'S KEEP",
+	"VALLEY INK",
+	"A.O.N. WRESTLING",
+	"SWEATRX",
+	"MORNING STAR",
 }
 
-local function part(parent: Instance, name: string, size: Vector3, cf: CFrame, colour: Color3, mat: Enum.Material?, trans: number?): Part
+-- Scope contract: the mall has 128 inline storefront shells, but only three
+-- per concourse face and level are true interiors. That makes 24 inline raid
+-- spaces, plus the eight floors across the four department stores. The rest
+-- remain shuttered frontage: a big mall needs scale, not 100 empty rooms.
+local PLAYABLE_BAY_INDICES = { [2] = true, [8] = true, [13] = true }
+
+local function part(
+	parent: Instance,
+	name: string,
+	size: Vector3,
+	cf: CFrame,
+	colour: Color3,
+	mat: Enum.Material?,
+	trans: number?
+): Part
 	local p = Instance.new("Part")
 	p.Name, p.Size, p.CFrame, p.Color = name, size, cf, colour
 	p.Material = mat or Enum.Material.SmoothPlastic
@@ -170,7 +208,17 @@ function GalleriaBuilder.Build(): Model
 	local M = Instance.new("Model")
 	M.Name = "ClaudeGalleria"
 	local F: { [string]: Folder } = {}
-	for _, n in ipairs({ "Floors", "Shops", "Structure", "Anchors", "Roof", "Court", "Escalators", "Fixtures", "Gameplay" }) do
+	for _, n in ipairs({
+		"Floors",
+		"Shops",
+		"Structure",
+		"Anchors",
+		"Roof",
+		"Court",
+		"Escalators",
+		"Fixtures",
+		"Gameplay",
+	}) do
 		local f = Instance.new("Folder")
 		f.Name, f.Parent = n, M
 		F[n] = f
@@ -178,8 +226,25 @@ function GalleriaBuilder.Build(): Model
 
 	-- A flat disc, for the court and the fountain. A Part cylinder is extruded
 	-- along its own X, so it has to be stood on end to lie down.
-	local function disc(parent: Instance, name: string, radius: number, y: number, h: number, colour: Color3, mat: Enum.Material?, trans: number?): Part
-		local p = part(parent, name, Vector3.new(h, radius * 2 * S, radius * 2 * S), CFrame.new(0, y, 0) * CFrame.Angles(0, 0, math.pi / 2), colour, mat, trans)
+	local function disc(
+		parent: Instance,
+		name: string,
+		radius: number,
+		y: number,
+		h: number,
+		colour: Color3,
+		mat: Enum.Material?,
+		trans: number?
+	): Part
+		local p = part(
+			parent,
+			name,
+			Vector3.new(h, radius * 2 * S, radius * 2 * S),
+			CFrame.new(0, y, 0) * CFrame.Angles(0, 0, math.pi / 2),
+			colour,
+			mat,
+			trans
+		)
 		p.Shape = Enum.PartType.Cylinder
 		return p
 	end
@@ -187,8 +252,24 @@ function GalleriaBuilder.Build(): Model
 	-- The columns are round and salmon. With the teal trusses that is most of
 	-- what makes a photograph of this place recognisable; square posts read as
 	-- any mall anywhere. Takes world studs, not model units.
-	local function pillar(folder: Instance, name: string, wx: number, wz: number, y: number, h: number, dia: number, colour: Color3): Part
-		local p = part(folder, name, Vector3.new(h, dia, dia), CFrame.new(wx, y, wz) * CFrame.Angles(0, 0, math.pi / 2), colour, Enum.Material.Concrete)
+	local function pillar(
+		folder: Instance,
+		name: string,
+		wx: number,
+		wz: number,
+		y: number,
+		h: number,
+		dia: number,
+		colour: Color3
+	): Part
+		local p = part(
+			folder,
+			name,
+			Vector3.new(h, dia, dia),
+			CFrame.new(wx, y, wz) * CFrame.Angles(0, 0, math.pi / 2),
+			colour,
+			Enum.Material.Concrete
+		)
 		p.Shape = Enum.PartType.Cylinder
 		return p
 	end
@@ -200,12 +281,47 @@ function GalleriaBuilder.Build(): Model
 	-- A dressed figure in a shop window. Half set dressing, half foreshadowing:
 	-- the Window Walkers were display mannequins, so a mall with none in its
 	-- windows is missing both its life and its threat.
-	local function mannequin(folder: Instance, name: string, wx: number, wz: number, yaw: number, y: number)
+	local function mannequin(
+		folder: Instance,
+		name: string,
+		wx: number,
+		wz: number,
+		yaw: number,
+		y: number
+	)
 		local rot = CFrame.Angles(0, -yaw, 0)
-		part(folder, `{name}_Base`, Vector3.new(3.4, 0.5, 3.4), CFrame.new(wx, y + 0.25, wz) * rot, C.shop, Enum.Material.Metal)
-		part(folder, `{name}_Leg`, Vector3.new(1, 2.2, 1), CFrame.new(wx, y + 1.5, wz) * rot, C.fascia, Enum.Material.SmoothPlastic)
-		part(folder, `{name}_Body`, Vector3.new(2.4, 2.6, 1.6), CFrame.new(wx, y + 3.9, wz) * rot, C.fascia, Enum.Material.SmoothPlastic)
-		local head = part(folder, `{name}_Head`, Vector3.new(1.3, 1.3, 1.3), CFrame.new(wx, y + 5.8, wz) * rot, C.fascia, Enum.Material.SmoothPlastic)
+		part(
+			folder,
+			`{name}_Base`,
+			Vector3.new(3.4, 0.5, 3.4),
+			CFrame.new(wx, y + 0.25, wz) * rot,
+			C.shop,
+			Enum.Material.Metal
+		)
+		part(
+			folder,
+			`{name}_Leg`,
+			Vector3.new(1, 2.2, 1),
+			CFrame.new(wx, y + 1.5, wz) * rot,
+			C.fascia,
+			Enum.Material.SmoothPlastic
+		)
+		part(
+			folder,
+			`{name}_Body`,
+			Vector3.new(2.4, 2.6, 1.6),
+			CFrame.new(wx, y + 3.9, wz) * rot,
+			C.fascia,
+			Enum.Material.SmoothPlastic
+		)
+		local head = part(
+			folder,
+			`{name}_Head`,
+			Vector3.new(1.3, 1.3, 1.3),
+			CFrame.new(wx, y + 5.8, wz) * rot,
+			C.fascia,
+			Enum.Material.SmoothPlastic
+		)
 		head.Shape = Enum.PartType.Ball
 	end
 
@@ -216,7 +332,15 @@ function GalleriaBuilder.Build(): Model
 	-- the arm was built climbing the other way, and its landing ended up at the
 	-- foot, hanging a storey above the floor with the deck rising away from it.
 	-- That is why nothing on level two could be reached after the rescale.
-	local function escalator(folder: Instance, name: string, x1: number, z1: number, x2: number, z2: number, base: number)
+	local function escalator(
+		folder: Instance,
+		name: string,
+		x1: number,
+		z1: number,
+		x2: number,
+		z2: number,
+		base: number
+	)
 		local run = Vector2.new(x2 - x1, z2 - z1).Magnitude * S
 		local hyp = math.sqrt(run * run + F2F * F2F)
 		local pitch = math.atan2(F2F, run)
@@ -234,11 +358,25 @@ function GalleriaBuilder.Build(): Model
 			-- geometry you stand on or paint; a raised ghost step is the one
 			-- thing they cannot be. Paint is right here, because real steps on
 			-- a 27 degree ramp make the climb jerky.
-			local tread = part(folder, `Tread_{name}_{k}`, Vector3.new(1.2, 0.5, ESC_W - 1), cf * CFrame.new(t, 0.78, 0), C.teal, Enum.Material.Metal)
+			local tread = part(
+				folder,
+				`Tread_{name}_{k}`,
+				Vector3.new(1.2, 0.5, ESC_W - 1),
+				cf * CFrame.new(t, 0.78, 0),
+				C.teal,
+				Enum.Material.Metal
+			)
 			tread.CanCollide, tread.CanTouch, tread.CanQuery = false, false, false
 		end
 		for sgn = -1, 1, 2 do
-			part(folder, `Balustrade_{name}_{sgn}`, Vector3.new(hyp, 8, 1.4), cf * CFrame.new(0, 5, sgn * (ESC_W / 2 + 0.7)), C.teal, Enum.Material.Metal)
+			part(
+				folder,
+				`Balustrade_{name}_{sgn}`,
+				Vector3.new(hyp, 8, 1.4),
+				cf * CFrame.new(0, 5, sgn * (ESC_W / 2 + 0.7)),
+				C.teal,
+				Enum.Material.Metal
+			)
 		end
 	end
 
@@ -280,14 +418,34 @@ function GalleriaBuilder.Build(): Model
 			return midX + dir.X * along + nrm.X * off, midZ + dir.Y * along + nrm.Y * off
 		end
 
-		part(F.Floors, `Hall{ai}_L1`, Vector3.new(len * S, 2, HALL * 2 * S), CFrame.new(midX * S, -1, midZ * S) * rot, C.tile, Enum.Material.Pebble)
+		part(
+			F.Floors,
+			`Hall{ai}_L1`,
+			Vector3.new(len * S, 2, HALL * 2 * S),
+			CFrame.new(midX * S, -1, midZ * S) * rot,
+			C.tile,
+			Enum.Material.Pebble
+		)
 		for side = -1, 1, 2 do
 			local bx, bz = at(0, (HALL + WELL) / 2 * side)
-			part(F.Floors, `Balcony{ai}_{side}`, Vector3.new(len * S, 2, BAL * S), CFrame.new(bx * S, F2F - 1, bz * S) * rot, C.tile, Enum.Material.Pebble)
+			part(
+				F.Floors,
+				`Balcony{ai}_{side}`,
+				Vector3.new(len * S, 2, BAL * S),
+				CFrame.new(bx * S, F2F - 1, bz * S) * rot,
+				C.tile,
+				Enum.Material.Pebble
+			)
 			-- The edge band seen from the floor below: a cream soffit under the
 			-- balcony slab, which is most of what reads as this mall from L1.
 			local ex, ez = at(0, WELL * side)
-			part(F.Structure, `Soffit{ai}_{side}`, Vector3.new(len * S, 5, 1.6), CFrame.new(ex * S, F2F - 4.5, ez * S) * rot, C.fascia)
+			part(
+				F.Structure,
+				`Soffit{ai}_{side}`,
+				Vector3.new(len * S, 5, 1.6),
+				CFrame.new(ex * S, F2F - 4.5, ez * S) * rot,
+				C.fascia
+			)
 		end
 
 		-- Two escalators per arm, on opposite sides. Each sits in the well with
@@ -310,11 +468,31 @@ function GalleriaBuilder.Build(): Model
 			end
 			local head = centre + sense * (run / 2 + 0.45)
 			local hx, hz = at(head, 0)
-			part(F.Floors, `Landing{ai}_{k}`, Vector3.new(0.95 * S, 2, WELL * 2 * S), CFrame.new(hx * S, F2F - 1, hz * S) * rot, C.tile, Enum.Material.Pebble)
+			part(
+				F.Floors,
+				`Landing{ai}_{k}`,
+				Vector3.new(0.95 * S, 2, WELL * 2 * S),
+				CFrame.new(hx * S, F2F - 1, hz * S) * rot,
+				C.tile,
+				Enum.Material.Pebble
+			)
 			-- The far end of the landing is a two storey drop into the well.
 			local ex, ez = at(head + sense * 0.5, 0)
-			part(F.Structure, `LandingRail{ai}_{k}`, Vector3.new(1, 3.4, WELL * 2 * S), CFrame.new(ex * S, F2F + 1.7, ez * S) * rot, C.fascia)
-			part(F.Structure, `LandingCap{ai}_{k}`, Vector3.new(1.8, 1.2, WELL * 2 * S), CFrame.new(ex * S, F2F + 4, ez * S) * rot, C.teal, Enum.Material.Metal)
+			part(
+				F.Structure,
+				`LandingRail{ai}_{k}`,
+				Vector3.new(1, 3.4, WELL * 2 * S),
+				CFrame.new(ex * S, F2F + 1.7, ez * S) * rot,
+				C.fascia
+			)
+			part(
+				F.Structure,
+				`LandingCap{ai}_{k}`,
+				Vector3.new(1.8, 1.2, WELL * 2 * S),
+				CFrame.new(ex * S, F2F + 4, ez * S) * rot,
+				C.teal,
+				Enum.Material.Metal
+			)
 			for side = -1, 1, 2 do
 				local lo = math.min(centre - run / 2, head) - 0.55
 				local hi = math.max(centre + run / 2, head) + 0.55
@@ -336,14 +514,37 @@ function GalleriaBuilder.Build(): Model
 			local fcLen = 6.0
 			fcFrom, fcTo = fcAt - fcLen / 2, fcAt + fcLen / 2
 			local fx, fz = at(fcAt, 0)
-			part(F.Floors, "FoodCourtDeck", Vector3.new(fcLen * S, 2, WELL * 2 * S), CFrame.new(fx * S, F2F - 1, fz * S) * rot, C.tile, Enum.Material.Pebble)
+			part(
+				F.Floors,
+				"FoodCourtDeck",
+				Vector3.new(fcLen * S, 2, WELL * 2 * S),
+				CFrame.new(fx * S, F2F - 1, fz * S) * rot,
+				C.tile,
+				Enum.Material.Pebble
+			)
 			for side = -1, 1, 2 do
-				table.insert(landings, { arm = ai, side = side, from = fcFrom - 0.1, to = fcTo + 0.1 })
+				table.insert(
+					landings,
+					{ arm = ai, side = side, from = fcFrom - 0.1, to = fcTo + 0.1 }
+				)
 			end
 			for e = -1, 1, 2 do
 				local ex, ez = at(fcAt + e * (fcLen / 2 + 0.03), 0)
-				part(F.Structure, `FCRail_{e}`, Vector3.new(1, 3.4, WELL * 2 * S), CFrame.new(ex * S, F2F + 1.7, ez * S) * rot, C.fascia)
-				part(F.Structure, `FCCap_{e}`, Vector3.new(1.8, 1.2, WELL * 2 * S), CFrame.new(ex * S, F2F + 4, ez * S) * rot, C.teal, Enum.Material.Metal)
+				part(
+					F.Structure,
+					`FCRail_{e}`,
+					Vector3.new(1, 3.4, WELL * 2 * S),
+					CFrame.new(ex * S, F2F + 1.7, ez * S) * rot,
+					C.fascia
+				)
+				part(
+					F.Structure,
+					`FCCap_{e}`,
+					Vector3.new(1.8, 1.2, WELL * 2 * S),
+					CFrame.new(ex * S, F2F + 4, ez * S) * rot,
+					C.teal,
+					Enum.Material.Metal
+				)
 			end
 
 			-- The chequered floor, which is most of what a food court looks
@@ -356,7 +557,16 @@ function GalleriaBuilder.Build(): Model
 						local a0 = fcAt - fcLen / 2 + (i + 0.5) * 13 / S
 						local o0 = -WELL + (j + 0.5) * 13 / S
 						local tx, tz = at(a0, o0)
-						paint(part(F.Floors, `FCTile_{i}_{j}`, Vector3.new(13, 0.4, 13), CFrame.new(tx * S, F2F - 0.18, tz * S) * rot, C.shop, Enum.Material.Pebble))
+						paint(
+							part(
+								F.Floors,
+								`FCTile_{i}_{j}`,
+								Vector3.new(13, 0.4, 13),
+								CFrame.new(tx * S, F2F - 0.18, tz * S) * rot,
+								C.shop,
+								Enum.Material.Pebble
+							)
+						)
 					end
 				end
 			end
@@ -369,13 +579,48 @@ function GalleriaBuilder.Build(): Model
 				for _, off in ipairs({ -0.34, 0.34 }) do
 					local t = fcAt - fcLen / 2 + fcLen * ((i + 0.5) / seatRows)
 					local tx, tz = at(t, off)
-					part(F.Fixtures, `FCPedestal_{i}_{off}`, Vector3.new(3, 2.6, 3), CFrame.new(tx * S, F2F + 1.3, tz * S) * rot, C.teal, Enum.Material.Metal)
-					part(F.Fixtures, `FCTable_{i}_{off}`, Vector3.new(10, 0.8, 10), CFrame.new(tx * S, F2F + 3, tz * S) * rot, C.fascia, Enum.Material.WoodPlanks)
+					part(
+						F.Fixtures,
+						`FCPedestal_{i}_{off}`,
+						Vector3.new(3, 2.6, 3),
+						CFrame.new(tx * S, F2F + 1.3, tz * S) * rot,
+						C.teal,
+						Enum.Material.Metal
+					)
+					part(
+						F.Fixtures,
+						`FCTable_{i}_{off}`,
+						Vector3.new(10, 0.8, 10),
+						CFrame.new(tx * S, F2F + 3, tz * S) * rot,
+						C.fascia,
+						Enum.Material.WoodPlanks
+					)
 					for c = -1, 1, 2 do
 						local sx, sz = at(t + c * 0.26, off)
-						part(F.Fixtures, `FCSeat_{i}_{off}_{c}`, Vector3.new(5, 0.6, 5), CFrame.new(sx * S, F2F + 1.7, sz * S) * rot, C.column, Enum.Material.WoodPlanks)
-						part(F.Fixtures, `FCSeatLeg_{i}_{off}_{c}`, Vector3.new(1.6, 1.7, 1.6), CFrame.new(sx * S, F2F + 0.85, sz * S) * rot, C.teal, Enum.Material.Metal)
-						part(F.Fixtures, `FCBack_{i}_{off}_{c}`, Vector3.new(0.8, 3, 5), CFrame.new((sx + c * 0.09) * S, F2F + 3.4, sz * S) * rot, C.column, Enum.Material.WoodPlanks)
+						part(
+							F.Fixtures,
+							`FCSeat_{i}_{off}_{c}`,
+							Vector3.new(5, 0.6, 5),
+							CFrame.new(sx * S, F2F + 1.7, sz * S) * rot,
+							C.column,
+							Enum.Material.WoodPlanks
+						)
+						part(
+							F.Fixtures,
+							`FCSeatLeg_{i}_{off}_{c}`,
+							Vector3.new(1.6, 1.7, 1.6),
+							CFrame.new(sx * S, F2F + 0.85, sz * S) * rot,
+							C.teal,
+							Enum.Material.Metal
+						)
+						part(
+							F.Fixtures,
+							`FCBack_{i}_{off}_{c}`,
+							Vector3.new(0.8, 3, 5),
+							CFrame.new((sx + c * 0.09) * S, F2F + 3.4, sz * S) * rot,
+							C.column,
+							Enum.Material.WoodPlanks
+						)
 					end
 				end
 			end
@@ -398,8 +643,21 @@ function GalleriaBuilder.Build(): Model
 					-- photographs.
 					local rx, rz = at((t0 + t1) / 2, WELL * side)
 					local wlen = (t1 - t0) * S + 0.4
-					part(F.Structure, `RailPanel{ai}_{side}_{i}`, Vector3.new(wlen, 3.4, 0.9), CFrame.new(rx * S, F2F + 1.7, rz * S) * rot, C.fascia)
-					part(F.Structure, `RailCap{ai}_{side}_{i}`, Vector3.new(wlen, 1.2, 1.8), CFrame.new(rx * S, F2F + 4, rz * S) * rot, C.teal, Enum.Material.Metal)
+					part(
+						F.Structure,
+						`RailPanel{ai}_{side}_{i}`,
+						Vector3.new(wlen, 3.4, 0.9),
+						CFrame.new(rx * S, F2F + 1.7, rz * S) * rot,
+						C.fascia
+					)
+					part(
+						F.Structure,
+						`RailCap{ai}_{side}_{i}`,
+						Vector3.new(wlen, 1.2, 1.8),
+						CFrame.new(rx * S, F2F + 4, rz * S) * rot,
+						C.teal,
+						Enum.Material.Metal
+					)
 				end
 			end
 		end
@@ -458,7 +716,14 @@ function GalleriaBuilder.Build(): Model
 			for si, sp in ipairs(spans) do
 				local smid, slen = (sp[1] + sp[2]) / 2, sp[2] - sp[1]
 				local sx, sz = at(smid, (HALL + DEPTH) * side)
-				part(F.Shops, `Shell{ai}_{side}_{si}`, Vector3.new(slen * S, F2F * 2, 2), CFrame.new(sx * S, F2F, sz * S) * rot, C.shell, Enum.Material.Concrete)
+				part(
+					F.Shops,
+					`Shell{ai}_{side}_{si}`,
+					Vector3.new(slen * S, F2F * 2, 2),
+					CFrame.new(sx * S, F2F, sz * S) * rot,
+					C.shell,
+					Enum.Material.Concrete
+				)
 			end
 
 			-- The corridor itself: one unbroken floor and ceiling per level,
@@ -468,11 +733,30 @@ function GalleriaBuilder.Build(): Model
 				for lvl = 1, 2 do
 					local y = (lvl - 1) * F2F
 					local px, pz = at(cmid, (HALL + DEPTH / 2) * side)
-					part(F.Shops, `PortalFloor_{ai}_{side}_{ci}_{lvl}`, Vector3.new(clen * S, 2, DEPTH * S), CFrame.new(px * S, y - 1, pz * S) * rot, C.tile, Enum.Material.Pebble)
-					part(F.Shops, `PortalCeil_{ai}_{side}_{ci}_{lvl}`, Vector3.new(clen * S, 1, DEPTH * S), CFrame.new(px * S, y + STORE_H, pz * S) * rot, C.fascia)
+					part(
+						F.Shops,
+						`PortalFloor_{ai}_{side}_{ci}_{lvl}`,
+						Vector3.new(clen * S, 2, DEPTH * S),
+						CFrame.new(px * S, y - 1, pz * S) * rot,
+						C.tile,
+						Enum.Material.Pebble
+					)
+					part(
+						F.Shops,
+						`PortalCeil_{ai}_{side}_{ci}_{lvl}`,
+						Vector3.new(clen * S, 1, DEPTH * S),
+						CFrame.new(px * S, y + STORE_H, pz * S) * rot,
+						C.fascia
+					)
 					for e = -1, 1, 2 do
 						local jx, jz = at(cmid + e * clen / 2, (HALL + DEPTH / 2) * side)
-						part(F.Shops, `PortalJamb_{ai}_{side}_{ci}_{lvl}_{e}`, Vector3.new(2, STORE_H, DEPTH * S), CFrame.new(jx * S, y + STORE_H / 2, jz * S) * rot, C.fascia)
+						part(
+							F.Shops,
+							`PortalJamb_{ai}_{side}_{ci}_{lvl}_{e}`,
+							Vector3.new(2, STORE_H, DEPTH * S),
+							CFrame.new(jx * S, y + STORE_H / 2, jz * S) * rot,
+							C.fascia
+						)
 					end
 				end
 			end
@@ -486,40 +770,117 @@ function GalleriaBuilder.Build(): Model
 				for lvl = 1, 2 do
 					local y = (lvl - 1) * F2F
 					local tag = `L{lvl}_{ai}_{side}_{i}`
+					local playable = PLAYABLE_BAY_INDICES[i] == true
 					local cx, cz = at(along, (HALL + DEPTH / 2) * side)
 
 					-- A bay is a room, not a block. Most are shuttered, which is
 					-- what a dead mall looks like and also means the ones you can
 					-- walk into are the ones worth walking into.
-					part(F.Shops, `BayFloor_{tag}`, Vector3.new(bw * S, 1, DEPTH * S), CFrame.new(cx * S, y - 0.5, cz * S) * rot, C.tile, Enum.Material.Pebble)
-					part(F.Shops, `BayCeil_{tag}`, Vector3.new(bw * S, 1, DEPTH * S), CFrame.new(cx * S, y + STORE_H, cz * S) * rot, C.shop)
+					part(
+						F.Shops,
+						`BayFloor_{tag}`,
+						Vector3.new(bw * S, 1, DEPTH * S),
+						CFrame.new(cx * S, y - 0.5, cz * S) * rot,
+						C.tile,
+						Enum.Material.Pebble
+					)
+					part(
+						F.Shops,
+						`BayCeil_{tag}`,
+						Vector3.new(bw * S, 1, DEPTH * S),
+						CFrame.new(cx * S, y + STORE_H, cz * S) * rot,
+						C.shop
+					)
 					for e = -1, 1, 2 do
 						local dx, dz = at(along + e * bw / 2, (HALL + DEPTH / 2) * side)
-						part(F.Shops, `Divider_{tag}_{e}`, Vector3.new(1.5, STORE_H, DEPTH * S), CFrame.new(dx * S, y + STORE_H / 2, dz * S) * rot, C.shop, Enum.Material.Slate)
+						part(
+							F.Shops,
+							`Divider_{tag}_{e}`,
+							Vector3.new(1.5, STORE_H, DEPTH * S),
+							CFrame.new(dx * S, y + STORE_H / 2, dz * S) * rot,
+							C.shop,
+							Enum.Material.Slate
+						)
 					end
 
-						local fx, fz = at(along, (HALL + 0.08) * side)
+					local fx, fz = at(along, (HALL + 0.08) * side)
 					-- Inside the food court span and on its level, a shopfront
 					-- is a servery: an open counter under a menu board, not a
 					-- shutter. These are the units the smell comes from.
-					if ai == fcArm and lvl == 2 and along > fcFrom and along < fcTo then
-						part(F.Shops, `Counter_{tag}`, Vector3.new(bw * S, 7, 3), CFrame.new(fx * S, y + 3.5, fz * S) * rot, C.fascia, Enum.Material.Marble)
-						part(F.Shops, `CounterFront_{tag}`, Vector3.new(bw * S, 1, 3.6), CFrame.new(fx * S, y + 7.4, fz * S) * rot, C.teal, Enum.Material.Metal)
-						local menu = part(F.Shops, `Menu_{tag}`, Vector3.new(bw * S * 0.8, 9, 0.8), CFrame.new(fx * S, y + STORE_H - 11, fz * S) * rot, C.shop)
-						label(menu, L2_NAMES[((i + ai * 3) % #L2_NAMES) + 1], if side == 1 then Enum.NormalId.Front else Enum.NormalId.Back)
-						local fascia2 = part(F.Shops, `Fascia_{tag}`, Vector3.new(bw * S, 4.5, 1.4), CFrame.new(fx * S, y + STORE_H - 2.5, fz * S) * rot, C.fascia)
-						label(fascia2, L2_NAMES[((i + ai * 3) % #L2_NAMES) + 1], if side == 1 then Enum.NormalId.Front else Enum.NormalId.Back)
-						part(F.Shops, `Trim_{tag}`, Vector3.new(bw * S, 1.2, 1.8), CFrame.new(fx * S, y + STORE_H - 5.2, fz * S) * rot, C.teal)
+					if
+						playable
+						and ai == fcArm
+						and lvl == 2
+						and along > fcFrom
+						and along < fcTo
+					then
+						part(
+							F.Shops,
+							`Counter_{tag}`,
+							Vector3.new(bw * S, 7, 3),
+							CFrame.new(fx * S, y + 3.5, fz * S) * rot,
+							C.fascia,
+							Enum.Material.Marble
+						)
+						part(
+							F.Shops,
+							`CounterFront_{tag}`,
+							Vector3.new(bw * S, 1, 3.6),
+							CFrame.new(fx * S, y + 7.4, fz * S) * rot,
+							C.teal,
+							Enum.Material.Metal
+						)
+						local menu = part(
+							F.Shops,
+							`Menu_{tag}`,
+							Vector3.new(bw * S * 0.8, 9, 0.8),
+							CFrame.new(fx * S, y + STORE_H - 11, fz * S) * rot,
+							C.shop
+						)
+						label(
+							menu,
+							L2_NAMES[((i + ai * 3) % #L2_NAMES) + 1],
+							if side == 1 then Enum.NormalId.Front else Enum.NormalId.Back
+						)
+						local fascia2 = part(
+							F.Shops,
+							`Fascia_{tag}`,
+							Vector3.new(bw * S, 4.5, 1.4),
+							CFrame.new(fx * S, y + STORE_H - 2.5, fz * S) * rot,
+							C.fascia
+						)
+						label(
+							fascia2,
+							L2_NAMES[((i + ai * 3) % #L2_NAMES) + 1],
+							if side == 1 then Enum.NormalId.Front else Enum.NormalId.Back
+						)
+						part(
+							F.Shops,
+							`Trim_{tag}`,
+							Vector3.new(bw * S, 1.2, 1.8),
+							CFrame.new(fx * S, y + STORE_H - 5.2, fz * S) * rot,
+							C.teal
+						)
 						continue
 					end
-					if (i + ai + lvl) % 3 == 0 then
+					if playable then
 						local doorW = 14
 						local paneW = (bw * S - doorW) / 2
 						for e = -1, 1, 2 do
-							local px, pz = at(along + e * (doorW / 2 + paneW / 2) / S, (HALL + 0.08) * side)
-							part(F.Shops, `Glass_{tag}_{e}`, Vector3.new(paneW, STORE_H - 5, 1), CFrame.new(px * S, y + (STORE_H - 5) / 2, pz * S) * rot, C.glass, Enum.Material.Glass, 0.45)
+							local px, pz =
+								at(along + e * (doorW / 2 + paneW / 2) / S, (HALL + 0.08) * side)
+							part(
+								F.Shops,
+								`Glass_{tag}_{e}`,
+								Vector3.new(paneW, STORE_H - 5, 1),
+								CFrame.new(px * S, y + (STORE_H - 5) / 2, pz * S) * rot,
+								C.glass,
+								Enum.Material.Glass,
+								0.45
+							)
 							-- A figure behind the glass, facing out.
-							local mx, mz = at(along + e * (doorW / 2 + paneW / 2) / S, (HALL + 0.55) * side)
+							local mx, mz =
+								at(along + e * (doorW / 2 + paneW / 2) / S, (HALL + 0.55) * side)
 							mannequin(F.Fixtures, `Dummy_{tag}_{e}`, mx * S, mz * S, ang, y)
 						end
 
@@ -534,27 +895,92 @@ function GalleriaBuilder.Build(): Model
 						-- light sources is exactly what whited the mall out
 						-- before. Geometry first; light only if it reads dead.
 						do
-							local function fit(nm: string, dAlong: number, dAcross: number, sw: number, h: number, sd: number, col: Color3, mat: Enum.Material?)
+							local function fit(
+								nm: string,
+								dAlong: number,
+								dAcross: number,
+								sw: number,
+								h: number,
+								sd: number,
+								col: Color3,
+								mat: Enum.Material?
+							)
 								local px, pz = at(along + dAlong, (HALL + dAcross) * side)
-								local p = part(F.Shops, `{nm}_{tag}`, Vector3.new(sw * S, h, sd * S), CFrame.new(px * S, y + h / 2, pz * S) * rot, col, mat)
+								local p = part(
+									F.Shops,
+									`{nm}_{tag}`,
+									Vector3.new(sw * S, h, sd * S),
+									CFrame.new(px * S, y + h / 2, pz * S) * rot,
+									col,
+									mat
+								)
 								p.CanCollide = true
 								return p
 							end
 							-- Shelving against the back wall and down one side.
-							fit("ShelfBack", 0, DEPTH - 0.18, bw * 0.92, 13, 0.34, C.shop, Enum.Material.Metal)
-							fit("ShelfSide", -bw * 0.4, DEPTH * 0.56, 0.22, 11, DEPTH * 0.6, C.shop, Enum.Material.Metal)
+							fit(
+								"ShelfBack",
+								0,
+								DEPTH - 0.18,
+								bw * 0.92,
+								13,
+								0.34,
+								C.shop,
+								Enum.Material.Metal
+							)
+							fit(
+								"ShelfSide",
+								-bw * 0.4,
+								DEPTH * 0.56,
+								0.22,
+								11,
+								DEPTH * 0.6,
+								C.shop,
+								Enum.Material.Metal
+							)
 							-- A till counter set back from the glass, and two
 							-- free-standing units in the middle of the floor.
-							fit("Till", bw * 0.26, 0.72, bw * 0.4, 4.6, 0.3, C.fascia, Enum.Material.WoodPlanks)
+							fit(
+								"Till",
+								bw * 0.26,
+								0.72,
+								bw * 0.4,
+								4.6,
+								0.3,
+								C.fascia,
+								Enum.Material.WoodPlanks
+							)
 							for r = 0, 1 do
-								fit(`Unit{r}`, (r - 0.5) * bw * 0.44, DEPTH * (0.38 + r * 0.22), bw * 0.3, if r == 0 then 8 else 4.4, 0.26, if r == 0 then C.fascia else C.teal, Enum.Material.Metal)
+								fit(
+									`Unit{r}`,
+									(r - 0.5) * bw * 0.44,
+									DEPTH * (0.38 + r * 0.22),
+									bw * 0.3,
+									if r == 0 then 8 else 4.4,
+									0.26,
+									if r == 0 then C.fascia else C.teal,
+									Enum.Material.Metal
+								)
 							end
 						end
 					else
-						part(F.Shops, `Shutter_{tag}`, Vector3.new(bw * S, STORE_H - 5, 1.2), CFrame.new(fx * S, y + (STORE_H - 5) / 2, fz * S) * rot, C.shop, Enum.Material.DiamondPlate)
+						part(
+							F.Shops,
+							`Shutter_{tag}`,
+							Vector3.new(bw * S, STORE_H - 5, 1.2),
+							CFrame.new(fx * S, y + (STORE_H - 5) / 2, fz * S) * rot,
+							C.shop,
+							Enum.Material.DiamondPlate
+						)
 					end
 
-					local fascia = part(F.Shops, `Fascia_{tag}`, Vector3.new(bw * S, 4.5, 1.4), CFrame.new(fx * S, y + STORE_H - 2.5, fz * S) * rot, C.fascia)
+					local fascia = part(
+						F.Shops,
+						`Fascia_{tag}`,
+						Vector3.new(bw * S, 4.5, 1.4),
+						CFrame.new(fx * S, y + STORE_H - 2.5, fz * S) * rot,
+						C.fascia
+					)
 					local list = if lvl == 1 then L1_NAMES else L2_NAMES
 					local n
 					if lvl == 1 then
@@ -568,8 +994,18 @@ function GalleriaBuilder.Build(): Model
 					-- from the concourse, so the side that faces a shopper is -Z on
 					-- the positive flank and +Z on the negative one. This was the
 					-- wrong way round, which put every sign inside its own shop.
-					label(fascia, `{list[((i + ai * 3) % #list) + 1]}   {n}`, if side == 1 then Enum.NormalId.Front else Enum.NormalId.Back)
-					part(F.Shops, `Trim_{tag}`, Vector3.new(bw * S, 1.2, 1.8), CFrame.new(fx * S, y + STORE_H - 5.2, fz * S) * rot, C.teal)
+					label(
+						fascia,
+						`{list[((i + ai * 3) % #list) + 1]}   {n}`,
+						if side == 1 then Enum.NormalId.Front else Enum.NormalId.Back
+					)
+					part(
+						F.Shops,
+						`Trim_{tag}`,
+						Vector3.new(bw * S, 1.2, 1.8),
+						CFrame.new(fx * S, y + STORE_H - 5.2, fz * S) * rot,
+						C.teal
+					)
 				end
 			end
 		end
@@ -580,12 +1016,35 @@ function GalleriaBuilder.Build(): Model
 			local along = -len / 2 + len * (i / cols)
 			for side = -1, 1, 2 do
 				local cx, cz = at(along, (HALL - 0.18) * side)
-				pillar(F.Structure, `Column{ai}_{i}_{side}`, cx * S, cz * S, F2F - 1, F2F * 2 - 2, 10, C.column)
+				pillar(
+					F.Structure,
+					`Column{ai}_{i}_{side}`,
+					cx * S,
+					cz * S,
+					F2F - 1,
+					F2F * 2 - 2,
+					10,
+					C.column
+				)
 				-- The teal uplighter bowl near the head of each column.
-				part(F.Structure, `Uplight{ai}_{i}_{side}`, Vector3.new(15, 3, 15), CFrame.new(cx * S, F2F * 2 - 11, cz * S), C.teal, Enum.Material.Metal)
+				part(
+					F.Structure,
+					`Uplight{ai}_{i}_{side}`,
+					Vector3.new(15, 3, 15),
+					CFrame.new(cx * S, F2F * 2 - 11, cz * S),
+					C.teal,
+					Enum.Material.Metal
+				)
 			end
 			local tx, tz = at(along, 0)
-			part(F.Roof, `Truss{ai}_{i}`, Vector3.new(2.2, 2.2, HALL * 2 * S), CFrame.new(tx * S, F2F * 2 + 10, tz * S) * rot, C.teal, Enum.Material.Metal)
+			part(
+				F.Roof,
+				`Truss{ai}_{i}`,
+				Vector3.new(2.2, 2.2, HALL * 2 * S),
+				CFrame.new(tx * S, F2F * 2 + 10, tz * S) * rot,
+				C.teal,
+				Enum.Material.Metal
+			)
 		end
 
 		-- Street furniture, at a size a player reads. All of this was two to
@@ -609,35 +1068,126 @@ function GalleriaBuilder.Build(): Model
 				local px, pz = at(t, 0)
 				local kind = i % 4
 				if kind == 0 then
-					part(F.Fixtures, `Planter{ai}_{i}`, Vector3.new(26, 2.6, 11), CFrame.new(px * S, 1.3, pz * S) * rot, C.column, Enum.Material.Concrete)
-					part(F.Fixtures, `PlanterRim{ai}_{i}`, Vector3.new(27, 0.7, 12), CFrame.new(px * S, 2.9, pz * S) * rot, C.fascia, Enum.Material.Concrete)
-					part(F.Fixtures, `Shrub{ai}_{i}`, Vector3.new(21, 4.5, 8), CFrame.new(px * S, 5, pz * S) * rot, Color3.fromRGB(74, 112, 72), Enum.Material.Grass)
+					part(
+						F.Fixtures,
+						`Planter{ai}_{i}`,
+						Vector3.new(26, 2.6, 11),
+						CFrame.new(px * S, 1.3, pz * S) * rot,
+						C.column,
+						Enum.Material.Concrete
+					)
+					part(
+						F.Fixtures,
+						`PlanterRim{ai}_{i}`,
+						Vector3.new(27, 0.7, 12),
+						CFrame.new(px * S, 2.9, pz * S) * rot,
+						C.fascia,
+						Enum.Material.Concrete
+					)
+					part(
+						F.Fixtures,
+						`Shrub{ai}_{i}`,
+						Vector3.new(21, 4.5, 8),
+						CFrame.new(px * S, 5, pz * S) * rot,
+						Color3.fromRGB(74, 112, 72),
+						Enum.Material.Grass
+					)
 				elseif kind == 1 then
 					for b = -1, 1, 2 do
 						local bx, bz = at(t, b * 0.28)
-						part(F.Fixtures, `Bench{ai}_{i}_{b}`, Vector3.new(16, 0.7, 4), CFrame.new(bx * S, 1.7, bz * S) * rot, C.fascia, Enum.Material.WoodPlanks)
-						part(F.Fixtures, `BenchBack{ai}_{i}_{b}`, Vector3.new(16, 2.6, 0.7), CFrame.new((bx + b * 0.07) * S, 3.2, bz * S) * rot, C.fascia, Enum.Material.WoodPlanks)
+						part(
+							F.Fixtures,
+							`Bench{ai}_{i}_{b}`,
+							Vector3.new(16, 0.7, 4),
+							CFrame.new(bx * S, 1.7, bz * S) * rot,
+							C.fascia,
+							Enum.Material.WoodPlanks
+						)
+						part(
+							F.Fixtures,
+							`BenchBack{ai}_{i}_{b}`,
+							Vector3.new(16, 2.6, 0.7),
+							CFrame.new((bx + b * 0.07) * S, 3.2, bz * S) * rot,
+							C.fascia,
+							Enum.Material.WoodPlanks
+						)
 						for e = -1, 1, 2 do
-							part(F.Fixtures, `BenchLeg{ai}_{i}_{b}_{e}`, Vector3.new(0.9, 1.7, 3.4), CFrame.new((bx + e * 0.26) * S, 0.85, bz * S) * rot, C.teal, Enum.Material.Metal)
+							part(
+								F.Fixtures,
+								`BenchLeg{ai}_{i}_{b}_{e}`,
+								Vector3.new(0.9, 1.7, 3.4),
+								CFrame.new((bx + e * 0.26) * S, 0.85, bz * S) * rot,
+								C.teal,
+								Enum.Material.Metal
+							)
 						end
 					end
 				elseif kind == 2 then
-					part(F.Fixtures, `Kiosk{ai}_{i}`, Vector3.new(30, 4, 16), CFrame.new(px * S, 2, pz * S) * rot, C.fascia)
-					part(F.Fixtures, `KioskTop{ai}_{i}`, Vector3.new(32, 0.6, 18), CFrame.new(px * S, 4.3, pz * S) * rot, C.teal, Enum.Material.Metal)
+					part(
+						F.Fixtures,
+						`Kiosk{ai}_{i}`,
+						Vector3.new(30, 4, 16),
+						CFrame.new(px * S, 2, pz * S) * rot,
+						C.fascia
+					)
+					part(
+						F.Fixtures,
+						`KioskTop{ai}_{i}`,
+						Vector3.new(32, 0.6, 18),
+						CFrame.new(px * S, 4.3, pz * S) * rot,
+						C.teal,
+						Enum.Material.Metal
+					)
 					for e = -1, 1, 2 do
-						part(F.Fixtures, `KioskPost{ai}_{i}_{e}`, Vector3.new(0.8, 5, 0.8), CFrame.new((px + e * 0.52) * S, 7, pz * S) * rot, C.teal, Enum.Material.Metal)
+						part(
+							F.Fixtures,
+							`KioskPost{ai}_{i}_{e}`,
+							Vector3.new(0.8, 5, 0.8),
+							CFrame.new((px + e * 0.52) * S, 7, pz * S) * rot,
+							C.teal,
+							Enum.Material.Metal
+						)
 					end
-					part(F.Fixtures, `KioskRoof{ai}_{i}`, Vector3.new(34, 0.8, 20), CFrame.new(px * S, 9.6, pz * S) * rot, C.teal, Enum.Material.Metal)
+					part(
+						F.Fixtures,
+						`KioskRoof{ai}_{i}`,
+						Vector3.new(34, 0.8, 20),
+						CFrame.new(px * S, 9.6, pz * S) * rot,
+						C.teal,
+						Enum.Material.Metal
+					)
 				else
 					for e = -1, 1, 2 do
 						local bx, bz = at(t, e * 0.3)
-						local bin = part(F.Fixtures, `Bin{ai}_{i}_{e}`, Vector3.new(3, 3.4, 3), CFrame.new(bx * S, 1.7, bz * S) * rot, C.shop, Enum.Material.Metal)
+						local bin = part(
+							F.Fixtures,
+							`Bin{ai}_{i}_{e}`,
+							Vector3.new(3, 3.4, 3),
+							CFrame.new(bx * S, 1.7, bz * S) * rot,
+							C.shop,
+							Enum.Material.Metal
+						)
 						bin.Shape = Enum.PartType.Cylinder
-						bin.CFrame = CFrame.new(bx * S, 1.7, bz * S) * rot * CFrame.Angles(0, 0, math.pi / 2)
+						bin.CFrame = CFrame.new(bx * S, 1.7, bz * S)
+							* rot
+							* CFrame.Angles(0, 0, math.pi / 2)
 					end
 					local dx, dz = at(t, 0)
-					part(F.Fixtures, `DirectoryPost{ai}_{i}`, Vector3.new(1, 3, 1), CFrame.new(dx * S, 1.5, dz * S) * rot, C.teal, Enum.Material.Metal)
-					local board = part(F.Fixtures, `Directory{ai}_{i}`, Vector3.new(9, 5, 0.8), CFrame.new(dx * S, 5.2, dz * S) * rot, C.shop)
+					part(
+						F.Fixtures,
+						`DirectoryPost{ai}_{i}`,
+						Vector3.new(1, 3, 1),
+						CFrame.new(dx * S, 1.5, dz * S) * rot,
+						C.teal,
+						Enum.Material.Metal
+					)
+					local board = part(
+						F.Fixtures,
+						`Directory{ai}_{i}`,
+						Vector3.new(9, 5, 0.8),
+						CFrame.new(dx * S, 5.2, dz * S) * rot,
+						C.shop
+					)
 					label(board, "GALLERIA  DIRECTORY", Enum.NormalId.Front)
 					label(board, "GALLERIA  DIRECTORY", Enum.NormalId.Back)
 				end
@@ -649,12 +1199,30 @@ function GalleriaBuilder.Build(): Model
 		-- a flat floor is what makes a greybox read as a car park.
 		for side = -1, 1, 2 do
 			local bx, bz = at(0, (HALL - 0.12) * side)
-			paint(part(F.Floors, `FloorBorder{ai}_{side}`, Vector3.new(len * S, 0.4, 5), CFrame.new(bx * S, -0.18, bz * S) * rot, C.shop, Enum.Material.Pebble))
+			paint(
+				part(
+					F.Floors,
+					`FloorBorder{ai}_{side}`,
+					Vector3.new(len * S, 0.4, 5),
+					CFrame.new(bx * S, -0.18, bz * S) * rot,
+					C.shop,
+					Enum.Material.Pebble
+				)
+			)
 		end
 		local bands = math.floor(len / 2.2)
 		for i = 0, bands - 1 do
 			local bx, bz = at(-len / 2 + len * ((i + 0.5) / bands), 0)
-			paint(part(F.Floors, `FloorBand{ai}_{i}`, Vector3.new(5, 0.4, HALL * 2 * S), CFrame.new(bx * S, -0.18, bz * S) * rot, C.shop, Enum.Material.Pebble))
+			paint(
+				part(
+					F.Floors,
+					`FloorBand{ai}_{i}`,
+					Vector3.new(5, 0.4, HALL * 2 * S),
+					CFrame.new(bx * S, -0.18, bz * S) * rot,
+					C.shop,
+					Enum.Material.Pebble
+				)
+			)
 		end
 
 		-- Banners hung off the trusses. Cheap, and they fill the volume that
@@ -663,7 +1231,14 @@ function GalleriaBuilder.Build(): Model
 		for i = 0, banners - 1 do
 			for side = -1, 1, 2 do
 				local bx, bz = at(-len / 2 + len * ((i + 0.5) / banners), (HALL - 0.45) * side)
-				part(F.Fixtures, `Banner{ai}_{i}_{side}`, Vector3.new(0.6, 16, 11), CFrame.new(bx * S, F2F * 2 - 4, bz * S) * rot, if i % 2 == 0 then C.teal else C.column, Enum.Material.Fabric)
+				part(
+					F.Fixtures,
+					`Banner{ai}_{i}_{side}`,
+					Vector3.new(0.6, 16, 11),
+					CFrame.new(bx * S, F2F * 2 - 4, bz * S) * rot,
+					if i % 2 == 0 then C.teal else C.column,
+					Enum.Material.Fabric
+				)
 			end
 		end
 
@@ -698,14 +1273,49 @@ function GalleriaBuilder.Build(): Model
 					for sideU = -1, 1, 2 do
 						local ux, uz = at(t, (HALL - BAL / 2) * sideU)
 						if k % 2 == 0 then
-							part(F.Fixtures, `UpBench{ai}_{k}_{sideU}`, Vector3.new(15, 0.7, 4), CFrame.new(ux * S, F2F + 1.7, uz * S) * rot, C.fascia, Enum.Material.WoodPlanks)
-							part(F.Fixtures, `UpBenchBack{ai}_{k}_{sideU}`, Vector3.new(15, 2.6, 0.7), CFrame.new((ux + sideU * 0.07) * S, F2F + 3.2, uz * S) * rot, C.fascia, Enum.Material.WoodPlanks)
+							part(
+								F.Fixtures,
+								`UpBench{ai}_{k}_{sideU}`,
+								Vector3.new(15, 0.7, 4),
+								CFrame.new(ux * S, F2F + 1.7, uz * S) * rot,
+								C.fascia,
+								Enum.Material.WoodPlanks
+							)
+							part(
+								F.Fixtures,
+								`UpBenchBack{ai}_{k}_{sideU}`,
+								Vector3.new(15, 2.6, 0.7),
+								CFrame.new((ux + sideU * 0.07) * S, F2F + 3.2, uz * S) * rot,
+								C.fascia,
+								Enum.Material.WoodPlanks
+							)
 							for e = -1, 1, 2 do
-								part(F.Fixtures, `UpBenchLeg{ai}_{k}_{sideU}_{e}`, Vector3.new(0.9, 1.7, 3.4), CFrame.new((ux + e * 0.24) * S, F2F + 0.85, uz * S) * rot, C.teal, Enum.Material.Metal)
+								part(
+									F.Fixtures,
+									`UpBenchLeg{ai}_{k}_{sideU}_{e}`,
+									Vector3.new(0.9, 1.7, 3.4),
+									CFrame.new((ux + e * 0.24) * S, F2F + 0.85, uz * S) * rot,
+									C.teal,
+									Enum.Material.Metal
+								)
 							end
 						else
-							part(F.Fixtures, `UpPlanter{ai}_{k}_{sideU}`, Vector3.new(12, 2.6, 9), CFrame.new(ux * S, F2F + 1.3, uz * S) * rot, C.column, Enum.Material.Concrete)
-							part(F.Fixtures, `UpShrub{ai}_{k}_{sideU}`, Vector3.new(9, 4.2, 7), CFrame.new(ux * S, F2F + 4.6, uz * S) * rot, Color3.fromRGB(74, 112, 72), Enum.Material.Grass)
+							part(
+								F.Fixtures,
+								`UpPlanter{ai}_{k}_{sideU}`,
+								Vector3.new(12, 2.6, 9),
+								CFrame.new(ux * S, F2F + 1.3, uz * S) * rot,
+								C.column,
+								Enum.Material.Concrete
+							)
+							part(
+								F.Fixtures,
+								`UpShrub{ai}_{k}_{sideU}`,
+								Vector3.new(9, 4.2, 7),
+								CFrame.new(ux * S, F2F + 4.6, uz * S) * rot,
+								Color3.fromRGB(74, 112, 72),
+								Enum.Material.Grass
+							)
 						end
 					end
 				end
@@ -715,7 +1325,14 @@ function GalleriaBuilder.Build(): Model
 		local lamps = math.max(2, math.floor(len / 2.8))
 		for i = 0, lamps - 1 do
 			local lx, lz = at(-len / 2 + len * ((i + 0.5) / lamps), 0)
-			local can = part(F.Fixtures, `Downlight{ai}_{i}`, Vector3.new(7, 1.2, 7), CFrame.new(lx * S, F2F + 14, lz * S) * rot, C.shop, Enum.Material.Metal)
+			local can = part(
+				F.Fixtures,
+				`Downlight{ai}_{i}`,
+				Vector3.new(7, 1.2, 7),
+				CFrame.new(lx * S, F2F + 14, lz * S) * rot,
+				C.shop,
+				Enum.Material.Metal
+			)
 			-- A plain dark fitting with a light in it: no glowing lens, no
 			-- emissive panel. Chris: "no fucking glowing shit, basic ass
 			-- lighting". The fixture is scenery, the PointLight does the work.
@@ -726,7 +1343,14 @@ function GalleriaBuilder.Build(): Model
 			light.Parent = can
 		end
 
-		part(F.Roof, `Ridge{ai}`, Vector3.new(len * S, 2.6, 2.6), CFrame.new(midX * S, F2F * 2 + 24, midZ * S) * rot, C.teal, Enum.Material.Metal)
+		part(
+			F.Roof,
+			`Ridge{ai}`,
+			Vector3.new(len * S, 2.6, 2.6),
+			CFrame.new(midX * S, F2F * 2 + 24, midZ * S) * rot,
+			C.teal,
+			Enum.Material.Metal
+		)
 	end
 
 	-- The court.
@@ -763,20 +1387,47 @@ function GalleriaBuilder.Build(): Model
 			-- invisible underfoot, and enough that nothing fights.
 			local jitter = (i % 2) * 0.05
 			local yaw = CFrame.Angles(0, -(th + math.pi / 2), 0)
-			part(F.Court, `CourtBalcony_{i}`, Vector3.new(w * S, 2, (COURT_OUT - COURT_WELL) * S), CFrame.new(p.X * S, F2F - 1 + LIFT + jitter, p.Y * S) * yaw, C.tile, Enum.Material.Pebble)
+			part(
+				F.Court,
+				`CourtBalcony_{i}`,
+				Vector3.new(w * S, 2, (COURT_OUT - COURT_WELL) * S),
+				CFrame.new(p.X * S, F2F - 1 + LIFT + jitter, p.Y * S) * yaw,
+				C.tile,
+				Enum.Material.Pebble
+			)
 			-- The court is wider than the concourse, so the arms' outer walls do
 			-- not reach round it. Without this the court is open to the sky on
 			-- both flanks and you can see straight out of the building.
 			local wp = Vector2.new(math.cos(th), math.sin(th)) * (COURT_OUT + 0.1)
-			part(F.Court, `CourtWall_{i}`, Vector3.new(w * S, F2F * 2, 2), CFrame.new(wp.X * S, F2F, wp.Y * S) * yaw, C.shell, Enum.Material.Concrete)
+			part(
+				F.Court,
+				`CourtWall_{i}`,
+				Vector3.new(w * S, F2F * 2, 2),
+				CFrame.new(wp.X * S, F2F, wp.Y * S) * yaw,
+				C.shell,
+				Enum.Material.Concrete
+			)
 			-- No rail where the lift lands, or it arrives at level two and lets
 			-- you off against a fence.
 			local toLift = math.abs(((math.deg(th) - 225 + 180) % 360) - 180)
 			if toLift >= 14 then
 				local r = Vector2.new(math.cos(th), math.sin(th)) * COURT_WELL
 				local railW = 2 * math.pi * COURT_WELL / RING * S * 1.25
-				part(F.Court, `CourtRailPanel_{i}`, Vector3.new(railW, 3.4, 0.9), CFrame.new(r.X * S, F2F + 1.7 + LIFT + jitter, r.Y * S) * yaw, C.fascia)
-				part(F.Court, `CourtRailCap_{i}`, Vector3.new(railW, 1.2, 1.8), CFrame.new(r.X * S, F2F + 4 + LIFT + jitter, r.Y * S) * yaw, C.teal, Enum.Material.Metal)
+				part(
+					F.Court,
+					`CourtRailPanel_{i}`,
+					Vector3.new(railW, 3.4, 0.9),
+					CFrame.new(r.X * S, F2F + 1.7 + LIFT + jitter, r.Y * S) * yaw,
+					C.fascia
+				)
+				part(
+					F.Court,
+					`CourtRailCap_{i}`,
+					Vector3.new(railW, 1.2, 1.8),
+					CFrame.new(r.X * S, F2F + 4 + LIFT + jitter, r.Y * S) * yaw,
+					C.teal,
+					Enum.Material.Metal
+				)
 			end
 		end
 	end
@@ -794,18 +1445,45 @@ function GalleriaBuilder.Build(): Model
 		local rot = CFrame.Angles(0, -ang, 0)
 		local r = (COURT_WELL + COURT_R) / 2
 		local c = dir * r
-		part(F.Court, `CourtBridge_{ai}`, Vector3.new(1.0 * S, 2, 2.0 * S), CFrame.new(c.X * S, F2F - 1 + LIFT, c.Y * S) * rot, C.tile, Enum.Material.Pebble)
+		part(
+			F.Court,
+			`CourtBridge_{ai}`,
+			Vector3.new(1.0 * S, 2, 2.0 * S),
+			CFrame.new(c.X * S, F2F - 1 + LIFT, c.Y * S) * rot,
+			C.tile,
+			Enum.Material.Pebble
+		)
 		-- Both long edges look down into the void.
 		for e = -1, 1, 2 do
 			local edge = dir * (r + e * 0.5)
-			part(F.Court, `CourtBridgePanel_{ai}_{e}`, Vector3.new(1, 3.4, 2.0 * S), CFrame.new(edge.X * S, F2F + 1.7 + LIFT, edge.Y * S) * rot, C.fascia)
-			part(F.Court, `CourtBridgeCap_{ai}_{e}`, Vector3.new(1.8, 1.2, 2.0 * S), CFrame.new(edge.X * S, F2F + 4 + LIFT, edge.Y * S) * rot, C.teal, Enum.Material.Metal)
+			part(
+				F.Court,
+				`CourtBridgePanel_{ai}_{e}`,
+				Vector3.new(1, 3.4, 2.0 * S),
+				CFrame.new(edge.X * S, F2F + 1.7 + LIFT, edge.Y * S) * rot,
+				C.fascia
+			)
+			part(
+				F.Court,
+				`CourtBridgeCap_{ai}_{e}`,
+				Vector3.new(1.8, 1.2, 2.0 * S),
+				CFrame.new(edge.X * S, F2F + 4 + LIFT, edge.Y * S) * rot,
+				C.teal,
+				Enum.Material.Metal
+			)
 		end
 	end
 
 	disc(F.Court, "FountainBasin", 0.5, 3, 8, C.teal, Enum.Material.Marble)
 	disc(F.Court, "FountainWater", 0.44, 6.9, 0.8, C.glass, Enum.Material.Glass, 0.35)
-	part(F.Court, "FountainStem", Vector3.new(6, 15, 6), CFrame.new(0, 10, 0), C.column, Enum.Material.Concrete)
+	part(
+		F.Court,
+		"FountainStem",
+		Vector3.new(6, 15, 6),
+		CFrame.new(0, 10, 0),
+		C.column,
+		Enum.Material.Concrete
+	)
 
 	-- The court is the middle of the mall and held a fountain, a lift and
 	-- nothing else - Chris: "it's empty everywhere", and this is the room
@@ -819,21 +1497,70 @@ function GalleriaBuilder.Build(): Model
 			local bx, bz = math.cos(a) * RING * S, math.sin(a) * RING * S
 			local face = CFrame.new(bx, 0, bz) * CFrame.Angles(0, -a + math.pi / 2, 0)
 			if k % 2 == 0 then
-				part(F.Fixtures, `CourtBench_{k}`, Vector3.new(16, 0.7, 4), face * CFrame.new(0, 1.7, 0), C.fascia, Enum.Material.WoodPlanks)
-				part(F.Fixtures, `CourtBenchBack_{k}`, Vector3.new(16, 2.6, 0.7), face * CFrame.new(0, 3.2, 1.6), C.fascia, Enum.Material.WoodPlanks)
+				part(
+					F.Fixtures,
+					`CourtBench_{k}`,
+					Vector3.new(16, 0.7, 4),
+					face * CFrame.new(0, 1.7, 0),
+					C.fascia,
+					Enum.Material.WoodPlanks
+				)
+				part(
+					F.Fixtures,
+					`CourtBenchBack_{k}`,
+					Vector3.new(16, 2.6, 0.7),
+					face * CFrame.new(0, 3.2, 1.6),
+					C.fascia,
+					Enum.Material.WoodPlanks
+				)
 				for e = -1, 1, 2 do
-					part(F.Fixtures, `CourtBenchLeg_{k}_{e}`, Vector3.new(0.9, 1.7, 3.4), face * CFrame.new(e * 6.5, 0.85, 0), C.teal, Enum.Material.Metal)
+					part(
+						F.Fixtures,
+						`CourtBenchLeg_{k}_{e}`,
+						Vector3.new(0.9, 1.7, 3.4),
+						face * CFrame.new(e * 6.5, 0.85, 0),
+						C.teal,
+						Enum.Material.Metal
+					)
 				end
 			else
-				part(F.Fixtures, `CourtPlanter_{k}`, Vector3.new(13, 2.6, 13), face * CFrame.new(0, 1.3, 0), C.column, Enum.Material.Concrete)
-				part(F.Fixtures, `CourtPlanterRim_{k}`, Vector3.new(14, 0.7, 14), face * CFrame.new(0, 2.9, 0), C.fascia, Enum.Material.Concrete)
-				part(F.Fixtures, `CourtShrub_{k}`, Vector3.new(10, 5, 10), face * CFrame.new(0, 5.2, 0), Color3.fromRGB(74, 112, 72), Enum.Material.Grass)
+				part(
+					F.Fixtures,
+					`CourtPlanter_{k}`,
+					Vector3.new(13, 2.6, 13),
+					face * CFrame.new(0, 1.3, 0),
+					C.column,
+					Enum.Material.Concrete
+				)
+				part(
+					F.Fixtures,
+					`CourtPlanterRim_{k}`,
+					Vector3.new(14, 0.7, 14),
+					face * CFrame.new(0, 2.9, 0),
+					C.fascia,
+					Enum.Material.Concrete
+				)
+				part(
+					F.Fixtures,
+					`CourtShrub_{k}`,
+					Vector3.new(10, 5, 10),
+					face * CFrame.new(0, 5.2, 0),
+					Color3.fromRGB(74, 112, 72),
+					Enum.Material.Grass
+				)
 			end
 		end
 		for k = 0, 3 do
 			local a = (k / 4) * math.pi * 2 + math.pi / 8
 			local bx, bz = math.cos(a) * 2.5 * S, math.sin(a) * 2.5 * S
-			local bin = part(F.Fixtures, `CourtBin_{k}`, Vector3.new(3, 3.4, 3), CFrame.new(bx, 1.7, bz), C.shop, Enum.Material.Metal)
+			local bin = part(
+				F.Fixtures,
+				`CourtBin_{k}`,
+				Vector3.new(3, 3.4, 3),
+				CFrame.new(bx, 1.7, bz),
+				C.shop,
+				Enum.Material.Metal
+			)
 			bin.Shape = Enum.PartType.Cylinder
 			bin.CFrame = CFrame.new(bx, 1.7, bz) * CFrame.Angles(0, 0, math.pi / 2)
 		end
@@ -848,7 +1575,15 @@ function GalleriaBuilder.Build(): Model
 		local rr = (COURT_WELL + 0.1 + COURT_OUT + 0.2) / 2
 		local p = Vector2.new(math.cos(th), math.sin(th)) * rr
 		local w = 2 * math.pi * rr / 20 * 1.4
-		part(F.Roof, `CourtDeck_{i}`, Vector3.new(w * S, 2, (COURT_OUT + 0.2 - COURT_WELL - 0.1) * S), CFrame.new(p.X * S, F2F * 2 + 1 + (i % 2) * 0.05, p.Y * S) * CFrame.Angles(0, -(th + math.pi / 2), 0), C.shell, Enum.Material.Concrete)
+		part(
+			F.Roof,
+			`CourtDeck_{i}`,
+			Vector3.new(w * S, 2, (COURT_OUT + 0.2 - COURT_WELL - 0.1) * S),
+			CFrame.new(p.X * S, F2F * 2 + 1 + (i % 2) * 0.05, p.Y * S)
+				* CFrame.Angles(0, -(th + math.pi / 2), 0),
+			C.shell,
+			Enum.Material.Concrete
+		)
 	end
 
 	-- The clock. It is in half the photographs of this place, standing at the
@@ -857,21 +1592,59 @@ function GalleriaBuilder.Build(): Model
 		local a = math.pi * 0.78
 		local kx, kz = math.cos(a) * (COURT_WELL + 0.5) * S, math.sin(a) * (COURT_WELL + 0.5) * S
 		pillar(F.Court, "ClockPost", kx, kz, F2F * 0.95, F2F * 1.9, 11, C.column)
-		local face = part(F.Court, "ClockFace", Vector3.new(6, 26, 26), CFrame.new(kx, F2F * 1.85, kz) * CFrame.Angles(0, 0, math.pi / 2), C.fascia)
+		local face = part(
+			F.Court,
+			"ClockFace",
+			Vector3.new(6, 26, 26),
+			CFrame.new(kx, F2F * 1.85, kz) * CFrame.Angles(0, 0, math.pi / 2),
+			C.fascia
+		)
 		face.Shape = Enum.PartType.Cylinder
-		part(F.Court, "ClockRim", Vector3.new(4, 30, 30), CFrame.new(kx, F2F * 1.85, kz) * CFrame.Angles(0, 0, math.pi / 2), C.teal, Enum.Material.Metal).Shape = Enum.PartType.Cylinder
+		part(
+			F.Court,
+			"ClockRim",
+			Vector3.new(4, 30, 30),
+			CFrame.new(kx, F2F * 1.85, kz) * CFrame.Angles(0, 0, math.pi / 2),
+			C.teal,
+			Enum.Material.Metal
+		).Shape =
+			Enum.PartType.Cylinder
 	end
 
 	-- A dark band of tile round the fountain, the way the floor pattern rings
 	-- it in the photographs.
-	disc(F.Court, "FountainBand", 0.95, -1 + LIFT + 0.05, 2, Color3.fromRGB(58, 60, 64), Enum.Material.Pebble)
+	disc(
+		F.Court,
+		"FountainBand",
+		0.95,
+		-1 + LIFT + 0.05,
+		2,
+		Color3.fromRGB(58, 60, 64),
+		Enum.Material.Pebble
+	)
 
-	disc(F.Roof, "CourtSkylight", COURT_OUT - 0.15, F2F * 2 + 20, 1.2, C.glass, Enum.Material.Glass, 0.55)
+	disc(
+		F.Roof,
+		"CourtSkylight",
+		COURT_OUT - 0.15,
+		F2F * 2 + 20,
+		1.2,
+		C.glass,
+		Enum.Material.Glass,
+		0.55
+	)
 	-- Stepped, not stacked: eight full-diameter bars at one height all
 	-- cross at the hub and fight there. A couple of studs of rise each turns
 	-- the crossing into a lattice instead.
 	for i = 0, 7 do
-		part(F.Roof, `CourtTruss_{i}`, Vector3.new(COURT_OUT * 2 * S, 2.2, 2.2), CFrame.new(0, F2F * 2 + 17 + i * 0.25, 0) * CFrame.Angles(0, -math.pi * i / 8, 0), C.teal, Enum.Material.Metal)
+		part(
+			F.Roof,
+			`CourtTruss_{i}`,
+			Vector3.new(COURT_OUT * 2 * S, 2.2, 2.2),
+			CFrame.new(0, F2F * 2 + 17 + i * 0.25, 0) * CFrame.Angles(0, -math.pi * i / 8, 0),
+			C.teal,
+			Enum.Material.Metal
+		)
 	end
 
 	-- A glass lift in the court. Chris asked for one by the fountain; it is
@@ -889,11 +1662,31 @@ function GalleriaBuilder.Build(): Model
 		-- wrong side, so the car arrived upstairs behind glass.
 		for k, a in ipairs({ math.rad(135), math.rad(315) }) do
 			local ox, oz = math.cos(a) * shaft / 2, math.sin(a) * shaft / 2
-			part(F.Court, `LiftGlass_{k}`, Vector3.new(shaft * S, F2F + 14, 2), CFrame.new((lx + ox) * S, (F2F + 14) / 2, (lz + oz) * S) * CFrame.Angles(0, -(a + math.pi / 2), 0), C.glass, Enum.Material.Glass, 0.6)
+			part(
+				F.Court,
+				`LiftGlass_{k}`,
+				Vector3.new(shaft * S, F2F + 14, 2),
+				CFrame.new((lx + ox) * S, (F2F + 14) / 2, (lz + oz) * S)
+					* CFrame.Angles(0, -(a + math.pi / 2), 0),
+				C.glass,
+				Enum.Material.Glass,
+				0.6
+			)
 		end
 		for i = 0, 3 do
 			local a = math.pi / 2 * i
-			part(F.Court, `LiftPost_{i}`, Vector3.new(3, F2F + 16, 3), CFrame.new((lx + math.cos(a) * shaft * 0.72) * S, (F2F + 16) / 2, (lz + math.sin(a) * shaft * 0.72) * S), C.teal, Enum.Material.Metal)
+			part(
+				F.Court,
+				`LiftPost_{i}`,
+				Vector3.new(3, F2F + 16, 3),
+				CFrame.new(
+					(lx + math.cos(a) * shaft * 0.72) * S,
+					(F2F + 16) / 2,
+					(lz + math.sin(a) * shaft * 0.72) * S
+				),
+				C.teal,
+				Enum.Material.Metal
+			)
 		end
 		-- The car. LiftService drives it between these two heights; the map
 		-- states where they are rather than the service guessing.
@@ -901,11 +1694,25 @@ function GalleriaBuilder.Build(): Model
 		-- the ring at the top. Parked two studs proud of the tile it looked
 		-- fine and could not be walked onto at all: the navmesh will not climb
 		-- a step that size, so the lift was unreachable before it was unwired.
-		local car = part(F.Court, "LiftCar", Vector3.new(shaft * S - 5, 2, shaft * S - 5), CFrame.new(lx * S, -1 + LIFT, lz * S), C.shell, Enum.Material.Metal)
+		local car = part(
+			F.Court,
+			"LiftCar",
+			Vector3.new(shaft * S - 5, 2, shaft * S - 5),
+			CFrame.new(lx * S, -1 + LIFT, lz * S),
+			C.shell,
+			Enum.Material.Metal
+		)
 		car:SetAttribute("LowY", -1 + LIFT)
 		car:SetAttribute("HighY", F2F - 1 + LIFT)
 		CollectionService:AddTag(car, "Lift")
-		part(F.Court, "LiftHead", Vector3.new(shaft * S + 5, 4, shaft * S + 5), CFrame.new(lx * S, F2F + 16, lz * S), C.teal, Enum.Material.Metal)
+		part(
+			F.Court,
+			"LiftHead",
+			Vector3.new(shaft * S + 5, 4, shaft * S + 5),
+			CFrame.new(lx * S, F2F + 16, lz * S),
+			C.teal,
+			Enum.Material.Metal
+		)
 	end
 
 	-- Department stores. They were solid brick blocks, which is what Chris hit:
@@ -921,7 +1728,17 @@ function GalleriaBuilder.Build(): Model
 	local DOORW = 2.2 -- mall entrance width, in model units
 	local DOOR_H = 26
 
-	local function department(name: string, cx: number, cz: number, w: number, d: number, yaw: number, front: string, doors: { number }, doorsUp: { number })
+	local function department(
+		name: string,
+		cx: number,
+		cz: number,
+		w: number,
+		d: number,
+		yaw: number,
+		front: string,
+		doors: { number },
+		doorsUp: { number }
+	)
 		local H = F2F * 2
 		local rot = CFrame.Angles(0, -yaw, 0)
 		local cos, sin = math.cos(yaw), math.sin(yaw)
@@ -930,9 +1747,29 @@ function GalleriaBuilder.Build(): Model
 		local function at(lx: number, lz: number): (number, number)
 			return cx + lx * cos - lz * sin, cz + lx * sin + lz * cos
 		end
-		local function box(folder: Instance, nm: string, lx: number, lz: number, sx: number, sz: number, y: number, h: number, colour: Color3, mat: Enum.Material?, trans: number?): Part
+		local function box(
+			folder: Instance,
+			nm: string,
+			lx: number,
+			lz: number,
+			sx: number,
+			sz: number,
+			y: number,
+			h: number,
+			colour: Color3,
+			mat: Enum.Material?,
+			trans: number?
+		): Part
 			local wx, wz = at(lx, lz)
-			return part(folder, nm, Vector3.new(sx * S, h, sz * S), CFrame.new(wx * S, y, wz * S) * rot, colour, mat, trans)
+			return part(
+				folder,
+				nm,
+				Vector3.new(sx * S, h, sz * S),
+				CFrame.new(wx * S, y, wz * S) * rot,
+				colour,
+				mat,
+				trans
+			)
 		end
 
 		-- The void in the upper slab that the escalators rise through.
@@ -962,10 +1799,54 @@ function GalleriaBuilder.Build(): Model
 		box(F.Anchors, `Floor1_{name}`, 0, 0, w, d, -1, 2, C.tile, Enum.Material.Pebble)
 		-- Level two is four slabs around the void rather than one slab, because
 		-- an escalator needs somewhere to come up.
-		box(F.Anchors, `Floor2_{name}_W`, -(w + vw) / 4, 0, (w - vw) / 2, d, F2F - 1, 2, C.tile, Enum.Material.Pebble)
-		box(F.Anchors, `Floor2_{name}_E`, (w + vw) / 4, 0, (w - vw) / 2, d, F2F - 1, 2, C.tile, Enum.Material.Pebble)
-		box(F.Anchors, `Floor2_{name}_N`, 0, -(d + vd) / 4, vw, (d - vd) / 2, F2F - 1, 2, C.tile, Enum.Material.Pebble)
-		box(F.Anchors, `Floor2_{name}_S`, 0, (d + vd) / 4, vw, (d - vd) / 2, F2F - 1, 2, C.tile, Enum.Material.Pebble)
+		box(
+			F.Anchors,
+			`Floor2_{name}_W`,
+			-(w + vw) / 4,
+			0,
+			(w - vw) / 2,
+			d,
+			F2F - 1,
+			2,
+			C.tile,
+			Enum.Material.Pebble
+		)
+		box(
+			F.Anchors,
+			`Floor2_{name}_E`,
+			(w + vw) / 4,
+			0,
+			(w - vw) / 2,
+			d,
+			F2F - 1,
+			2,
+			C.tile,
+			Enum.Material.Pebble
+		)
+		box(
+			F.Anchors,
+			`Floor2_{name}_N`,
+			0,
+			-(d + vd) / 4,
+			vw,
+			(d - vd) / 2,
+			F2F - 1,
+			2,
+			C.tile,
+			Enum.Material.Pebble
+		)
+		box(
+			F.Anchors,
+			`Floor2_{name}_S`,
+			0,
+			(d + vd) / 4,
+			vw,
+			(d - vd) / 2,
+			F2F - 1,
+			2,
+			C.tile,
+			Enum.Material.Pebble
+		)
 		box(F.Anchors, `Roof_{name}`, 0, 0, w, d, H + 1, 2, C.shell, Enum.Material.Concrete)
 
 		-- Rails round the void, so the drop is guarded but visible.
@@ -979,10 +1860,32 @@ function GalleriaBuilder.Build(): Model
 			for _, seg in ipairs({ { -vd / 2, land - ESC_GAP }, { land + ESC_GAP, vd / 2 } }) do
 				local lo, hi = seg[1], seg[2]
 				if hi - lo > 0.05 then
-					box(F.Anchors, `VoidRail_{name}_X{sgn}_{math.floor(lo * 100)}`, sgn * vw / 2, (lo + hi) / 2, 0.06, hi - lo, F2F + 1.75, 3.5, C.teal, Enum.Material.Metal)
+					box(
+						F.Anchors,
+						`VoidRail_{name}_X{sgn}_{math.floor(lo * 100)}`,
+						sgn * vw / 2,
+						(lo + hi) / 2,
+						0.06,
+						hi - lo,
+						F2F + 1.75,
+						3.5,
+						C.teal,
+						Enum.Material.Metal
+					)
 				end
 			end
-			box(F.Anchors, `VoidRail_{name}_Z{sgn}`, 0, sgn * vd / 2, vw, 0.06, F2F + 1.75, 3.5, C.teal, Enum.Material.Metal)
+			box(
+				F.Anchors,
+				`VoidRail_{name}_Z{sgn}`,
+				0,
+				sgn * vd / 2,
+				vw,
+				0.06,
+				F2F + 1.75,
+				3.5,
+				C.teal,
+				Enum.Material.Metal
+			)
 		end
 
 		-- Perimeter. Only the face that meets the mall is cut for doors.
@@ -1014,7 +1917,10 @@ function GalleriaBuilder.Build(): Model
 			local isBack = backFace == here
 			for bi, band in ipairs(bands) do
 				local y0, y1 = band[1] :: number, band[2] :: number
-				local gaps = if isFront then band[3] :: { number } elseif isBack and bi == 1 then { 0 } else {}
+				local gaps = if isFront
+					then band[3] :: { number }
+					elseif isBack and bi == 1 then { 0 }
+					else {}
 				local cuts = table.clone(gaps)
 				table.sort(cuts)
 				local runs = {}
@@ -1034,9 +1940,31 @@ function GalleriaBuilder.Build(): Model
 						continue
 					end
 					if axis == "X" then
-						box(F.Anchors, `Wall_{name}_{axis}{sgn}_{bi}_{i}`, sgn * w / 2, mid, WALL_T, rlen, (y0 + y1) / 2, y1 - y0, C.brick, Enum.Material.Brick)
+						box(
+							F.Anchors,
+							`Wall_{name}_{axis}{sgn}_{bi}_{i}`,
+							sgn * w / 2,
+							mid,
+							WALL_T,
+							rlen,
+							(y0 + y1) / 2,
+							y1 - y0,
+							C.brick,
+							Enum.Material.Brick
+						)
 					else
-						box(F.Anchors, `Wall_{name}_{axis}{sgn}_{bi}_{i}`, mid, sgn * d / 2, rlen, WALL_T, (y0 + y1) / 2, y1 - y0, C.brick, Enum.Material.Brick)
+						box(
+							F.Anchors,
+							`Wall_{name}_{axis}{sgn}_{bi}_{i}`,
+							mid,
+							sgn * d / 2,
+							rlen,
+							WALL_T,
+							(y0 + y1) / 2,
+							y1 - y0,
+							C.brick,
+							Enum.Material.Brick
+						)
 					end
 				end
 			end
@@ -1049,18 +1977,51 @@ function GalleriaBuilder.Build(): Model
 			local sgn = if backFace:sub(1, 1) == "+" then 1 else -1
 			local ox = if isX then sgn * (w / 2 + 1.1) else 0
 			local oz = if isX then 0 else sgn * (d / 2 + 1.1)
-			box(F.Anchors, `ExitApron_{name}`, ox, oz, if isX then 2.4 else 3.0, if isX then 3.0 else 2.4, -1, 2, C.shell, Enum.Material.Concrete)
+			box(
+				F.Anchors,
+				`ExitApron_{name}`,
+				ox,
+				oz,
+				if isX then 2.4 else 3.0,
+				if isX then 3.0 else 2.4,
+				-1,
+				2,
+				C.shell,
+				Enum.Material.Concrete
+			)
 			-- The marker does not carry anyone: a raised slab this thin is not
 			-- picked up as ground, and every route that ended standing on it
 			-- came back NoPath while the apron an inch away was reachable. It
 			-- is paint on the floor, and the apron underneath is the floor.
-			local pad = box(F.Anchors, `Exit_{name}`, ox, oz, 1.5, 1.5, 0.3, 0.6, C.teal, Enum.Material.Metal)
+			local pad = box(
+				F.Anchors,
+				`Exit_{name}`,
+				ox,
+				oz,
+				1.5,
+				1.5,
+				0.3,
+				0.6,
+				C.teal,
+				Enum.Material.Metal
+			)
 			pad.CanCollide = false
 			pad:SetAttribute("Store", name)
 			CollectionService:AddTag(pad, "ExtractCandidate")
 		end
 
-		box(F.Anchors, `Parapet_{name}`, 0, 0, w + 0.12, d + 0.12, H + 5, 6, C.shell, Enum.Material.Concrete)
+		box(
+			F.Anchors,
+			`Parapet_{name}`,
+			0,
+			0,
+			w + 0.12,
+			d + 0.12,
+			H + 5,
+			6,
+			C.shell,
+			Enum.Material.Concrete
+		)
 
 		-- Sign band, mounted on the parapet above the roofline rather than on
 		-- the face. It used to sit at 35 to 57 studs, which is exactly where
@@ -1073,11 +2034,36 @@ function GalleriaBuilder.Build(): Model
 			local bandLen = (if isX then d else w) * 0.5
 			local band
 			if isX then
-				band = box(F.Anchors, `Sign_{name}`, sgn * (w / 2 + 0.06), 0, 0.08, bandLen, H + 11, 20, C.teal)
+				band = box(
+					F.Anchors,
+					`Sign_{name}`,
+					sgn * (w / 2 + 0.06),
+					0,
+					0.08,
+					bandLen,
+					H + 11,
+					20,
+					C.teal
+				)
 			else
-				band = box(F.Anchors, `Sign_{name}`, 0, sgn * (d / 2 + 0.06), bandLen, 0.08, H + 11, 20, C.teal)
+				band = box(
+					F.Anchors,
+					`Sign_{name}`,
+					0,
+					sgn * (d / 2 + 0.06),
+					bandLen,
+					0.08,
+					H + 11,
+					20,
+					C.teal
+				)
 			end
-			for _, f in ipairs({ Enum.NormalId.Front, Enum.NormalId.Back, Enum.NormalId.Left, Enum.NormalId.Right }) do
+			for _, f in ipairs({
+				Enum.NormalId.Front,
+				Enum.NormalId.Back,
+				Enum.NormalId.Left,
+				Enum.NormalId.Right,
+			}) do
 				label(band, name, f)
 			end
 		end
@@ -1109,7 +2095,16 @@ function GalleriaBuilder.Build(): Model
 					or onAisle(lx, lz)
 				if not inWay then
 					local px, pz = at(lx, lz)
-					pillar(F.Structure, `DeptColumn_{name}_{i}_{j}`, px * S, pz * S, H / 2, H, 10, C.column)
+					pillar(
+						F.Structure,
+						`DeptColumn_{name}_{i}_{j}`,
+						px * S,
+						pz * S,
+						H / 2,
+						H,
+						10,
+						C.column
+					)
 				end
 			end
 		end
@@ -1129,7 +2124,18 @@ function GalleriaBuilder.Build(): Model
 							or onAisle(lx, lz)
 						if not inWay then
 							local tall = (r + c) % 3 == 0
-							box(F.Fixtures, `Rack_{name}_{lvl}_{r}_{c}`, lx, lz, w / 5.4, 0.28, y + (if tall then 7 else 3.5), if tall then 14 else 7, if tall then C.shop else C.fascia, Enum.Material.Metal)
+							box(
+								F.Fixtures,
+								`Rack_{name}_{lvl}_{r}_{c}`,
+								lx,
+								lz,
+								w / 5.4,
+								0.28,
+								y + (if tall then 7 else 3.5),
+								if tall then 14 else 7,
+								if tall then C.shop else C.fascia,
+								Enum.Material.Metal
+							)
 						end
 					end
 				end
@@ -1149,7 +2155,14 @@ function GalleriaBuilder.Build(): Model
 				local lx, lz = w * q[1], d * q[2]
 				if not onAisle(lx, lz) then
 					local wx, wz = at(lx, lz)
-					local cache = part(F.Gameplay, `Cache_{name}_{lvl}_{i}`, Vector3.new(2.6, 1.25, 2.1), CFrame.new(wx * S, y + 3, wz * S) * rot, C.teal, Enum.Material.Metal)
+					local cache = part(
+						F.Gameplay,
+						`Cache_{name}_{lvl}_{i}`,
+						Vector3.new(2.6, 1.25, 2.1),
+						CFrame.new(wx * S, y + 3, wz * S) * rot,
+						C.teal,
+						Enum.Material.Metal
+					)
 					cache.CanCollide = false
 					cache:SetAttribute("Tier", "Relics")
 					cache:SetAttribute("PlacementTier", "Relics")
@@ -1161,7 +2174,14 @@ function GalleriaBuilder.Build(): Model
 			-- aisle: that door is the one the extraction picker may choose, and
 			-- a robot standing in it is a wall.
 			local px, pz = at(w / 4, d / 2 - 2.2)
-			local post = part(F.Gameplay, `SweeperSpawn_{name}_{lvl}`, Vector3.new(4, 4, 4), CFrame.new(px * S, y + 3, pz * S), C.teal, Enum.Material.Metal)
+			local post = part(
+				F.Gameplay,
+				`SweeperSpawn_{name}_{lvl}`,
+				Vector3.new(4, 4, 4),
+				CFrame.new(px * S, y + 3, pz * S),
+				C.teal,
+				Enum.Material.Metal
+			)
 			post.CanCollide, post.Transparency = false, 1
 			CollectionService:AddTag(post, "SweeperSpawn")
 		end
@@ -1172,7 +2192,10 @@ function GalleriaBuilder.Build(): Model
 		for i = 0, 5 do
 			local lx = -w / 2 + w * ((i % 3 + 0.5) / 3)
 			local lz = -d / 2 + d * ((math.floor(i / 3) + 0.35) / 2)
-			if not onAisle(lx, lz) and not (math.abs(lx) < vw / 2 + 1 and math.abs(lz) < vd / 2 + 1) then
+			if
+				not onAisle(lx, lz)
+				and not (math.abs(lx) < vw / 2 + 1 and math.abs(lz) < vd / 2 + 1)
+			then
 				local wx, wz = at(lx, lz)
 				mannequin(F.Fixtures, `Dummy_{name}_{i}`, wx * S, wz * S, yaw + i, 0)
 			end
@@ -1194,11 +2217,31 @@ function GalleriaBuilder.Build(): Model
 	local EDGE = HALL + DEPTH
 
 	-- Boscov's closes the west arm, so its east face is the arm's end.
-	department("BOSWELL'S", ARMS[1].b.X - 14 / 2, 0, 14, 15, 0, "+X", { 0 }, { -(HALL + WELL) / 2, (HALL + WELL) / 2 })
+	department(
+		"BOSWELL'S",
+		ARMS[1].b.X - 14 / 2,
+		0,
+		14,
+		15,
+		0,
+		"+X",
+		{ 0 },
+		{ -(HALL + WELL) / 2, (HALL + WELL) / 2 }
+	)
 
 	-- Sears closes the south-east arm the same way, squared to it.
 	local sears = ARMS[2].b + se * (15 / 2)
-	department("SAYERS", sears.X, sears.Y, 15, 14, seAng, "-X", { 0 }, { -(HALL + WELL) / 2, (HALL + WELL) / 2 })
+	department(
+		"SAYERS",
+		sears.X,
+		sears.Y,
+		15,
+		14,
+		seAng,
+		"-X",
+		{ 0 },
+		{ -(HALL + WELL) / 2, (HALL + WELL) / 2 }
+	)
 
 	-- JCPenney and Bon-Ton both sit on the NORTH side, on opposite arms, with
 	-- the bend between them. Three earlier versions had one or both on the
@@ -1222,7 +2265,14 @@ function GalleriaBuilder.Build(): Model
 		local G = F.Gameplay
 
 		local function marker(name: string, mx: number, mz: number, y: number): Part
-			local p = part(G, name, Vector3.new(4, 4, 4), CFrame.new(mx * S, y, mz * S), C.teal, Enum.Material.Metal)
+			local p = part(
+				G,
+				name,
+				Vector3.new(4, 4, 4),
+				CFrame.new(mx * S, y, mz * S),
+				C.teal,
+				Enum.Material.Metal
+			)
 			p.CanCollide, p.Transparency = false, 0.55
 			return p
 		end
@@ -1240,7 +2290,14 @@ function GalleriaBuilder.Build(): Model
 		spawn.Enabled = false
 		spawn.Parent = G
 
-		local relay = part(G, "RelayBank_Court", Vector3.new(5, 4, 5), CFrame.new(2 * S, 2, -2 * S), C.teal, Enum.Material.Metal)
+		local relay = part(
+			G,
+			"RelayBank_Court",
+			Vector3.new(5, 4, 5),
+			CFrame.new(2 * S, 2, -2 * S),
+			C.teal,
+			Enum.Material.Metal
+		)
 		relay:SetAttribute("InteractionLabel", "Bank Haul")
 		CollectionService:AddTag(relay, "RelayBank")
 
@@ -1279,7 +2336,10 @@ function GalleriaBuilder.Build(): Model
 				table.insert(placements, { `Cache_A{ai}_{k}`, gp.X, gp.Y, 3, "Components" })
 				if k % 2 == 0 then
 					local up = arm.a + dir * t + nrm * (1.15 * -side)
-					table.insert(placements, { `Cache_A{ai}_{k}_Up`, up.X, up.Y, F2F + 3, "Supplies" })
+					table.insert(
+						placements,
+						{ `Cache_A{ai}_{k}_Up`, up.X, up.Y, F2F + 3, "Supplies" }
+					)
 				end
 				t += 2.6
 				k += 1
@@ -1364,13 +2424,22 @@ function GalleriaBuilder.Build(): Model
 		params.FilterDescendantsInstances = { F.Gameplay }
 		local dropped, kept = 0, 0
 		for _, marker in ipairs(F.Gameplay:GetChildren()) do
-			local tagged = CollectionService:HasTag(marker, "Loot") or CollectionService:HasTag(marker, "SweeperSpawn")
+			local tagged = CollectionService:HasTag(marker, "Loot")
+				or CollectionService:HasTag(marker, "SweeperSpawn")
 			if marker:IsA("BasePart") and tagged then
-				local floor = workspace:Raycast(marker.Position + Vector3.new(0, 6, 0), Vector3.new(0, -22, 0), params)
+				local floor = workspace:Raycast(
+					marker.Position + Vector3.new(0, 6, 0),
+					Vector3.new(0, -22, 0),
+					params
+				)
 				local standing = floor ~= nil and (marker.Position.Y - floor.Position.Y) < 8
 				local blocked = false
 				for _, other in ipairs(workspace:GetPartBoundsInRadius(marker.Position, 2.4)) do
-					if other.CanCollide and other:IsDescendantOf(M) and other.Parent ~= F.Gameplay then
+					if
+						other.CanCollide
+						and other:IsDescendantOf(M)
+						and other.Parent ~= F.Gameplay
+					then
 						blocked = true
 						break
 					end
@@ -1404,7 +2473,11 @@ function GalleriaBuilder.Build(): Model
 				local solid = 0
 				for s = -1, 1, 2 do
 					local probe = (rail.CFrame * CFrame.new(s * 6, 0, 0)).Position
-					local hit = workspace:Raycast(probe + Vector3.new(0, 7, 0), Vector3.new(0, -14, 0), params)
+					local hit = workspace:Raycast(
+						probe + Vector3.new(0, 7, 0),
+						Vector3.new(0, -14, 0),
+						params
+					)
 					if hit and math.abs(hit.Position.Y - F2F) < 1.5 then
 						solid += 1
 					end
