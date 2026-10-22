@@ -914,11 +914,38 @@ function GalleriaBuilder.Build(): Model
 						-- into a hundred of these. Shuttered bays stay empty
 						-- because you cannot see into them.
 						--
-						-- No light in here on purpose. A shop interior is where
-						-- the lantern earns its keep, and adding thirty more
-						-- light sources is exactly what whited the mall out
-						-- before. Geometry first; light only if it reads dead.
+						-- One weak fitting each. The note that used to be here
+						-- said no light on purpose, because a shop interior is
+						-- where the lantern earns its keep - and it ended
+						-- "light only if it reads dead". It read dead: with
+						-- the court, the concourse and the anchors lit, the
+						-- bays were all that was left in MapAudit's dark list.
+						--
+						-- The objection behind that note turns out not to
+						-- hold. Relics are `visibility: lanternOnly`, and that
+						-- is enforced by LootService and the client, not by
+						-- how dark the room is - so a lit shop takes nothing
+						-- away from the lantern. At 0.5 these are the dimmest
+						-- fittings in the mall by a distance: enough to see
+						-- there is a shop here, not enough to read it.
 						do
+							local bx, bz = at(along, (HALL + DEPTH / 2) * side)
+							local shopCan = part(
+								F.Fixtures,
+								`BayLight_{tag}`,
+								Vector3.new(5, 1, 5),
+								CFrame.new(bx * S, y + 16, bz * S) * rot,
+								C.shop,
+								Enum.Material.Metal
+							)
+							shopCan.CanCollide, shopCan.CanQuery, shopCan.CanTouch =
+								false, false, false
+							local shopLight = Instance.new("PointLight")
+							shopLight.Color = Color3.fromRGB(255, 226, 196)
+							shopLight.Brightness, shopLight.Range, shopLight.Shadows =
+								0.5, 44, false
+							shopLight.Parent = shopCan
+
 							local function fit(
 								nm: string,
 								dAlong: number,
@@ -1362,8 +1389,45 @@ function GalleriaBuilder.Build(): Model
 			can.CanCollide, can.CanQuery = false, false
 			local light = Instance.new("PointLight")
 			light.Color = Color3.fromRGB(255, 232, 200)
-			light.Brightness, light.Range, light.Shadows = 0.85, 46, false
+			-- 0.85 is the house lamp and does not move. The range does: at 46
+			-- there was a dim band halfway between every pair of fittings.
+			light.Brightness, light.Range, light.Shadows = 0.85, 54, false
 			light.Parent = can
+		end
+
+		-- A second row, under the balconies, lighting level one.
+		--
+		-- The downlights above hang at F2F + 14 - forty six studs over the
+		-- level one floor - because the middle of the concourse is open to the
+		-- roof and there is nothing nearer to fix them to. Range is a sphere,
+		-- so by the time one of those reaches the tile it has about twenty
+		-- eight studs of spread left and only directly underneath itself.
+		-- MapAudit put most of Hall1_L1 and Hall2_L1 in the dark while the
+		-- balconies read fine, which is exactly that shape of fault: the
+		-- ground floor was lit by a thin stripe down the middle.
+		--
+		-- These hang under the balcony soffit, over the walking lanes and the
+		-- shopfronts, which is where a mall puts them anyway.
+		local underPitch = 62
+		local underCount = math.max(2, math.round(len * S / underPitch))
+		for i = 0, underCount - 1 do
+			for _, side in ipairs({ -1, 1 }) do
+				local ux, uz =
+					at(-len / 2 + len * ((i + 0.5) / underCount), (HALL - BAL / 2) * side)
+				local can = part(
+					F.Fixtures,
+					`UnderLight{ai}_{i}_{side}`,
+					Vector3.new(6, 1.2, 6),
+					CFrame.new(ux * S, F2F - 6, uz * S) * rot,
+					C.shop,
+					Enum.Material.Metal
+				)
+				can.CanCollide, can.CanQuery, can.CanTouch = false, false, false
+				local light = Instance.new("PointLight")
+				light.Color = Color3.fromRGB(255, 232, 200)
+				light.Brightness, light.Range, light.Shadows = 0.8, 50, false
+				light.Parent = can
+			end
 		end
 
 		part(
@@ -1382,6 +1446,29 @@ function GalleriaBuilder.Build(): Model
 	-- is the striping that showed up the moment the court was first built.
 	disc(F.Court, "CourtRim", COURT_OUT + 0.06, -1, 2.4, C.teal, Enum.Material.Metal)
 	disc(F.Court, "CourtFloor", COURT_OUT, -1 + LIFT, 2, C.tile, Enum.Material.Pebble)
+
+	-- The court had no light of its own. The arm downlights stop where the
+	-- arms stop, and the court is the one place every route crosses and where
+	-- the crew spawns - it was the single largest patch of unlit floor in the
+	-- mall. A ring under the level two balcony arcs, outside the open well so
+	-- the fittings have something to hang from.
+	for i = 0, 7 do
+		local th = 2 * math.pi * (i + 0.5) / 8
+		local cp = Vector2.new(math.cos(th), math.sin(th)) * ((COURT_WELL + COURT_OUT) / 2)
+		local can = part(
+			F.Fixtures,
+			`CourtLight_{i}`,
+			Vector3.new(6, 1.2, 6),
+			CFrame.new(cp.X * S, F2F - 6, cp.Y * S),
+			C.shop,
+			Enum.Material.Metal
+		)
+		can.CanCollide, can.CanQuery, can.CanTouch = false, false, false
+		local light = Instance.new("PointLight")
+		light.Color = Color3.fromRGB(255, 232, 200)
+		light.Brightness, light.Range, light.Shadows = 0.85, 56, false
+		light.Parent = can
+	end
 
 	-- The balcony carries round the court as two arcs. It stops where each arm's
 	-- well opens into the court's, because that opening is the point of a court:
@@ -2179,24 +2266,45 @@ function GalleriaBuilder.Build(): Model
 		-- cross and to see a rack, never enough to make the lantern pointless,
 		-- because the lantern is what makes the relics visible at all. Plain
 		-- metal can, no lens, no Neon, no beam - see DONTFUCKUPTHELIGHTS.md.
+		--
+		-- Two numbers here were got wrong twice before the audit settled them,
+		-- and both are worth keeping written down.
+		--
+		-- The grid comes off the store's own size rather than being a fixed
+		-- three by three. At three by three the pools stood 73 studs apart in
+		-- a 220 by 240 room and MapAudit put 30% of the mall's standable floor
+		-- in the dark, nearly all of it inside the four anchors.
+		--
+		-- And the fittings hang at 17 rather than tight under the 27 stud
+		-- ceiling. Range is a sphere, so mounting height is spent out of the
+		-- same budget as floor coverage: at 27 up, a 58 stud range had only
+		-- about 52 left to spread sideways once it reached the floor, and the
+		-- corners got nothing. Dropping the fitting ten studs buys more floor
+		-- than ten studs of range would, and it does it without the light
+		-- reaching further through the walls - with Shadows off, which they
+		-- are, every one of these shines straight through the shopfront into
+		-- the concourse, so a bigger range is not free.
+		local lightPitch = 62
+		local nx = math.max(2, math.round(w * S / lightPitch))
+		local nz = math.max(2, math.round(d * S / lightPitch))
 		for lvl = 0, 1 do
-			for a = 0, 2 do
-				for b = 0, 2 do
-					local lx = -w / 2 + w * ((a + 0.5) / 3)
-					local lz = -d / 2 + d * ((b + 0.5) / 3)
+			for a = 0, nx - 1 do
+				for b = 0, nz - 1 do
+					local lx = -w / 2 + w * ((a + 0.5) / nx)
+					local lz = -d / 2 + d * ((b + 0.5) / nz)
 					local wx, wz = at(lx, lz)
 					local can = part(
 						F.Fixtures,
 						`DeptLight_{name}_{lvl}_{a}_{b}`,
 						Vector3.new(7, 1.2, 7),
-						CFrame.new(wx * S, lvl * F2F + F2F - 5, wz * S) * rot,
+						CFrame.new(wx * S, lvl * F2F + 17, wz * S) * rot,
 						C.shop,
 						Enum.Material.Metal
 					)
 					can.CanCollide, can.CanQuery, can.CanTouch = false, false, false
 					local light = Instance.new("PointLight")
 					light.Color = Color3.fromRGB(255, 226, 196)
-					light.Brightness, light.Range, light.Shadows = 0.6, 42, false
+					light.Brightness, light.Range, light.Shadows = 0.7, 54, false
 					light.Parent = can
 				end
 			end
