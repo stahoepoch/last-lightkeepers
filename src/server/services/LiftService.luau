@@ -19,6 +19,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 local TAG = "Lift"
+local GATE_TAG = "LiftGate"
 local TRAVEL_SECONDS = 5
 local REACH = 14
 
@@ -35,7 +36,8 @@ local function ridersOn(car: BasePart): { Model }
 		if root and root:IsA("BasePart") then
 			local d = root.Position - car.Position
 			local feet = root.Position.Y - 3
-			if math.abs(d.X) < car.Size.X / 2 + 1
+			if
+				math.abs(d.X) < car.Size.X / 2 + 1
 				and math.abs(d.Z) < car.Size.Z / 2 + 1
 				and feet > top - 2
 				and feet < top + 7
@@ -88,6 +90,37 @@ local function nextStop(stops: { number }, at: number, rising: boolean): (number
 	return stops[index + 1] or stops[index], true
 end
 
+--- The landing doors belonging to this car: the ones standing in its own
+--- shaft. Lanternhold's lift has four, the Galleria's has none, and matching
+--- on the shaft footprint keeps the two from driving each other's.
+local function gatesOf(car: BasePart): { BasePart }
+	local out: { BasePart } = {}
+	for _, g in ipairs(CollectionService:GetTagged(GATE_TAG)) do
+		if g:IsA("BasePart") and g:GetAttribute("Stop") ~= nil then
+			local d = g.Position - car.Position
+			if math.abs(d.X) < car.Size.X and math.abs(d.Z) < car.Size.Z + 12 then
+				table.insert(out, g)
+			end
+		end
+	end
+	return out
+end
+
+--- Open the door at the floor the car is standing at and shut the rest. An
+--- open shaft with a doorway onto it is the same fall Chris already found
+--- once by stepping out of this lift, so the default is shut.
+local function setGates(gates: { BasePart }, carY: number, moving: boolean)
+	for _, g in ipairs(gates) do
+		local stop = g:GetAttribute("Stop")
+		local here = type(stop) == "number" and not moving and math.abs(carY - stop) < 1.5
+		-- CanQuery too, not just CanCollide: an open door that still answers
+		-- raycasts is invisible and walk-through but the camera still shoves
+		-- off it, which is how half this building's "wonky camera" started.
+		g.CanCollide, g.CanQuery = not here, not here
+		g.Transparency = here and 1 or 0
+	end
+end
+
 local function travel(car: BasePart, to: number)
 	local from = car.Position.Y
 	local riders = ridersOn(car)
@@ -130,6 +163,9 @@ function LiftService.init()
 			prompt.Parent = car
 		end
 
+		local gates = gatesOf(car)
+		setGates(gates, car.Position.Y, false)
+
 		local busy, rising = false, true
 		prompt.Triggered:Connect(function()
 			if busy then
@@ -139,7 +175,9 @@ function LiftService.init()
 			local to, nowRising = nextStop(stops, car.Position.Y, rising)
 			rising = nowRising
 			prompt.Enabled = false
+			setGates(gates, car.Position.Y, true)
 			travel(car, to)
+			setGates(gates, car.Position.Y, false)
 			prompt.Enabled = true
 			busy = false
 		end)

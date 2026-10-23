@@ -205,7 +205,10 @@ local function wall(
 		-- doorway has no skirting across it because it has no wall there.
 		-- Lintels (py0 > y0) get none: they are not standing on the floor.
 		if py0 <= y0 + 0.01 then
-			local sk = half + 0.6
+			-- 0.3 proud, not 0.6. Chris: "clipping on the flashing" - every
+			-- prop set against a wall was placed off the WALL face and then
+			-- intersected the skirting standing proud of it.
+			local sk = half + 0.3
 			local base
 			if axis == "X" then
 				base = box(
@@ -275,7 +278,7 @@ end
 local WELLS: { [number]: { { number } } } = {
 	[2] = { { 0, 22, 78, 190 }, { 89, 103, 208, 225 } },
 	[3] = { { 20, 42, 78, 188 }, { 89, 103, 208, 225 } },
-	[4] = { { 62, 86, 126, 228 }, { 89, 103, 208, 225 } },
+	[4] = { { 62, 84, 116, 238 }, { 89, 103, 208, 225 } },
 }
 
 --- Everything in `rect` that is not inside any of `holes`, as a list of
@@ -477,7 +480,8 @@ local function lightRoom(
 	z1: number,
 	floorY: number,
 	head: number,
-	opts: { Brightness: number, Range: number, Spacing: number? }
+	opts: { Brightness: number, Range: number, Spacing: number? },
+	ceilingHoles: { { number } }?
 )
 	local pitch = opts.Spacing or 44
 	local nx = math.max(1, math.round((x1 - x0) / pitch))
@@ -504,22 +508,34 @@ local function lightRoom(
 		for j = 0, nz - 1 do
 			local lx = x0 + (x1 - x0) * ((i + 0.5) / nx)
 			local lz = z0 + (z1 - z0) * ((j + 0.5) / nz)
-			if head > mount + 0.4 then
-				local rod = box(
-					parent,
-					"LampRod",
-					lx - 0.3,
-					lx + 0.3,
-					mount,
-					head,
-					lz - 0.3,
-					lz + 0.3,
-					C.iron,
-					Enum.Material.Metal
-				)
-				rod.CanCollide, rod.CanQuery = false, false
+			-- Chris: "lamp fixtures are floating weird". A lamp hung under a
+			-- hole in the ceiling has nothing above it to hang from, and 59
+			-- of them were sitting over the stair wells and the lift shaft
+			-- with their rods ending in open air.
+			local overHole = false
+			for _, h in ipairs(ceilingHoles or {}) do
+				if lx > h[1] - 3 and lx < h[2] + 3 and lz > h[3] - 3 and lz < h[4] + 3 then
+					overHole = true
+				end
 			end
-			lamp(parent, lx, mount, lz, opts.Brightness, opts.Range)
+			if not overHole then
+				if head > mount + 0.4 then
+					local rod = box(
+						parent,
+						"LampRod",
+						lx - 0.3,
+						lx + 0.3,
+						mount,
+						head,
+						lz - 0.3,
+						lz + 0.3,
+						C.iron,
+						Enum.Material.Metal
+					)
+					rod.CanCollide, rod.CanQuery = false, false
+				end
+				lamp(parent, lx, mount, lz, opts.Brightness, opts.Range)
+			end
 		end
 	end
 end
@@ -942,7 +958,7 @@ function LanternholdBuilder.Build(): Model
 				Brightness = (room.light :: number) * 0.62,
 				Range = 34,
 				Spacing = 36,
-			})
+			}, WELLS[level + 1])
 		end
 	end
 
@@ -1220,13 +1236,15 @@ function LanternholdBuilder.Build(): Model
 				light = 1.0,
 			},
 			{
+				-- "rename the Bar to something more appropriate" - a temple
+				-- social room, next door to a cigar room, is a lounge.
 				name = "Bar",
 				x0 = WEST,
 				x1 = CENTRE,
 				z0 = 195,
 				z1 = Z1,
 				light = 0.95,
-				title = "THE BAR",
+				title = "THE LOUNGE",
 			},
 			{
 				name = "FrontEntrance",
@@ -1291,7 +1309,10 @@ function LanternholdBuilder.Build(): Model
 
 	-- The vaults you can walk into: a row of heavy doors off a short passage.
 	for i = 0, 3 do
-		local x = CENTRE + 10 + i * 15
+		-- i * 13 from CENTRE + 8: at 15 the last door ran to x 111 and the
+		-- east shell wall starts at 108.5, so one of the four was buried in
+		-- the outside wall.
+		local x = CENTRE + 8 + i * 13
 		box(
 			F.Fixtures,
 			`VaultDoor_{i}`,
@@ -1424,9 +1445,12 @@ function LanternholdBuilder.Build(): Model
 	-- To x 0, not x 40. It ran 40 studs past the Egyptian Room's corner and
 	-- finished up standing four studs inside the gathering area, which is one
 	-- of the walls Chris meant by "walls are weird".
-	wall(F.Floor2, "Second_Egypt", "Z", 96, -W, 0, LEVELS[3], HEADS[3], {
-		{ -70, -70 + DOOR_W * 2 },
-	})
+	-- SOLID. Chris: "the two rooms shouldn't connect." The Egyptian Room is
+	-- the one room in the building you are supposed to arrive at rather than
+	-- pass through, and a 22 stud opening straight into the York Rite room
+	-- made the pair of them read as one long hall with a change of carpet.
+	-- It is reached from the stair hall through the spine door at z 40..51.
+	wall(F.Floor2, "Second_Egypt", "Z", 96, -W, 0, LEVELS[3], HEADS[3], {})
 	-- From x 0 now, so the gathering area has a north wall across its whole
 	-- width. The first door is on the stair head so you come up out of the
 	-- stair and through it.
@@ -1532,13 +1556,16 @@ function LanternholdBuilder.Build(): Model
 		-- The whole building hung on those two studs.
 		flight(F.Core, "Stair_0_1", 2, 20, 80, 188, LEVELS[1], LEVELS[2])
 		flight(F.Core, "Stair_1_2", 22, 40, 186, 78, LEVELS[2], LEVELS[3])
-		flight(F.Core, "Stair_2_3", 64, 84, 128, 226, LEVELS[3], LEVELS[4])
+		-- 18 wide like the other two, over a longer run. Chris: "stairs don't
+		-- look uniform or correct" - this one was 20 wide at 25 degrees while
+		-- the flights below it are 18 at 15 and 20.
+		flight(F.Core, "Stair_2_3", 64, 82, 118, 236, LEVELS[3], LEVELS[4])
 		-- and a landing at the head of each, so you step off onto floor
 		-- rather than onto the lip of the slab.
 		for _, L in ipairs({
 			{ 2, 20, 184, 192, LEVELS[2] },
 			{ 22, 40, 74, 82, LEVELS[3] },
-			{ 64, 84, 222, 230, LEVELS[4] },
+			{ 64, 82, 232, 240, LEVELS[4] },
 		}) do
 			box(
 				F.Core,
@@ -1561,7 +1588,7 @@ function LanternholdBuilder.Build(): Model
 		-- three are fenced.
 		wellRail(F.Core, "Well_1", 0, 22, 78, 190, LEVELS[2], "n")
 		wellRail(F.Core, "Well_2", 20, 42, 78, 188, LEVELS[3], "s")
-		wellRail(F.Core, "Well_3", 62, 86, 126, 228, LEVELS[4], "n")
+		wellRail(F.Core, "Well_3", 62, 84, 116, 238, LEVELS[4], "n")
 
 		-- ON THE EAST WALL, and a lift rather than a room. Chris: "the
 		-- elevator at one point brings u to an inescapable room, well,
@@ -1585,64 +1612,62 @@ function LanternholdBuilder.Build(): Model
 		wall(F.Core, "LiftShaftW", "X", LX0, LZ0, LZ1, 0, TOP, {})
 		wall(F.Core, "LiftShaftE", "X", LX1, LZ0, LZ1, 0, TOP, {})
 		wall(F.Core, "LiftShaftN", "Z", LZ1, LX0, LX1, 0, TOP, {})
-		-- A FRAME, NOT A SLAB, and this was the thing that trapped him. The
-		-- surround was one solid brass box spanning the whole width of the
-		-- opening at every stop - so the car top had the shaft's three walls
-		-- round it and a brass wall across the fourth side. There was no way
-		-- off the car at all except the gap round the well, which is why
-		-- falling through the floor was how he got out.
+		-- THE LIFT IS A DOORWAY IN A WALL NOW. Chris, twice: "the lift's
+		-- entrance is just sideways and weird... still awkward and sideways."
+		-- Both earlier attempts kept it as free-standing brass - first a slab
+		-- across the opening, then two jambs and a head - and all of that
+		-- stood at z 205.4..207 while the shaft mouth is at z 208, so the
+		-- frame hovered a stud and a half in FRONT of the hole it framed,
+		-- didn't line up with the shaft walls either side of it, and read as
+		-- an arch dumped in the room rather than a lift.
 		--
-		-- Two jambs and a head over the opening read the same and leave the
-		-- 13 studs between them clear. The head does not collide so the camera
-		-- cannot catch on it as you walk under.
+		-- The shaft gets a proper front wall at its mouth with a door cut in
+		-- it, built by the same wall() every other door in the building uses,
+		-- so it gets the same reveal, the same lintel and the same skirting
+		-- and sits in the plane of the shaft instead of floating off it.
 		for i, lvl in ipairs(LEVELS) do
-			for k, j in ipairs({ { LX0 - 2, LX0 + 1.5 }, { LX1 - 1.5, LX1 + 2 } }) do
-				box(
-					F.Core,
-					`LiftJamb_{i}_{k}`,
-					j[1],
-					j[2],
-					lvl,
-					lvl + 15,
-					LZ0 - 2.6,
-					LZ0 - 1,
-					C.brass,
-					Enum.Material.Metal
-				)
-			end
+			local top = LEVELS[i + 1] or TOP
+			wall(F.Core, `LiftFace_{i}`, "Z", LZ0, LX0 - 1.5, LX1 + 1.5, lvl, top, {
+				{ LX0 + 1.5, LX1 - 1.5 },
+			})
 			-- Chris: "why the elevator is hidden". A lit brass sign over the
-			-- opening at every stop, so it reads as the lift from across the
-			-- room rather than as another doorway.
+			-- opening, flush to the face wall it is mounted on.
 			local sign = box(
 				F.Core,
 				`LiftSign_{i}`,
-				LX0 + 1,
-				LX1 - 1,
-				lvl + 17.4,
-				lvl + 22,
-				LZ0 - 2.8,
-				LZ0 - 1.6,
+				LX0 + 1.5,
+				LX1 - 1.5,
+				lvl + DOOR_H + 0.8,
+				lvl + DOOR_H + 5.4,
+				LZ0 - 2.2,
+				LZ0 - 1.5,
 				C.brass,
 				Enum.Material.Metal
 			)
 			sign.CanCollide, sign.CanQuery = false, false
-			label(sign, "LIFT", Enum.NormalId.Front, 26)
+			label(sign, "LIFT", Enum.NormalId.Front, 24)
 			local sl = Instance.new("PointLight")
 			sl.Color, sl.Brightness, sl.Range, sl.Shadows = WARM, 0.7, 22, false
 			sl.Parent = sign
-			local lintel = box(
+
+			-- A LANDING DOOR, because the other three sides of this opening
+			-- are now a wall and the fourth is a 30 stud drop whenever the
+			-- car is at another floor. LiftService opens the one the car is
+			-- standing at and keeps the rest shut.
+			local gate = box(
 				F.Core,
-				`LiftSurround_{i}`,
-				LX0 - 2,
-				LX1 + 2,
-				lvl + 15,
-				lvl + 17,
-				LZ0 - 2.6,
-				LZ0 - 1,
-				C.brass,
+				`LiftGate_{i}`,
+				LX0 + 1.5,
+				LX1 - 1.5,
+				lvl,
+				lvl + DOOR_H,
+				LZ0 - 0.5,
+				LZ0 + 0.5,
+				C.iron,
 				Enum.Material.Metal
 			)
-			lintel.CanCollide, lintel.CanQuery = false, false
+			gate:SetAttribute("Stop", lvl)
+			CollectionService:AddTag(gate, "LiftGate")
 		end
 		local car = box(
 			F.Core,
@@ -1746,9 +1771,16 @@ function LanternholdBuilder.Build(): Model
 		for tier = 0, 1 do
 			local inset = 15 + tier * 9
 			local h = y + 1.6 + tier * 1.8
+			-- The east run is cut either side of the spine doorway at
+			-- z 40..51. Sealing the room off from the York Rite room left
+			-- that door as its only way in, and the seating ran straight
+			-- across it seven studs inside: a 2.8 stud step up onto a bench
+			-- is more than a Humanoid takes without jumping, so the whole
+			-- Egyptian Room went unreachable the moment the other door shut.
 			for run, spec in ipairs({
 				{ ex0 + inset - 8, ex0 + inset, ez0 + inset, ez1 - inset },
-				{ ex1 - inset, ex1 - inset + 8, ez0 + inset, ez1 - inset },
+				{ ex1 - inset, ex1 - inset + 8, ez0 + inset, 36 },
+				{ ex1 - inset, ex1 - inset + 8, 55, ez1 - inset },
 				{ ex0 + inset, ex1 - inset, ez0 + inset - 8, ez0 + inset },
 			}) do
 				box(
@@ -2029,13 +2061,17 @@ function LanternholdBuilder.Build(): Model
 		-- WorkshopUpgrades and GadgetCrafting and nothing sold anything.
 		local qm = box(
 			F.Fixtures,
+			-- Chris: "why is it so smack dab against the doorway?" The east
+			-- wall's door into this room is at z 250..261 and the counter ran
+			-- z 244..252, so you walked in through the side of it. Twenty
+			-- studs south puts it clear of both doors with room to stand at.
 			"QuartermasterCounter",
 			WEST + 8,
 			CENTRE - 8,
 			LEVELS[2],
 			LEVELS[2] + 4.2,
-			244,
-			252,
+			224,
+			232,
 			C.timber,
 			Enum.Material.WoodPlanks
 		)
@@ -2248,11 +2284,40 @@ function LanternholdBuilder.Build(): Model
 		-- ---- THE BANQUET HALL is the eating area, and three long tables is
 		-- a refectory. Chairs down both sides of each so it reads as a place
 		-- people sit rather than a place tables are stored.
+		-- Chris: "banquet hall furnishings are all idk what they are lol."
+		-- Fifteen chairs each side of an empty aisle, because the three long
+		-- tables the comment promised were never built. Here they are.
 		for i = 0, 2 do
 			local z = 140 + i * 50
+			box(
+				F.Fixtures,
+				`RefectoryTop_{i}`,
+				-88,
+				-38,
+				B + 4,
+				B + 4.8,
+				z,
+				z + 34,
+				C.timber,
+				Enum.Material.WoodPlanks
+			)
+			for _, ex in ipairs({ -84, -42 }) do
+				box(
+					F.Fixtures,
+					`RefectoryLeg_{i}`,
+					ex - 1.6,
+					ex + 1.6,
+					B,
+					B + 4,
+					z + 2,
+					z + 32,
+					C.timber,
+					Enum.Material.WoodPlanks
+				)
+			end
 			for k = 0, 4 do
-				chair(-98, z + 4 + k * 6, B, 1)
-				chair(-28, z + 4 + k * 6, B, -1)
+				chair(-94, z + 5 + k * 6, B, 1)
+				chair(-32, z + 5 + k * 6, B, -1)
 			end
 		end
 		box(
@@ -2646,8 +2711,10 @@ function LanternholdBuilder.Build(): Model
 			chair(-62, z, L3, -1)
 		end
 
-		-- ---- THE BAR. The quartermaster counter is already here; this is
-		-- the back shelf and the stools that make it read as a bar.
+		-- ---- THE LOUNGE. The quartermaster counter is already here; this
+		-- is the back shelf and the stools that make it read as a bar. All
+		-- of it moved twenty studs south with the counter, which was sitting
+		-- across the east door.
 		box(
 			F.Fixtures,
 			"BarBackShelf",
@@ -2655,8 +2722,8 @@ function LanternholdBuilder.Build(): Model
 			CENTRE - 8,
 			L1,
 			L1 + 15,
-			256,
-			260,
+			236,
+			240,
 			C.timber,
 			Enum.Material.WoodPlanks
 		)
@@ -2669,8 +2736,8 @@ function LanternholdBuilder.Build(): Model
 				x + 1,
 				L1 + 9,
 				L1 + 12.4,
-				254.6,
-				256.6,
+				234.6,
+				236.6,
 				C.glass,
 				Enum.Material.Glass,
 				0.4
@@ -2686,8 +2753,8 @@ function LanternholdBuilder.Build(): Model
 				x + 2.2,
 				L1,
 				L1 + 4.4,
-				237,
-				241.4,
+				217,
+				221.4,
 				C.timber,
 				Enum.Material.WoodPlanks
 			)
@@ -3253,14 +3320,31 @@ function LanternholdBuilder.Build(): Model
 				if math.abs(d.y0 - y) < 0.5 then
 					-- which of the room's four edges does this opening sit in,
 					-- and which way is "out" of the room from there
+					-- The room has to own most of the opening. A doorway that
+					-- straddles two rooms' corner used to get a plate from
+					-- each, in the same place, and the two texts rendered on
+					-- top of each other: "THE BANQUET HALL" over
+					-- "LANTERNHOLD" came out as one unreadable smear.
+					local share = 0
+					if d.axis == "X" then
+						share = math.min(d.b, room.z1) - math.max(d.a, room.z0)
+					else
+						share = math.min(d.b, room.x1) - math.max(d.a, room.x0)
+					end
+					local owns = share >= (d.b - d.a) * 0.6
 					local out: number? = nil
-					if d.axis == "X" and d.b > room.z0 + 0.5 and d.a < room.z1 - 0.5 then
+					if owns and d.axis == "X" and d.b > room.z0 + 0.5 and d.a < room.z1 - 0.5 then
 						if math.abs(d.at - room.x0) < 0.6 then
 							out = -1
 						elseif math.abs(d.at - room.x1) < 0.6 then
 							out = 1
 						end
-					elseif d.axis == "Z" and d.b > room.x0 + 0.5 and d.a < room.x1 - 0.5 then
+					elseif
+						owns
+						and d.axis == "Z"
+						and d.b > room.x0 + 0.5
+						and d.a < room.x1 - 0.5
+					then
 						if math.abs(d.at - room.z0) < 0.6 then
 							out = -1
 						elseif math.abs(d.at - room.z1) < 0.6 then
