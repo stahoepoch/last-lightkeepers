@@ -989,7 +989,7 @@ function LanternholdBuilder.Build(): Model
 			-- 95 by 300. Pulling the range inside the grid spacing leaves the
 			-- pools touching instead of piling up.
 			lightRoom(folder, room.x0, room.x1, room.z0, room.z1, y, head, {
-				Brightness = (room.light :: number) * 0.62,
+				Brightness = (room.light :: number) * 0.88,
 				Range = 34,
 				Spacing = 36,
 			}, WELLS[level + 1])
@@ -1172,8 +1172,10 @@ function LanternholdBuilder.Build(): Model
 	end
 	-- The spine's two side walls. Every door in them opens off the hall
 	-- into one room; no room opens into another.
+	-- The kitchen door is at z 70, not 40: the Lamp Wall runs z 8..52 along
+	-- the inside of this wall and stood straight across the old opening.
 	wall(F.Floor0, "Bottom_SpineW", "X", WEST, Z0, Z1, 0, HEADS[1], {
-		{ 40, 40 + DOOR_W },
+		{ 70, 70 + DOOR_W },
 		{ 160, 160 + DOOR_W },
 		{ 240, 240 + DOOR_W },
 	})
@@ -2535,8 +2537,13 @@ function LanternholdBuilder.Build(): Model
 		-- lift stands at the head, so everything lines the two side lanes.
 		runner("HallRunner_S", -20, 20, 16, 112, B)
 		runner("HallRunner_N", -20, 20, 276, 296, B)
-		for i, z in ipairs({ 128, 160, 192, 224, 256 }) do
+		-- Between the doorways, not across them, and clear of the two floor
+		-- pads at the south end. The west wall's doors are at z 70, 160 and
+		-- 240; the east wall's at 50, 136, 181 and 245.
+		for i, z in ipairs({ 120, 196, 275 }) do
 			bench(`HallBenchW_{i}`, WEST + 7, z, B, "Z", -1)
+		end
+		for i, z in ipairs({ 120, 162, 275 }) do
 			bench(`HallBenchE_{i}`, CENTRE - 7, z, B, "Z", 1)
 		end
 		for i, pt in ipairs({
@@ -2715,8 +2722,11 @@ function LanternholdBuilder.Build(): Model
 
 		-- ---- THE STAIR HALL on this floor: the same two lanes.
 		runner("StairHall1Runner", -20, 20, 16, 112, L1)
-		for i, z in ipairs({ 30, 60, 92 }) do
+		-- doors on this floor: west at z 60 and 200, east at 60, 185 and 265
+		for i, z in ipairs({ 30, 100, 170 }) do
 			bench(`StairHall1Bench_{i}`, WEST + 7, z, L1, "Z", -1)
+		end
+		for i, z in ipairs({ 30, 100, 160 }) do
 			bench(`StairHall1BenchE_{i}`, CENTRE - 7, z, L1, "Z", 1)
 		end
 		planter("StairHall1Plant_a", WEST + 8, 112, L1)
@@ -2827,7 +2837,8 @@ function LanternholdBuilder.Build(): Model
 		-- Egyptian Room west, York Rite east, hall between them.
 
 		runner("StairHall2Runner", -20, 20, 16, 112, L2)
-		for i, z in ipairs({ 30, 62, 94 }) do
+		-- doors on this floor are at z 100..122 and 210..221, both sides
+		for i, z in ipairs({ 30, 62, 150 }) do
 			bench(`StairHall2Bench_{i}`, WEST + 7, z, L2, "Z", -1)
 			bench(`StairHall2BenchE_{i}`, CENTRE - 7, z, L2, "Z", 1)
 		end
@@ -2923,7 +2934,8 @@ function LanternholdBuilder.Build(): Model
 		-- ===================================================== THE 3RD FLOOR
 
 		runner("StairHall3Runner", -20, 20, 16, 112, L3)
-		for i, z in ipairs({ 30, 62, 94 }) do
+		-- doors on this floor are at z 100..122 and 210..221, both sides
+		for i, z in ipairs({ 30, 62, 150 }) do
 			bench(`StairHall3Bench_{i}`, WEST + 7, z, L3, "Z", -1)
 			bench(`StairHall3BenchE_{i}`, CENTRE - 7, z, L3, "Z", 1)
 		end
@@ -3170,8 +3182,8 @@ function LanternholdBuilder.Build(): Model
 		local board = box(
 			F.Fixtures,
 			"DepartureBoard",
-			-20,
-			20,
+			-17,
+			17,
 			HEADS[1] - 17,
 			HEADS[1] - 10,
 			104,
@@ -3181,6 +3193,162 @@ function LanternholdBuilder.Build(): Model
 		)
 		board.CanCollide, board.CanQuery = false, false
 		label(board, "LEAVE FOR A RAID", Enum.NormalId.Front, 22)
+
+		-- ------------------------------------------------ the departure hall
+		-- Chris: "make the raid area more pleasant, and make it so people
+		-- know we have more than one raid, its going to be a hub, not a
+		-- slab." It was a brass rectangle painted on the floor with a sign
+		-- over it, which is exactly a slab.
+		--
+		-- So: a gate you walk out through, and a board on the wall for each
+		-- destination either side of it, lit if the route is open and dark
+		-- if it is not. ExpeditionService owns which routes actually run -
+		-- this is the room that tells you they exist.
+		for i, px in ipairs({ -22, 22 }) do
+			box(
+				F.Fixtures,
+				`GatePier_{i}`,
+				px - 4,
+				px + 4,
+				y,
+				y + 18,
+				102,
+				108,
+				C.limestone,
+				Enum.Material.Concrete
+			)
+			box(
+				F.Fixtures,
+				`GatePierCap_{i}`,
+				px - 5.2,
+				px + 5.2,
+				y + 18,
+				y + 20,
+				100.8,
+				109.2,
+				C.limestone,
+				Enum.Material.Concrete
+			)
+			local lantern = box(
+				F.Fixtures,
+				`GateLantern_{i}`,
+				px - 2,
+				px + 2,
+				y + 20,
+				y + 24,
+				103,
+				107,
+				C.brass,
+				Enum.Material.Metal
+			)
+			lantern.CanCollide, lantern.CanQuery = false, false
+			local gl = Instance.new("PointLight")
+			gl.Color, gl.Brightness, gl.Range, gl.Shadows = WARM, 1.1, 34, false
+			gl.Parent = lantern
+		end
+		local lintel = box(
+			F.Fixtures,
+			"GateLintel",
+			-27,
+			27,
+			y + 20,
+			y + 24,
+			102,
+			108,
+			C.limestone,
+			Enum.Material.Concrete
+		)
+		lintel.CanCollide, lintel.CanQuery = false, false
+
+		-- a mosaic the pad sits on, so the floor reads as a threshold
+		for i, inset in ipairs({ 0, 4, 8 }) do
+			local band = box(
+				F.Fixtures,
+				`GateMosaic_{i}`,
+				-24 + inset * 2,
+				24 - inset * 2,
+				y + 0.12 + i * 0.02,
+				y + 0.2 + i * 0.02,
+				56 + inset * 2,
+				104 - inset * 2,
+				i % 2 == 1 and C.inlay or C.gilt,
+				Enum.Material.Slate
+			)
+			band.CanCollide, band.CanQuery, band.CanTouch = false, false, false
+		end
+
+		-- THE DESTINATION BOARDS. Only the Galleria is open; the other three
+		-- are real Johnstown places standing in as the routes still to come,
+		-- and they are deliberately dark and labelled SEALED so nobody walks
+		-- at one expecting it to work. Change the names freely - nothing but
+		-- these labels depends on them.
+		for _, dest in ipairs({
+			{
+				-- Clear of the doorways in these two walls (west at z 70..81,
+				-- east at 50..61) and of the gate piers at z 102. The open
+				-- route takes the board nearest the gate.
+				title = "THE GALLERIA",
+				sub = "FLOODED RETAIL DISTRICT",
+				open = true,
+				side = -1,
+				z = 84,
+			},
+			{ title = "THE INCLINE", sub = "SEALED", open = false, side = -1, z = 20 },
+			{ title = "CAMBRIA WORKS", sub = "SEALED", open = false, side = 1, z = 64 },
+			{ title = "THE STONE BRIDGE", sub = "SEALED", open = false, side = 1, z = 84 },
+		}) do
+			local wallX = dest.side < 0 and WEST or CENTRE
+			local inner = wallX - dest.side * 1.5
+			local x0 = math.min(inner, inner - dest.side * 0.9)
+			local x1 = math.max(inner, inner - dest.side * 0.9)
+			local nm = (dest.title:gsub("%s", ""))
+			local panel = box(
+				F.Fixtures,
+				`Dest_{nm}_Panel`,
+				x0,
+				x1,
+				y + 5,
+				y + 19,
+				dest.z,
+				dest.z + 16,
+				C.timber,
+				Enum.Material.WoodPlanks
+			)
+			panel.CanCollide, panel.CanQuery = false, false
+			local plate = box(
+				F.Fixtures,
+				`Dest_{nm}_Plate`,
+				x0 - (dest.side < 0 and 0 or 0.7),
+				x1 + (dest.side < 0 and 0.7 or 0),
+				y + 8,
+				y + 16,
+				dest.z + 1.5,
+				dest.z + 14.5,
+				dest.open and C.brass or C.dark,
+				Enum.Material.Metal
+			)
+			plate.CanCollide, plate.CanQuery = false, false
+			local face = dest.side < 0 and Enum.NormalId.Right or Enum.NormalId.Left
+			label(plate, `{dest.title}\n{dest.sub}`, face, 15)
+			if dest.open then
+				local lamp2 = box(
+					F.Fixtures,
+					`Dest_{nm}_Lamp`,
+					x0 - 1.4,
+					x1 + 1.4,
+					y + 19.4,
+					y + 21,
+					dest.z + 5,
+					dest.z + 11,
+					C.brass,
+					Enum.Material.Metal
+				)
+				lamp2.CanCollide, lamp2.CanQuery = false, false
+				local dl = Instance.new("PointLight")
+				dl.Color, dl.Brightness, dl.Range, dl.Shadows = WARM, 0.9, 26, false
+				dl.Parent = lamp2
+			end
+		end
 		local bl = Instance.new("PointLight")
 		bl.Color, bl.Brightness, bl.Range, bl.Shadows = WARM, 1.4, 44, false
 		bl.Parent = board
