@@ -207,61 +207,58 @@ The showpiece, and the reason the building is worth modelling at all.
 
 ---
 
-## Measured, 2026-10-23: the rooms are mostly not rooms
+## The room list, from Chris, 2026-10-23
 
-Chris, on the upper floors: *"the upper rooms have way to many rooms, walls are
-weird and there isn't the feeling this is like real, or walkable, it has so
-many spots, and i know that is what the pictures showed you, but the flow is
-pretty rough."*
+**This section supersedes the floor-by-floor tables above.** Those are a
+reading of the drawings; this is Chris saying what he actually wants in the
+building, and it is what `LanternholdBuilder` now builds:
 
-Measuring it in a running session says the problem is not the number of rooms
-and not the doors. Every room on every floor has at least two ways out — there
-are no dead ends anywhere. What there is instead:
+> *"like the bottom floor, just a kitchen, a banquet hall, the two bathrooms,
+> and an elevator. 1st floor the ballroom, the bar, front entrance for the
+> steps outside, elevator and secret vaults. 2nd floor, the york rite room,
+> the egyptian room, elevator, and stairs going up. third floor museum,
+> library, cigar room, elevator. that should make it simplified and easy, and
+> then we can make it all look clean with like props, and stuff. so its not
+> overly crowded."*
 
-**20 of the 32 named rooms on the upper three floors have more than half their
-perimeter standing open.**
-
-| Level | Named rooms | More than half open |
-| --- | --- | --- |
-| 1st | 10 | 7 |
-| 2nd | 14 | 9 |
-| 3rd | 8 | 4 |
-
-The worst of them are the ones with the names that should mean the most:
-
-| Room | Perimeter open |
+| Level | Rooms |
 | --- | --- |
-| Hallway2, StairHall2 | 93% |
-| Bar | 91% |
-| PrepareRoom | 88% |
-| UpperHall3 | 86% |
-| Bathroom2 | 81% |
-| YorkRiteRoom | 74% |
-| CigarRoom | 74% |
-| ChapelRoom | 72% |
+| Bottom | Kitchen, Banquet Hall, two washrooms, the lift — plus the arrival hall and the ramp as circulation |
+| 1st | Ballroom, Bar, Front Steps, the lift, Secret Vaults — plus the stair hall |
+| 2nd | Egyptian Room, York Rite Room, the lift, the stair hall |
+| 3rd | Museum, Library, Cigar Room, the lift |
 
-The 2nd floor has fourteen named rooms and five walls. So most of what the
-builder calls a room is a rectangle of different carpet with a brass plaque
-over it, standing in open floor. You walk past a plaque reading THE CHAPEL and
-there is no chapel there — the label changes and nothing else does. That is
-what "walls are weird" and "doesn't feel real" are describing, and it is also
-why there are "so many spots": the floor is subdivided by flooring rather than
-by architecture, so it reads as many places while walking like one.
+Twenty-one rooms, down from thirty-five. Halls are circulation and carry no
+plaque; every name on a wall is somewhere you went on purpose. The chapel, the
+OES room, the balcony, the gathering area, the preparation rooms and the
+anteroom/storage labels are all gone — they were on the drawings but not in
+the list, and Chris's call is the one that counts.
 
-### Two ways out of it, and they need Chris
+Two rooms differ from a literal reading of the drawings, both because the
+structure forces it:
 
-1. **Fewer rooms.** Merge the labels down to the spaces that are actually
-   enclosed. The 2nd floor becomes about six rooms instead of fourteen. Most
-   faithful to "way too many rooms", least faithful to the plans.
-2. **Real walls.** Wall the named rooms so they become the rooms the plans
-   show. Faithful to the drawings, but it adds partitions to a floor he has
-   just said has too many.
+- **The 2nd floor lift and stairs are one east room.** Stair C runs up at
+  x 64..84 and the lift shaft is at x 92..108, so a wall between them would
+  have to stand over the stair well.
+- **The 3rd floor is the same**, for the same reason.
 
-The likely answer is a mix: give real walls to the rooms that carry the
-building — Egyptian, Chapel, York Rite, Museum, Cigar Room, Ballroom — and
-fold the leftovers (TinyRoom1/3, PrepareRoom, PreparingRoom, EastRoom2/3, the
-loose bathrooms) into the halls they already open onto. Which of those matter
-depends on what each room is **for**, and the unanswered question from this
-file still blocks it: there is no shop, and `data/loot.json` has four sinks
-with nowhere to spend. A room with a job gets walls; a room without one gets
-merged.
+### What was actually wrong before, corrected
+
+An earlier version of this section claimed 20 of 32 upstairs rooms stood more
+than half open, with a table of percentages. **Those numbers were wrong.** The
+probe that produced them started outside each room and fired its ray away from
+the boundary, so it never tested the wall it was asking about — it was
+measuring whether the *neighbouring* floor was empty, which it nearly always
+is. Re-run correctly against the same build, the real figure was **6 of 32**,
+and the genuinely under-walled rooms were PrepareRoom (100% open — it had no
+walls at all), ElevatorLobby2, ChapelRoom, StairHall2, YorkRiteRoom and
+StairHall3, all between 52% and 61%.
+
+The conclusion the bad numbers pointed at happened to survive — the floors did
+need consolidating, and Chris said so independently — but the evidence for it
+did not, and a measurement that agrees with you is still worth checking.
+
+As built to Chris's list, measured in a running session: every one of the 21
+rooms is enclosed, none is sealed, the only single-exit room is the kitchen
+(which opens off the banquet hall, as it should), and there are no unexplained
+holes on any floor.

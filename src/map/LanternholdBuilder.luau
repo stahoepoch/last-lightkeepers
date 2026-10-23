@@ -917,6 +917,18 @@ function LanternholdBuilder.Build(): Model
 	-- with the kitchen behind it.
 	for _, r in
 		ipairs({
+			-- CHRIS'S OWN ROOM LIST, 2026-10-23, and it supersedes the plans:
+			-- "like the bottom floor, just a kitchen, a banquet hall, the two
+			-- bathrooms, and an elevator. 1st floor the ballroom, the bar,
+			-- front entrance for the steps outside, elevator and secret vaults.
+			-- 2nd floor, the york rite room, the egyptian room, elevator, and
+			-- stairs going up. third floor museum, library, cigar room,
+			-- elevator. that should make it simplified and easy, and then we
+			-- can make it all look clean with like props, and stuff. so its
+			-- not overly crowded."
+			--
+			-- So the halls are circulation, not rooms with plaques, and every
+			-- name on a wall is somewhere you went on purpose.
 			{
 				name = "Kitchen",
 				x0 = -W,
@@ -940,52 +952,25 @@ function LanternholdBuilder.Build(): Model
 				x0 = WEST,
 				x1 = CENTRE,
 				z0 = Z0,
-				z1 = 60,
-				light = 1.1,
-				title = "LANTERNHOLD",
-			},
-			{
-				name = "StairHall0",
-				x0 = WEST,
-				x1 = CENTRE,
-				z0 = 60,
-				z1 = 205,
-				light = 1.0,
-				title = "THE STAIR HALL",
-			},
-			{
-				name = "NorthLobby",
-				x0 = WEST,
-				x1 = CENTRE,
-				z0 = 205,
 				z1 = Z1,
-				light = 0.95,
-				title = "TO THE ROAD",
+				light = 1.05,
+				title = "LANTERNHOLD",
 			},
 			{
 				name = "RampEntrance",
 				x0 = CENTRE,
 				x1 = EAST,
 				z0 = Z0,
-				z1 = 55,
+				z1 = 95,
 				light = 1.0,
 				title = "THE RAMP",
-			},
-			{
-				name = "EastRoom0",
-				x0 = CENTRE,
-				x1 = EAST,
-				z0 = 55,
-				z1 = 95,
-				light = 0.85,
-				title = "STORE ROOM",
 			},
 			{
 				name = "BathroomA",
 				x0 = CENTRE,
 				x1 = EAST,
 				z0 = 95,
-				z1 = 130,
+				z1 = 145,
 				light = 0.8,
 				title = "WASHROOM",
 			},
@@ -993,8 +978,8 @@ function LanternholdBuilder.Build(): Model
 				name = "BathroomB",
 				x0 = CENTRE,
 				x1 = EAST,
-				z0 = 130,
-				z1 = 165,
+				z0 = 145,
+				z1 = 195,
 				light = 0.8,
 				title = "WASHROOM",
 			},
@@ -1002,24 +987,10 @@ function LanternholdBuilder.Build(): Model
 				name = "ElevatorLobby0",
 				x0 = CENTRE,
 				x1 = EAST,
-				z0 = 165,
-				-- Both of these move so the lift lobby is the room the lift
-				-- is actually in. The shaft sits at z 208..226, and on this
-				-- floor and the top one it was landing in the room NEXT to
-				-- the lobby named after it - which is half of why Chris could
-				-- not tell where he was when the doors opened.
-				z1 = 240,
+				z0 = 195,
+				z1 = Z1,
 				light = 0.9,
 				title = "THE LIFT",
-			},
-			{
-				name = "NorthEastRoom",
-				x0 = CENTRE,
-				x1 = EAST,
-				z0 = 240,
-				z1 = Z1,
-				light = 0.85,
-				title = "THE WORKSHOP",
 			},
 		} :: { Room })
 	do
@@ -1043,7 +1014,7 @@ function LanternholdBuilder.Build(): Model
 	-- lift at x 93..107 opened onto the blank part of the wall three studs in
 	-- front of it. The second opening is on the lift's axis, which gives the
 	-- strip a second lane and puts a door where the doors actually open.
-	for _, z in ipairs({ 95, 130, 165, 205 }) do
+	for _, z in ipairs({ 95, 145, 195 }) do
 		wall(F.Floor0, `Bottom_East_{z}`, "Z", z, CENTRE, EAST, 0, HEADS[1], {
 			{ 70, 70 + DOOR_W },
 			{ 94, 94 + DOOR_W },
@@ -1092,71 +1063,34 @@ function LanternholdBuilder.Build(): Model
 				name = "Ballroom",
 				x0 = -W,
 				x1 = WEST,
-				z0 = 30,
+				z0 = Z0,
 				z1 = Z1,
 				light = 1.0,
 				floor = Color3.fromRGB(104, 62, 40),
 				mat = Enum.Material.WoodPlanks,
 			},
 			{
-				name = "WomensRestroom",
-				x0 = WEST,
-				x1 = CENTRE,
-				z0 = Z0,
-				z1 = 50,
-				light = 0.8,
-				title = "WASHROOM",
-			},
-			{
 				name = "StairHall1",
 				x0 = WEST,
 				x1 = CENTRE,
-				z0 = 50,
+				z0 = Z0,
 				z1 = 195,
 				light = 1.0,
-				title = "THE STAIR HALL",
 			},
 			{
 				name = "Bar",
 				x0 = WEST,
 				x1 = CENTRE,
 				z0 = 195,
-				z1 = 258,
+				z1 = Z1,
 				light = 0.95,
 				title = "THE BAR",
-			},
-			{
-				name = "Bathrooms1",
-				x0 = WEST,
-				x1 = CENTRE,
-				z0 = 258,
-				z1 = Z1,
-				light = 0.8,
-				title = "WASHROOMS",
-			},
-			{
-				name = "Storage1",
-				x0 = CENTRE,
-				x1 = EAST,
-				z0 = Z0,
-				z1 = 58,
-				light = 0.7,
-				title = "STORAGE",
-			},
-			{
-				name = "TinyRoom1",
-				x0 = CENTRE,
-				x1 = EAST,
-				z0 = 58,
-				z1 = 118,
-				light = 0.8,
-				title = "ANTEROOM",
 			},
 			{
 				name = "FrontEntrance",
 				x0 = CENTRE,
 				x1 = EAST,
-				z0 = 118,
+				z0 = Z0,
 				z1 = 195,
 				light = 1.1,
 				title = "THE FRONT STEPS",
@@ -1188,16 +1122,27 @@ function LanternholdBuilder.Build(): Model
 		{ 210, 210 + DOOR_W },
 	})
 	wall(F.Floor1, "First_EastWall", "X", CENTRE, Z0, Z1, LEVELS[2], HEADS[2], {
+		{ 60, 60 + DOOR_W },
 		{ 130, 130 + DOOR_W * 2 },
 		{ 250, 250 + DOOR_W },
 	})
 	-- Same two doors, same reason, and on this floor the north one is how you
 	-- get from the lift into the vaults without walking the length of the
 	-- lobby first.
-	for _, z in ipairs({ 58, 118, 195, 240 }) do
+	for _, z in ipairs({ 195, 240 }) do
 		wall(F.Floor1, `First_East_{z}`, "Z", z, CENTRE, EAST, LEVELS[2], HEADS[2], {
 			{ 70, 70 + DOOR_W },
 			{ 94, 94 + DOOR_W },
+		})
+	end
+
+	-- THE CENTRE STRIP GETS ITS WALLS. Washroom, stair hall, bar, washrooms -
+	-- four names over one unbroken 60 by 300 run of floor, so the bar was 91%
+	-- open and the stair hall 83%. You read a plaque saying THE BAR and
+	-- nothing around you changed. The doors line up with the stair head.
+	for _, z in ipairs({ 195 }) do
+		wall(F.Floor1, `First_Centre_{z}`, "Z", z, WEST, CENTRE, LEVELS[2], HEADS[2], {
+			{ 8, 8 + DOOR_W },
 		})
 	end
 
@@ -1296,149 +1241,68 @@ function LanternholdBuilder.Build(): Model
 				floor = C.egyptBlue,
 			},
 			{
-				name = "PrepareRoom",
-				x0 = 0,
-				x1 = 40,
-				z0 = 30,
-				z1 = 70,
-				light = 0.8,
-				title = "PREPARATION",
-			},
-			{
-				name = "GatheringArea",
-				x0 = 40,
-				x1 = EAST,
-				z0 = Z0,
-				z1 = 100,
-				light = 1.0,
-				title = "THE GATHERING",
-			},
-			{ name = "CrossHall", x0 = -W, x1 = -45, z0 = 96, z1 = 122, light = 0.9 },
-			{
 				name = "YorkRiteRoom",
 				x0 = -W,
-				x1 = -45,
-				z0 = 122,
-				z1 = 192,
+				x1 = 0,
+				z0 = 96,
+				z1 = Z1,
 				light = 0.85,
 				title = "THE YORK RITE ROOM",
 			},
 			{
-				name = "ChapelRoom",
-				x0 = -W,
-				x1 = -45,
-				z0 = 192,
-				z1 = 252,
-				light = 0.85,
-				title = "THE CHAPEL",
-			},
-			{
-				name = "Balcony2",
-				x0 = -W,
-				x1 = -45,
-				z0 = 252,
-				z1 = Z1,
-				light = 0.8,
-				title = "THE BALCONY",
-			},
-			{ name = "Hallway2", x0 = -45, x1 = 0, z0 = 96, z1 = 258, light = 0.95 },
-			{
-				name = "PreparingRoom",
-				x0 = -45,
-				x1 = 0,
-				z0 = 258,
-				z1 = Z1,
-				light = 0.8,
-				title = "PREPARATION",
-			},
-			{
-				name = "Bathroom2",
+				name = "StairHall2",
 				x0 = 0,
-				x1 = 26,
-				z0 = 258,
+				x1 = 50,
+				z0 = Z0,
 				z1 = Z1,
-				light = 0.8,
-				title = "WASHROOM",
-			},
-			{
-				name = "OESRoom",
-				x0 = 26,
-				x1 = EAST,
-				z0 = 250,
-				z1 = Z1,
-				light = 0.9,
-				title = "THE OES ROOM",
+				light = 1.0,
 			},
 			{
 				name = "ElevatorLobby2",
 				x0 = 50,
 				x1 = EAST,
-				z0 = 205,
-				z1 = 250,
+				z0 = Z0,
+				z1 = Z1,
 				light = 0.9,
 				title = "THE LIFT",
-			},
-			{
-				name = "EastRoom2",
-				x0 = 50,
-				x1 = EAST,
-				z0 = 100,
-				z1 = 205,
-				light = 0.9,
-				title = "ANTEROOM",
-			},
-			-- The room lane B rises through IS the stair hall. It was labelled
-			-- an anteroom, while the east bay - which has no stair in it - was
-			-- labelled the stair hall. Swapping the names is most of why this
-			-- floor did not make sense to walk.
-			{
-				name = "StairHall2",
-				x0 = 0,
-				x1 = 50,
-				z0 = 100,
-				z1 = 205,
-				light = 1.0,
-				title = "THE STAIR HALL",
 			},
 		} :: { Room })
 	do
 		buildRoom(F.Floor2, 3, r)
 	end
-	wall(F.Floor2, "Second_Spine", "X", 0, 96, Z1, LEVELS[3], HEADS[3], {
+	-- The whole depth now: Egyptian Room and York Rite on the west of it,
+	-- the stair hall on the east.
+	wall(F.Floor2, "Second_Spine", "X", 0, Z0, Z1, LEVELS[3], HEADS[3], {
+		{ 40, 40 + DOOR_W },
 		{ 130, 130 + DOOR_W },
 		{ 230, 230 + DOOR_W },
 	})
-	wall(F.Floor2, "Second_West", "X", -45, 96, Z1, LEVELS[3], HEADS[3], {
-		{ 150, 150 + DOOR_W },
-		{ 215, 215 + DOOR_W },
-		{ 265, 265 + DOOR_W },
+	-- Second_West, Second_Gather, Second_North and the two west cross walls
+	-- are gone with the rooms they divided. The 2nd floor is four rooms.
+	-- To x 0, not x 40. It ran 40 studs past the Egyptian Room's corner and
+	-- finished up standing four studs inside the gathering area, which is one
+	-- of the walls Chris meant by "walls are weird".
+	wall(F.Floor2, "Second_Egypt", "Z", 96, -W, 0, LEVELS[3], HEADS[3], {
+		{ -70, -70 + DOOR_W * 2 },
 	})
-	wall(
-		F.Floor2,
-		"Second_Egypt",
-		"Z",
-		96,
-		-W,
-		40,
-		LEVELS[3],
-		HEADS[3],
-		{ { -70, -70 + DOOR_W * 2 } }
-	)
-	wall(
-		F.Floor2,
-		"Second_Gather",
-		"Z",
-		100,
-		40,
-		EAST,
-		LEVELS[3],
-		HEADS[3],
-		{ { 60, 60 + DOOR_W } }
-	)
+	-- From x 0 now, so the gathering area has a north wall across its whole
+	-- width. The first door is on the stair head so you come up out of the
+	-- stair and through it.
+
 	-- Two doors. With one at z 140 the lift lobby's only way out was north
 	-- through the OES room, and a lift that opens onto a single door through
 	-- somebody else's room is most of what "the flow is pretty rough" means.
-	wall(F.Floor2, "Second_East", "X", 50, 100, 250, LEVELS[3], HEADS[3], {
+	-- THE WEST STRIP. York Rite, Chapel and Balcony sat in one 65 by 204 run
+	-- of open floor - the chapel stood 72% open and the York Rite room 74%,
+	-- which is why neither of them felt like a room you had walked into.
+
+	-- and the north end of the floor, across the stair hall and the lift
+
+	-- Stair hall | lift core, the full depth. The lift is at x 92..108 and
+	-- stair C starts at x 64..84, so "elevator, and stairs going up" is one
+	-- room on this floor.
+	wall(F.Floor2, "Second_East", "X", 50, Z0, Z1, LEVELS[3], HEADS[3], {
+		{ 40, 40 + DOOR_W },
 		{ 140, 140 + DOOR_W },
 		{ 196, 196 + DOOR_W },
 	})
@@ -1458,54 +1322,26 @@ function LanternholdBuilder.Build(): Model
 			{
 				name = "CigarRoom",
 				x0 = -50,
-				x1 = 70,
+				x1 = 50,
 				z0 = Z0,
 				z1 = 120,
 				light = 0.8,
 				title = "THE CIGAR ROOM",
 			},
 			{
-				name = "EastRoom3",
-				x0 = 70,
-				x1 = EAST,
-				z0 = Z0,
-				z1 = 120,
-				light = 0.8,
-				title = "STORAGE",
-			},
-			{
 				name = "Museum",
 				x0 = -W,
-				x1 = -25,
+				x1 = 50,
 				z0 = 120,
-				z1 = 232,
+				z1 = Z1,
 				light = 0.9,
 				title = "THE MUSEUM",
-			},
-			{
-				name = "TinyRoom3",
-				x0 = -W,
-				x1 = -25,
-				z0 = 232,
-				z1 = Z1,
-				light = 0.8,
-				title = "ANTEROOM",
-			},
-			{ name = "UpperHall3", x0 = -25, x1 = 50, z0 = 120, z1 = Z1, light = 0.9 },
-			{
-				name = "StairHall3",
-				x0 = 50,
-				x1 = EAST,
-				z0 = 120,
-				z1 = 200,
-				light = 0.95,
-				title = "THE STAIR HALL",
 			},
 			{
 				name = "ElevatorLobby3",
 				x0 = 50,
 				x1 = EAST,
-				z0 = 200,
+				z0 = Z0,
 				z1 = Z1,
 				light = 0.9,
 				title = "THE LIFT",
@@ -1514,22 +1350,21 @@ function LanternholdBuilder.Build(): Model
 	do
 		buildRoom(F.Floor3, 4, r)
 	end
-	wall(F.Floor3, "Third_Cigar", "Z", 120, -W, EAST, LEVELS[4], HEADS[4], {
+	wall(F.Floor3, "Third_Cigar", "Z", 120, -W, 50, LEVELS[4], HEADS[4], {
 		{ -60, -60 + DOOR_W },
 		{ 20, 20 + DOOR_W },
 	})
 	wall(F.Floor3, "Third_Library", "X", -50, Z0, 120, LEVELS[4], HEADS[4], { { 40, 40 + DOOR_W } })
-	wall(
-		F.Floor3,
-		"Third_Museum",
-		"X",
-		-25,
-		120,
-		Z1,
-		LEVELS[4],
-		HEADS[4],
-		{ { 160, 160 + DOOR_W } }
-	)
+	-- Third_Museum is gone: the museum is the whole north of this floor now.
+
+	-- The top floor's east side was open to the upper hall down its whole
+	-- length, so the stair and lift core and the hall read as one 135 stud
+	-- room with two names. This is the wall between them.
+	wall(F.Floor3, "Third_Core", "X", 50, Z0, Z1, LEVELS[4], HEADS[4], {
+		{ 40, 40 + DOOR_W },
+		{ 150, 150 + DOOR_W },
+		{ 250, 250 + DOOR_W },
+	})
 
 	-- -------------------------------------------------------------- the core
 	-- NOT one stack. The plans put the stair in the centre on the lower
@@ -1917,15 +1752,22 @@ function LanternholdBuilder.Build(): Model
 			end
 		end
 
+		-- IN THE WALL BETWEEN THE KITCHEN AND THE BANQUET HALL, which is what
+		-- a serving hatch is. It was at x -90..-58, z 40..50 - the middle of
+		-- the kitchen floor, buried under the prep table (x -74..-40) and
+		-- running into the ranges (x -104..-86). Pathfinding could not reach
+		-- it from any side: every approach landed on the table top.
+		--
+		-- x -100..-75 keeps it clear of the doorway at x -70..-59.
 		local hatch = box(
 			F.Fixtures,
 			"KitchenHatch",
-			-90,
-			-58,
+			-100,
+			-75,
 			y,
 			y + 4.2,
-			40,
-			50,
+			106,
+			114,
 			C.timber,
 			Enum.Material.WoodPlanks
 		)
@@ -2209,7 +2051,11 @@ function LanternholdBuilder.Build(): Model
 		-- ---- WASHROOMS. Stalls and basins, on both of the bottom floor's
 		-- and the ones above. Cheap, and their absence is the kind of thing
 		-- that makes a building read as a mock-up.
+		-- Needs at least 34 studs of width: stalls are set out from the left
+		-- wall and basins from the right, and under that they meet in the
+		-- middle and leave no lane a player can walk down.
 		local function washroom(x0: number, x1: number, z0: number, z1: number, y: number)
+			assert(x1 - x0 >= 34, `washroom {x0}..{x1} is too narrow to walk into`)
 			for i = 0, 2 do
 				local z = z0 + 6 + i * 11
 				box(F.Fixtures, "StallWall", x0 + 4, x0 + 20, y, y + 11, z, z + 0.8, C.trim)
@@ -2233,11 +2079,10 @@ function LanternholdBuilder.Build(): Model
 				)
 			end
 		end
-		washroom(CENTRE, EAST, 95, 130, B)
-		washroom(CENTRE, EAST, 130, 165, B)
-		washroom(WEST, CENTRE, Z0, 50, L1)
-		washroom(WEST, CENTRE, 258, Z1, L1)
-		washroom(0, 26, 258, Z1, L2)
+		-- The two bathrooms are both on the bottom floor, which is where
+		-- Chris's list puts them and the only floor that has any.
+		washroom(CENTRE, EAST, 95, 145, B)
+		washroom(CENTRE, EAST, 145, 195, B)
 
 		-- ---- THE BALLROOM. Chandeliers on the beam line, a dais at the north
 		-- end for the band, and chairs round the walls the way a ballroom is
@@ -2281,26 +2126,6 @@ function LanternholdBuilder.Build(): Model
 		for i = 0, 7 do
 			chair(-W + 9, 60 + i * 28, L1, 1)
 			chair(WEST - 9, 60 + i * 28, L1, -1)
-		end
-
-		-- ---- THE GATHERING AREA, which is the room people stand in before a
-		-- meeting: low tables, chairs in twos, nothing formal.
-		for i = 0, 2 do
-			local x = 54 + i * 20
-			box(
-				F.Fixtures,
-				`GatherTable_{i}`,
-				x,
-				x + 12,
-				L2,
-				L2 + 3.2,
-				30,
-				42,
-				C.timber,
-				Enum.Material.WoodPlanks
-			)
-			chair(x + 6, 24, L2, 1)
-			chair(x + 6, 48, L2, -1)
 		end
 
 		-- ---- THE CHAPEL and THE YORK RITE ROOM. Both are meeting rooms:
@@ -2354,9 +2179,9 @@ function LanternholdBuilder.Build(): Model
 			)
 			label(lectern, nm, Enum.NormalId.Front, 16)
 		end
-		meetingRoom(-W, -45, 122, 192, L2, "YORK RITE")
-		meetingRoom(-W, -45, 192, 252, L2, "THE CHAPEL")
-		meetingRoom(26, EAST, 250, Z1, L2, "ORDER OF THE EASTERN STAR")
+		-- One meeting room on the lodge floor, not three. The chapel and the
+		-- OES room are not on Chris's list for the 2nd floor.
+		meetingRoom(-W, 0, 120, 240, L2, "YORK RITE")
 
 		-- ---- THE FRONT ENTRANCE. A porter's desk and a pair of doors, so
 		-- the public way in reads as the front of a building.
