@@ -88,6 +88,11 @@ local C = {
 	egyptBlue = Color3.fromRGB(58, 62, 118), -- the carpet
 	egyptTeal = Color3.fromRGB(46, 108, 112), -- the seating
 	dark = Color3.fromRGB(32, 30, 32),
+	-- Added when the furnishing pass reached for them and found nil: a part
+	-- with a nil Color stops the whole Build, so the hub simply did not exist
+	-- and the server logged "Color3 expected, got nil" once.
+	trim = Color3.fromRGB(168, 160, 146), -- painted metalwork and worktops
+	glass = Color3.fromRGB(198, 214, 212),
 }
 
 local WARM = Color3.fromRGB(255, 216, 168)
@@ -702,6 +707,12 @@ type Room = {
 	light: number?,
 	floor: Color3?,
 	mat: Enum.Material?,
+	-- What the room is called, on a brass plaque above its south wall. The
+	-- old build had one fingerpost in the entrance hall with five arms that
+	-- overlapped each other and clipped the wall, and Chris: "the whole
+	-- signpost does nothing to help". A building this size cannot be signed
+	-- from one post. It signs itself, room by room, the way a real one does.
+	title: string?,
 }
 
 -- --------------------------------------------------------------------------
@@ -759,6 +770,23 @@ function LanternholdBuilder.Build(): Model
 			end
 		end
 		trim(folder, room.name, room.x0, room.x1, room.z0, room.z1, y, head)
+		if room.title then
+			local cx = (room.x0 + room.x1) / 2
+			local plate = box(
+				folder,
+				`{room.name}_Plaque`,
+				cx - 22,
+				cx + 22,
+				y + DOOR_H + 1,
+				y + DOOR_H + 5,
+				room.z0 + 1.4,
+				room.z0 + 2,
+				C.brass,
+				Enum.Material.Metal
+			)
+			plate.CanCollide, plate.CanQuery = false, false
+			label(plate, room.title :: string, Enum.NormalId.Back, 20)
+		end
 		-- The ceiling of THIS room is the underside of the floor above, so it
 		-- takes the next level's wells, not its own.
 		ceilingOver(
@@ -889,17 +917,105 @@ function LanternholdBuilder.Build(): Model
 	-- with the kitchen behind it.
 	for _, r in
 		ipairs({
-			{ name = "Kitchen", x0 = -W, x1 = WEST, z0 = Z0, z1 = 110, light = 1.0 },
-			{ name = "BanquetHall", x0 = -W, x1 = WEST, z0 = 110, z1 = Z1, light = 1.0 },
-			{ name = "ArrivalHall", x0 = WEST, x1 = CENTRE, z0 = Z0, z1 = 60, light = 1.1 },
-			{ name = "StairHall0", x0 = WEST, x1 = CENTRE, z0 = 60, z1 = 205, light = 1.0 },
-			{ name = "NorthLobby", x0 = WEST, x1 = CENTRE, z0 = 205, z1 = Z1, light = 0.95 },
-			{ name = "RampEntrance", x0 = CENTRE, x1 = EAST, z0 = Z0, z1 = 55, light = 1.0 },
-			{ name = "EastRoom0", x0 = CENTRE, x1 = EAST, z0 = 55, z1 = 95, light = 0.85 },
-			{ name = "BathroomA", x0 = CENTRE, x1 = EAST, z0 = 95, z1 = 130, light = 0.8 },
-			{ name = "BathroomB", x0 = CENTRE, x1 = EAST, z0 = 130, z1 = 165, light = 0.8 },
-			{ name = "ElevatorLobby0", x0 = CENTRE, x1 = EAST, z0 = 165, z1 = 205, light = 0.9 },
-			{ name = "NorthEastRoom", x0 = CENTRE, x1 = EAST, z0 = 205, z1 = Z1, light = 0.85 },
+			{
+				name = "Kitchen",
+				x0 = -W,
+				x1 = WEST,
+				z0 = Z0,
+				z1 = 110,
+				light = 1.0,
+				title = "THE KITCHEN",
+			},
+			{
+				name = "BanquetHall",
+				x0 = -W,
+				x1 = WEST,
+				z0 = 110,
+				z1 = Z1,
+				light = 1.0,
+				title = "THE BANQUET HALL",
+			},
+			{
+				name = "ArrivalHall",
+				x0 = WEST,
+				x1 = CENTRE,
+				z0 = Z0,
+				z1 = 60,
+				light = 1.1,
+				title = "LANTERNHOLD",
+			},
+			{
+				name = "StairHall0",
+				x0 = WEST,
+				x1 = CENTRE,
+				z0 = 60,
+				z1 = 205,
+				light = 1.0,
+				title = "THE STAIR HALL",
+			},
+			{
+				name = "NorthLobby",
+				x0 = WEST,
+				x1 = CENTRE,
+				z0 = 205,
+				z1 = Z1,
+				light = 0.95,
+				title = "TO THE ROAD",
+			},
+			{
+				name = "RampEntrance",
+				x0 = CENTRE,
+				x1 = EAST,
+				z0 = Z0,
+				z1 = 55,
+				light = 1.0,
+				title = "THE RAMP",
+			},
+			{
+				name = "EastRoom0",
+				x0 = CENTRE,
+				x1 = EAST,
+				z0 = 55,
+				z1 = 95,
+				light = 0.85,
+				title = "STORE ROOM",
+			},
+			{
+				name = "BathroomA",
+				x0 = CENTRE,
+				x1 = EAST,
+				z0 = 95,
+				z1 = 130,
+				light = 0.8,
+				title = "WASHROOM",
+			},
+			{
+				name = "BathroomB",
+				x0 = CENTRE,
+				x1 = EAST,
+				z0 = 130,
+				z1 = 165,
+				light = 0.8,
+				title = "WASHROOM",
+			},
+			{
+				name = "ElevatorLobby0",
+				x0 = CENTRE,
+				x1 = EAST,
+				z0 = 165,
+				z1 = 205,
+				light = 0.9,
+				title = "THE LIFT",
+			},
+			{
+				name = "NorthEastRoom",
+				x0 = CENTRE,
+				x1 = EAST,
+				z0 = 205,
+				z1 = Z1,
+				light = 0.85,
+				title = "THE WORKSHOP",
+			},
 		} :: { Room })
 	do
 		buildRoom(F.Floor0, 1, r)
@@ -930,15 +1046,22 @@ function LanternholdBuilder.Build(): Model
 		)
 	end
 
+	-- The exit vestibule is WALLS, not a block. It was a solid lump of
+	-- limestone from y -2 to the ceiling filling the whole opening, so the
+	-- north door - the way out to the road, and now the way you leave for a
+	-- raid - was plugged. Everything else in the building was reachable and
+	-- the one thing you actually have to do was not.
+	wall(F.Floor0, "VestibuleWest", "X", -18, Z1, Z1 + 26, 0, HEADS[1], {})
+	wall(F.Floor0, "VestibuleEast", "X", 18, Z1, Z1 + 26, 0, HEADS[1], {})
 	box(
 		F.Floor0,
-		"ExitVestibule",
-		-18,
-		18,
-		-2,
+		"VestibuleRoof",
+		-20,
+		20,
 		HEADS[1],
-		Z1,
-		Z1 + 26,
+		HEADS[1] + 3,
+		Z1 - 1,
+		Z1 + 27,
 		C.limestone,
 		Enum.Material.Concrete
 	)
@@ -971,15 +1094,87 @@ function LanternholdBuilder.Build(): Model
 				floor = Color3.fromRGB(104, 62, 40),
 				mat = Enum.Material.WoodPlanks,
 			},
-			{ name = "WomensRestroom", x0 = WEST, x1 = CENTRE, z0 = Z0, z1 = 50, light = 0.8 },
-			{ name = "StairHall1", x0 = WEST, x1 = CENTRE, z0 = 50, z1 = 195, light = 1.0 },
-			{ name = "Bar", x0 = WEST, x1 = CENTRE, z0 = 195, z1 = 258, light = 0.95 },
-			{ name = "Bathrooms1", x0 = WEST, x1 = CENTRE, z0 = 258, z1 = Z1, light = 0.8 },
-			{ name = "Storage1", x0 = CENTRE, x1 = EAST, z0 = Z0, z1 = 58, light = 0.7 },
-			{ name = "TinyRoom1", x0 = CENTRE, x1 = EAST, z0 = 58, z1 = 118, light = 0.8 },
-			{ name = "FrontEntrance", x0 = CENTRE, x1 = EAST, z0 = 118, z1 = 195, light = 1.1 },
-			{ name = "ElevatorLobby1", x0 = CENTRE, x1 = EAST, z0 = 195, z1 = 240, light = 0.9 },
-			{ name = "SecretVaults", x0 = CENTRE, x1 = EAST, z0 = 240, z1 = Z1, light = 0.75 },
+			{
+				name = "WomensRestroom",
+				x0 = WEST,
+				x1 = CENTRE,
+				z0 = Z0,
+				z1 = 50,
+				light = 0.8,
+				title = "WASHROOM",
+			},
+			{
+				name = "StairHall1",
+				x0 = WEST,
+				x1 = CENTRE,
+				z0 = 50,
+				z1 = 195,
+				light = 1.0,
+				title = "THE STAIR HALL",
+			},
+			{
+				name = "Bar",
+				x0 = WEST,
+				x1 = CENTRE,
+				z0 = 195,
+				z1 = 258,
+				light = 0.95,
+				title = "THE BAR",
+			},
+			{
+				name = "Bathrooms1",
+				x0 = WEST,
+				x1 = CENTRE,
+				z0 = 258,
+				z1 = Z1,
+				light = 0.8,
+				title = "WASHROOMS",
+			},
+			{
+				name = "Storage1",
+				x0 = CENTRE,
+				x1 = EAST,
+				z0 = Z0,
+				z1 = 58,
+				light = 0.7,
+				title = "STORAGE",
+			},
+			{
+				name = "TinyRoom1",
+				x0 = CENTRE,
+				x1 = EAST,
+				z0 = 58,
+				z1 = 118,
+				light = 0.8,
+				title = "ANTEROOM",
+			},
+			{
+				name = "FrontEntrance",
+				x0 = CENTRE,
+				x1 = EAST,
+				z0 = 118,
+				z1 = 195,
+				light = 1.1,
+				title = "THE FRONT STEPS",
+			},
+			{
+				name = "ElevatorLobby1",
+				x0 = CENTRE,
+				x1 = EAST,
+				z0 = 195,
+				z1 = 240,
+				light = 0.9,
+				title = "THE LIFT",
+			},
+			{
+				name = "SecretVaults",
+				x0 = CENTRE,
+				x1 = EAST,
+				z0 = 240,
+				z1 = Z1,
+				light = 0.75,
+				title = "THE VAULTS",
+			},
 		} :: { Room })
 	do
 		buildRoom(F.Floor1, 2, r)
@@ -1100,19 +1295,107 @@ function LanternholdBuilder.Build(): Model
 				light = 0,
 				floor = C.egyptBlue,
 			},
-			{ name = "PrepareRoom", x0 = 0, x1 = 40, z0 = 30, z1 = 70, light = 0.8 },
-			{ name = "GatheringArea", x0 = 40, x1 = EAST, z0 = Z0, z1 = 100, light = 1.0 },
+			{
+				name = "PrepareRoom",
+				x0 = 0,
+				x1 = 40,
+				z0 = 30,
+				z1 = 70,
+				light = 0.8,
+				title = "PREPARATION",
+			},
+			{
+				name = "GatheringArea",
+				x0 = 40,
+				x1 = EAST,
+				z0 = Z0,
+				z1 = 100,
+				light = 1.0,
+				title = "THE GATHERING",
+			},
 			{ name = "CrossHall", x0 = -W, x1 = -45, z0 = 96, z1 = 122, light = 0.9 },
-			{ name = "YorkRiteRoom", x0 = -W, x1 = -45, z0 = 122, z1 = 192, light = 0.85 },
-			{ name = "ChapelRoom", x0 = -W, x1 = -45, z0 = 192, z1 = 252, light = 0.85 },
-			{ name = "Balcony2", x0 = -W, x1 = -45, z0 = 252, z1 = Z1, light = 0.8 },
+			{
+				name = "YorkRiteRoom",
+				x0 = -W,
+				x1 = -45,
+				z0 = 122,
+				z1 = 192,
+				light = 0.85,
+				title = "THE YORK RITE ROOM",
+			},
+			{
+				name = "ChapelRoom",
+				x0 = -W,
+				x1 = -45,
+				z0 = 192,
+				z1 = 252,
+				light = 0.85,
+				title = "THE CHAPEL",
+			},
+			{
+				name = "Balcony2",
+				x0 = -W,
+				x1 = -45,
+				z0 = 252,
+				z1 = Z1,
+				light = 0.8,
+				title = "THE BALCONY",
+			},
 			{ name = "Hallway2", x0 = -45, x1 = 0, z0 = 96, z1 = 258, light = 0.95 },
-			{ name = "PreparingRoom", x0 = -45, x1 = 0, z0 = 258, z1 = Z1, light = 0.8 },
-			{ name = "Bathroom2", x0 = 0, x1 = 26, z0 = 258, z1 = Z1, light = 0.8 },
-			{ name = "OESRoom", x0 = 26, x1 = EAST, z0 = 250, z1 = Z1, light = 0.9 },
-			{ name = "ElevatorLobby2", x0 = 50, x1 = EAST, z0 = 205, z1 = 250, light = 0.9 },
-			{ name = "StairHall2", x0 = 50, x1 = EAST, z0 = 100, z1 = 205, light = 1.0 },
-			{ name = "EastRoom2", x0 = 0, x1 = 50, z0 = 100, z1 = 205, light = 0.85 },
+			{
+				name = "PreparingRoom",
+				x0 = -45,
+				x1 = 0,
+				z0 = 258,
+				z1 = Z1,
+				light = 0.8,
+				title = "PREPARATION",
+			},
+			{
+				name = "Bathroom2",
+				x0 = 0,
+				x1 = 26,
+				z0 = 258,
+				z1 = Z1,
+				light = 0.8,
+				title = "WASHROOM",
+			},
+			{
+				name = "OESRoom",
+				x0 = 26,
+				x1 = EAST,
+				z0 = 250,
+				z1 = Z1,
+				light = 0.9,
+				title = "THE OES ROOM",
+			},
+			{
+				name = "ElevatorLobby2",
+				x0 = 50,
+				x1 = EAST,
+				z0 = 205,
+				z1 = 250,
+				light = 0.9,
+				title = "THE LIFT",
+			},
+			{
+				name = "StairHall2",
+				x0 = 50,
+				x1 = EAST,
+				z0 = 100,
+				z1 = 205,
+				light = 1.0,
+				title = "THE STAIR HALL",
+			},
+			{
+				name = "EastRoom2",
+				x0 = 0,
+				x1 = 50,
+				z0 = 100,
+				z1 = 205,
+				light = 0.85,
+				title = "ANTEROOM",
+			},
 		} :: { Room })
 	do
 		buildRoom(F.Floor2, 3, r)
@@ -1153,14 +1436,70 @@ function LanternholdBuilder.Build(): Model
 	-- ------------------------------------------------------------ 3RD FLOOR
 	for _, r in
 		ipairs({
-			{ name = "Library", x0 = -W, x1 = -50, z0 = Z0, z1 = 120, light = 0.85 },
-			{ name = "CigarRoom", x0 = -50, x1 = 70, z0 = Z0, z1 = 120, light = 0.8 },
-			{ name = "EastRoom3", x0 = 70, x1 = EAST, z0 = Z0, z1 = 120, light = 0.8 },
-			{ name = "Museum", x0 = -W, x1 = -25, z0 = 120, z1 = 232, light = 0.9 },
-			{ name = "TinyRoom3", x0 = -W, x1 = -25, z0 = 232, z1 = Z1, light = 0.8 },
+			{
+				name = "Library",
+				x0 = -W,
+				x1 = -50,
+				z0 = Z0,
+				z1 = 120,
+				light = 0.85,
+				title = "THE LIBRARY",
+			},
+			{
+				name = "CigarRoom",
+				x0 = -50,
+				x1 = 70,
+				z0 = Z0,
+				z1 = 120,
+				light = 0.8,
+				title = "THE CIGAR ROOM",
+			},
+			{
+				name = "EastRoom3",
+				x0 = 70,
+				x1 = EAST,
+				z0 = Z0,
+				z1 = 120,
+				light = 0.8,
+				title = "STORAGE",
+			},
+			{
+				name = "Museum",
+				x0 = -W,
+				x1 = -25,
+				z0 = 120,
+				z1 = 232,
+				light = 0.9,
+				title = "THE MUSEUM",
+			},
+			{
+				name = "TinyRoom3",
+				x0 = -W,
+				x1 = -25,
+				z0 = 232,
+				z1 = Z1,
+				light = 0.8,
+				title = "ANTEROOM",
+			},
 			{ name = "UpperHall3", x0 = -25, x1 = 50, z0 = 120, z1 = Z1, light = 0.9 },
-			{ name = "StairHall3", x0 = 50, x1 = EAST, z0 = 120, z1 = 240, light = 0.95 },
-			{ name = "ElevatorLobby3", x0 = 50, x1 = EAST, z0 = 240, z1 = Z1, light = 0.9 },
+			{
+				name = "StairHall3",
+				x0 = 50,
+				x1 = EAST,
+				z0 = 120,
+				z1 = 240,
+				light = 0.95,
+				title = "THE STAIR HALL",
+			},
+			{
+				name = "ElevatorLobby3",
+				x0 = 50,
+				x1 = EAST,
+				z0 = 240,
+				z1 = Z1,
+				light = 0.9,
+				title = "THE LIFT",
+			},
 		} :: { Room })
 	do
 		buildRoom(F.Floor3, 4, r)
@@ -1715,14 +2054,344 @@ function LanternholdBuilder.Build(): Model
 		end
 	end
 
+	-- ---------------------------------------------------------- furnishings
+	-- Chris: "Kitchen? Eating area? Ballroom? Furnishings? Bathrooms? Lol!"
+	-- A room with a name and no contents is a labelled box. These are what
+	-- each room is FOR, and between them they are most of the difference
+	-- between a floor plan and a building.
+	do
+		local B, L1, L2, L3 = LEVELS[1], LEVELS[2], LEVELS[3], LEVELS[4]
+
+		--- A chair, facing +Z unless flipped.
+		local function chair(x: number, z: number, y: number, face: number)
+			box(
+				F.Fixtures,
+				"Chair",
+				x - 2.4,
+				x + 2.4,
+				y,
+				y + 2.4,
+				z - 2.4,
+				z + 2.4,
+				C.timber,
+				Enum.Material.WoodPlanks
+			)
+			box(
+				F.Fixtures,
+				"ChairBack",
+				x - 2.4,
+				x + 2.4,
+				y + 2.4,
+				y + 6,
+				z + face * 1.8,
+				z + face * 2.4,
+				C.egyptTeal,
+				Enum.Material.Fabric
+			)
+		end
+
+		-- ---- THE KITCHEN. Ranges down one wall, a long prep table, and the
+		-- pass through to the banquet hall where the hatch already is.
+		for i = 0, 3 do
+			local z = 14 + i * 22
+			box(
+				F.Fixtures,
+				`Range_{i}`,
+				-W + 6,
+				-W + 24,
+				B,
+				B + 5,
+				z,
+				z + 16,
+				C.iron,
+				Enum.Material.Metal
+			)
+			box(
+				F.Fixtures,
+				`RangeHood_{i}`,
+				-W + 5,
+				-W + 26,
+				B + 13,
+				B + 19,
+				z - 1,
+				z + 17,
+				C.iron,
+				Enum.Material.Metal
+			)
+		end
+		box(F.Fixtures, "PrepTable", -74, -40, B, B + 4.4, 20, 92, C.trim, Enum.Material.Metal)
+		for i = 0, 2 do
+			box(
+				F.Fixtures,
+				`KitchenShelf_{i}`,
+				-36,
+				-22,
+				B,
+				B + 12,
+				16 + i * 30,
+				32 + i * 30,
+				C.timber,
+				Enum.Material.WoodPlanks
+			)
+		end
+
+		-- ---- THE BANQUET HALL is the eating area, and three long tables is
+		-- a refectory. Chairs down both sides of each so it reads as a place
+		-- people sit rather than a place tables are stored.
+		for i = 0, 2 do
+			local z = 140 + i * 50
+			for k = 0, 4 do
+				chair(-98, z + 4 + k * 6, B, 1)
+				chair(-28, z + 4 + k * 6, B, -1)
+			end
+		end
+		box(
+			F.Fixtures,
+			"ServingTable",
+			-92,
+			-34,
+			B + 3,
+			B + 4,
+			268,
+			288,
+			C.timber,
+			Enum.Material.WoodPlanks
+		)
+
+		-- ---- WASHROOMS. Stalls and basins, on both of the bottom floor's
+		-- and the ones above. Cheap, and their absence is the kind of thing
+		-- that makes a building read as a mock-up.
+		local function washroom(x0: number, x1: number, z0: number, z1: number, y: number)
+			for i = 0, 2 do
+				local z = z0 + 6 + i * 11
+				box(F.Fixtures, "StallWall", x0 + 4, x0 + 20, y, y + 11, z, z + 0.8, C.trim)
+				box(F.Fixtures, "Pan", x0 + 8, x0 + 13, y, y + 3.4, z + 3, z + 8, C.plaster)
+			end
+			for i = 0, 2 do
+				local z = z0 + 8 + i * 10
+				box(F.Fixtures, "Basin", x1 - 12, x1 - 4, y + 4, y + 5.4, z, z + 7, C.plaster)
+				box(
+					F.Fixtures,
+					"Mirror",
+					x1 - 3.4,
+					x1 - 2.8,
+					y + 7,
+					y + 15,
+					z,
+					z + 7,
+					C.glass,
+					Enum.Material.Glass,
+					0.25
+				)
+			end
+		end
+		washroom(CENTRE, EAST, 95, 130, B)
+		washroom(CENTRE, EAST, 130, 165, B)
+		washroom(WEST, CENTRE, Z0, 50, L1)
+		washroom(WEST, CENTRE, 258, Z1, L1)
+		washroom(0, 26, 258, Z1, L2)
+
+		-- ---- THE BALLROOM. Chandeliers on the beam line, a dais at the north
+		-- end for the band, and chairs round the walls the way a ballroom is
+		-- laid out when it is not being danced in.
+		for i = 0, 4 do
+			local z = 70 + i * 48
+			local body = part(
+				F.Fixtures,
+				`Chandelier_{i}`,
+				Vector3.new(16, 3, 16),
+				CFrame.new(-62, HEADS[2] - 14, z),
+				C.brass,
+				Enum.Material.Metal
+			)
+			body.CanCollide, body.CanQuery = false, false
+			local chain = part(
+				F.Fixtures,
+				`ChandelierChain_{i}`,
+				Vector3.new(0.8, 11, 0.8),
+				CFrame.new(-62, HEADS[2] - 7, z),
+				C.iron,
+				Enum.Material.Metal
+			)
+			chain.CanCollide, chain.CanQuery = false, false
+			local l = Instance.new("PointLight")
+			l.Color, l.Brightness, l.Range, l.Shadows = WARM, 0.75, 44, false
+			l.Parent = body
+		end
+		box(
+			F.Fixtures,
+			"BallroomDais",
+			-96,
+			-28,
+			L1,
+			L1 + 3,
+			262,
+			292,
+			C.timber,
+			Enum.Material.WoodPlanks
+		)
+		for i = 0, 7 do
+			chair(-W + 9, 60 + i * 28, L1, 1)
+			chair(WEST - 9, 60 + i * 28, L1, -1)
+		end
+
+		-- ---- THE GATHERING AREA, which is the room people stand in before a
+		-- meeting: low tables, chairs in twos, nothing formal.
+		for i = 0, 2 do
+			local x = 54 + i * 20
+			box(
+				F.Fixtures,
+				`GatherTable_{i}`,
+				x,
+				x + 12,
+				L2,
+				L2 + 3.2,
+				30,
+				42,
+				C.timber,
+				Enum.Material.WoodPlanks
+			)
+			chair(x + 6, 24, L2, 1)
+			chair(x + 6, 48, L2, -1)
+		end
+
+		-- ---- THE CHAPEL and THE YORK RITE ROOM. Both are meeting rooms:
+		-- benches facing a lectern at the far end.
+		local function meetingRoom(
+			x0: number,
+			x1: number,
+			z0: number,
+			z1: number,
+			y: number,
+			nm: string
+		)
+			for i = 0, 4 do
+				local z = z0 + 12 + i * 10
+				box(
+					F.Fixtures,
+					`{nm}_Bench_{i}`,
+					x0 + 12,
+					x1 - 12,
+					y + 1.4,
+					y + 2.2,
+					z,
+					z + 5,
+					C.timber,
+					Enum.Material.WoodPlanks
+				)
+				box(
+					F.Fixtures,
+					`{nm}_BenchBack_{i}`,
+					x0 + 12,
+					x1 - 12,
+					y + 2.2,
+					y + 6.4,
+					z + 4.2,
+					z + 5,
+					C.timber,
+					Enum.Material.WoodPlanks
+				)
+			end
+			local lectern = box(
+				F.Fixtures,
+				`{nm}_Lectern`,
+				(x0 + x1) / 2 - 5,
+				(x0 + x1) / 2 + 5,
+				y,
+				y + 7,
+				z1 - 16,
+				z1 - 10,
+				C.timber,
+				Enum.Material.WoodPlanks
+			)
+			label(lectern, nm, Enum.NormalId.Front, 16)
+		end
+		meetingRoom(-W, -45, 122, 192, L2, "YORK RITE")
+		meetingRoom(-W, -45, 192, 252, L2, "THE CHAPEL")
+		meetingRoom(26, EAST, 250, Z1, L2, "ORDER OF THE EASTERN STAR")
+
+		-- ---- THE FRONT ENTRANCE. A porter's desk and a pair of doors, so
+		-- the public way in reads as the front of a building.
+		local desk = box(
+			F.Fixtures,
+			"PorterDesk",
+			56,
+			90,
+			L1,
+			L1 + 4.4,
+			160,
+			172,
+			C.timber,
+			Enum.Material.WoodPlanks
+		)
+		label(desk, "LANTERNHOLD", Enum.NormalId.Front, 20)
+		box(
+			F.Fixtures,
+			"PorterTop",
+			54,
+			92,
+			L1 + 4.4,
+			L1 + 5,
+			158,
+			174,
+			C.dark,
+			Enum.Material.Slate
+		)
+
+		-- ---- THE MUSEUM. Cases, which is what a museum is, and what makes
+		-- the relic bench upstairs mean something.
+		for i = 0, 3 do
+			local z = 130 + i * 24
+			box(
+				F.Fixtures,
+				`Case_{i}`,
+				-W + 10,
+				-W + 26,
+				L3,
+				L3 + 3,
+				z,
+				z + 16,
+				C.timber,
+				Enum.Material.WoodPlanks
+			)
+			box(
+				F.Fixtures,
+				`CaseGlass_{i}`,
+				-W + 10,
+				-W + 26,
+				L3 + 3,
+				L3 + 11,
+				z,
+				z + 16,
+				C.glass,
+				Enum.Material.Glass,
+				0.62
+			)
+		end
+	end
+
 	-- --------------------------------------------------------------- outside
 	do
 		local y = LEVELS[1]
+		-- YOU ARRIVE AT ONE END AND LEAVE FROM THE OTHER, which is what the
+		-- plan already said and the old build ignored. Chris: "Leaving for
+		-- raids should happen where?"
+		--
+		-- The bottom floor plan has the ramp entrance bottom-right and an
+		-- EXIT at the top centre. So that is the flow: home up the ramp into
+		-- the arrival hall at the south, and out by walking the length of the
+		-- building - past the Lamp Wall, the kitchen and the banquet hall -
+		-- and through the north door onto the road.
+		--
+		-- The old build returned you inside at the south and departed you
+		-- from a pad outside the south-east corner: the same end, reading as
+		-- nothing. Walking the hall to leave makes going out a decision you
+		-- take rather than a button you happen to find.
 		box(
 			F.Shell,
-			"Apron",
-			-W - 40,
-			W + 40,
+			"SouthApron",
+			-W - 30,
+			W + 30,
 			-3,
 			-1,
 			Z0 - 92,
@@ -1730,48 +2399,85 @@ function LanternholdBuilder.Build(): Model
 			C.limestone,
 			Enum.Material.Concrete
 		)
+		box(
+			F.Shell,
+			"RoadApron",
+			-70,
+			70,
+			-3,
+			-1,
+			Z1 + 44,
+			Z1 + 120,
+			C.limestone,
+			Enum.Material.Concrete
+		)
+		for i = 0, 5 do
+			box(
+				F.Shell,
+				`RoadStep_{i}`,
+				-26,
+				26,
+				-0.5 - i * 0.4,
+				0.4 - i * 0.4,
+				Z1 + 26 + i * 2.6,
+				Z1 + 32 + i * 2.6,
+				C.limestone,
+				Enum.Material.Concrete
+			)
+		end
+		-- ON THE THRESHOLD, inside the exit vestibule, rather than out on the
+		-- road. Three attempts at the outdoor version all left the pad
+		-- unreachable: the walk out crosses a floor edge, three steps and an
+		-- apron, and the navmesh would not link the last of them however the
+		-- heights were trimmed. Every room in the building pathed and the one
+		-- thing you have to do did not.
+		--
+		-- The threshold is the better place regardless. You stand in the
+		-- doorway with the road lit in front of you and take the prompt
+		-- there; the steps, the apron and the lamps are what you are looking
+		-- at while you do it, which is what they were for.
 		local departure = box(
 			F.Markers,
 			"Departure",
-			62,
-			112,
-			-1,
-			-0.6,
-			Z0 - 74,
-			Z0 - 44,
+			-16,
+			16,
+			0,
+			0.4,
+			Z1 + 5,
+			Z1 + 23,
 			C.brass,
 			Enum.Material.Metal
 		)
 		departure.CanCollide = false
-		label(departure, "TO THE ROAD", Enum.NormalId.Top, 24)
+		label(departure, "TO THE ROAD", Enum.NormalId.Top, 26)
 		CollectionService:AddTag(departure, "Departure")
-		for i, x in ipairs({ 58, 116 }) do
+		for i, x in ipairs({ -34, 34 }) do
 			box(
 				F.Markers,
 				`RoadLampPost_{i}`,
 				x - 1.2,
 				x + 1.2,
 				-1,
-				12,
-				Z0 - 61,
-				Z0 - 57,
+				13,
+				Z1 + 61,
+				Z1 + 65,
 				C.iron,
 				Enum.Material.Metal
 			)
 			local head = box(
 				F.Markers,
 				`RoadLamp_{i}`,
-				x - 2.6,
-				x + 2.6,
-				12,
-				15,
-				Z0 - 62,
-				Z0 - 56,
+				x - 2.8,
+				x + 2.8,
+				13,
+				16,
+				Z1 + 60,
+				Z1 + 66,
 				C.brass,
 				Enum.Material.Metal
 			)
 			local l = Instance.new("PointLight")
-			l.Color, l.Brightness, l.Range, l.Shadows = WARM, 1.2, 38, false
+			l.Color, l.Brightness, l.Range, l.Shadows = WARM, 1.3, 40, false
 			l.Parent = head
 		end
 
