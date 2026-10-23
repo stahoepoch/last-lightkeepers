@@ -245,9 +245,9 @@ end
 -- Stair A arrives at z 186 on the 1st, B at z 80 on the 2nd, C at z 226 on
 -- the 3rd, and each well stops on that line.
 local WELLS: { [number]: { { number } } } = {
-	[2] = { { 0, 22, 78, 188 }, { 64, 102, 196, 238 } },
-	[3] = { { 20, 42, 78, 188 }, { 64, 102, 196, 238 } },
-	[4] = { { 58, 102, 126, 226 }, { 64, 102, 196, 238 } },
+	[2] = { { 0, 22, 78, 190 }, { 93, 107, 208, 225 } },
+	[3] = { { 20, 42, 78, 188 }, { 93, 107, 208, 225 } },
+	[4] = { { 62, 86, 126, 228 }, { 93, 107, 208, 225 } },
 }
 
 --- Everything in `rect` that is not inside any of `holes`, as a list of
@@ -1003,7 +1003,12 @@ function LanternholdBuilder.Build(): Model
 				x0 = CENTRE,
 				x1 = EAST,
 				z0 = 165,
-				z1 = 205,
+				-- Both of these move so the lift lobby is the room the lift
+				-- is actually in. The shaft sits at z 208..226, and on this
+				-- floor and the top one it was landing in the room NEXT to
+				-- the lobby named after it - which is half of why Chris could
+				-- not tell where he was when the doors opened.
+				z1 = 240,
 				light = 0.9,
 				title = "THE LIFT",
 			},
@@ -1011,7 +1016,7 @@ function LanternholdBuilder.Build(): Model
 				name = "NorthEastRoom",
 				x0 = CENTRE,
 				x1 = EAST,
-				z0 = 205,
+				z0 = 240,
 				z1 = Z1,
 				light = 0.85,
 				title = "THE WORKSHOP",
@@ -1032,18 +1037,17 @@ function LanternholdBuilder.Build(): Model
 		{ 250, 250 + DOOR_W },
 	})
 	wall(F.Floor0, "Kitchen_North", "Z", 110, -W, WEST, 0, HEADS[1], { { -70, -70 + DOOR_W } })
+	-- TWO doors in each of these, not one. The east strip was an enfilade:
+	-- five rooms in a line joined only at x 70..81, so every trip up this side
+	-- of the building was single file through five identical doorways, and the
+	-- lift at x 93..107 opened onto the blank part of the wall three studs in
+	-- front of it. The second opening is on the lift's axis, which gives the
+	-- strip a second lane and puts a door where the doors actually open.
 	for _, z in ipairs({ 95, 130, 165, 205 }) do
-		wall(
-			F.Floor0,
-			`Bottom_East_{z}`,
-			"Z",
-			z,
-			CENTRE,
-			EAST,
-			0,
-			HEADS[1],
-			{ { 70, 70 + DOOR_W } }
-		)
+		wall(F.Floor0, `Bottom_East_{z}`, "Z", z, CENTRE, EAST, 0, HEADS[1], {
+			{ 70, 70 + DOOR_W },
+			{ 94, 94 + DOOR_W },
+		})
 	end
 
 	-- The exit vestibule is WALLS, not a block. It was a solid lump of
@@ -1187,18 +1191,14 @@ function LanternholdBuilder.Build(): Model
 		{ 130, 130 + DOOR_W * 2 },
 		{ 250, 250 + DOOR_W },
 	})
+	-- Same two doors, same reason, and on this floor the north one is how you
+	-- get from the lift into the vaults without walking the length of the
+	-- lobby first.
 	for _, z in ipairs({ 58, 118, 195, 240 }) do
-		wall(
-			F.Floor1,
-			`First_East_{z}`,
-			"Z",
-			z,
-			CENTRE,
-			EAST,
-			LEVELS[2],
-			HEADS[2],
-			{ { 70, 70 + DOOR_W } }
-		)
+		wall(F.Floor1, `First_East_{z}`, "Z", z, CENTRE, EAST, LEVELS[2], HEADS[2], {
+			{ 70, 70 + DOOR_W },
+			{ 94, 94 + DOOR_W },
+		})
 	end
 
 	-- The vaults you can walk into: a row of heavy doors off a short passage.
@@ -1435,7 +1435,13 @@ function LanternholdBuilder.Build(): Model
 		HEADS[3],
 		{ { 60, 60 + DOOR_W } }
 	)
-	wall(F.Floor2, "Second_East", "X", 50, 100, 250, LEVELS[3], HEADS[3], { { 140, 140 + DOOR_W } })
+	-- Two doors. With one at z 140 the lift lobby's only way out was north
+	-- through the OES room, and a lift that opens onto a single door through
+	-- somebody else's room is most of what "the flow is pretty rough" means.
+	wall(F.Floor2, "Second_East", "X", 50, 100, 250, LEVELS[3], HEADS[3], {
+		{ 140, 140 + DOOR_W },
+		{ 196, 196 + DOOR_W },
+	})
 
 	-- ------------------------------------------------------------ 3RD FLOOR
 	for _, r in
@@ -1491,7 +1497,7 @@ function LanternholdBuilder.Build(): Model
 				x0 = 50,
 				x1 = EAST,
 				z0 = 120,
-				z1 = 240,
+				z1 = 200,
 				light = 0.95,
 				title = "THE STAIR HALL",
 			},
@@ -1499,7 +1505,7 @@ function LanternholdBuilder.Build(): Model
 				name = "ElevatorLobby3",
 				x0 = 50,
 				x1 = EAST,
-				z0 = 240,
+				z0 = 200,
 				z1 = Z1,
 				light = 0.9,
 				title = "THE LIFT",
@@ -1551,13 +1557,13 @@ function LanternholdBuilder.Build(): Model
 		-- The whole building hung on those two studs.
 		flight(F.Core, "Stair_0_1", 2, 20, 80, 188, LEVELS[1], LEVELS[2])
 		flight(F.Core, "Stair_1_2", 22, 40, 186, 78, LEVELS[2], LEVELS[3])
-		flight(F.Core, "Stair_2_3", 62, 98, 128, 226, LEVELS[3], LEVELS[4])
+		flight(F.Core, "Stair_2_3", 64, 84, 128, 226, LEVELS[3], LEVELS[4])
 		-- and a landing at the head of each, so you step off onto floor
 		-- rather than onto the lip of the slab.
 		for _, L in ipairs({
 			{ 2, 20, 184, 192, LEVELS[2] },
 			{ 22, 40, 74, 82, LEVELS[3] },
-			{ 62, 98, 222, 230, LEVELS[4] },
+			{ 64, 84, 222, 230, LEVELS[4] },
 		}) do
 			box(
 				F.Core,
@@ -1573,36 +1579,71 @@ function LanternholdBuilder.Build(): Model
 			)
 		end
 
-		-- In the elevator lobby, which is where the plan puts it: between the
-		-- front entrance and the vaults. It was inside the vault room, and
-		-- its shaft was cutting that room's floor out from under itself.
-		local LX0, LX1, LZ0, LZ1 = 66, 100, 198, 236
+		-- ON THE EAST WALL, and a lift rather than a room. Chris: "the
+		-- elevator at one point brings u to an inescapable room, well,
+		-- actually, i fell through the floor so i did get out lol."
+		--
+		-- Both halves of that were this one object, and it was a 34 by 38 stud
+		-- shaft - bigger than most of the rooms it opened into. It is 13 by 16
+		-- now, which is a lift, and it sits against the east shell wall where
+		-- every floor's lift lobby already reaches, so the car arrives in the
+		-- room named after it on all four stops instead of two.
+		--
+		-- It also stood 4 studs clear of its own well on every side, which is
+		-- the hole he fell down: a trench right across the mouth you stepped
+		-- into on the way out. The well is now the car plus half a stud.
+		local LX0, LX1, LZ0, LZ1 = 92, 108, 208, 226
 		wall(F.Core, "LiftShaftW", "X", LX0, LZ0, LZ1, 0, TOP, {})
 		wall(F.Core, "LiftShaftE", "X", LX1, LZ0, LZ1, 0, TOP, {})
 		wall(F.Core, "LiftShaftN", "Z", LZ1, LX0, LX1, 0, TOP, {})
+		-- A FRAME, NOT A SLAB, and this was the thing that trapped him. The
+		-- surround was one solid brass box spanning the whole width of the
+		-- opening at every stop - so the car top had the shaft's three walls
+		-- round it and a brass wall across the fourth side. There was no way
+		-- off the car at all except the gap round the well, which is why
+		-- falling through the floor was how he got out.
+		--
+		-- Two jambs and a head over the opening read the same and leave the
+		-- 13 studs between them clear. The head does not collide so the camera
+		-- cannot catch on it as you walk under.
 		for i, lvl in ipairs(LEVELS) do
-			box(
+			for k, j in ipairs({ { LX0 - 2, LX0 + 1.5 }, { LX1 - 1.5, LX1 + 2 } }) do
+				box(
+					F.Core,
+					`LiftJamb_{i}_{k}`,
+					j[1],
+					j[2],
+					lvl,
+					lvl + 15,
+					LZ0 - 2.6,
+					LZ0 - 1,
+					C.brass,
+					Enum.Material.Metal
+				)
+			end
+			local lintel = box(
 				F.Core,
 				`LiftSurround_{i}`,
 				LX0 - 2,
 				LX1 + 2,
-				lvl,
-				lvl + 14,
+				lvl + 15,
+				lvl + 17,
 				LZ0 - 2.6,
 				LZ0 - 1,
 				C.brass,
 				Enum.Material.Metal
 			)
+			lintel.CanCollide, lintel.CanQuery = false, false
 		end
 		local car = box(
 			F.Core,
 			"LiftCar",
-			LX0 + 2,
-			LX1 - 2,
+			LX0 + 1.5,
+			LX1 - 1.5,
 			-2,
 			0,
-			LZ0 + 2,
-			LZ1 - 2,
+			LZ0 + 0.5,
+			LZ1 - 1.5,
 			C.timber,
 			Enum.Material.WoodPlanks
 		)
@@ -1938,13 +1979,16 @@ function LanternholdBuilder.Build(): Model
 
 		local vice = box(
 			F.Fixtures,
+			-- North of the shaft. This bench ran x 58..100 by z 220..234,
+			-- which put it straight through the old lift shaft's west wall
+			-- and left a third of it inside the lift.
 			"WorkshopBench",
 			58,
 			100,
 			y,
 			y + 4.4,
-			220,
-			234,
+			248,
+			262,
 			C.timber,
 			Enum.Material.WoodPlanks
 		)
@@ -1957,8 +2001,8 @@ function LanternholdBuilder.Build(): Model
 			102,
 			y,
 			y + 0.3,
-			238,
 			268,
+			296,
 			C.inlay,
 			Enum.Material.Fabric
 		)
