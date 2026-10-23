@@ -2709,7 +2709,7 @@ function LanternholdBuilder.Build(): Model
 				L3 + 3.4,
 				pt[2] - 5,
 				pt[2] + 5,
-				Color3.fromRGB(78, 44, 40),
+				Color3.fromRGB(122, 68, 56),
 				Enum.Material.Fabric
 			)
 			box(
@@ -2721,9 +2721,373 @@ function LanternholdBuilder.Build(): Model
 				L3 + 8.6,
 				pt[2] + 3.4,
 				pt[2] + 5,
-				Color3.fromRGB(78, 44, 40),
+				Color3.fromRGB(122, 68, 56),
 				Enum.Material.Fabric
 			)
+		end
+
+		-- ------------------------------------------- the rooms with nothing
+		-- Seven rooms measured zero props and three more were under one per
+		-- thousand square studs. Everything below hugs a wall: the lift
+		-- lobbies carry the lift shaft and a staircase through the middle of
+		-- them, so the centre of those rooms has to stay empty.
+
+		--- A side table against a wall, with a lamp on it.
+		local function console(nm: string, x: number, z: number, y: number, long: string)
+			local hx = long == "X" and 11 or 2.6
+			local hz = long == "X" and 2.6 or 11
+			box(
+				F.Fixtures,
+				`{nm}_Top`,
+				x - hx,
+				x + hx,
+				y + 4,
+				y + 4.8,
+				z - hz,
+				z + hz,
+				C.timber,
+				Enum.Material.WoodPlanks
+			)
+			for _, e in ipairs({ -1, 1 }) do
+				local lx = long == "X" and x + e * (hx - 1.4) or x
+				local lz = long == "X" and z or z + e * (hz - 1.4)
+				box(
+					F.Fixtures,
+					`{nm}_Leg`,
+					lx - 1,
+					lx + 1,
+					y,
+					y + 4,
+					lz - 1,
+					lz + 1,
+					C.timber,
+					Enum.Material.WoodPlanks
+				)
+			end
+		end
+
+		--- A glass display case, for the museum.
+		local function showcase(
+			nm: string,
+			x0: number,
+			x1: number,
+			z0: number,
+			z1: number,
+			y: number
+		)
+			box(
+				F.Fixtures,
+				`{nm}_Plinth`,
+				x0,
+				x1,
+				y,
+				y + 3.4,
+				z0,
+				z1,
+				C.timber,
+				Enum.Material.WoodPlanks
+			)
+			local g = box(
+				F.Fixtures,
+				`{nm}_Glass`,
+				x0,
+				x1,
+				y + 3.4,
+				y + 11,
+				z0,
+				z1,
+				C.glass,
+				Enum.Material.Glass,
+				0.62
+			)
+			g.CanQuery = false
+		end
+
+		-- ---- THE PARLOUR, which is the room the ramp used to run into.
+		-- Chris: "lets just lose it and decorate that room."
+		do
+			local y = B
+			runner("ParlourRug", 58, 98, 28, 72, y)
+			-- a fireplace on the outside wall, with chairs drawn up to it
+			box(
+				F.Fixtures,
+				"ParlourChimney",
+				103,
+				EAST,
+				y,
+				y + 22,
+				36,
+				64,
+				C.limestone,
+				Enum.Material.Concrete
+			)
+			box(F.Fixtures, "ParlourHearth", 99, 103, y, y + 1, 40, 60, C.dark, Enum.Material.Slate)
+			local fire = box(
+				F.Fixtures,
+				"ParlourFire",
+				100,
+				103,
+				y + 1,
+				y + 5,
+				44,
+				56,
+				Color3.fromRGB(196, 104, 42),
+				Enum.Material.Neon
+			)
+			fire.CanCollide, fire.CanQuery = false, false
+			local fl = Instance.new("PointLight")
+			fl.Color, fl.Brightness, fl.Range, fl.Shadows =
+				Color3.fromRGB(255, 168, 96), 0.9, 30, false
+			fl.Parent = fire
+			box(
+				F.Fixtures,
+				"ParlourMantel",
+				100,
+				105,
+				y + 10,
+				y + 11.4,
+				34,
+				66,
+				C.timber,
+				Enum.Material.WoodPlanks
+			)
+			for i, pt in ipairs({ { 88, 36 }, { 88, 64 }, { 70, 42 }, { 70, 58 } }) do
+				box(
+					F.Fixtures,
+					`ParlourChair_{i}`,
+					pt[1] - 5,
+					pt[1] + 5,
+					y,
+					y + 3.4,
+					pt[2] - 5,
+					pt[2] + 5,
+					Color3.fromRGB(122, 68, 56),
+					Enum.Material.Fabric
+				)
+				box(
+					F.Fixtures,
+					`ParlourChairBack_{i}`,
+					pt[1] - 5,
+					pt[1] - 3.4,
+					y + 3.4,
+					y + 8.6,
+					pt[2] - 5,
+					pt[2] + 5,
+					Color3.fromRGB(122, 68, 56),
+					Enum.Material.Fabric
+				)
+			end
+			-- a card table in the corner away from the fire
+			box(
+				F.Fixtures,
+				"CardTable",
+				56,
+				72,
+				y + 4,
+				y + 4.8,
+				74,
+				90,
+				C.timber,
+				Enum.Material.WoodPlanks
+			)
+			for _, c in ipairs({ { 52, 82 }, { 76, 82 } }) do
+				box(
+					F.Fixtures,
+					"CardChair",
+					c[1] - 2.4,
+					c[1] + 2.4,
+					y,
+					y + 4.4,
+					c[2] - 2.4,
+					c[2] + 2.4,
+					C.timber,
+					Enum.Material.WoodPlanks
+				)
+			end
+			console("ParlourSideboard", 76, 6, y, "X")
+			planter("ParlourPlant_1", 50, 88, y)
+		end
+
+		-- ---- THE LIFT LOBBIES. All four are circulation with a shaft and,
+		-- upstairs, a staircase running through them, so this is wall work
+		-- only: a bench to wait on and something green at the corners.
+		do
+			-- bottom floor: the lobby also holds the workshop, so it gets
+			-- less than the others
+			bench("LiftBench_0", EAST - 8, 250, B, "Z", 1)
+			planter("LiftPlant_0", CENTRE + 8, 200, B)
+		end
+		do
+			-- 1st floor: a small lobby between the front steps and the vaults
+			bench("LiftBench_1", CENTRE + 8, 212, L1, "Z", -1)
+			planter("LiftPlant_1", CENTRE + 8, 234, L1)
+		end
+		for _, spec in ipairs({
+			{ y = L2, name = "2" },
+			{ y = L3, name = "3" },
+		}) do
+			-- the 2nd and 3rd floor cores are 60 by 300 with the stair well
+			-- down the middle; everything goes on the east wall or the far
+			-- ends, clear of the shaft at x 88..104, z 208..226
+			local y = spec.y
+			bench(`CoreBench_{spec.name}_a`, EAST - 8, 40, y, "Z", 1)
+			bench(`CoreBench_{spec.name}_b`, EAST - 8, 70, y, "Z", 1)
+			bench(`CoreBench_{spec.name}_c`, EAST - 8, 266, y, "Z", 1)
+			console(`CoreTable_{spec.name}`, 56, 285, y, "Z")
+			planter(`CorePlant_{spec.name}_a`, 56, 20, y)
+			planter(`CorePlant_{spec.name}_b`, EAST - 7, 290, y)
+		end
+
+		-- ---- THE STAIR HALLS. Both are mostly stair well, so the furniture
+		-- lives in the end of each that is solid floor.
+		do
+			-- 1st floor: the clear ground is z 0..78, south of the well
+			runner("StairHall1Runner", -6, 36, 10, 70, L1)
+			bench("StairHall1Bench_a", WEST + 7, 24, L1, "Z", -1)
+			bench("StairHall1Bench_b", WEST + 7, 54, L1, "Z", -1)
+			console("StairHall1Table", 15, 8, L1, "X")
+			planter("StairHall1Plant", CENTRE - 8, 62, L1)
+		end
+		do
+			-- 2nd floor: clear ground is z 0..96 and z 190..300, either side
+			-- of the well at x 20..42, z 78..188
+			runner("StairHall2Runner", 4, 46, 196, 292, L2)
+			bench("StairHall2Bench_a", 6, 30, L2, "Z", -1)
+			bench("StairHall2Bench_b", 6, 240, L2, "Z", -1)
+			bench("StairHall2Bench_c", 44, 240, L2, "Z", 1)
+			console("StairHall2Table", 25, 290, L2, "X")
+			planter("StairHall2Plant_a", 6, 62, L2)
+			planter("StairHall2Plant_b", 44, 200, L2)
+		end
+
+		-- ---- THE EAST CORRIDOR is 25 studs wide, so one narrow table and
+		-- a plant at each end is the most it can take and stay walkable.
+		console("CorridorTable", 48, 150, B, "Z")
+		planter("CorridorPlant_a", 48, 104, B)
+		planter("CorridorPlant_b", 48, 188, B)
+
+		-- ---- THE MUSEUM had nine props in 28,800 square studs. Cases down
+		-- both long walls and benches to sit and look at them from.
+		for i = 0, 5 do
+			local z = 132 + i * 26
+			showcase(`Case_N_{i}`, -W + 4, -W + 18, z, z + 18, L3)
+			showcase(`Case_S_{i}`, 32, 46, z, z + 18, L3)
+		end
+		for i, z in ipairs({ 170, 230 }) do
+			bench(`MuseumBench_{i}`, -30, z, L3, "Z", 1)
+		end
+		planter("MuseumPlant_a", -W + 10, 290, L3)
+		planter("MuseumPlant_b", 40, 290, L3)
+
+		-- ---- THE YORK RITE ROOM is 90 by 204 with one set of benches in
+		-- it. An altar in the middle, officers' chairs at the head, and
+		-- candle standards at the corners of the altar.
+		do
+			local y = L2
+			box(
+				F.Fixtures,
+				"YorkAltar",
+				-62,
+				-42,
+				y,
+				y + 5.4,
+				262,
+				280,
+				C.timber,
+				Enum.Material.WoodPlanks
+			)
+			box(
+				F.Fixtures,
+				"YorkAltarTop",
+				-64,
+				-40,
+				y + 5.4,
+				y + 6.2,
+				260,
+				282,
+				C.gilt,
+				Enum.Material.Metal
+			)
+			for i, pt in ipairs({ { -66, 258 }, { -38, 258 }, { -66, 284 }, { -38, 284 } }) do
+				box(
+					F.Fixtures,
+					`YorkStand_{i}`,
+					pt[1] - 1.2,
+					pt[1] + 1.2,
+					y,
+					y + 11,
+					pt[2] - 1.2,
+					pt[2] + 1.2,
+					C.brass,
+					Enum.Material.Metal
+				)
+				local g = box(
+					F.Fixtures,
+					`YorkFlame_{i}`,
+					pt[1] - 2,
+					pt[1] + 2,
+					y + 11,
+					y + 14,
+					pt[2] - 2,
+					pt[2] + 2,
+					Color3.fromRGB(255, 244, 214),
+					Enum.Material.Neon
+				)
+				g.CanCollide, g.CanQuery = false, false
+				local gl = Instance.new("PointLight")
+				gl.Color, gl.Brightness, gl.Range, gl.Shadows = WARM, 0.5, 24, false
+				gl.Parent = g
+			end
+			for i, x in ipairs({ -74, -52, -30 }) do
+				box(
+					F.Fixtures,
+					`YorkOfficer_{i}`,
+					x - 4,
+					x + 4,
+					y,
+					y + 4.4,
+					290,
+					298,
+					C.timber,
+					Enum.Material.WoodPlanks
+				)
+				box(
+					F.Fixtures,
+					`YorkOfficerBack_{i}`,
+					x - 4,
+					x + 4,
+					y + 4.4,
+					y + 13,
+					296,
+					298,
+					C.egyptTeal,
+					Enum.Material.Fabric
+				)
+			end
+			for i, z in ipairs({ 120, 160, 200 }) do
+				bench(`YorkSideBench_{i}`, -W + 7, z, y, "Z", -1)
+			end
+		end
+
+		-- ---- THE FRONT STEPS. A rug, plants and a notice board, so the
+		-- public way in looks like a lobby rather than a corridor.
+		runner("EntranceRug", 56, 100, 120, 186, L1)
+		planter("EntrancePlant_a", CENTRE + 8, 14, L1)
+		planter("EntrancePlant_b", EAST - 8, 14, L1)
+		box(
+			F.Fixtures,
+			"NoticeBoard",
+			CENTRE + 1.4,
+			CENTRE + 2.2,
+			L1 + 6,
+			L1 + 16,
+			90,
+			118,
+			C.timber,
+			Enum.Material.WoodPlanks
+		)
+		for i, z in ipairs({ 30, 60 }) do
+			bench(`EntranceBenchB_{i}`, CENTRE + 8, z, L1, "Z", -1)
 		end
 	end
 
