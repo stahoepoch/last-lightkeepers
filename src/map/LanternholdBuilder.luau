@@ -1379,22 +1379,26 @@ function LanternholdBuilder.Build(): Model
 				title = "THE LIFT",
 			},
 			{
-				name = "StairHall2",
+				name = "EastRoom2",
 				x0 = 50,
 				x1 = EAST,
 				z0 = 100,
 				z1 = 205,
-				light = 1.0,
-				title = "THE STAIR HALL",
+				light = 0.9,
+				title = "ANTEROOM",
 			},
+			-- The room lane B rises through IS the stair hall. It was labelled
+			-- an anteroom, while the east bay - which has no stair in it - was
+			-- labelled the stair hall. Swapping the names is most of why this
+			-- floor did not make sense to walk.
 			{
-				name = "EastRoom2",
+				name = "StairHall2",
 				x0 = 0,
 				x1 = 50,
 				z0 = 100,
 				z1 = 205,
-				light = 0.85,
-				title = "ANTEROOM",
+				light = 1.0,
+				title = "THE STAIR HALL",
 			},
 		} :: { Room })
 	do
