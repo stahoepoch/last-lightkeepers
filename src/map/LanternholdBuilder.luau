@@ -162,6 +162,10 @@ end
 
 --- A wall along one axis with doorways cut in it, each with a lintel over.
 --- `gaps` are spans in the along-axis coordinate.
+--- Every opening cut by wall(), so doorways can be signed afterwards. The
+--- builder is a single pass per place, so this is cleared at the top of it.
+local DOORWAYS: { { axis: string, at: number, a: number, b: number, y0: number } } = {}
+
 local function wall(
 	parent: Instance,
 	name: string,
@@ -184,30 +188,53 @@ local function wall(
 			return
 		end
 		index += 1
+		local half = WALL_T / 2
 		if axis == "X" then
-			box(
-				parent,
-				`{name}_{index}`,
-				at - WALL_T / 2,
-				at + WALL_T / 2,
-				py0,
-				py1,
-				a,
-				b,
-				C.plaster
-			)
+			box(parent, `{name}_{index}`, at - half, at + half, py0, py1, a, b, C.plaster)
 		else
-			box(
-				parent,
-				`{name}_{index}`,
-				a,
-				b,
-				py0,
-				py1,
-				at - WALL_T / 2,
-				at + WALL_T / 2,
-				C.plaster
-			)
+			box(parent, `{name}_{index}`, a, b, py0, py1, at - half, at + half, C.plaster)
+		end
+		-- SKIRTING BELONGS TO THE WALL, NOT THE ROOM. Chris: "i don't
+		-- understand what these wooden pieces are on all the doors" - they
+		-- were the skirting board, which trim() drew round the whole
+		-- rectangle of every room, so it ran straight through every doorway
+		-- in that room. Making it non-colliding stopped it blocking the door
+		-- and left a wooden plank lying across the threshold instead.
+		--
+		-- Built here it exists only where there is actually a wall, so a
+		-- doorway has no skirting across it because it has no wall there.
+		-- Lintels (py0 > y0) get none: they are not standing on the floor.
+		if py0 <= y0 + 0.01 then
+			local sk = half + 0.6
+			local base
+			if axis == "X" then
+				base = box(
+					parent,
+					`{name}_{index}_Skirt`,
+					at - sk,
+					at + sk,
+					py0,
+					py0 + 2.2,
+					a,
+					b,
+					C.timber,
+					Enum.Material.WoodPlanks
+				)
+			else
+				base = box(
+					parent,
+					`{name}_{index}_Skirt`,
+					a,
+					b,
+					py0,
+					py0 + 2.2,
+					at - sk,
+					at + sk,
+					C.timber,
+					Enum.Material.WoodPlanks
+				)
+			end
+			base.CanCollide, base.CanQuery, base.CanTouch = false, false, false
 		end
 	end
 	local run = lo
@@ -216,6 +243,7 @@ local function wall(
 		if gb > ga then
 			piece(run, ga, y0, y1)
 			piece(ga, gb, y0 + DOOR_H, y1) -- the lintel over the opening
+			table.insert(DOORWAYS, { axis = axis, at = at, a = ga, b = gb, y0 = y0 })
 			run = gb
 		end
 	end
@@ -361,17 +389,13 @@ local function trim(
 		{ x0, x1, z1 - 1.2, z1 },
 	}) do
 		local a, b, c, d = side[1], side[2], side[3], side[4]
-		-- NONE of this collides. Chris: "why are there wood blocks stopping me
-		-- from moving everywhere?" - this skirting. It runs the full rectangle
-		-- of every room, which means it also runs straight across every
-		-- doorway in that room, and at three studs a Humanoid will not step
-		-- over it. Forty rooms of decorative trim became forty rooms you
-		-- could not walk out of.
+		-- The skirting USED to be here, drawn round the room's whole
+		-- rectangle and therefore straight through its doorways. It is built
+		-- by wall() now, where the walls actually are. What is left is the
+		-- painted band and the gilt line at the ceiling, which are far above
+		-- any door and can run the full rectangle honestly.
 		--
-		-- Skirting, a painted band and a gilt line are paint. The fix is not
-		-- to cut them around the doors, it is for none of them to be solid.
-		local baseStrip =
-			box(parent, `{name}_Base`, a, b, y, y + 2.2, c, d, C.timber, Enum.Material.WoodPlanks)
+		-- None of it collides: it is paint.
 		local stencilStrip =
 			box(parent, `{name}_Stencil`, a, b, head - 3.4, head - 1.6, c, d, C.stencil)
 		local giltStrip = box(
@@ -386,7 +410,7 @@ local function trim(
 			C.gilt,
 			Enum.Material.Metal
 		)
-		for _, strip in ipairs({ baseStrip, stencilStrip, giltStrip }) do
+		for _, strip in ipairs({ stencilStrip, giltStrip }) do
 			strip.CanCollide, strip.CanQuery, strip.CanTouch = false, false, false
 		end
 	end
@@ -718,6 +742,10 @@ type Room = {
 -- --------------------------------------------------------------------------
 function LanternholdBuilder.Build(): Model
 	lampCount = 0
+	table.clear(DOORWAYS)
+	-- every room built this pass, so the doorways into it can be signed once
+	-- all the walls exist
+	local built: { { folder: Instance, room: Room, level: number } } = {}
 	local existing = Workspace:FindFirstChild("Lanternhold")
 	if existing then
 		existing:Destroy()
@@ -743,6 +771,7 @@ function LanternholdBuilder.Build(): Model
 	end
 
 	local function buildRoom(folder: Instance, level: number, room: Room)
+		table.insert(built, { folder = folder, room = room, level = level })
 		local y, head = LEVELS[level], HEADS[level]
 		local wells = WELLS[level]
 		terrazzo(folder, `{room.name}_Floor`, room.x0, room.x1, room.z0, room.z1, y, wells)
@@ -771,21 +800,13 @@ function LanternholdBuilder.Build(): Model
 		end
 		trim(folder, room.name, room.x0, room.x1, room.z0, room.z1, y, head)
 		if room.title then
-			local cx = (room.x0 + room.x1) / 2
-			local plate = box(
-				folder,
-				`{room.name}_Plaque`,
-				cx - 22,
-				cx + 22,
-				y + DOOR_H + 1,
-				y + DOOR_H + 5,
-				room.z0 + 1.4,
-				room.z0 + 2,
-				C.brass,
-				Enum.Material.Metal
-			)
-			plate.CanCollide, plate.CanQuery = false, false
-			label(plate, room.title :: string, Enum.NormalId.Back, 20)
+			-- The name goes OVER THE DOORS, outside, in signDoors below.
+			-- Chris: "all the labels for the stuff are on the inside or the
+			-- sides its just not easy to navigate." This was one brass plate
+			-- on the room's own south wall facing into the room, so you could
+			-- only read a room's name once you were standing in it, and if
+			-- you came in from the north you read the back of it.
+			local _ = room.title
 		end
 		-- The ceiling of THIS room is the underside of the floor above, so it
 		-- takes the next level's wells, not its own.
@@ -965,9 +986,23 @@ function LanternholdBuilder.Build(): Model
 				light = 1.0,
 				title = "THE RAMP",
 			},
+			-- Chris: "why the washrooms are all connected on the side". They
+			-- were the corridor: the east strip ran ramp -> washroom ->
+			-- washroom -> lift in a line, so the only way up this side of the
+			-- building was through both of them, and they opened into each
+			-- other. The corridor is its own lane at x 45..70 now and the two
+			-- washrooms hang off it, with no door between them.
+			{
+				name = "EastCorridor",
+				x0 = CENTRE,
+				x1 = 70,
+				z0 = 95,
+				z1 = 195,
+				light = 0.95,
+			},
 			{
 				name = "BathroomA",
-				x0 = CENTRE,
+				x0 = 70,
 				x1 = EAST,
 				z0 = 95,
 				z1 = 145,
@@ -976,7 +1011,7 @@ function LanternholdBuilder.Build(): Model
 			},
 			{
 				name = "BathroomB",
-				x0 = CENTRE,
+				x0 = 70,
 				x1 = EAST,
 				z0 = 145,
 				z1 = 195,
@@ -1001,10 +1036,11 @@ function LanternholdBuilder.Build(): Model
 		{ 150, 150 + DOOR_W },
 		{ 240, 240 + DOOR_W },
 	})
+	-- Chris: "all the rooms have too many entrances." Three, not four, and
+	-- each one goes somewhere different: the ramp, the corridor, the lift.
 	wall(F.Floor0, "Bottom_EastWall", "X", CENTRE, Z0, Z1, 0, HEADS[1], {
 		{ 20, 20 + DOOR_W },
-		{ 110, 110 + DOOR_W },
-		{ 180, 180 + DOOR_W },
+		{ 140, 140 + DOOR_W },
 		{ 250, 250 + DOOR_W },
 	})
 	wall(F.Floor0, "Kitchen_North", "Z", 110, -W, WEST, 0, HEADS[1], { { -70, -70 + DOOR_W } })
@@ -1014,12 +1050,15 @@ function LanternholdBuilder.Build(): Model
 	-- lift at x 93..107 opened onto the blank part of the wall three studs in
 	-- front of it. The second opening is on the lift's axis, which gives the
 	-- strip a second lane and puts a door where the doors actually open.
+	-- The washroom block: solid on three sides, one door each off the
+	-- corridor, and nothing between the two of them.
 	for _, z in ipairs({ 95, 145, 195 }) do
-		wall(F.Floor0, `Bottom_East_{z}`, "Z", z, CENTRE, EAST, 0, HEADS[1], {
-			{ 70, 70 + DOOR_W },
-			{ 94, 94 + DOOR_W },
-		})
+		wall(F.Floor0, `Bottom_Wash_{z}`, "Z", z, 70, EAST, 0, HEADS[1], {})
 	end
+	wall(F.Floor0, "Bottom_Wash_W", "X", 70, 95, 195, 0, HEADS[1], {
+		{ 112, 112 + DOOR_W },
+		{ 160, 160 + DOOR_W },
+	})
 
 	-- The exit vestibule is WALLS, not a block. It was a solid lump of
 	-- limestone from y -2 to the ceiling filling the whole opening, so the
@@ -1130,8 +1169,9 @@ function LanternholdBuilder.Build(): Model
 	-- get from the lift into the vaults without walking the length of the
 	-- lobby first.
 	for _, z in ipairs({ 195, 240 }) do
+		-- One door, on the lift's axis, so front steps -> lift -> vaults is a
+		-- straight line up the east side instead of two parallel lanes.
 		wall(F.Floor1, `First_East_{z}`, "Z", z, CENTRE, EAST, LEVELS[2], HEADS[2], {
-			{ 70, 70 + DOOR_W },
 			{ 94, 94 + DOOR_W },
 		})
 	end
@@ -1274,8 +1314,7 @@ function LanternholdBuilder.Build(): Model
 	-- the stair hall on the east.
 	wall(F.Floor2, "Second_Spine", "X", 0, Z0, Z1, LEVELS[3], HEADS[3], {
 		{ 40, 40 + DOOR_W },
-		{ 130, 130 + DOOR_W },
-		{ 230, 230 + DOOR_W },
+		{ 180, 180 + DOOR_W },
 	})
 	-- Second_West, Second_Gather, Second_North and the two west cross walls
 	-- are gone with the rooms they divided. The 2nd floor is four rooms.
@@ -1303,8 +1342,7 @@ function LanternholdBuilder.Build(): Model
 	-- room on this floor.
 	wall(F.Floor2, "Second_East", "X", 50, Z0, Z1, LEVELS[3], HEADS[3], {
 		{ 40, 40 + DOOR_W },
-		{ 140, 140 + DOOR_W },
-		{ 196, 196 + DOOR_W },
+		{ 180, 180 + DOOR_W },
 	})
 
 	-- ------------------------------------------------------------ 3RD FLOOR
@@ -1362,8 +1400,7 @@ function LanternholdBuilder.Build(): Model
 	-- room with two names. This is the wall between them.
 	wall(F.Floor3, "Third_Core", "X", 50, Z0, Z1, LEVELS[4], HEADS[4], {
 		{ 40, 40 + DOOR_W },
-		{ 150, 150 + DOOR_W },
-		{ 250, 250 + DOOR_W },
+		{ 180, 180 + DOOR_W },
 	})
 
 	-- -------------------------------------------------------------- the core
@@ -1456,6 +1493,26 @@ function LanternholdBuilder.Build(): Model
 					Enum.Material.Metal
 				)
 			end
+			-- Chris: "why the elevator is hidden". A lit brass sign over the
+			-- opening at every stop, so it reads as the lift from across the
+			-- room rather than as another doorway.
+			local sign = box(
+				F.Core,
+				`LiftSign_{i}`,
+				LX0 + 1,
+				LX1 - 1,
+				lvl + 17.4,
+				lvl + 22,
+				LZ0 - 2.8,
+				LZ0 - 1.6,
+				C.brass,
+				Enum.Material.Metal
+			)
+			sign.CanCollide, sign.CanQuery = false, false
+			label(sign, "LIFT", Enum.NormalId.Front, 26)
+			local sl = Instance.new("PointLight")
+			sl.Color, sl.Brightness, sl.Range, sl.Shadows = WARM, 1.5, 40, false
+			sl.Parent = sign
 			local lintel = box(
 				F.Core,
 				`LiftSurround_{i}`,
@@ -1902,30 +1959,76 @@ function LanternholdBuilder.Build(): Model
 			CollectionService:AddTag(site, "LandmarkSite")
 		end
 
-		box(
-			F.Fixtures,
-			"PoolTable",
-			-30,
-			24,
-			LEVELS[4],
-			LEVELS[4] + 4.4,
-			40,
-			70,
-			C.egyptTeal,
-			Enum.Material.Fabric
-		)
-		box(
-			F.Fixtures,
-			"PoolRail",
-			-32,
-			26,
-			LEVELS[4] + 4.4,
-			LEVELS[4] + 5.2,
-			38,
-			72,
-			C.timber,
-			Enum.Material.WoodPlanks
-		)
+		-- A POOL TABLE, not a stage. This was 54 by 30 studs - wider than
+		-- some of the rooms - standing flat on the floor with no legs, and
+		-- its "rail" was a second slab laid across the whole top, so the
+		-- cloth was hidden completely and the thing read as a teal platform.
+		do
+			local y = LEVELS[4]
+			box(
+				F.Fixtures,
+				"PoolCloth",
+				-13,
+				13,
+				y + 2.6,
+				y + 3.4,
+				48,
+				62,
+				Color3.fromRGB(32, 74, 48),
+				Enum.Material.Fabric
+			)
+			for i, r in ipairs({
+				{ -14.2, -13, 46.8, 63.2 },
+				{ 13, 14.2, 46.8, 63.2 },
+				{ -14.2, 14.2, 46.8, 48 },
+				{ -14.2, 14.2, 62, 63.2 },
+			}) do
+				box(
+					F.Fixtures,
+					`PoolRail_{i}`,
+					r[1],
+					r[2],
+					y + 2.6,
+					y + 4.2,
+					r[3],
+					r[4],
+					C.timber,
+					Enum.Material.WoodPlanks
+				)
+			end
+			for _, cx in ipairs({ -11, 11 }) do
+				for _, cz in ipairs({ 50, 60 }) do
+					box(
+						F.Fixtures,
+						"PoolLeg",
+						cx - 1.4,
+						cx + 1.4,
+						y,
+						y + 2.6,
+						cz - 1.4,
+						cz + 1.4,
+						C.timber,
+						Enum.Material.WoodPlanks
+					)
+				end
+			end
+			local shade = box(
+				F.Fixtures,
+				"PoolLamp",
+				-9,
+				9,
+				y + 11,
+				y + 12.6,
+				51,
+				59,
+				C.brass,
+				Enum.Material.Metal
+			)
+			shade.CanCollide, shade.CanQuery = false, false
+			local pl = Instance.new("PointLight")
+			pl.Color, pl.Brightness, pl.Range, pl.Shadows = WARM, 1.1, 34, false
+			pl.Parent = shade
+		end
 
 		for i = 0, 3 do
 			local z = 16 + i * 26
@@ -2081,8 +2184,8 @@ function LanternholdBuilder.Build(): Model
 		end
 		-- The two bathrooms are both on the bottom floor, which is where
 		-- Chris's list puts them and the only floor that has any.
-		washroom(CENTRE, EAST, 95, 145, B)
-		washroom(CENTRE, EAST, 145, 195, B)
+		washroom(70, EAST, 95, 145, B)
+		washroom(70, EAST, 145, 195, B)
 
 		-- ---- THE BALLROOM. Chandeliers on the beam line, a dais at the north
 		-- end for the band, and chairs round the walls the way a ballroom is
@@ -2241,6 +2344,261 @@ function LanternholdBuilder.Build(): Model
 				0.62
 			)
 		end
+		-- ------------------------------------------------------------ props
+		-- Chris: "we can make it all look clean with like props, and stuff.
+		-- so its not overly crowded." These go round the EDGES of rooms and
+		-- down the sides of halls, never in the middle of a route, and a lot
+		-- of bare floor is left on purpose.
+
+		--- A bench against a wall. `back` is the side the backrest sits on.
+		local function bench(
+			nm: string,
+			x: number,
+			z: number,
+			y: number,
+			long: string,
+			back: number
+		)
+			local hx = long == "X" and 9 or 2.4
+			local hz = long == "X" and 2.4 or 9
+			box(
+				F.Fixtures,
+				`{nm}_Seat`,
+				x - hx,
+				x + hx,
+				y + 2.6,
+				y + 3.4,
+				z - hz,
+				z + hz,
+				C.timber,
+				Enum.Material.WoodPlanks
+			)
+			for _, e in ipairs({ -1, 1 }) do
+				local lx = long == "X" and x + e * (hx - 1.2) or x
+				local lz = long == "X" and z or z + e * (hz - 1.2)
+				box(
+					F.Fixtures,
+					`{nm}_Leg`,
+					lx - 1,
+					lx + 1,
+					y,
+					y + 2.6,
+					lz - 1,
+					lz + 1,
+					C.timber,
+					Enum.Material.WoodPlanks
+				)
+			end
+			local bx0 = long == "X" and x - hx or x + back * 1.6
+			local bx1 = long == "X" and x + hx or x + back * 2.4
+			local bz0 = long == "X" and z + back * 1.6 or z - hz
+			local bz1 = long == "X" and z + back * 2.4 or z + hz
+			box(
+				F.Fixtures,
+				`{nm}_Back`,
+				bx0,
+				bx1,
+				y + 3.4,
+				y + 7.4,
+				bz0,
+				bz1,
+				C.timber,
+				Enum.Material.WoodPlanks
+			)
+		end
+
+		--- A planter. The foliage does not collide, so it cannot wall off a lane.
+		local function planter(nm: string, x: number, z: number, y: number)
+			local pot = box(
+				F.Fixtures,
+				`{nm}_Pot`,
+				x - 3.4,
+				x + 3.4,
+				y,
+				y + 4.4,
+				z - 3.4,
+				z + 3.4,
+				C.inlay,
+				Enum.Material.Slate
+			)
+			local leaf = box(
+				F.Fixtures,
+				`{nm}_Leaf`,
+				x - 4.2,
+				x + 4.2,
+				y + 4.4,
+				y + 13,
+				z - 4.2,
+				z + 4.2,
+				Color3.fromRGB(58, 84, 52),
+				Enum.Material.Grass
+			)
+			pot.CanQuery, leaf.CanCollide, leaf.CanQuery = false, false, false
+		end
+
+		--- A runner down a hall: paint, nothing to trip over.
+		local function runner(nm: string, x0: number, x1: number, z0: number, z1: number, y: number)
+			local r = box(
+				F.Fixtures,
+				nm,
+				x0,
+				x1,
+				y + 0.22,
+				y + 0.3,
+				z0,
+				z1,
+				Color3.fromRGB(86, 38, 36),
+				Enum.Material.Fabric
+			)
+			r.CanCollide, r.CanQuery, r.CanTouch = false, false, false
+		end
+
+		-- ---- THE ARRIVAL HALL: 60 by 300 studs of bare floor, and the first
+		-- thing anybody sees. The stair runs up the middle at x 2..20,
+		-- z 80..188 with the departure pad beside it, so all of this hugs
+		-- the walls and leaves the centre clear.
+		runner("HallRunner_S", -6, 36, 46, 78, B)
+		runner("HallRunner_N", -6, 36, 192, 296, B)
+		for i, z in ipairs({ 62, 200, 224 }) do
+			bench(`HallBenchW_{i}`, WEST + 7, z, B, "Z", -1)
+		end
+		for i, z in ipairs({ 200, 224 }) do
+			bench(`HallBenchE_{i}`, CENTRE - 7, z, B, "Z", 1)
+		end
+		for i, pt in ipairs({
+			{ WEST + 8, 185 },
+			{ CENTRE - 8, 185 },
+			{ WEST + 8, 288 },
+			{ CENTRE - 8, 288 },
+		}) do
+			planter(`HallPlant_{i}`, pt[1], pt[2], B)
+		end
+
+		-- ---- THE LIBRARY, which had a name on the door and no books in it.
+		for i = 0, 4 do
+			local z = 12 + i * 21
+			box(
+				F.Fixtures,
+				`Shelf_{i}`,
+				-W + 4,
+				-W + 13,
+				L3,
+				L3 + 17,
+				z,
+				z + 17,
+				C.timber,
+				Enum.Material.WoodPlanks
+			)
+			local bk = box(
+				F.Fixtures,
+				`Books_{i}`,
+				-W + 13,
+				-W + 14.2,
+				L3 + 2,
+				L3 + 15,
+				z + 1,
+				z + 16,
+				C.inlay,
+				Enum.Material.Fabric
+			)
+			bk.CanCollide, bk.CanQuery = false, false
+		end
+		box(
+			F.Fixtures,
+			"ReadingTable",
+			-92,
+			-66,
+			L3,
+			L3 + 4.4,
+			56,
+			84,
+			C.timber,
+			Enum.Material.WoodPlanks
+		)
+		for _, z in ipairs({ 62, 78 }) do
+			chair(-96, z, L3, 1)
+			chair(-62, z, L3, -1)
+		end
+
+		-- ---- THE BAR. The quartermaster counter is already here; this is
+		-- the back shelf and the stools that make it read as a bar.
+		box(
+			F.Fixtures,
+			"BarBackShelf",
+			WEST + 8,
+			CENTRE - 8,
+			L1,
+			L1 + 15,
+			256,
+			260,
+			C.timber,
+			Enum.Material.WoodPlanks
+		)
+		for i = 0, 11 do
+			local x = WEST + 11 + i * 4.4
+			local b = box(
+				F.Fixtures,
+				`Bottle_{i}`,
+				x - 1,
+				x + 1,
+				L1 + 9,
+				L1 + 12.4,
+				254.6,
+				256.6,
+				C.glass,
+				Enum.Material.Glass,
+				0.4
+			)
+			b.CanCollide, b.CanQuery = false, false
+		end
+		for i = 0, 5 do
+			local x = WEST + 12 + i * 7
+			box(
+				F.Fixtures,
+				`Stool_{i}`,
+				x - 2.2,
+				x + 2.2,
+				L1,
+				L1 + 4.4,
+				237,
+				241.4,
+				C.timber,
+				Enum.Material.WoodPlanks
+			)
+		end
+
+		-- ---- THE FRONT STEPS. Somewhere to wait by the porter desk.
+		for i, z in ipairs({ 48, 92 }) do
+			bench(`EntranceBench_{i}`, EAST - 8, z, L1, "Z", 1)
+		end
+
+		-- ---- THE CIGAR ROOM. Armchairs round the walls, clear of the table.
+		for i, pt in ipairs({ { -40, 18 }, { -40, 100 }, { 36, 18 }, { 36, 100 } }) do
+			box(
+				F.Fixtures,
+				`Armchair_{i}`,
+				pt[1] - 5,
+				pt[1] + 5,
+				L3,
+				L3 + 3.4,
+				pt[2] - 5,
+				pt[2] + 5,
+				Color3.fromRGB(78, 44, 40),
+				Enum.Material.Fabric
+			)
+			box(
+				F.Fixtures,
+				`ArmchairBack_{i}`,
+				pt[1] - 5,
+				pt[1] + 5,
+				L3 + 3.4,
+				L3 + 8.6,
+				pt[2] + 3.4,
+				pt[2] + 5,
+				Color3.fromRGB(78, 44, 40),
+				Enum.Material.Fabric
+			)
+		end
 	end
 
 	-- --------------------------------------------------------------- outside
@@ -2309,20 +2667,43 @@ function LanternholdBuilder.Build(): Model
 		-- doorway with the road lit in front of you and take the prompt
 		-- there; the steps, the apron and the lamps are what you are looking
 		-- at while you do it, which is what they were for.
-		local departure = box(
-			F.Markers,
-			"Departure",
-			-16,
-			16,
-			0,
-			0.4,
-			Z1 + 5,
-			Z1 + 23,
+		-- IN THE ARRIVAL HALL, at the far end of it. Chris: "why can't the
+		-- raids be in this giant bottom hallway? why walk to the outside on
+		-- the other side of the building?"
+		--
+		-- No reason at all. You come home onto the return point at the south
+		-- end of this hall and you leave from the north end of the same hall,
+		-- so the one room you cannot miss is the room that does both. The
+		-- door, the steps and the road lamps stay where they are as the thing
+		-- you are walking towards.
+		local departure =
+			box(F.Markers, "Departure", 22, 44, 0, 0.4, 90, 130, C.brass, Enum.Material.Metal)
+		departure.CanCollide = false
+		label(departure, "LEAVE FOR A RAID", Enum.NormalId.Top, 26)
+		-- Eighty-odd studs from where you land, in the east lane of the hall
+		-- beside the staircase, not 240 studs away at the other end of it.
+		-- The middle of this hall is the stair (x 2..20, z 80..188), so the
+		-- pad goes in the clear lane next to it: you come home at the south
+		-- end, and the way out and the way upstairs are side by side in front
+		-- of you. Everything else in the building is somewhere you choose to
+		-- go, not somewhere the exit makes you walk past.
+		local board = box(
+			F.Fixtures,
+			"DepartureBoard",
+			22,
+			44,
+			HEADS[1] - 11,
+			HEADS[1] - 3,
+			87,
+			88.2,
 			C.brass,
 			Enum.Material.Metal
 		)
-		departure.CanCollide = false
-		label(departure, "TO THE ROAD", Enum.NormalId.Top, 26)
+		board.CanCollide, board.CanQuery = false, false
+		label(board, "LEAVE FOR A RAID", Enum.NormalId.Front, 22)
+		local bl = Instance.new("PointLight")
+		bl.Color, bl.Brightness, bl.Range, bl.Shadows = WARM, 1.4, 44, false
+		bl.Parent = board
 		CollectionService:AddTag(departure, "Departure")
 		for i, x in ipairs({ -34, 34 }) do
 			box(
@@ -2368,6 +2749,79 @@ function LanternholdBuilder.Build(): Model
 		pad.Anchored, pad.Neutral, pad.CanCollide = true, true, false
 		pad.Transparency = 1
 		pad.Parent = F.Markers
+	end
+
+	-- ------------------------------------------------- signs over the doors
+	-- One brass plate over every opening into a named room, on the OUTSIDE
+	-- face, so you read where you are going before you walk in rather than
+	-- after. A room with four doors gets four signs.
+	for _, entry in ipairs(built) do
+		local room, y = entry.room, LEVELS[entry.level]
+		if room.title then
+			local n = 0
+			for _, d in ipairs(DOORWAYS) do
+				if math.abs(d.y0 - y) < 0.5 then
+					-- which of the room's four edges does this opening sit in,
+					-- and which way is "out" of the room from there
+					local out: number? = nil
+					if d.axis == "X" and d.b > room.z0 + 0.5 and d.a < room.z1 - 0.5 then
+						if math.abs(d.at - room.x0) < 0.6 then
+							out = -1
+						elseif math.abs(d.at - room.x1) < 0.6 then
+							out = 1
+						end
+					elseif d.axis == "Z" and d.b > room.x0 + 0.5 and d.a < room.x1 - 0.5 then
+						if math.abs(d.at - room.z0) < 0.6 then
+							out = -1
+						elseif math.abs(d.at - room.z1) < 0.6 then
+							out = 1
+						end
+					end
+					if out then
+						n += 1
+						local o = out :: number
+						local near, far = WALL_T / 2 * o, (WALL_T / 2 + 0.7) * o
+						local lo, hi = math.min(near, far), math.max(near, far)
+						local plate
+						if d.axis == "X" then
+							plate = box(
+								entry.folder,
+								`{room.name}_Sign_{n}`,
+								d.at + lo,
+								d.at + hi,
+								y + DOOR_H + 0.8,
+								y + DOOR_H + 5.2,
+								d.a,
+								d.b,
+								C.brass,
+								Enum.Material.Metal
+							)
+						else
+							plate = box(
+								entry.folder,
+								`{room.name}_Sign_{n}`,
+								d.a,
+								d.b,
+								y + DOOR_H + 0.8,
+								y + DOOR_H + 5.2,
+								d.at + lo,
+								d.at + hi,
+								C.brass,
+								Enum.Material.Metal
+							)
+						end
+						plate.CanCollide, plate.CanQuery, plate.CanTouch = false, false, false
+						local face
+						if d.axis == "X" then
+							face = o < 0 and Enum.NormalId.Left or Enum.NormalId.Right
+						else
+							face = o < 0 and Enum.NormalId.Front or Enum.NormalId.Back
+						end
+						label(plate, room.title :: string, face, 15)
+					end
+				end
+			end
+		end
 	end
 
 	M.Parent = Workspace
