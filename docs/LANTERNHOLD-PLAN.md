@@ -204,3 +204,64 @@ The showpiece, and the reason the building is worth modelling at all.
   nearer 100 x 150 feet, or larger?
 - ❓ Which floors should be open to players at the start, if the building
   unlocks as the town is restored?
+
+---
+
+## Measured, 2026-10-23: the rooms are mostly not rooms
+
+Chris, on the upper floors: *"the upper rooms have way to many rooms, walls are
+weird and there isn't the feeling this is like real, or walkable, it has so
+many spots, and i know that is what the pictures showed you, but the flow is
+pretty rough."*
+
+Measuring it in a running session says the problem is not the number of rooms
+and not the doors. Every room on every floor has at least two ways out — there
+are no dead ends anywhere. What there is instead:
+
+**20 of the 32 named rooms on the upper three floors have more than half their
+perimeter standing open.**
+
+| Level | Named rooms | More than half open |
+| --- | --- | --- |
+| 1st | 10 | 7 |
+| 2nd | 14 | 9 |
+| 3rd | 8 | 4 |
+
+The worst of them are the ones with the names that should mean the most:
+
+| Room | Perimeter open |
+| --- | --- |
+| Hallway2, StairHall2 | 93% |
+| Bar | 91% |
+| PrepareRoom | 88% |
+| UpperHall3 | 86% |
+| Bathroom2 | 81% |
+| YorkRiteRoom | 74% |
+| CigarRoom | 74% |
+| ChapelRoom | 72% |
+
+The 2nd floor has fourteen named rooms and five walls. So most of what the
+builder calls a room is a rectangle of different carpet with a brass plaque
+over it, standing in open floor. You walk past a plaque reading THE CHAPEL and
+there is no chapel there — the label changes and nothing else does. That is
+what "walls are weird" and "doesn't feel real" are describing, and it is also
+why there are "so many spots": the floor is subdivided by flooring rather than
+by architecture, so it reads as many places while walking like one.
+
+### Two ways out of it, and they need Chris
+
+1. **Fewer rooms.** Merge the labels down to the spaces that are actually
+   enclosed. The 2nd floor becomes about six rooms instead of fourteen. Most
+   faithful to "way too many rooms", least faithful to the plans.
+2. **Real walls.** Wall the named rooms so they become the rooms the plans
+   show. Faithful to the drawings, but it adds partitions to a floor he has
+   just said has too many.
+
+The likely answer is a mix: give real walls to the rooms that carry the
+building — Egyptian, Chapel, York Rite, Museum, Cigar Room, Ballroom — and
+fold the leftovers (TinyRoom1/3, PrepareRoom, PreparingRoom, EastRoom2/3, the
+loose bathrooms) into the halls they already open onto. Which of those matter
+depends on what each room is **for**, and the unanswered question from this
+file still blocks it: there is no shop, and `data/loot.json` has four sinks
+with nowhere to spend. A room with a job gets walls; a room without one gets
+merged.
