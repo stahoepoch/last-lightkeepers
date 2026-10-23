@@ -58,13 +58,20 @@ local WEST, CENTRE, EAST = -15, 45, W
 -- floors. That is both true of the building and the thing that stops four
 -- identical slabs reading as a car park. A player is five studs, so these
 -- are 3.2, 5.2, 5.6 and 4 player heights - against the old build's 6.4.
-local LEVELS = { 0, 18, 44, 72 }
-local HEADS = { 16, 40, 68, 88 }
-local TOP = 92
+-- Chris: "the ceiling is far too low, i mean our temple is massive." It was.
+-- I over-corrected off the Galleria, whose 32 stud storey was itself too tall
+-- for a mall - but a temple is not a mall, and the Egyptian Room in the
+-- photographs is a very tall room full of very tall columns.
+--
+-- Storey heights are 26, 38, 42 and 30 studs now. Against a five stud player
+-- that is 5.2, 7.6, 8.4 and 6, and the grand rooms are the tall ones.
+local LEVELS = { 0, 30, 72, 118 }
+local HEADS = { 26, 68, 114, 148 }
+local TOP = 154
 
 local WALL_T = 3
 local DOOR_W = 11
-local DOOR_H = 10 -- a door a person walks through, not a cathedral arch
+local DOOR_H = 13 -- a door a person walks through, with reach over it
 
 local C = {
 	-- Read off the photographs rather than invented.
@@ -210,10 +217,71 @@ local function wall(
 	piece(run, hi, y0, y1)
 end
 
+-- Where each floor is OPEN, so the stairs and the lift have something to
+-- come up through.
+--
+-- This is the fault that made the whole building unwalkable on first build:
+-- every slab was laid across the full footprint, so each flight climbed
+-- neatly into the underside of the floor above and stopped. Pathfinding
+-- reported NOPATH to every room on every upper level and only the bottom
+-- floor could be reached at all - Chris: "the stairs need staggered more, i
+-- can't get up them". The treads were never the problem; there was no hole.
+--
+-- Indexed by the level the hole is cut IN, so WELLS[2] is what is missing
+-- from the 1st floor's slab.
+-- Each well is sized to the flight that arrives in it, and ends exactly
+-- where that flight's top tread ends. The first version made them all the
+-- same generous rectangle, which cut the hole six studs PAST the top of the
+-- stair - so every flight climbed to the right height and then stopped at
+-- the edge of a six stud gap with the floor on the far side of it. Still
+-- NOPATH to every upper room, for a completely different reason than the
+-- first time.
+--
+-- Stair A arrives at z 186 on the 1st, B at z 80 on the 2nd, C at z 226 on
+-- the 3rd, and each well stops on that line.
+local WELLS: { [number]: { { number } } } = {
+	[2] = { { 0, 22, 78, 188 }, { 64, 102, 196, 238 } },
+	[3] = { { 20, 42, 78, 188 }, { 64, 102, 196, 238 } },
+	[4] = { { 58, 102, 126, 226 }, { 64, 102, 196, 238 } },
+}
+
+--- Everything in `rect` that is not inside any of `holes`, as a list of
+--- rectangles. Each hole splits every rectangle it overlaps into at most four
+--- strips, which is enough: a floor here never has more than two wells and
+--- they are nowhere near each other.
+local function subtract(rect: { number }, holes: { { number } }): { { number } }
+	local pieces = { rect }
+	for _, hole in ipairs(holes) do
+		local next_: { { number } } = {}
+		for _, r in ipairs(pieces) do
+			local ox0, ox1 = math.max(r[1], hole[1]), math.min(r[2], hole[2])
+			local oz0, oz1 = math.max(r[3], hole[3]), math.min(r[4], hole[4])
+			if ox1 <= ox0 or oz1 <= oz0 then
+				table.insert(next_, r) -- no overlap, keep whole
+			else
+				if r[3] < oz0 then
+					table.insert(next_, { r[1], r[2], r[3], oz0 })
+				end
+				if oz1 < r[4] then
+					table.insert(next_, { r[1], r[2], oz1, r[4] })
+				end
+				if r[1] < ox0 then
+					table.insert(next_, { r[1], ox0, oz0, oz1 })
+				end
+				if ox1 < r[2] then
+					table.insert(next_, { ox1, r[2], oz0, oz1 })
+				end
+			end
+		end
+		pieces = next_
+	end
+	return pieces
+end
+
 --- Terrazzo with the dark bands set into it. This is the floor in every
 --- photograph of the building and it is the cheapest single thing that makes
 --- a room read as this place rather than as a grey box.
-local function terrazzo(
+local function terrazzoSolid(
 	parent: Instance,
 	name: string,
 	x0: number,
@@ -222,7 +290,10 @@ local function terrazzo(
 	z1: number,
 	y: number
 )
-	box(parent, name, x0, x1, y - 2, y, z0, z1, C.terrazzo, Enum.Material.Pebble)
+	-- Concrete, not Pebble. Chris: "the texture is ugly" - Pebble is a coarse
+	-- lumpy aggregate and the floors in the photographs are POLISHED
+	-- terrazzo, which is close to flat.
+	box(parent, name, x0, x1, y - 2, y, z0, z1, C.terrazzo, Enum.Material.Concrete)
 	local inset = 7
 	for _, spec in ipairs({
 		{ x0 + inset, x0 + inset + 2.5, z0 + inset, z1 - inset },
@@ -232,20 +303,37 @@ local function terrazzo(
 	}) do
 		local a, b, c, d = spec[1], spec[2], spec[3], spec[4]
 		if b - a > 0.2 and d - c > 0.2 then
-			box(
-				parent,
-				`{name}_Band`,
-				a,
-				b,
-				y - 0.08,
-				y + 0.05,
-				c,
-				d,
-				C.inlay,
-				Enum.Material.Pebble
-			)
+			-- Sitting ON the slab, not sunk through its surface. Chris: "the
+			-- floor makes me sick, it keeps flickering" - that is z-fighting
+			-- and it was mine. The band ran y - 0.08 to y + 0.05 while the
+			-- slab top is exactly y, so the two were coplanar across the whole
+			-- band and the renderer could not pick one. Standing proud of the
+			-- slab gives each visible face its own depth.
+			local band =
+				box(parent, `{name}_Band`, a, b, y, y + 0.12, c, d, C.inlay, Enum.Material.Slate)
+			band.CanCollide, band.CanQuery = false, false
 		end
 	end
+end
+
+--- The same floor, with the stair and lift wells left open in it.
+local function terrazzo(
+	parent: Instance,
+	name: string,
+	x0: number,
+	x1: number,
+	z0: number,
+	z1: number,
+	y: number,
+	holes: { { number } }?
+)
+	if holes and #holes > 0 then
+		for i, piece in ipairs(subtract({ x0, x1, z0, z1 }, holes)) do
+			terrazzoSolid(parent, `{name}_{i}`, piece[1], piece[2], piece[3], piece[4], y)
+		end
+		return
+	end
+	terrazzoSolid(parent, name, x0, x1, z0, z1, y)
 end
 
 --- The dark wood base at the floor and the painted stencil band where wall
@@ -268,9 +356,34 @@ local function trim(
 		{ x0, x1, z1 - 1.2, z1 },
 	}) do
 		local a, b, c, d = side[1], side[2], side[3], side[4]
-		box(parent, `{name}_Base`, a, b, y, y + 3, c, d, C.timber, Enum.Material.WoodPlanks)
-		box(parent, `{name}_Stencil`, a, b, head - 3.4, head - 1.6, c, d, C.stencil)
-		box(parent, `{name}_Gilt`, a, b, head - 1.6, head - 1, c, d, C.gilt, Enum.Material.Metal)
+		-- NONE of this collides. Chris: "why are there wood blocks stopping me
+		-- from moving everywhere?" - this skirting. It runs the full rectangle
+		-- of every room, which means it also runs straight across every
+		-- doorway in that room, and at three studs a Humanoid will not step
+		-- over it. Forty rooms of decorative trim became forty rooms you
+		-- could not walk out of.
+		--
+		-- Skirting, a painted band and a gilt line are paint. The fix is not
+		-- to cut them around the doors, it is for none of them to be solid.
+		local baseStrip =
+			box(parent, `{name}_Base`, a, b, y, y + 2.2, c, d, C.timber, Enum.Material.WoodPlanks)
+		local stencilStrip =
+			box(parent, `{name}_Stencil`, a, b, head - 3.4, head - 1.6, c, d, C.stencil)
+		local giltStrip = box(
+			parent,
+			`{name}_Gilt`,
+			a,
+			b,
+			head - 1.6,
+			head - 1,
+			c,
+			d,
+			C.gilt,
+			Enum.Material.Metal
+		)
+		for _, strip in ipairs({ baseStrip, stencilStrip, giltStrip }) do
+			strip.CanCollide, strip.CanQuery, strip.CanTouch = false, false, false
+		end
 	end
 end
 
@@ -283,14 +396,19 @@ local function ceilingOver(
 	z0: number,
 	z1: number,
 	y: number,
-	bay: number
+	bay: number,
+	holes: { { number } }?
 )
-	box(parent, name, x0, x1, y, y + 2, z0, z1, C.plaster)
-	local span = z1 - z0
-	local n = math.max(1, math.floor(span / bay))
-	for i = 0, n do
-		local z = z0 + span * (i / n)
-		box(parent, `{name}_Beam_{i}`, x0, x1, y - 2.2, y, z - 1.6, z + 1.6, C.plaster)
+	-- The ceiling takes the same wells as the floor above it. A stairwell
+	-- with a hole in the slab and a ceiling slab under it is still capped.
+	for i, r in ipairs(subtract({ x0, x1, z0, z1 }, holes or {})) do
+		box(parent, `{name}_{i}`, r[1], r[2], y, y + 2, r[3], r[4], C.plaster)
+		local span = r[4] - r[3]
+		local n = math.max(1, math.floor(span / bay))
+		for j = 0, n do
+			local z = r[3] + span * (j / n)
+			box(parent, `{name}_Beam_{i}_{j}`, r[1], r[2], y - 2.2, y, z - 1.6, z + 1.6, C.plaster)
+		end
 	end
 end
 
@@ -328,22 +446,40 @@ local function lightRoom(
 	x1: number,
 	z0: number,
 	z1: number,
+	floorY: number,
 	head: number,
 	opts: { Brightness: number, Range: number, Spacing: number? }
 )
 	local pitch = opts.Spacing or 44
 	local nx = math.max(1, math.round((x1 - x0) / pitch))
 	local nz = math.max(1, math.round((z1 - z0) / pitch))
+	-- Hung on a drop rather than fixed flat to the ceiling. Range is a
+	-- sphere, so in a 42 stud room a fitting tight under the ceiling spends
+	-- nearly all its reach getting down to the floor and lights nothing -
+	-- which is exactly how the Galleria's ground concourse ended up lit by a
+	-- stripe down the middle. Twenty two studs is above head height and still
+	-- over the floor.
+	local mount = math.min(head - 4, floorY + 22)
 	for i = 0, nx - 1 do
 		for j = 0, nz - 1 do
-			lamp(
-				parent,
-				x0 + (x1 - x0) * ((i + 0.5) / nx),
-				head - 4,
-				z0 + (z1 - z0) * ((j + 0.5) / nz),
-				opts.Brightness,
-				opts.Range
-			)
+			local lx = x0 + (x1 - x0) * ((i + 0.5) / nx)
+			local lz = z0 + (z1 - z0) * ((j + 0.5) / nz)
+			if head - 4 > mount + 1 then
+				local rod = box(
+					parent,
+					"LampRod",
+					lx - 0.3,
+					lx + 0.3,
+					mount,
+					head - 1,
+					lz - 0.3,
+					lz + 0.3,
+					C.iron,
+					Enum.Material.Metal
+				)
+				rod.CanCollide, rod.CanQuery = false, false
+			end
+			lamp(parent, lx, mount, lz, opts.Brightness, opts.Range)
 		end
 	end
 end
@@ -464,40 +600,97 @@ local function flight(
 	yLow: number,
 	yHigh: number
 )
-	local steps = math.max(8, math.floor(math.abs(yHigh - yLow) / 1.5))
+	-- A SOLID RAMP with the steps as non-colliding paint on top.
+	--
+	-- Built as real stepped geometry first, and it did not work: a walking
+	-- agent got NoPath from the foot of the stair to a third of the way up,
+	-- while the same agent with AgentCanJump succeeded. Roblox's navmesh will
+	-- not link a run of discrete 1.4 stud platforms into a walkable surface,
+	-- so every upper floor in the building was unreachable on foot.
+	--
+	-- GalleriaBuilder already learned this and says so at its escalators:
+	-- treads "have to be either real geometry you stand on or paint; a raised
+	-- ghost step is the one thing they cannot be." The ramp is the geometry;
+	-- the treads are the paint.
+	local dz = zHigh - zLow
+	local dy = yHigh - yLow
+	local hyp = math.sqrt(dz * dz + dy * dy)
+	local pitch = math.atan2(dy, dz)
+	local cf = CFrame.new((x0 + x1) / 2, (yLow + yHigh) / 2, (zLow + zHigh) / 2)
+		* CFrame.Angles(-pitch, 0, 0)
+	part(
+		parent,
+		`{name}_Ramp`,
+		Vector3.new(x1 - x0, 2, hyp),
+		cf,
+		C.terrazzo,
+		Enum.Material.Concrete
+	)
+
+	-- The steps, flush with the ramp surface so there is nothing to catch on.
+	local steps = math.max(10, math.floor(math.abs(dy) / 1.4))
 	for i = 0, steps - 1 do
-		local t0, t1 = i / steps, (i + 1) / steps
-		local za = zLow + (zHigh - zLow) * t0
-		local zb = zLow + (zHigh - zLow) * t1
-		local y = yLow + (yHigh - yLow) * t1
-		local lo, hi = math.min(za, zb), math.max(za, zb)
-		box(
+		local t = (i + 0.5) / steps
+		local tread = part(
 			parent,
 			`{name}_Tread_{i}`,
-			x0,
-			x1,
-			y - 1.5,
-			y,
-			lo,
-			hi,
-			C.terrazzo,
-			Enum.Material.Pebble
+			Vector3.new(x1 - x0, 0.4, hyp / steps - 0.3),
+			cf * CFrame.new(0, 1.1, (t - 0.5) * hyp),
+			C.inlay,
+			Enum.Material.Slate
 		)
-		box(
+		tread.CanCollide, tread.CanQuery, tread.CanTouch = false, false, false
+		local nose = part(
 			parent,
 			`{name}_Nose_{i}`,
-			x0,
-			x1,
-			y,
-			y + 0.15,
-			lo,
-			lo + 0.9,
+			Vector3.new(x1 - x0, 0.45, 0.8),
+			cf * CFrame.new(0, 1.2, (t - 0.5) * hyp - hyp / steps / 2),
 			C.gilt,
 			Enum.Material.Metal
 		)
+		nose.CanCollide, nose.CanQuery, nose.CanTouch = false, false, false
 	end
-	decoRail(parent, `{name}_RailW`, x0 - 1.4, x0 - 0.2, zLow, zHigh, (yLow + yHigh) / 2 - 2)
-	decoRail(parent, `{name}_RailE`, x1 + 0.2, x1 + 1.4, zLow, zHigh, (yLow + yHigh) / 2 - 2)
+
+	-- The rail follows the flight, and nothing on a stair collides: a
+	-- handrail you walk into is worse than one you clip through.
+	for side, sideX in ipairs({ { x0 - 1.4, x0 - 0.2 }, { x1 + 0.2, x1 + 1.4 } }) do
+		local rails = math.max(3, math.floor(steps / 2))
+		for i = 0, rails do
+			local t = i / rails
+			local z = zLow + dz * t
+			local ry = yLow + dy * t
+			local post = box(
+				parent,
+				`{name}_RailPost_{side}_{i}`,
+				sideX[1],
+				sideX[2],
+				ry,
+				ry + 7,
+				z - 0.5,
+				z + 0.5,
+				C.iron,
+				Enum.Material.Metal
+			)
+			post.CanCollide, post.CanQuery = false, false
+			if i < rails then
+				local nt = (i + 1) / rails
+				local nz, ny = zLow + dz * nt, yLow + dy * nt
+				local hand = box(
+					parent,
+					`{name}_RailHand_{side}_{i}`,
+					sideX[1],
+					sideX[2],
+					math.min(ry, ny) + 6.2,
+					math.max(ry, ny) + 7.4,
+					math.min(z, nz),
+					math.max(z, nz),
+					C.timber,
+					Enum.Material.WoodPlanks
+				)
+				hand.CanCollide, hand.CanQuery = false, false
+			end
+		end
+	end
 end
 
 type Room = {
@@ -540,23 +733,45 @@ function LanternholdBuilder.Build(): Model
 
 	local function buildRoom(folder: Instance, level: number, room: Room)
 		local y, head = LEVELS[level], HEADS[level]
-		terrazzo(folder, `{room.name}_Floor`, room.x0, room.x1, room.z0, room.z1, y)
+		local wells = WELLS[level]
+		terrazzo(folder, `{room.name}_Floor`, room.x0, room.x1, room.z0, room.z1, y, wells)
 		if room.floor then
-			box(
-				folder,
-				`{room.name}_Finish`,
-				room.x0 + 1,
-				room.x1 - 1,
-				y,
-				y + 0.12,
-				room.z0 + 1,
-				room.z1 - 1,
-				room.floor,
-				room.mat or Enum.Material.Fabric
-			)
+			-- Also standing proud rather than flush, for the same reason, and
+			-- above the inlay bands so a carpeted room does not fight them.
+			for i, r in
+				ipairs(
+					subtract({ room.x0 + 1, room.x1 - 1, room.z0 + 1, room.z1 - 1 }, wells or {})
+				)
+			do
+				local finish = box(
+					folder,
+					`{room.name}_Finish_{i}`,
+					r[1],
+					r[2],
+					y,
+					y + 0.2,
+					r[3],
+					r[4],
+					room.floor,
+					room.mat or Enum.Material.Fabric
+				)
+				finish.CanCollide = false
+			end
 		end
 		trim(folder, room.name, room.x0, room.x1, room.z0, room.z1, y, head)
-		ceilingOver(folder, `{room.name}_Ceiling`, room.x0, room.x1, room.z0, room.z1, head, 34)
+		-- The ceiling of THIS room is the underside of the floor above, so it
+		-- takes the next level's wells, not its own.
+		ceilingOver(
+			folder,
+			`{room.name}_Ceiling`,
+			room.x0,
+			room.x1,
+			room.z0,
+			room.z1,
+			head,
+			34,
+			WELLS[level + 1]
+		)
 		if (room.light or 0) > 0 then
 			-- The per-room numbers are relative weights, not absolute
 			-- brightness. The first build used them raw at range 40 on a 44
@@ -567,17 +782,17 @@ function LanternholdBuilder.Build(): Model
 			-- Smaller pools closer together is the fix rather than fewer:
 			-- range 30 on a 34 grid leaves the worst point between four lamps
 			-- 24 away, inside reach, while barely reaching the next room.
-			lightRoom(folder, room.x0, room.x1, room.z0, room.z1, head, {
+			lightRoom(folder, room.x0, room.x1, room.z0, room.z1, y, head, {
 				Brightness = (room.light :: number) * 0.62,
-				Range = 30,
-				Spacing = 34,
+				Range = 40,
+				Spacing = 36,
 			})
 		end
 	end
 
 	-- ------------------------------------------------------------- the shell
 	for i, lvl in ipairs(LEVELS) do
-		terrazzo(F.Shell, `Slab_{i}`, -W, W, Z0, Z1, lvl)
+		terrazzo(F.Shell, `Slab_{i}`, -W, W, Z0, Z1, lvl, WELLS[i])
 	end
 	box(F.Shell, "Roof", -W, W, TOP, TOP + 3, Z0, Z1, C.limestone, Enum.Material.Concrete)
 	box(
@@ -974,11 +1189,51 @@ function LanternholdBuilder.Build(): Model
 	-- every level, and that single fact is most of why the hub read as a
 	-- warren rather than a building.
 	do
-		flight(F.Core, "Stair_0_1", 2, 38, 80, 186, LEVELS[1], LEVELS[2])
-		flight(F.Core, "Stair_1_2", 2, 38, 186, 80, LEVELS[2], LEVELS[3])
+		-- Side by side in their own lanes, not stacked in one shaft.
+		--
+		-- Both flights used the same x band, so the bottom tread of the upper
+		-- flight landed exactly on the top tread of the lower one: you climbed
+		-- the first stair correctly and arrived underneath the second, with
+		-- nowhere to step off. The profile up the shaft read 0 -> 9 studs and
+		-- then jumped to 59 as the raycast found the flight above, and
+		-- pathfinding said NOPATH to every room on every upper floor.
+		--
+		-- Two lanes with a well each is both the fix and what the stair hall
+		-- in the photograph actually is - two runs beside each other sharing a
+		-- balustrade, not one flight folded over itself.
+		-- Each ramp runs to the EXACT edge of its well. Stopping two studs
+		-- short left a two stud gap between the top of the ramp and the slab,
+		-- and the navmesh will not bridge it: every point on the ramp was
+		-- reachable right up to z = 186, and the floor at z = 196 was not.
+		-- The whole building hung on those two studs.
+		flight(F.Core, "Stair_0_1", 2, 20, 80, 188, LEVELS[1], LEVELS[2])
+		flight(F.Core, "Stair_1_2", 22, 40, 186, 78, LEVELS[2], LEVELS[3])
 		flight(F.Core, "Stair_2_3", 62, 98, 128, 226, LEVELS[3], LEVELS[4])
+		-- and a landing at the head of each, so you step off onto floor
+		-- rather than onto the lip of the slab.
+		for _, L in ipairs({
+			{ 2, 20, 184, 192, LEVELS[2] },
+			{ 22, 40, 74, 82, LEVELS[3] },
+			{ 62, 98, 222, 230, LEVELS[4] },
+		}) do
+			box(
+				F.Core,
+				`StairLanding_{L[5]}`,
+				L[1],
+				L[2],
+				L[5] - 2,
+				L[5],
+				L[3],
+				L[4],
+				C.terrazzo,
+				Enum.Material.Concrete
+			)
+		end
 
-		local LX0, LX1, LZ0, LZ1 = 68, 98, 252, 288
+		-- In the elevator lobby, which is where the plan puts it: between the
+		-- front entrance and the vaults. It was inside the vault room, and
+		-- its shaft was cutting that room's floor out from under itself.
+		local LX0, LX1, LZ0, LZ1 = 66, 100, 198, 236
 		wall(F.Core, "LiftShaftW", "X", LX0, LZ0, LZ1, 0, TOP, {})
 		wall(F.Core, "LiftShaftE", "X", LX1, LZ0, LZ1, 0, TOP, {})
 		wall(F.Core, "LiftShaftN", "Z", LZ1, LX0, LX1, 0, TOP, {})
@@ -1008,7 +1263,7 @@ function LanternholdBuilder.Build(): Model
 			C.timber,
 			Enum.Material.WoodPlanks
 		)
-		car:SetAttribute("Stops", "0,18,44,72")
+		car:SetAttribute("Stops", "0,30,72,118")
 		CollectionService:AddTag(car, "Lift")
 	end
 
@@ -1024,13 +1279,16 @@ function LanternholdBuilder.Build(): Model
 		for i = 0, 4 do
 			local z = ez0 + (ez1 - ez0) * ((i + 0.5) / 5)
 			for side, x in ipairs({ ex0 + 13, ex1 - 13 }) do
+				-- Scaled off the room, not fixed. In a 42 stud room a 22 stud
+				-- column is a bollard, and the photographs are all column.
+				local shaft = (head - y) * 0.72
 				box(
 					F.Fixtures,
 					`EgyptCol_{i}_{side}`,
 					x - 5,
 					x + 5,
 					y,
-					y + 22,
+					y + shaft,
 					z - 5,
 					z + 5,
 					C.egyptGold,
@@ -1041,8 +1299,8 @@ function LanternholdBuilder.Build(): Model
 					`EgyptCap_{i}_{side}`,
 					x - 7,
 					x + 7,
-					y + 22,
-					y + 26,
+					y + shaft,
+					y + shaft + 5,
 					z - 7,
 					z + 7,
 					C.egyptGold,
@@ -1053,8 +1311,8 @@ function LanternholdBuilder.Build(): Model
 					`EgyptBand_{i}_{side}`,
 					x - 5.4,
 					x + 5.4,
-					y + 20.6,
-					y + 22,
+					y + shaft - 1.4,
+					y + shaft,
 					z - 5.4,
 					z + 5.4,
 					C.gilt,
@@ -1065,8 +1323,8 @@ function LanternholdBuilder.Build(): Model
 					`EgyptPanel_{i}_{side}`,
 					x - 5.3,
 					x + 5.3,
-					y + 6,
-					y + 18,
+					y + 7,
+					y + shaft - 5,
 					z - 2.2,
 					z + 2.2,
 					C.egyptTeal
@@ -1174,7 +1432,7 @@ function LanternholdBuilder.Build(): Model
 				F.Fixtures,
 				`AltarLampGlobe_{i}`,
 				Vector3.new(4, 6, 4),
-				CFrame.new(lx, y + 18, lz),
+				CFrame.new(lx, y + 22, lz),
 				Color3.fromRGB(248, 242, 228)
 			)
 			globe.CanCollide, globe.CanQuery = false, false
@@ -1221,8 +1479,9 @@ function LanternholdBuilder.Build(): Model
 			ex1,
 			ez0,
 			ez1,
+			y,
 			head,
-			{ Brightness = 0.7, Range = 38, Spacing = 40 }
+			{ Brightness = 0.7, Range = 42, Spacing = 38 }
 		)
 	end
 
