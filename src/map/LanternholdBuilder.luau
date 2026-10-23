@@ -1,98 +1,91 @@
 --!strict
--- Lanternhold — the hub, built as the four-storey hall it is taken from.
+-- Lanternhold — the Johnstown Masonic Temple, Valley Pike.
 --
--- Chris went and stood in the real building and sent back its programme:
--- basement, then floors one, two and three, with a lift inside. The basement
--- is the kitchen and food rooms, one floor is a giant ballroom, the second has
--- the lodge rooms - an Egyptian room and a Gothic chapel - and the third is a
--- museum and storage. "We can make basement the lobby beginning."
+-- Rewritten from Chris's own four floor plans and his photographs of the
+-- inside. The previous version was built from a programme he described from
+-- memory; the levels were roughly right and nearly every room in them was
+-- invented, which is what he kept hitting: "lanternhold itself doesn't feel
+-- right, i know its the masonic temple, but it doesn't feel right, look
+-- right, or lol, smell right."
 --
--- That is better than anything invented, so the hub is the building now rather
--- than a hall with rooms off it:
+-- The plans and photographs are in docs/reference/lanternhold/ and the
+-- reading of them is docs/LANTERNHOLD-PLAN.md. READ THOSE BEFORE EDITING
+-- THIS. Anything here that contradicts the plans is a bug in this file.
 --
---   BASEMENT  the Landing you arrive in, the Community Kitchen, the Lamp Wall
---             and your workshop corner. Lit, warm, lived in.
---   FLOOR 1   the ballroom. Eight thousand square feet, built, roofed, unlit.
---   FLOOR 2   the lodge rooms. Egyptian and Norman Gothic, both dark and shut.
---   FLOOR 3   the museum - the Keeping Room, where relics are named - and the
---             storage rooms, which are not lit either.
+-- J. C. Fulton and Son of Uniontown, 1927-1933, cornerstone 1931. Art Deco:
+-- pale limestone, flat roof, and a tall central entrance bay of fluted
+-- pilasters that read like organ pipes. Chris: "we are a very special temple,
+-- you'll never see another one like it besides philly or england, we have a
+-- huge place and it's ornate."
 --
--- The dark was always the point and now it has four floors to be dark on. From
--- the basement you see up the stair well past three unlit landings, which is
--- the argument for going back out there, made without a word.
+-- ORNATE IS THE BRIEF. The old build was plain coloured boxes and that is
+-- the whole of "doesn't look right". What makes this building is terrazzo
+-- with dark inlay banding underfoot, cream plaster over a dark wood base, a
+-- painted green-and-gold stencil band where wall meets ceiling, beamed
+-- ceilings, brass door furniture, and Art Deco iron balustrades with a
+-- circle-and-chevron motif. Those six things are in nearly every photograph,
+-- they are cheap, and they go everywhere.
 --
--- The building is real, so the detail is checkable: J. C. Fulton and Son of
--- Uniontown designed it for the Johnstown masons in the mid-1920s, in Moxham.
--- The ballroom is about 8,000 square feet, the Egyptian room is original, and
--- the castle-styled room has wood beams and slate floors. Chris puts the lodge
--- rooms on the second floor; the Society of Architectural Historians puts the
--- Egyptian room on the third. He is in the building and I am not.
---
--- Geometry is in studs. A player is about five studs tall, so a table top is
--- two and a bit and a door is eight. The previous version had tables at nine
--- studs and doors at twenty-two, which is what Chris meant by "some of the
--- stuff in lanternhold is huge and not to scale with players."
+-- STRUCTURE. Rooms are declared as rectangles in a table per floor and built
+-- by one function rather than written out by hand. The old file grew
+-- organically and every change had to hunt for its own coordinates; this way
+-- a room that moves takes its floor, skirting, stencil, ceiling and lighting
+-- with it.
 --
 --   require(workspace.Map.LanternholdBuilder).Build()
--- Builds Workspace.Lanternhold. Deliberately NOT under Workspace.Map, because
--- FloodedMallBuilder clears every child of Map on the first line of its build.
+-- Builds Workspace.Lanternhold, deliberately NOT under Workspace.Map, which
+-- Rojo owns and reconciles on every sync.
 
 local CollectionService = game:GetService("CollectionService")
 local Workspace = game:GetService("Workspace")
 
 local LanternholdBuilder = {}
 
--- The plan. South is -Z: the road arrives from the farms.
-local W = 130 -- half-width
-local Z0, Z1 = 0, 230 -- south and north walls
--- The core holds the stairs, the lift and a walkway past both. It used to be
--- too narrow for all three, so the lift ended up east of it - which put the
--- shaft squarely in front of the ballroom and lodge doorways, blocking the
--- view into the rooms the whole hub is built around.
-local CORE_X0, CORE_X1 = -126, -50
-local CORE_Z0, CORE_Z1 = 16, 92
+-- ------------------------------------------------------------------ the grid
+-- The plans are portrait: the building is deeper than it is wide. X runs west
+-- (the left of the plan) to east; Z runs from the bottom of the plan, where
+-- the ramp entrance is, to the top, where the exit is.
+local W = 110 -- half-width, so 220 across
+local Z0, Z1 = 0, 300
 
--- The back hall, north of the landing. BH_SPINE is the wall across it, which
--- leaves a corridor between the landing door and the two rooms behind; and
--- BH_DIVIDE is the wall between those rooms. Named rather than typed into
--- eight places, because the lighting grids are derived from the same numbers
--- and a room whose lamps stop at a wall that has moved is the fault this
--- building has had twice already.
-local BH_SPINE = 118
-local BH_DIVIDE = 34
+-- The three vertical bands every plan shares: a west block of big rooms, a
+-- centre strip carrying the stairs, and an east block of small rooms with the
+-- elevator in it.
+local WEST, CENTRE, EAST = -15, 45, W
 
--- Floor levels, as the height you stand on, and the ceiling over each.
-local LEVELS = { 0, 26, 64, 92 }
-local HEADS = { 24, 62, 90, 118 }
-local TOP = 126
+-- Floor levels and the ceiling over each. NOT a constant storey: the ballroom
+-- and the Egyptian Room are grand rooms and are taller than the service
+-- floors. That is both true of the building and the thing that stops four
+-- identical slabs reading as a car park. A player is five studs, so these
+-- are 3.2, 5.2, 5.6 and 4 player heights - against the old build's 6.4.
+local LEVELS = { 0, 18, 44, 72 }
+local HEADS = { 16, 40, 68, 88 }
+local TOP = 92
 
-local WALL_T = 4
-local DOOR_H = 8 -- a door a person walks through
-local DOOR_W = 14
+local WALL_T = 3
+local DOOR_W = 11
+local DOOR_H = 10 -- a door a person walks through, not a cathedral arch
 
 local C = {
-	stone = Color3.fromRGB(206, 196, 176), -- cast stone, not brick. See the photograph.
-	trim = Color3.fromRGB(176, 166, 148),
-	timber = Color3.fromRGB(120, 84, 56),
-	board = Color3.fromRGB(168, 150, 128),
-	dark = Color3.fromRGB(34, 32, 36),
-	brass = Color3.fromRGB(198, 160, 92),
-	glass = Color3.fromRGB(196, 214, 212),
-	cloth = Color3.fromRGB(122, 74, 62),
-	grass = Color3.fromRGB(94, 104, 74),
-	egypt = Color3.fromRGB(150, 116, 58),
-	gothic = Color3.fromRGB(86, 90, 104),
-	-- Read off Chris's photographs from inside the building.
-	terrazzo = Color3.fromRGB(168, 160, 144), -- speckled cream, polished; see DONTFUCKUPTHELIGHTS.md
-	inlay = Color3.fromRGB(92, 84, 74), -- the dark bands set into it
-	hardwood = Color3.fromRGB(104, 62, 40), -- the ballroom floor, red-brown
-	plaster = Color3.fromRGB(202, 196, 184), -- the coffered ceilings; lowered to stop blowing out beside a lamp
-	iron = Color3.fromRGB(46, 42, 40), -- the balustrades
-	stencil = Color3.fromRGB(92, 112, 84), -- the painted border band
-	gilt = Color3.fromRGB(176, 148, 86),
+	-- Read off the photographs rather than invented.
+	limestone = Color3.fromRGB(214, 208, 192), -- the outside, pale and flat
+	plaster = Color3.fromRGB(226, 219, 203), -- cream walls above the base
+	terrazzo = Color3.fromRGB(176, 168, 150), -- speckled cream, polished
+	inlay = Color3.fromRGB(74, 68, 60), -- the dark bands set into it
+	timber = Color3.fromRGB(78, 46, 28), -- dark stained doors and rails
+	brass = Color3.fromRGB(190, 152, 86),
+	iron = Color3.fromRGB(38, 35, 33), -- the deco balustrades
+	stencil = Color3.fromRGB(96, 116, 86), -- the painted border band, green
+	gilt = Color3.fromRGB(198, 164, 92), -- and its gold
+	egyptGold = Color3.fromRGB(198, 158, 74),
+	egyptBlue = Color3.fromRGB(58, 62, 118), -- the carpet
+	egyptTeal = Color3.fromRGB(46, 108, 112), -- the seating
+	dark = Color3.fromRGB(32, 30, 32),
 }
-local WARM = Color3.fromRGB(255, 214, 160)
 
+local WARM = Color3.fromRGB(255, 216, 168)
+
+-- ------------------------------------------------------------------ helpers
 local function part(
 	parent: Instance,
 	name: string,
@@ -112,6 +105,9 @@ local function part(
 	return p
 end
 
+--- A box from two opposite corners. Ordering is forced, because an earlier
+--- version computed x1 - x0 raw and a negative width clamped to nothing: a
+--- door leaf came out a thousandth of a stud thick and nobody could see why.
 local function box(
 	parent: Instance,
 	name: string,
@@ -125,18 +121,35 @@ local function box(
 	mat: Enum.Material?,
 	trans: number?
 ): Part
+	local lo = Vector3.new(math.min(x0, x1), math.min(y0, y1), math.min(z0, z1))
+	local hi = Vector3.new(math.max(x0, x1), math.max(y0, y1), math.max(z0, z1))
+	local size = hi - lo
 	return part(
 		parent,
 		name,
-		Vector3.new(x1 - x0, y1 - y0, z1 - z0),
-		CFrame.new((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2),
+		Vector3.new(math.max(size.X, 0.05), math.max(size.Y, 0.05), math.max(size.Z, 0.05)),
+		CFrame.new((lo + hi) / 2),
 		colour,
 		mat,
 		trans
 	)
 end
 
---- A wall with doorways cut in it, each with a lintel over it.
+local function label(host: BasePart, text: string, face: Enum.NormalId, size: number?)
+	local gui = Instance.new("SurfaceGui")
+	gui.Face, gui.Adornee, gui.AlwaysOnTop = face, host, false
+	gui.CanvasSize = Vector2.new(400, 100)
+	gui.Parent = host
+	local t = Instance.new("TextLabel")
+	t.Size, t.BackgroundTransparency = UDim2.fromScale(1, 1), 1
+	t.Font, t.Text = Enum.Font.GothamBold, text
+	t.TextSize = size or 24
+	t.TextColor3 = Color3.fromRGB(246, 240, 226)
+	t.Parent = gui
+end
+
+--- A wall along one axis with doorways cut in it, each with a lintel over.
+--- `gaps` are spans in the along-axis coordinate.
 local function wall(
 	parent: Instance,
 	name: string,
@@ -146,451 +159,60 @@ local function wall(
 	to: number,
 	y0: number,
 	y1: number,
-	colour: Color3,
-	gaps: { { number } },
-	headH: number?
+	gaps: { { number } }
 )
-	-- Doorways are door height by default. The openings onto the rooms that are
-	-- shut take a taller head, because the whole point of those rooms is that
-	-- you stand at the barrier and see what you are not allowed into - and an
-	-- eight stud hole shows you a skirting board.
-	local head = math.min(y0 + (headH or DOOR_H), y1)
+	local lo, hi = math.min(from, to), math.max(from, to)
 	local cuts = table.clone(gaps)
 	table.sort(cuts, function(a, b)
 		return a[1] < b[1]
 	end)
-	local runs, cursor = {}, from
-	for _, g in ipairs(cuts) do
-		if g[1] > cursor then
-			table.insert(runs, { cursor, g[1] })
+	local index = 0
+	local function piece(a: number, b: number, py0: number, py1: number)
+		if b - a < 0.05 or py1 - py0 < 0.05 then
+			return
 		end
-		cursor = math.max(cursor, g[2])
-	end
-	if cursor < to then
-		table.insert(runs, { cursor, to })
-	end
-	local h = WALL_T / 2
-	for i, r in ipairs(runs) do
-		if r[2] - r[1] > 0.01 then
-			if axis == "X" then
-				box(
-					parent,
-					`{name}_{i}`,
-					at - h,
-					at + h,
-					y0,
-					y1,
-					r[1],
-					r[2],
-					colour,
-					Enum.Material.Concrete
-				)
-			else
-				box(
-					parent,
-					`{name}_{i}`,
-					r[1],
-					r[2],
-					y0,
-					y1,
-					at - h,
-					at + h,
-					colour,
-					Enum.Material.Concrete
-				)
-			end
-		end
-	end
-	for i, g in ipairs(cuts) do
-		if y1 > head then
-			if axis == "X" then
-				box(
-					parent,
-					`{name}_Head_{i}`,
-					at - h,
-					at + h,
-					head,
-					y1,
-					g[1],
-					g[2],
-					colour,
-					Enum.Material.Concrete
-				)
-			else
-				box(
-					parent,
-					`{name}_Head_{i}`,
-					g[1],
-					g[2],
-					head,
-					y1,
-					at - h,
-					at + h,
-					colour,
-					Enum.Material.Concrete
-				)
-			end
-		end
-	end
-end
-
-local function label(host: BasePart, text: string, face: Enum.NormalId, size: number?)
-	local g = Instance.new("SurfaceGui")
-	g.Face, g.CanvasSize, g.Parent = face, Vector2.new(600, 160), host
-	local l = Instance.new("TextLabel")
-	l.Size, l.BackgroundTransparency = UDim2.fromScale(1, 1), 1
-	l.Font, l.TextScaled = Enum.Font.GothamBold, true
-	l.TextSize = size or 34
-	l.TextColor3, l.Text = Color3.fromRGB(240, 226, 200), text
-	l.Parent = g
-end
-
-local function lamp(
-	parent: Instance,
-	name: string,
-	x: number,
-	y: number,
-	z: number,
-	lit: boolean
-): Part
-	local glass =
-		part(parent, name, Vector3.new(3, 4.5, 3), CFrame.new(x, y, z), C.dark, Enum.Material.Metal)
-	local bracket = part(
-		parent,
-		`{name}_Bracket`,
-		Vector3.new(1, 1, 3.5),
-		CFrame.new(x, y + 2.6, z),
-		C.brass,
-		Enum.Material.Metal
-	)
-	-- A fitting hung from the ceiling is not something to walk into. These
-	-- were collidable, which hung a hundred small obstacles inside the beams
-	-- and soffits they are fixed to.
-	glass.CanCollide, glass.CanQuery = false, false
-	bracket.CanCollide, bracket.CanQuery = false, false
-	if lit then
-		local light = Instance.new("PointLight")
-		-- 1.0 at range 34, not 1.5 at 42. Twelve of these on the hub floor at
-		-- the old setting overlapped into a flood rather than twelve pools,
-		-- and against plaster at 238,232,222 the hall went white even with the
-		-- Lighting block correct. The mall reads well at 0.85 and range 46;
-		-- this is the same idea - a lamp lights its own patch of floor and the
-		-- dark between patches is the point.
-		light.Color, light.Brightness, light.Range = WARM, 1.0, 34
-		-- Shadows off everywhere. A lantern that casts them strobes as you walk
-		-- past the posts, which is the flicker Chris hit in the mall.
-		light.Shadows = false
-		light.Parent = glass
-	end
-	return glass
-end
-
---- Lamps on a grid across a whole room, so a room cannot come out part-lit.
----
---- Every lamp in this building used to be a hand-typed coordinate, and the
---- result was what Chris walked into: "the lighting is awful in the
---- lanternhold". Not dim lamps - missing ones. The ballroom had none at all
---- over 180 by 230 studs, both lodge rooms had none, the museum had three for
---- a whole floor, the kitchen had two and both at the same x, and the stair
---- core - the only way between floors - had none on any level. The basement
---- landing was the one room anybody had covered, and it was covered because
---- somebody sat and typed twelve pairs of numbers.
----
---- Same lesson as the Galleria's relic caches: a list of coordinates is a
---- thing that goes stale silently. The grid comes off the room's own
---- rectangle, so a room that changes shape keeps its light.
----
---- Spacing has to stay inside the lamp's reach or the grid leaves holes at the
---- diagonals. At 46 studs the worst point between four lamps is 32.5 from all
---- of them, inside a 34 stud range; past about 48 the middle goes black.
-local function lightRoom(
-	parent: Instance,
-	name: string,
-	x0: number,
-	x1: number,
-	z0: number,
-	z1: number,
-	ceiling: number,
-	-- Deliberately a table with capitalised keys rather than three positional
-	-- numbers. tests/lighting.test.mjs guards every lamp in src/map by matching
-	-- `Brightness = <number>`, and a positional argument is invisible to it -
-	-- so the first version of this helper quietly took nine lamp brightnesses
-	-- out from under the guard that exists because this exact thing has cost
-	-- the project several evenings. Written this way the values are both
-	-- readable at the call site and still checked.
-	opts: { Brightness: number, Range: number, Spacing: number? }
-)
-	local pitch = opts.Spacing or 46
-	local nx = math.max(1, math.round((x1 - x0) / pitch))
-	local nz = math.max(1, math.round((z1 - z0) / pitch))
-	for i = 0, nx - 1 do
-		for j = 0, nz - 1 do
-			local x = x0 + (x1 - x0) * ((i + 0.5) / nx)
-			local z = z0 + (z1 - z0) * ((j + 0.5) / nz)
-			local glass = lamp(parent, `{name}_{i}_{j}`, x, ceiling - 5, z, true)
-			local light = glass:FindFirstChildOfClass("PointLight")
-			if light then
-				light.Brightness, light.Range = opts.Brightness, opts.Range
-			end
-		end
-	end
-end
-
---- A fingerpost: one post, an arm per destination, each arm swung to actually
---- point at the thing it names. The hub's rooms are spread over a 260 by 230
---- building and Chris walked it cold: "the whole place is strange". The
---- research on this is consistent - put hints in the world rather than in a
---- wall of text, and keep the extras to the sides of the route rather than
---- across it. An arm that points the wrong way is worse than no arm, so the
---- yaw is derived from the target rather than typed.
-local function fingerpost(
-	parent: Instance,
-	name: string,
-	x: number,
-	z: number,
-	base: number,
-	arms: { { text: string, tx: number, tz: number } }
-)
-	part(
-		parent,
-		`{name}_Post`,
-		Vector3.new(2.2, 15, 2.2),
-		CFrame.new(x, base + 7.5, z),
-		C.iron,
-		Enum.Material.Metal
-	)
-	part(
-		parent,
-		`{name}_Finial`,
-		Vector3.new(3.4, 1, 3.4),
-		CFrame.new(x, base + 15.2, z),
-		C.gilt,
-		Enum.Material.Metal
-	)
-	-- Stack the arms so the ones pointing nearly the same way sit furthest
-	-- apart vertically. Two of these rooms are both away to the west, only 12
-	-- degrees apart, and at even spacing their boards overlapped into an
-	-- unreadable pile - Chris: "signs don't match up". Sorting by bearing and
-	-- then dealing the heights out from the two ends inward puts angular
-	-- neighbours at opposite ends of the post.
-	table.sort(arms, function(a, b)
-		return math.atan2(a.tz - z, a.tx - x) < math.atan2(b.tz - z, b.tx - x)
-	end)
-	local slot, lo, hi = {}, 1, #arms
-	for i = 1, #arms do
-		if i % 2 == 1 then
-			slot[i] = lo
-			lo += 1
+		index += 1
+		if axis == "X" then
+			box(
+				parent,
+				`{name}_{index}`,
+				at - WALL_T / 2,
+				at + WALL_T / 2,
+				py0,
+				py1,
+				a,
+				b,
+				C.plaster
+			)
 		else
-			slot[i] = hi
-			hi -= 1
+			box(
+				parent,
+				`{name}_{index}`,
+				a,
+				b,
+				py0,
+				py1,
+				at - WALL_T / 2,
+				at + WALL_T / 2,
+				C.plaster
+			)
 		end
 	end
-	for i, arm in ipairs(arms) do
-		local yaw = math.atan2(arm.tz - z, arm.tx - x)
-		local y = base + 14.5 - (slot[i] - 1) * 4.1
-		local board = part(
-			parent,
-			`{name}_Arm{i}`,
-			Vector3.new(17, 2.4, 0.5),
-			CFrame.new(x, y, z) * CFrame.Angles(0, -yaw, 0) * CFrame.new(9.5, 0, 0),
-			C.timber,
-			Enum.Material.WoodPlanks
-		)
-		board.CanCollide = false
-		label(board, arm.text, Enum.NormalId.Front, 22)
-		label(board, arm.text, Enum.NormalId.Back, 22)
+	local run = lo
+	for _, gap in ipairs(cuts) do
+		local ga, gb = math.max(lo, gap[1]), math.min(hi, gap[2])
+		if gb > ga then
+			piece(run, ga, y0, y1)
+			piece(ga, gb, y0 + DOOR_H, y1) -- the lintel over the opening
+			run = gb
+		end
 	end
+	piece(run, hi, y0, y1)
 end
 
---- A room's own floor finish, laid ON the structural slab rather than beside
---- it. Every room used to build its own two-stud slab at exactly the height
---- the shell had already put one, which left two collidable surfaces sharing a
---- plane and made the rooms above unreachable from their own landings.
-local function finish(
-	parent: Instance,
-	name: string,
-	x0: number,
-	x1: number,
-	z0: number,
-	z1: number,
-	y: number,
-	colour: Color3,
-	mat: Enum.Material?
-)
-	local p = box(parent, name, x0, x1, y, y + 0.2, z0, z1, colour, mat or Enum.Material.WoodPlanks)
-	p.CanCollide = false
-	return p
-end
-
---- A square column with a moulded capital and a dark plinth. Every column in
---- the building is like this - square, cream, with a stepped capital - and a
---- plain post reads as scaffolding beside it.
-local function column(
-	parent: Instance,
-	name: string,
-	x: number,
-	z: number,
-	y0: number,
-	y1: number,
-	w: number
-)
-	local h = w / 2
-	box(
-		parent,
-		`{name}_Plinth`,
-		x - h - 0.4,
-		x + h + 0.4,
-		y0,
-		y0 + 2.5,
-		z - h - 0.4,
-		z + h + 0.4,
-		C.timber,
-		Enum.Material.WoodPlanks
-	)
-	box(
-		parent,
-		`{name}_Shaft`,
-		x - h,
-		x + h,
-		y0 + 2.5,
-		y1 - 2.5,
-		z - h,
-		z + h,
-		C.plaster,
-		Enum.Material.Concrete
-	)
-	box(
-		parent,
-		`{name}_Capital`,
-		x - h - 1,
-		x + h + 1,
-		y1 - 2.5,
-		y1,
-		z - h - 1,
-		z + h + 1,
-		C.plaster,
-		Enum.Material.Concrete
-	)
-end
-
---- A coffered ceiling: a grid of beams with the decorative band on their faces.
---- The ballroom's ceiling is the single most recognisable thing in the photos
---- of this building, and a flat slab throws all of it away.
-local function coffers(
-	parent: Instance,
-	name: string,
-	x0: number,
-	x1: number,
-	z0: number,
-	z1: number,
-	y: number,
-	bay: number,
-	band: Color3,
-	soffit: boolean?
-)
-	local nx = math.max(1, math.floor((x1 - x0) / bay))
-	local nz = math.max(1, math.floor((z1 - z0) / bay))
-	-- Only where there is no floor overhead already. Every room but the top one
-	-- has the slab above serving as its ceiling, and laying a soffit there puts
-	-- three collidable surfaces in the same two-stud band - which is what made
-	-- the museum unreachable from its own landing.
-	if soffit then
-		box(parent, `{name}_Soffit`, x0, x1, y, y + 2, z0, z1, C.plaster, Enum.Material.Concrete)
-	end
-	for i = 0, nx do
-		local x = x0 + (x1 - x0) * (i / nx)
-		box(
-			parent,
-			`{name}_BeamX_{i}`,
-			x - 2,
-			x + 2,
-			y - 3,
-			y,
-			z0,
-			z1,
-			C.plaster,
-			Enum.Material.Concrete
-		)
-		box(
-			parent,
-			`{name}_BandX_{i}`,
-			x - 2.3,
-			x + 2.3,
-			y - 2.2,
-			y - 1.2,
-			z0,
-			z1,
-			band,
-			Enum.Material.Concrete
-		)
-	end
-	for j = 0, nz do
-		local z = z0 + (z1 - z0) * (j / nz)
-		box(
-			parent,
-			`{name}_BeamZ_{j}`,
-			x0,
-			x1,
-			y - 3,
-			y,
-			z - 2,
-			z + 2,
-			C.plaster,
-			Enum.Material.Concrete
-		)
-		box(
-			parent,
-			`{name}_BandZ_{j}`,
-			x0,
-			x1,
-			y - 2.2,
-			y - 1.2,
-			z - 2.3,
-			z + 2.3,
-			band,
-			Enum.Material.Concrete
-		)
-	end
-end
-
---- The dark skirting band that runs round every room at about a foot high.
-local function baseband(
-	parent: Instance,
-	name: string,
-	x0: number,
-	x1: number,
-	z0: number,
-	z1: number,
-	y: number
-)
-	-- Skirting never collides. Built solid it is a three-stud wall round every
-	-- room, and it ran straight across the front doors, the kitchen opening and
-	-- the stair well - the whole building became unreachable from the road.
-	for _, spec in ipairs({
-		{ x0, x0 + 1, z0, z1 },
-		{ x1 - 1, x1, z0, z1 },
-		{ x0, x1, z0, z0 + 1 },
-		{ x0, x1, z1 - 1, z1 },
-	}) do
-		local b = box(
-			parent,
-			`{name}_{spec[1]}_{spec[3]}`,
-			spec[1],
-			spec[2],
-			y,
-			y + 3,
-			spec[3],
-			spec[4],
-			C.timber,
-			Enum.Material.WoodPlanks
-		)
-		b.CanCollide = false
-	end
-end
-
---- Terrazzo with dark bands set into it, which is the floor of every hall and
---- stair in the building.
+--- Terrazzo with the dark bands set into it. This is the floor in every
+--- photograph of the building and it is the cheapest single thing that makes
+--- a room read as this place rather than as a grey box.
 local function terrazzo(
 	parent: Instance,
 	name: string,
@@ -600,65 +222,238 @@ local function terrazzo(
 	z1: number,
 	y: number
 )
-	box(parent, `{name}`, x0, x1, y - 2, y, z0, z1, C.terrazzo, Enum.Material.Pebble)
-	local n = math.max(1, math.floor((z1 - z0) / 46))
-	for i = 1, n - 1 do
-		local z = z0 + (z1 - z0) * (i / n)
-		box(
-			parent,
-			`{name}_Band_{i}`,
-			x0,
-			x1,
-			y,
-			y + 0.3,
-			z - 5,
-			z + 5,
-			C.inlay,
-			Enum.Material.Pebble
-		).CanCollide =
-			false
+	box(parent, name, x0, x1, y - 2, y, z0, z1, C.terrazzo, Enum.Material.Pebble)
+	local inset = 7
+	for _, spec in ipairs({
+		{ x0 + inset, x0 + inset + 2.5, z0 + inset, z1 - inset },
+		{ x1 - inset - 2.5, x1 - inset, z0 + inset, z1 - inset },
+		{ x0 + inset, x1 - inset, z0 + inset, z0 + inset + 2.5 },
+		{ x0 + inset, x1 - inset, z1 - inset - 2.5, z1 - inset },
+	}) do
+		local a, b, c, d = spec[1], spec[2], spec[3], spec[4]
+		if b - a > 0.2 and d - c > 0.2 then
+			box(
+				parent,
+				`{name}_Band`,
+				a,
+				b,
+				y - 0.08,
+				y + 0.05,
+				c,
+				d,
+				C.inlay,
+				Enum.Material.Pebble
+			)
+		end
 	end
-	box(
-		parent,
-		`{name}_BandEdgeA`,
-		x0 + 10,
-		x0 + 16,
-		y,
-		y + 0.3,
-		z0,
-		z1,
-		C.inlay,
-		Enum.Material.Pebble
-	).CanCollide =
-		false
-	box(
-		parent,
-		`{name}_BandEdgeB`,
-		x1 - 16,
-		x1 - 10,
-		y,
-		y + 0.3,
-		z0,
-		z1,
-		C.inlay,
-		Enum.Material.Pebble
-	).CanCollide =
-		false
 end
 
---- A flight as one ramp with treads drawn on it. Discrete steps do not produce
---- a navmesh anything can path over - that fault has kept the other map's
---- stairs unusable since the first playtest.
---- A flight as one ramp with treads drawn on it, and a flat pad at each end.
---- Discrete steps do not produce a navmesh anything can path over, which is
---- the fault that has kept the other map's stairs unusable since the first
---- playtest. The pads matter just as much: a ramp ends in a tilted wedge, and
---- the navmesh will not generate on that last sliver.
----
---- The pads butt against the ramp rather than overlapping it. Overlapped, the
---- pad's flat top stood a stud and a third proud of the sloping deck beneath
---- it, and pathfinding walked three quarters of the way up every flight and
---- stopped dead at that lip.
+--- The dark wood base at the floor and the painted stencil band where wall
+--- meets ceiling. Two strips, and between them a room stops looking like a
+--- box with paint on it.
+local function trim(
+	parent: Instance,
+	name: string,
+	x0: number,
+	x1: number,
+	z0: number,
+	z1: number,
+	y: number,
+	head: number
+)
+	for _, side in ipairs({
+		{ x0, x0 + 1.2, z0, z1 },
+		{ x1 - 1.2, x1, z0, z1 },
+		{ x0, x1, z0, z0 + 1.2 },
+		{ x0, x1, z1 - 1.2, z1 },
+	}) do
+		local a, b, c, d = side[1], side[2], side[3], side[4]
+		box(parent, `{name}_Base`, a, b, y, y + 3, c, d, C.timber, Enum.Material.WoodPlanks)
+		box(parent, `{name}_Stencil`, a, b, head - 3.4, head - 1.6, c, d, C.stencil)
+		box(parent, `{name}_Gilt`, a, b, head - 1.6, head - 1, c, d, C.gilt, Enum.Material.Metal)
+	end
+end
+
+--- A beamed plaster ceiling.
+local function ceilingOver(
+	parent: Instance,
+	name: string,
+	x0: number,
+	x1: number,
+	z0: number,
+	z1: number,
+	y: number,
+	bay: number
+)
+	box(parent, name, x0, x1, y, y + 2, z0, z1, C.plaster)
+	local span = z1 - z0
+	local n = math.max(1, math.floor(span / bay))
+	for i = 0, n do
+		local z = z0 + span * (i / n)
+		box(parent, `{name}_Beam_{i}`, x0, x1, y - 2.2, y, z - 1.6, z + 1.6, C.plaster)
+	end
+end
+
+local lampCount = 0
+--- A fitting. Non-colliding: a ceiling lamp is not something to walk into.
+local function lamp(
+	parent: Instance,
+	x: number,
+	y: number,
+	z: number,
+	brightness: number,
+	range: number
+)
+	lampCount += 1
+	local glass = part(
+		parent,
+		`Lamp_{lampCount}`,
+		Vector3.new(2.6, 3, 2.6),
+		CFrame.new(x, y, z),
+		C.brass,
+		Enum.Material.Metal
+	)
+	glass.CanCollide, glass.CanQuery = false, false
+	local light = Instance.new("PointLight")
+	light.Color, light.Brightness, light.Range, light.Shadows = WARM, brightness, range, false
+	light.Parent = glass
+end
+
+--- Lamps on a grid across a room, so a room cannot come out part-lit. The
+--- spacing has to stay inside the lamp's reach or the diagonals go dark; 40
+--- against a range of 40 leaves the worst point 28 away, which is inside it.
+local function lightRoom(
+	parent: Instance,
+	x0: number,
+	x1: number,
+	z0: number,
+	z1: number,
+	head: number,
+	opts: { Brightness: number, Range: number, Spacing: number? }
+)
+	local pitch = opts.Spacing or 44
+	local nx = math.max(1, math.round((x1 - x0) / pitch))
+	local nz = math.max(1, math.round((z1 - z0) / pitch))
+	for i = 0, nx - 1 do
+		for j = 0, nz - 1 do
+			lamp(
+				parent,
+				x0 + (x1 - x0) * ((i + 0.5) / nx),
+				head - 4,
+				z0 + (z1 - z0) * ((j + 0.5) / nz),
+				opts.Brightness,
+				opts.Range
+			)
+		end
+	end
+end
+
+--- The Art Deco balustrade from the stair-hall photograph: dark iron uprights
+--- with a circle between each pair, under a dark wood handrail. It is the
+--- signature of the stair hall and the old build had nothing like it.
+local function decoRail(
+	parent: Instance,
+	name: string,
+	x0: number,
+	x1: number,
+	z0: number,
+	z1: number,
+	y: number
+)
+	local alongX = (x1 - x0) >= (z1 - z0)
+	local length = if alongX then x1 - x0 else z1 - z0
+	local n = math.max(2, math.floor(length / 7))
+	local midX, midZ = (x0 + x1) / 2, (z0 + z1) / 2
+	for i = 0, n do
+		local t = i / n
+		local px = if alongX then x0 + (x1 - x0) * t else midX
+		local pz = if alongX then midZ else z0 + (z1 - z0) * t
+		box(
+			parent,
+			`{name}_Post_{i}`,
+			px - 0.4,
+			px + 0.4,
+			y,
+			y + 6.2,
+			pz - 0.4,
+			pz + 0.4,
+			C.iron,
+			Enum.Material.Metal
+		)
+		if i < n then
+			local nt = (i + 1) / n
+			local qx = if alongX then x0 + (x1 - x0) * nt else px
+			local qz = if alongX then pz else z0 + (z1 - z0) * nt
+			local mx, mz = (px + qx) / 2, (pz + qz) / 2
+			box(
+				parent,
+				`{name}_Ring_{i}`,
+				mx - 1.5,
+				mx + 1.5,
+				y + 2.4,
+				y + 3.6,
+				mz - 1.5,
+				mz + 1.5,
+				C.iron,
+				Enum.Material.Metal
+			)
+		end
+	end
+	if alongX then
+		box(
+			parent,
+			`{name}_Hand`,
+			x0,
+			x1,
+			y + 6.2,
+			y + 7.4,
+			midZ - 0.9,
+			midZ + 0.9,
+			C.timber,
+			Enum.Material.WoodPlanks
+		)
+		box(
+			parent,
+			`{name}_Kick`,
+			x0,
+			x1,
+			y + 0.2,
+			y + 1,
+			midZ - 0.5,
+			midZ + 0.5,
+			C.iron,
+			Enum.Material.Metal
+		)
+	else
+		box(
+			parent,
+			`{name}_Hand`,
+			midX - 0.9,
+			midX + 0.9,
+			y + 6.2,
+			y + 7.4,
+			z0,
+			z1,
+			C.timber,
+			Enum.Material.WoodPlanks
+		)
+		box(
+			parent,
+			`{name}_Kick`,
+			midX - 0.5,
+			midX + 0.5,
+			y + 0.2,
+			y + 1,
+			z0,
+			z1,
+			C.iron,
+			Enum.Material.Metal
+		)
+	end
+end
+
+--- A flight, built as treads you walk up rather than a ramp, with the yellow
+--- nosing strips the building actually has on its stairs today.
 local function flight(
 	parent: Instance,
 	name: string,
@@ -669,116 +464,72 @@ local function flight(
 	yLow: number,
 	yHigh: number
 )
-	local dirZ = if zHigh > zLow then 1 else -1
-	local PAD = 14
-	-- The ramp stops short of the nominal top; the head pad covers the rest.
-	local zTop = zHigh - dirZ * PAD
-	local run = math.abs(zTop - zLow)
-	local rise = yHigh - yLow
-	local hyp = math.sqrt(run * run + rise * rise)
-	local pitch = math.atan2(rise, run)
-	local cf = CFrame.new((x0 + x1) / 2, (yLow + yHigh) / 2 - 1, (zLow + zTop) / 2)
-		* CFrame.Angles(0, if dirZ > 0 then 0 else math.pi, 0)
-		* CFrame.Angles(-pitch, 0, 0)
-	part(parent, `{name}_Deck`, Vector3.new(x1 - x0, 2, hyp), cf, C.trim, Enum.Material.Concrete)
-	for k = 1, 14 do
-		local t = ((k - 0.5) / 14 - 0.5) * hyp
-		-- Flush with the ramp, not standing on it. At 1.2 they were 0.4 studs
-		-- proud and non-colliding, so you walked the smooth deck underneath
-		-- while your legs passed through every visible step - the same ghost
-		-- step the Galleria escalators had, and the likeliest reading of
-		-- Chris's "the stairs going up are all weird". Either they are real
-		-- geometry you stand on or they are paint; they cannot be a raised
-		-- thing you pass through.
-		local tread = part(
-			parent,
-			`{name}_Tread_{k}`,
-			Vector3.new(x1 - x0 - 1, 0.4, 1),
-			cf * CFrame.new(0, 0.82, t),
-			C.stone,
-			Enum.Material.Concrete
-		)
-		tread.CanCollide, tread.CanTouch, tread.CanQuery = false, false, false
-	end
-	-- One handrail, on the outer side only. Railed on both, the flight is a
-	-- walled corridor and the rail on the landing side stands between the top
-	-- of the stair and the floor it arrives at.
-	-- The balustrade is wrought iron with circles and zigzags in it, not a
-	-- plain bar: it is the most distinctive thing in the stair hall.
-	local railX = -((x1 - x0) / 2 - 0.4)
-	part(
-		parent,
-		`{name}_RailTop`,
-		Vector3.new(1.4, 0.9, hyp),
-		cf * CFrame.new(railX, 4, 0),
-		C.timber,
-		Enum.Material.WoodPlanks
-	)
-	part(
-		parent,
-		`{name}_RailBottom`,
-		Vector3.new(0.7, 0.6, hyp),
-		cf * CFrame.new(railX, 0.9, 0),
-		C.iron,
-		Enum.Material.Metal
-	)
-	for k = 1, 10 do
-		local t = ((k - 0.5) / 10 - 0.5) * hyp
-		part(
-			parent,
-			`{name}_Baluster_{k}`,
-			Vector3.new(0.5, 3.2, 0.5),
-			cf * CFrame.new(railX, 2.3, t),
-			C.iron,
-			Enum.Material.Metal
-		)
-		local ring = part(
-			parent,
-			`{name}_Ring_{k}`,
-			Vector3.new(0.5, 2.2, 2.2),
-			cf * CFrame.new(railX, 2.3, t + hyp / 20),
-			C.iron,
-			Enum.Material.Metal
-		)
-		ring.Shape = Enum.PartType.Cylinder
-		ring.CanCollide = false
-	end
-
-	local function pad(nm: string, y: number, za: number, zb: number)
+	local steps = math.max(8, math.floor(math.abs(yHigh - yLow) / 1.5))
+	for i = 0, steps - 1 do
+		local t0, t1 = i / steps, (i + 1) / steps
+		local za = zLow + (zHigh - zLow) * t0
+		local zb = zLow + (zHigh - zLow) * t1
+		local y = yLow + (yHigh - yLow) * t1
+		local lo, hi = math.min(za, zb), math.max(za, zb)
 		box(
 			parent,
-			nm,
+			`{name}_Tread_{i}`,
 			x0,
 			x1,
-			y - 2,
+			y - 1.5,
 			y,
-			math.min(za, zb),
-			math.max(za, zb),
-			C.trim,
-			Enum.Material.Concrete
+			lo,
+			hi,
+			C.terrazzo,
+			Enum.Material.Pebble
+		)
+		box(
+			parent,
+			`{name}_Nose_{i}`,
+			x0,
+			x1,
+			y,
+			y + 0.15,
+			lo,
+			lo + 0.9,
+			C.gilt,
+			Enum.Material.Metal
 		)
 	end
-	pad(`{name}_Foot`, yLow, zLow - dirZ * PAD, zLow)
-	pad(`{name}_Head`, yHigh, zTop, zTop + dirZ * (PAD + 6))
+	decoRail(parent, `{name}_RailW`, x0 - 1.4, x0 - 0.2, zLow, zHigh, (yLow + yHigh) / 2 - 2)
+	decoRail(parent, `{name}_RailE`, x1 + 0.2, x1 + 1.4, zLow, zHigh, (yLow + yHigh) / 2 - 2)
 end
 
+type Room = {
+	name: string,
+	x0: number,
+	x1: number,
+	z0: number,
+	z1: number,
+	light: number?,
+	floor: Color3?,
+	mat: Enum.Material?,
+}
+
+-- --------------------------------------------------------------------------
 function LanternholdBuilder.Build(): Model
-	local old = Workspace:FindFirstChild("Lanternhold")
-	if old then
-		old:Destroy()
+	lampCount = 0
+	local existing = Workspace:FindFirstChild("Lanternhold")
+	if existing then
+		existing:Destroy()
 	end
 
 	local M = Instance.new("Model")
 	M.Name = "Lanternhold"
+
 	local F: { [string]: Folder } = {}
 	for _, n in ipairs({
-		"Ground",
 		"Shell",
+		"Floor0",
+		"Floor1",
+		"Floor2",
+		"Floor3",
 		"Core",
-		"Basement",
-		"Ballroom",
-		"Lodge",
-		"Museum",
 		"Fixtures",
 		"Markers",
 	}) do
@@ -787,790 +538,874 @@ function LanternholdBuilder.Build(): Model
 		F[n] = f
 	end
 
-	-- ------------------------------------------------------------- outside
-	box(F.Ground, "Ground", -420, 420, -8, -2, -260, 400, C.grass, Enum.Material.Grass)
-	box(F.Ground, "Road", -30, 30, -2, 0, -260, -30, C.trim, Enum.Material.Concrete)
-	box(F.Ground, "Porch", -60, 60, -2, 0, -30, Z0, C.trim, Enum.Material.Concrete)
+	local function buildRoom(folder: Instance, level: number, room: Room)
+		local y, head = LEVELS[level], HEADS[level]
+		terrazzo(folder, `{room.name}_Floor`, room.x0, room.x1, room.z0, room.z1, y)
+		if room.floor then
+			box(
+				folder,
+				`{room.name}_Finish`,
+				room.x0 + 1,
+				room.x1 - 1,
+				y,
+				y + 0.12,
+				room.z0 + 1,
+				room.z1 - 1,
+				room.floor,
+				room.mat or Enum.Material.Fabric
+			)
+		end
+		trim(folder, room.name, room.x0, room.x1, room.z0, room.z1, y, head)
+		ceilingOver(folder, `{room.name}_Ceiling`, room.x0, room.x1, room.z0, room.z1, head, 34)
+		if (room.light or 0) > 0 then
+			-- The per-room numbers are relative weights, not absolute
+			-- brightness. The first build used them raw at range 40 on a 44
+			-- stud grid and came out 26% of the floor blown, peaking at 3.22 -
+			-- fittings stacking through the walls between rooms, because every
+			-- light in both maps has Shadows off.
+			--
+			-- Smaller pools closer together is the fix rather than fewer:
+			-- range 30 on a 34 grid leaves the worst point between four lamps
+			-- 24 away, inside reach, while barely reaching the next room.
+			lightRoom(folder, room.x0, room.x1, room.z0, room.z1, head, {
+				Brightness = (room.light :: number) * 0.62,
+				Range = 30,
+				Spacing = 34,
+			})
+		end
+	end
 
 	-- ------------------------------------------------------------- the shell
-	-- Pale cast stone, tall recessed window slots between flat pilasters, a
-	-- carved band under a plain parapet, and a blank stair tower at one end.
-	-- That is the building in Chris's photograph, and nothing like the brick
-	-- box this used to be.
-	-- Every slab above the basement is built around the stair well rather than
-	-- across it. Laid solid, the flights ran straight up into the underside of
-	-- the floor above and no route between storeys existed at all - the hall
-	-- had four floors and no way between them.
-	-- Terrazzo in the basement and the stair halls, polished hardwood above.
-	-- Both are in the photographs and they are nothing like the plain boards
-	-- this had: the terrazzo is speckled cream with dark bands set into it, and
-	-- the ballroom floor is a deep red-brown.
 	for i, lvl in ipairs(LEVELS) do
-		local wood = i >= 2
-		if i == 1 then
-			terrazzo(F.Shell, `Slab_{i}`, -W, W, Z0, Z1, lvl)
-		else
-			local function slab(nm, x0, x1, z0, z1)
-				if wood then
-					box(
-						F.Shell,
-						nm,
-						x0,
-						x1,
-						lvl - 2,
-						lvl,
-						z0,
-						z1,
-						C.hardwood,
-						Enum.Material.WoodPlanks
-					)
-				else
-					terrazzo(F.Shell, nm, x0, x1, z0, z1, lvl)
-				end
-			end
-			slab(`Slab_{i}_E`, CORE_X1, W, Z0, Z1)
-			-- Carried east to the stair's own west edge rather than stopping
-			-- at CORE_X0.
-			--
-			-- Chris asked for "the remaining west slab (x -130..-126)" to be
-			-- made into something. Measured, it is not a room and never could
-			-- be: WallWest occupies -132 to -128, so that slab left a two stud
-			-- ledge - a player needs five - and then a six stud VOID between
-			-- its east edge and the foot of the stair, open the full height.
-			-- Standing at x -124 on the ballroom floor dropped you twenty six
-			-- studs onto the basement, and further from the floors above.
-			--
-			-- So it is a fall, not a wing. Filling it to the stair closes the
-			-- hole and leaves an eight stud service margin down the west side
-			-- of the core, which is what the gap was always pretending to be.
-			slab(`Slab_{i}_W`, -W, CORE_X0 + 6, Z0, Z1)
-			slab(`Slab_{i}_S`, CORE_X0, CORE_X1, Z0, CORE_Z0)
-			slab(`Slab_{i}_N`, CORE_X0, CORE_X1, CORE_Z1, Z1)
-			-- The north wing and the south strip are bare slab on every upper
-			-- level: real floor you can walk onto, outside every room anybody
-			-- programmed, with nothing over it. The audit put 37% of the hub's
-			-- standable floor in the dark and nearly all of it was here.
-			--
-			-- Lighting it does not make it a room, and it should become one -
-			-- that is the next piece of the overhaul and Chris should say what
-			-- these are. But a lit empty floor reads as a building not yet
-			-- fitted out, and an unlit one reads as the lights being broken,
-			-- which is what he has been telling us.
-			lightRoom(
-				F.Shell,
-				`NorthWing_{i}`,
-				CORE_X0,
-				CORE_X1,
-				CORE_Z1,
-				Z1,
-				HEADS[i],
-				{ Brightness = 0.7, Range = 38 }
-			)
-			lightRoom(
-				F.Shell,
-				`SouthStrip_{i}`,
-				CORE_X0,
-				CORE_X1,
-				Z0,
-				CORE_Z0,
-				HEADS[i],
-				{ Brightness = 0.7, Range = 38 }
-			)
-		end
+		terrazzo(F.Shell, `Slab_{i}`, -W, W, Z0, Z1, lvl)
 	end
-	box(F.Shell, "Roof", -W, W, TOP, TOP + 2, Z0, Z1, C.dark, Enum.Material.Slate)
-	wall(F.Shell, "WallWest", "X", -W, Z0, Z1, 0, TOP, C.stone, {})
-	wall(F.Shell, "WallEast", "X", W, Z0, Z1, 0, TOP, C.stone, {})
-	wall(F.Shell, "WallNorth", "Z", Z1, -W, W, 0, TOP, C.stone, {})
-	wall(F.Shell, "WallSouth", "Z", Z0, -W, W, 0, TOP, C.stone, { { -DOOR_W, DOOR_W } })
-
-	for i = 0, 8 do
-		local z = Z0 + 14 + i * 24
-		for _, x in ipairs({ -W - 2, W + 2 }) do
-			box(
-				F.Shell,
-				`Pilaster_{i}_{x}`,
-				x - 2,
-				x + 2,
-				0,
-				TOP,
-				z - 5,
-				z + 5,
-				C.stone,
-				Enum.Material.Concrete
-			)
-		end
-		if i < 8 then
-			for _, x in ipairs({ -W - 1, W + 1 }) do
-				-- One tall recessed slot per bay: in the photograph the glazing
-				-- runs most of the height rather than floor by floor.
-				box(
-					F.Shell,
-					`Glazing_{i}_{x}`,
-					x - 1,
-					x + 1,
-					30,
-					TOP - 16,
-					z + 7,
-					z + 22,
-					C.glass,
-					Enum.Material.Glass,
-					0.45
-				)
-			end
-		end
-	end
-	box(
-		F.Shell,
-		"Frieze",
-		-W - 4,
-		W + 4,
-		TOP - 14,
-		TOP - 8,
-		Z0 - 4,
-		Z1 + 4,
-		C.trim,
-		Enum.Material.Concrete
-	)
+	box(F.Shell, "Roof", -W, W, TOP, TOP + 3, Z0, Z1, C.limestone, Enum.Material.Concrete)
 	box(
 		F.Shell,
 		"Parapet",
-		-W - 4,
-		W + 4,
-		TOP,
-		TOP + 8,
-		Z0 - 4,
-		Z1 + 4,
-		C.stone,
+		-W - 2,
+		W + 2,
+		TOP + 3,
+		TOP + 9,
+		Z0 - 2,
+		Z1 + 2,
+		C.limestone,
 		Enum.Material.Concrete
 	)
-	box(
-		F.Shell,
-		"Tower",
-		-W - 10,
-		-W + 16,
-		0,
-		TOP + 22,
-		Z0 + 6,
-		Z0 + 44,
-		C.stone,
-		Enum.Material.Concrete
-	)
+	wall(F.Shell, "WallWest", "X", -W, Z0, Z1, 0, TOP, {})
+	wall(F.Shell, "WallEast", "X", W, Z0, Z1, 0, TOP, {})
+	wall(F.Shell, "WallNorth", "Z", Z1, -W, W, 0, TOP, { { -18, 18 } })
+	-- Two ways in, on two levels: the ramp into the bottom floor at the east
+	-- end of the south front, and the outside steps into the 1st floor at the
+	-- middle of it. The old build had one.
+	wall(F.Shell, "WallSouth", "Z", Z0, -W, W, 0, TOP, { { 58, 100 } })
 
-	for e = -1, 1, 2 do
-		-- Stood OPEN, against the facade, instead of closed across the opening.
-		-- Closed, they put a solid slab between where you land and the only
-		-- thing you are meant to do: a line of sight check from the arrival
-		-- point to the departure pad hit FrontDoor_1 at 23 studs. You arrived
-		-- facing the way out and could not see it - Chris: "going to a raid
-		-- isn't really explanatory". A hall with its doors flung open also
-		-- reads as somewhere expecting you back.
-		-- box() takes bounds as x1 - x0 with no min/max of its own, so a leaf
-		-- hinged on the west side handed it a negative width and Roblox
-		-- clamped that to 0.001: one door was a paper sliver. Order the pair.
-		local hinge = e * (DOOR_W / 2)
-		local da, db = hinge, hinge + e * 0.8
-		local pa, pb = hinge + e * 0.8, hinge + e * 1
+	-- The entrance bay: a projecting block of fluted pilasters, the single
+	-- most recognisable thing about the outside.
+	do
+		local bx0, bx1 = -34, 34
 		box(
 			F.Shell,
-			`FrontDoor_{e}`,
-			math.min(da, db),
-			math.max(da, db),
+			"EntranceBay",
+			bx0,
+			bx1,
 			0,
-			DOOR_H,
-			Z0 - 7.6,
-			Z0 - 0.6,
-			C.timber,
-			Enum.Material.WoodPlanks
+			TOP - 6,
+			Z0 - 14,
+			Z0,
+			C.limestone,
+			Enum.Material.Concrete
+		)
+		for i = 0, 10 do
+			local x = bx0 + (bx1 - bx0) * (i / 10)
+			box(
+				F.Shell,
+				`Flute_{i}`,
+				x - 1.6,
+				x + 1.6,
+				16,
+				TOP - 10,
+				Z0 - 15.8,
+				Z0 - 13.4,
+				C.limestone,
+				Enum.Material.Concrete
+			)
+		end
+		for i = 0, 8 do
+			box(
+				F.Shell,
+				`FrontStep_{i}`,
+				-22,
+				22,
+				i * 2.25,
+				i * 2.25 + 2.25,
+				Z0 - 34 + i * 2.3,
+				Z0 - 14,
+				C.limestone,
+				Enum.Material.Concrete
+			)
+		end
+	end
+
+	-- Tall narrow window slots on both flanks. Nothing behind them: it is
+	-- night, and the point is the silhouette seen from the departure pad.
+	for _, sx in ipairs({ -W, W }) do
+		for i = 0, 7 do
+			local z = Z1 * ((i + 0.5) / 8)
+			box(
+				F.Shell,
+				`Window_{sx}_{i}`,
+				sx - 1.6,
+				sx + 1.6,
+				24,
+				TOP - 16,
+				z - 4,
+				z + 4,
+				C.dark,
+				Enum.Material.Glass,
+				0.35
+			)
+		end
+	end
+
+	-- --------------------------------------------------------- BOTTOM FLOOR
+	-- Arrival. In at the south-east off the ramp, up the east edge past the
+	-- rooms and bathrooms, stair core in the middle, banquet hall to the west
+	-- with the kitchen behind it.
+	for _, r in
+		ipairs({
+			{ name = "Kitchen", x0 = -W, x1 = WEST, z0 = Z0, z1 = 110, light = 1.0 },
+			{ name = "BanquetHall", x0 = -W, x1 = WEST, z0 = 110, z1 = Z1, light = 1.0 },
+			{ name = "ArrivalHall", x0 = WEST, x1 = CENTRE, z0 = Z0, z1 = 60, light = 1.1 },
+			{ name = "StairHall0", x0 = WEST, x1 = CENTRE, z0 = 60, z1 = 205, light = 1.0 },
+			{ name = "NorthLobby", x0 = WEST, x1 = CENTRE, z0 = 205, z1 = Z1, light = 0.95 },
+			{ name = "RampEntrance", x0 = CENTRE, x1 = EAST, z0 = Z0, z1 = 55, light = 1.0 },
+			{ name = "EastRoom0", x0 = CENTRE, x1 = EAST, z0 = 55, z1 = 95, light = 0.85 },
+			{ name = "BathroomA", x0 = CENTRE, x1 = EAST, z0 = 95, z1 = 130, light = 0.8 },
+			{ name = "BathroomB", x0 = CENTRE, x1 = EAST, z0 = 130, z1 = 165, light = 0.8 },
+			{ name = "ElevatorLobby0", x0 = CENTRE, x1 = EAST, z0 = 165, z1 = 205, light = 0.9 },
+			{ name = "NorthEastRoom", x0 = CENTRE, x1 = EAST, z0 = 205, z1 = Z1, light = 0.85 },
+		} :: { Room })
+	do
+		buildRoom(F.Floor0, 1, r)
+	end
+	wall(F.Floor0, "Bottom_WestWall", "X", WEST, Z0, Z1, 0, HEADS[1], {
+		{ 30, 30 + DOOR_W },
+		{ 150, 150 + DOOR_W },
+		{ 240, 240 + DOOR_W },
+	})
+	wall(F.Floor0, "Bottom_EastWall", "X", CENTRE, Z0, Z1, 0, HEADS[1], {
+		{ 20, 20 + DOOR_W },
+		{ 110, 110 + DOOR_W },
+		{ 180, 180 + DOOR_W },
+		{ 250, 250 + DOOR_W },
+	})
+	wall(F.Floor0, "Kitchen_North", "Z", 110, -W, WEST, 0, HEADS[1], { { -70, -70 + DOOR_W } })
+	for _, z in ipairs({ 95, 130, 165, 205 }) do
+		wall(
+			F.Floor0,
+			`Bottom_East_{z}`,
+			"Z",
+			z,
+			CENTRE,
+			EAST,
+			0,
+			HEADS[1],
+			{ { 70, 70 + DOOR_W } }
+		)
+	end
+
+	box(
+		F.Floor0,
+		"ExitVestibule",
+		-18,
+		18,
+		-2,
+		HEADS[1],
+		Z1,
+		Z1 + 26,
+		C.limestone,
+		Enum.Material.Concrete
+	)
+	terrazzo(F.Floor0, "ExitFloor", -17, 17, Z1, Z1 + 25, 0)
+	for i = 0, 10 do
+		box(
+			F.Floor0,
+			`Ramp_{i}`,
+			70,
+			104,
+			-1 - i * 0.62,
+			0.4 - i * 0.62,
+			Z0 - 4 - i * 4,
+			Z0 + 2 - i * 4,
+			C.limestone,
+			Enum.Material.Concrete
+		)
+	end
+
+	-- ------------------------------------------------------------ 1ST FLOOR
+	for _, r in
+		ipairs({
+			{
+				name = "Ballroom",
+				x0 = -W,
+				x1 = WEST,
+				z0 = 30,
+				z1 = Z1,
+				light = 1.0,
+				floor = Color3.fromRGB(104, 62, 40),
+				mat = Enum.Material.WoodPlanks,
+			},
+			{ name = "WomensRestroom", x0 = WEST, x1 = CENTRE, z0 = Z0, z1 = 50, light = 0.8 },
+			{ name = "StairHall1", x0 = WEST, x1 = CENTRE, z0 = 50, z1 = 195, light = 1.0 },
+			{ name = "Bar", x0 = WEST, x1 = CENTRE, z0 = 195, z1 = 258, light = 0.95 },
+			{ name = "Bathrooms1", x0 = WEST, x1 = CENTRE, z0 = 258, z1 = Z1, light = 0.8 },
+			{ name = "Storage1", x0 = CENTRE, x1 = EAST, z0 = Z0, z1 = 58, light = 0.7 },
+			{ name = "TinyRoom1", x0 = CENTRE, x1 = EAST, z0 = 58, z1 = 118, light = 0.8 },
+			{ name = "FrontEntrance", x0 = CENTRE, x1 = EAST, z0 = 118, z1 = 195, light = 1.1 },
+			{ name = "ElevatorLobby1", x0 = CENTRE, x1 = EAST, z0 = 195, z1 = 240, light = 0.9 },
+			{ name = "SecretVaults", x0 = CENTRE, x1 = EAST, z0 = 240, z1 = Z1, light = 0.75 },
+		} :: { Room })
+	do
+		buildRoom(F.Floor1, 2, r)
+	end
+	wall(F.Floor1, "First_WestWall", "X", WEST, Z0, Z1, LEVELS[2], HEADS[2], {
+		{ 70, 70 + DOOR_W * 2 },
+		{ 210, 210 + DOOR_W },
+	})
+	wall(F.Floor1, "First_EastWall", "X", CENTRE, Z0, Z1, LEVELS[2], HEADS[2], {
+		{ 130, 130 + DOOR_W * 2 },
+		{ 250, 250 + DOOR_W },
+	})
+	for _, z in ipairs({ 58, 118, 195, 240 }) do
+		wall(
+			F.Floor1,
+			`First_East_{z}`,
+			"Z",
+			z,
+			CENTRE,
+			EAST,
+			LEVELS[2],
+			HEADS[2],
+			{ { 70, 70 + DOOR_W } }
+		)
+	end
+
+	-- The vaults you can walk into: a row of heavy doors off a short passage.
+	for i = 0, 3 do
+		local x = CENTRE + 10 + i * 15
+		box(
+			F.Fixtures,
+			`VaultDoor_{i}`,
+			x,
+			x + 11,
+			LEVELS[2],
+			LEVELS[2] + 13,
+			262,
+			264,
+			C.iron,
+			Enum.Material.Metal
 		)
 		box(
-			F.Shell,
-			`FrontPlate_{e}`,
-			math.min(pa, pb),
-			math.max(pa, pb),
-			4,
-			5.6,
-			Z0 - 5.4,
-			Z0 - 3.4,
+			F.Fixtures,
+			`VaultWheel_{i}`,
+			x + 4,
+			x + 7,
+			LEVELS[2] + 5,
+			LEVELS[2] + 8,
+			260.6,
+			262.2,
 			C.brass,
 			Enum.Material.Metal
 		)
 	end
-
-	local name =
-		box(F.Shell, "NameStone", -40, 40, 15, 23, Z0 - 3.2, Z0 - 2, C.trim, Enum.Material.Concrete)
-	label(name, "LANTERNHOLD", Enum.NormalId.Front)
-
-	-- ------------------------------------------------------------- the core
-	-- Stairs and the lift in one well, open the whole height. From the basement
-	-- you can see three unlit landings above you.
-	for i = 2, #LEVELS do
-		local up = i % 2 == 0
-		-- Do NOT widen this to the full depth of the core. Running it
-		-- CORE_Z0 + 2 to CORE_Z1 - 2 does flatten the flights - 40 degrees on
-		-- the ballroom-to-lodge run drops to 33, and all three land between 24
-		-- and 33 - but it also pushes each head pad far enough that the upper
-		-- flights stop connecting: CoreLanding_3, CoreLanding_4 and the whole
-		-- museum went unreachable on pathfinding. The 8 stud inset is what
-		-- keeps the pads inside the core and the landings linked. Tried and
-		-- reverted; the steep flight is the price.
-		flight(
-			F.Core,
-			`Stair_{i}`,
-			CORE_X0 + 6,
-			CORE_X0 + 32,
-			if up then CORE_Z0 + 8 else CORE_Z1 - 8,
-			if up then CORE_Z1 - 8 else CORE_Z0 + 8,
-			LEVELS[i - 1],
-			LEVELS[i]
-		)
-	end
-	-- No full-height wall down the east side of the core. Each floor already
-	-- has its own wall in that plane with its own doorway in it - the
-	-- ballroom's barred opening, the lodge doors, the museum's - and a solid
-	-- shaft wall standing in front of all of them blocked every one. The
-	-- museum became unreachable and the dark rooms you are meant to see into
-	-- could not even be looked at.
-	for i, lvl in ipairs(LEVELS) do
-		terrazzo(F.Core, `CoreLanding_{i}`, CORE_X0 + 32, CORE_X1, CORE_Z0, CORE_Z1, lvl)
-		baseband(F.Core, `CoreBase_{i}`, CORE_X0, CORE_X1, CORE_Z0, CORE_Z1, lvl)
-		-- The stair core had no light on any level. It is the only way between
-		-- floors, the flights are steep enough that one was reverted for being
-		-- 40 degrees, and you were climbing them blind. Lit over the landing
-		-- AND over the flight, because a lit landing above a black flight is
-		-- still a black flight.
-		lightRoom(
-			F.Core,
-			`CoreLight_{i}`,
-			CORE_X0 + 2,
-			CORE_X1,
-			CORE_Z0,
-			CORE_Z1,
-			HEADS[i],
-			{ Brightness = 1.1, Range = 36, Spacing = 40 }
-		)
-	end
-
-	-- Set so there is a walkway on both sides: the stair ends at CORE_X0 + 32,
-	-- then fourteen studs of landing, then the shaft, then twelve more to the
-	-- core wall. Pushed hard against the stair it left a two stud slot you
-	-- could not step off the flight into.
-	local LIFT_X0, LIFT_X1 = CORE_X0 + 46, CORE_X0 + 64
-	local LIFT_Z0, LIFT_Z1 = CORE_Z0 + 48, CORE_Z0 + 72
-	wall(F.Core, "LiftWallW", "X", LIFT_X0, LIFT_Z0, LIFT_Z1, 0, TOP, C.trim, {})
-	wall(F.Core, "LiftWallE", "X", LIFT_X1, LIFT_Z0, LIFT_Z1, 0, TOP, C.trim, {})
-	wall(F.Core, "LiftWallN", "Z", LIFT_Z1, LIFT_X0, LIFT_X1, 0, TOP, C.trim, {})
-	local car = box(
-		F.Core,
-		"LiftCar",
-		LIFT_X0 + 2,
-		LIFT_X1 - 2,
-		-2,
-		0,
-		LIFT_Z0 + 2,
-		LIFT_Z1 - 2,
-		C.trim,
-		Enum.Material.Metal
+	local vaultSign = box(
+		F.Fixtures,
+		"VaultSign",
+		CENTRE + 8,
+		CENTRE + 58,
+		LEVELS[2] + 15,
+		LEVELS[2] + 19,
+		263,
+		264,
+		C.timber,
+		Enum.Material.WoodPlanks
 	)
-	car:SetAttribute("Stops", "0,26,64,92")
-	CollectionService:AddTag(car, "Lift")
+	label(vaultSign, "THE VAULTS", Enum.NormalId.Back, 26)
 
-	-- ------------------------------------------------------------- basement
-	local B = LEVELS[1]
-	wall(F.Basement, "LandingNorth", "Z", 86, CORE_X1, W, B, HEADS[1], C.stone, { { -30, -2 } })
-	-- The basement's own wall onto the stair hall, with its door.
+	box(
+		F.Fixtures,
+		"BarCounter",
+		WEST + 8,
+		CENTRE - 8,
+		LEVELS[2],
+		LEVELS[2] + 4.2,
+		206,
+		214,
+		C.timber,
+		Enum.Material.WoodPlanks
+	)
+	box(
+		F.Fixtures,
+		"BarTop",
+		WEST + 6,
+		CENTRE - 6,
+		LEVELS[2] + 4.2,
+		LEVELS[2] + 4.8,
+		204,
+		216,
+		C.dark,
+		Enum.Material.Slate
+	)
+	box(
+		F.Fixtures,
+		"BackBar",
+		WEST + 8,
+		CENTRE - 8,
+		LEVELS[2],
+		LEVELS[2] + 14,
+		236,
+		239,
+		C.timber,
+		Enum.Material.WoodPlanks
+	)
+
+	-- ------------------------------------------------------------ 2ND FLOOR
+	-- The lodge floor. The Egyptian Room is the Blue Lodge Room, bottom left,
+	-- and it is the heart of the building. Its own lighting is set below, so
+	-- it is declared unlit here.
+	for _, r in
+		ipairs({
+			{
+				name = "EgyptianRoom",
+				x0 = -W,
+				x1 = 0,
+				z0 = Z0,
+				z1 = 96,
+				light = 0,
+				floor = C.egyptBlue,
+			},
+			{ name = "PrepareRoom", x0 = 0, x1 = 40, z0 = 30, z1 = 70, light = 0.8 },
+			{ name = "GatheringArea", x0 = 40, x1 = EAST, z0 = Z0, z1 = 100, light = 1.0 },
+			{ name = "CrossHall", x0 = -W, x1 = -45, z0 = 96, z1 = 122, light = 0.9 },
+			{ name = "YorkRiteRoom", x0 = -W, x1 = -45, z0 = 122, z1 = 192, light = 0.85 },
+			{ name = "ChapelRoom", x0 = -W, x1 = -45, z0 = 192, z1 = 252, light = 0.85 },
+			{ name = "Balcony2", x0 = -W, x1 = -45, z0 = 252, z1 = Z1, light = 0.8 },
+			{ name = "Hallway2", x0 = -45, x1 = 0, z0 = 96, z1 = 258, light = 0.95 },
+			{ name = "PreparingRoom", x0 = -45, x1 = 0, z0 = 258, z1 = Z1, light = 0.8 },
+			{ name = "Bathroom2", x0 = 0, x1 = 26, z0 = 258, z1 = Z1, light = 0.8 },
+			{ name = "OESRoom", x0 = 26, x1 = EAST, z0 = 250, z1 = Z1, light = 0.9 },
+			{ name = "ElevatorLobby2", x0 = 50, x1 = EAST, z0 = 205, z1 = 250, light = 0.9 },
+			{ name = "StairHall2", x0 = 50, x1 = EAST, z0 = 100, z1 = 205, light = 1.0 },
+			{ name = "EastRoom2", x0 = 0, x1 = 50, z0 = 100, z1 = 205, light = 0.85 },
+		} :: { Room })
+	do
+		buildRoom(F.Floor2, 3, r)
+	end
+	wall(F.Floor2, "Second_Spine", "X", 0, 96, Z1, LEVELS[3], HEADS[3], {
+		{ 130, 130 + DOOR_W },
+		{ 230, 230 + DOOR_W },
+	})
+	wall(F.Floor2, "Second_West", "X", -45, 96, Z1, LEVELS[3], HEADS[3], {
+		{ 150, 150 + DOOR_W },
+		{ 215, 215 + DOOR_W },
+		{ 265, 265 + DOOR_W },
+	})
 	wall(
-		F.Basement,
-		"CoreDoor",
-		"X",
-		CORE_X1,
-		CORE_Z0,
-		CORE_Z1,
-		B,
-		HEADS[1],
-		C.stone,
-		{ { 24, 44 } }
-	)
-	-- Stops at the core. Carried across it, this ceiling capped the stair well
-	-- and the first flight rose straight into its underside, which is why no
-	-- floor above the basement could be reached.
-	-- The basement is a column grid under a beamed ceiling, which is what the
-	-- photograph shows and what the room needs to stop reading as a hangar.
-	coffers(F.Basement, "LandingCeiling", CORE_X1, W, Z0, 86, HEADS[1], 46, C.plaster)
-	for i = 0, 3 do
-		for j = 0, 1 do
-			column(F.Basement, `LandingColumn_{i}_{j}`, -30 + i * 44, 28 + j * 40, B, HEADS[1], 9)
-		end
-	end
-	baseband(F.Basement, "LandingBase", CORE_X1, W, Z0, 86, B)
-	-- Four lamps lit the whole hub floor and Chris walked it: "the lanternhold
-	-- is still pretty dark on its own". A hub wants to read as a refuge,
-	-- precisely because the mall does not - if both are dark the lantern you
-	-- carry out means nothing. Density rather than brightness: the same 1.5
-	-- lamp on a grid, so the room is evenly lit instead of having four hot
-	-- spots and a lot of black between them.
-	lightRoom(
-		F.Basement,
-		"LandingLamp",
-		CORE_X1,
-		W,
-		Z0,
-		86,
-		HEADS[1],
-		{ Brightness = 1.2, Range = 38, Spacing = 42 }
-	)
-
-	-- The Lamp Wall: one lantern per Lightkeeper out, tagged and numbered.
-	box(
-		F.Fixtures,
-		"LampWallFace",
-		W - WALL_T - 3,
-		W - WALL_T,
-		B,
-		B + 20,
-		14,
-		70,
-		C.timber,
-		Enum.Material.WoodPlanks
-	)
-	-- Topped out at B + 22, under the basement ceiling at 24. At B + 27 the
-	-- plaque stood through the ballroom floor slab above it, which runs 24 to
-	-- 26 - a third of it was inside the next storey. The only real clipping
-	-- the audit found in the whole building.
-	local plaque = box(
-		F.Fixtures,
-		"LampWallPlaque",
-		W - WALL_T - 4,
-		W - WALL_T - 3.2,
-		B + 16,
-		B + 22,
-		24,
-		60,
-		C.timber,
-		Enum.Material.WoodPlanks
-	)
-	label(plaque, "KEEPERS OUT", Enum.NormalId.Left, 30)
-	for i = 0, 7 do
-		local g = lamp(F.Fixtures, `KeeperLamp_{i}`, W - WALL_T - 6, B + 11, 18 + i * 7, i % 3 ~= 2)
-		g:SetAttribute("Slot", i)
-		CollectionService:AddTag(g, "LampWallSlot")
-	end
-
-	-- The Community Kitchen and, behind it, the food room. This is what the
-	-- floor was for, which is why the hall has a kitchen before an armoury.
-	wall(F.Basement, "KitchenNorth", "Z", 150, -W, CORE_X1, B, HEADS[1], C.stone, { { -96, -68 } })
-	-- The kitchen keeps the painted border band: a green and gold stencil run
-	-- along the beam faces, which is the prettiest thing in the building and
-	-- costs two colours.
-	coffers(F.Basement, "KitchenCeiling", -W, CORE_X1, CORE_Z1, 150, HEADS[1], 40, C.stencil)
-	for i = 0, 1 do
-		column(F.Basement, `KitchenColumn_{i}`, -104 + i * 46, 118, B, HEADS[1], 9)
-	end
-	baseband(F.Basement, "KitchenBase", -W, CORE_X1, CORE_Z1, 150, B)
-	-- Two lamps, both on the same x, for an eighty by sixty room. The west
-	-- half of the kitchen was unlit floor.
-	lightRoom(
-		F.Basement,
-		"KitchenLamp",
-		-W,
-		CORE_X1,
-		CORE_Z1,
-		150,
-		HEADS[1],
-		{ Brightness = 1.2, Range = 38, Spacing = 42 }
-	)
-	-- The basement slab runs the whole 260 by 230 and only two parts of it
-	-- were lit: the landing, which stops at z = 86, and the kitchen, which
-	-- stops at z = 150. Everything north of those was dark floor you could
-	-- walk onto.
-	lightRoom(
-		F.Basement,
-		"BackCorridorLamp",
-		CORE_X1,
-		W,
-		86,
-		BH_SPINE,
-		HEADS[1],
-		{ Brightness = 0.95, Range = 38 }
-	)
-	-- Lit per room rather than as one grid over bare slab: the back hall is
-	-- rooms now, and a grid that straddles a wall leaves the far side dim.
-	lightRoom(F.Basement, "LongRoomLamp", CORE_X1, BH_DIVIDE, BH_SPINE, Z1, HEADS[1], {
-		Brightness = 1.1,
-		Range = 38,
-	})
-	lightRoom(F.Basement, "StoreLamp", BH_DIVIDE, W, BH_SPINE, Z1, HEADS[1], {
-		Brightness = 0.9,
-		Range = 38,
-	})
-	lightRoom(
-		F.Basement,
-		"StoreRoomLamp",
-		-W,
-		CORE_X1,
-		150,
-		Z1,
-		HEADS[1],
-		{ Brightness = 0.9, Range = 38 }
-	)
-	-- And the strip south of the core, which is the floor you arrive on.
-	lightRoom(
-		F.Basement,
-		"ArrivalLamp",
-		-W,
-		CORE_X1,
-		Z0,
-		CORE_Z0,
-		HEADS[1],
-		{ Brightness = 1.0, Range = 38 }
-	)
-	for i = 0, 1 do
-		local x0 = -120 + i * 42
-		box(
-			F.Fixtures,
-			`Table_{i}`,
-			x0,
-			x0 + 34,
-			B + 2.2,
-			B + 3,
-			98,
-			130,
-			C.timber,
-			Enum.Material.WoodPlanks
-		)
-		for _, z in ipairs({ 101, 127 }) do
-			box(
-				F.Fixtures,
-				`TableLeg_{i}_{z}`,
-				x0 + 3,
-				x0 + 5,
-				B,
-				B + 2.2,
-				z - 1,
-				z + 1,
-				C.timber,
-				Enum.Material.WoodPlanks
-			)
-		end
-		for _, dx in ipairs({ -4, 38 }) do
-			box(
-				F.Fixtures,
-				`Bench_{i}_{dx}`,
-				x0 + dx - 2,
-				x0 + dx + 2,
-				B + 1.4,
-				B + 2,
-				100,
-				128,
-				C.timber,
-				Enum.Material.WoodPlanks
-			)
-		end
-	end
-	box(F.Fixtures, "Servery", -124, -60, B, B + 3, 138, 146, C.timber, Enum.Material.WoodPlanks)
-	box(
-		F.Fixtures,
-		"ServeryTop",
-		-126,
-		-58,
-		B + 3,
-		B + 3.6,
-		137,
-		147,
-		C.trim,
-		Enum.Material.Concrete
-	)
-	local hatch = box(
-		F.Fixtures,
-		"KitchenContribution",
-		-104,
-		-80,
-		B + 3.6,
-		B + 4,
-		139,
-		145,
-		C.brass,
-		Enum.Material.Metal
-	)
-	hatch.CanCollide = false
-	label(hatch, "HAND IT IN", Enum.NormalId.Top, 24)
-	CollectionService:AddTag(hatch, "KitchenContribution")
-	local roll = box(
-		F.Fixtures,
-		"ClubBoard",
-		-W + WALL_T + 3.2,
-		-W + WALL_T + 4,
-		B + 4,
-		B + 16,
+		F.Floor2,
+		"Second_Egypt",
+		"Z",
 		96,
-		132,
-		C.timber,
-		Enum.Material.WoodPlanks
+		-W,
+		40,
+		LEVELS[3],
+		HEADS[3],
+		{ { -70, -70 + DOOR_W * 2 } }
 	)
-	label(roll, "THE GOOD CHEER CLUB", Enum.NormalId.Right, 30)
-	CollectionService:AddTag(roll, "ClubBoard")
-
-	-- Your workshop corner, where visitors walk past it.
-	-- East of the core. It was sitting in the stairwell, across the foot of the
-	-- first flight.
-	-- East of the core and clear of the lift shaft, which the last position ran
-	-- straight through.
-	box(
-		F.Fixtures,
-		"WorkBench",
-		12,
-		34,
-		B + 2.4,
-		B + 3.2,
-		20,
-		30,
-		C.timber,
-		Enum.Material.WoodPlanks
+	wall(
+		F.Floor2,
+		"Second_Gather",
+		"Z",
+		100,
+		40,
+		EAST,
+		LEVELS[3],
+		HEADS[3],
+		{ { 60, 60 + DOOR_W } }
 	)
-	for _, x in ipairs({ 15, 31 }) do
-		box(
-			F.Fixtures,
-			`WBLeg_{x}`,
-			x - 1,
-			x + 1,
-			B,
-			B + 2.4,
-			24,
-			26,
-			C.timber,
-			Enum.Material.WoodPlanks
-		)
-	end
-	local vice =
-		box(F.Fixtures, "Vice", 30, 34, B + 3.2, B + 4.6, 23, 27, C.brass, Enum.Material.Metal)
-	CollectionService:AddTag(vice, "WorkshopBench")
-	local shop =
-		box(F.Markers, "WorkshopPlot", 8, 38, B, B + 0.4, 14, 38, C.cloth, Enum.Material.Fabric)
-	shop.CanCollide = false
-	CollectionService:AddTag(shop, "WorkshopPlot")
+	wall(F.Floor2, "Second_East", "X", 50, 100, 250, LEVELS[3], HEADS[3], { { 140, 140 + DOOR_W } })
 
-	local departure =
-		box(F.Markers, "Departure", -16, 16, B, B + 0.4, -26, -6, C.brass, Enum.Material.Metal)
-	departure.CanCollide = false
-	label(departure, "TO THE ROAD", Enum.NormalId.Top, 26)
-	CollectionService:AddTag(departure, "Departure")
-
-	-- The one thing a hub has to do is get a new player into a run without
-	-- being told, and a brass plate flush with the floor does not do it. Two
-	-- lamps mark the pad, the pad itself is lit, and a beam runs to it from
-	-- where you land. Roblox's own onboarding docs describe testing exactly
-	-- this - a guided arrow - and a staff post on funnel events found players
-	-- stalling on a step until a small icon was put over the thing they were
-	-- meant to use. This is that icon.
+	-- ------------------------------------------------------------ 3RD FLOOR
+	for _, r in
+		ipairs({
+			{ name = "Library", x0 = -W, x1 = -50, z0 = Z0, z1 = 120, light = 0.85 },
+			{ name = "CigarRoom", x0 = -50, x1 = 70, z0 = Z0, z1 = 120, light = 0.8 },
+			{ name = "EastRoom3", x0 = 70, x1 = EAST, z0 = Z0, z1 = 120, light = 0.8 },
+			{ name = "Museum", x0 = -W, x1 = -25, z0 = 120, z1 = 232, light = 0.9 },
+			{ name = "TinyRoom3", x0 = -W, x1 = -25, z0 = 232, z1 = Z1, light = 0.8 },
+			{ name = "UpperHall3", x0 = -25, x1 = 50, z0 = 120, z1 = Z1, light = 0.9 },
+			{ name = "StairHall3", x0 = 50, x1 = EAST, z0 = 120, z1 = 240, light = 0.95 },
+			{ name = "ElevatorLobby3", x0 = 50, x1 = EAST, z0 = 240, z1 = Z1, light = 0.9 },
+		} :: { Room })
 	do
-		-- Brightness 1.4 and range 42, the same as every other lamp in the
-		-- building. These were 2.2 and 2.6 at range 52, which is nearly twice
-		-- the house lamp, and the Lighting block was tuned for a hall lit by
-		-- house lamps. Marking the way out does not require out-shouting the
-		-- room: the posts and the pad read as the departure because they are
-		-- the only lit thing outside the doors, not because they are hot.
-		for _, x in ipairs({ -20, 20 }) do
-			box(
-				F.Markers,
-				`RoadLampPost_{x}`,
-				x - 1.2,
-				x + 1.2,
-				B,
-				B + 9,
-				-18,
-				-14,
-				C.iron,
-				Enum.Material.Metal
-			)
-			local head = box(
-				F.Markers,
-				`RoadLamp_{x}`,
-				x - 2.6,
-				x + 2.6,
-				B + 9,
-				B + 12,
-				-18.6,
-				-13.4,
-				C.gilt,
-				Enum.Material.Metal
-			)
-			local lamp = Instance.new("PointLight")
-			lamp.Color, lamp.Brightness, lamp.Range, lamp.Shadows =
-				Color3.fromRGB(255, 196, 120), 1.4, 42, false
-			lamp.Parent = head
-		end
+		buildRoom(F.Floor3, 4, r)
 	end
-	local ret =
-		box(F.Markers, "ReturnPoint", -16, 16, B, B + 0.4, 12, 32, C.brass, Enum.Material.Metal)
-	ret.CanCollide = false
-	CollectionService:AddTag(ret, "ReturnPoint")
-
-	-- The hub owns the spawn. Until now the only SpawnLocation in the game was
-	-- inside the Galleria, and the Galleria is not built until a raid is
-	-- launched - so at server start Roblox had nowhere to put a player and
-	-- dropped them into the void. Chris: "i have no clue where i am spawning",
-	-- landing at y = -75 standing on his own torso.
-	--
-	-- A real SpawnLocation here also means arriving in the hub does not depend
-	-- on a script running in the right order.
-	local pad = Instance.new("SpawnLocation")
-	pad.Name = "HallSpawn"
-	pad.Size = Vector3.new(24, 1, 16)
-	pad.CFrame = ret.CFrame
-	pad.Anchored, pad.Neutral, pad.CanCollide = true, true, false
-	pad.Transparency = 1
-	pad.Parent = F.Markers
-
-	-- Just inside the doors and to one side of the walk, so it is in frame
-	-- when you land and again when you come back in, and across nobody's path.
-	-- Each arm points at the room it names: the Lamp Wall on the east wall,
-	-- the Good Cheer Club in the kitchen, the stair core for the Keeping Room
-	-- three floors up, and the workshop bench.
-	fingerpost(F.Markers, "HallPost", 20, 6, B, {
-		{ text = "THE LAMP WALL", tx = 120, tz = 42 },
-		{ text = "THE WORKSHOP", tx = 23, tz = 26 },
-		{ text = "THE GOOD CHEER CLUB", tx = -92, tz = 142 },
-		{ text = "THE KEEPING ROOM", tx = 60, tz = 49 },
+	wall(F.Floor3, "Third_Cigar", "Z", 120, -W, EAST, LEVELS[4], HEADS[4], {
+		{ -60, -60 + DOOR_W },
+		{ 20, 20 + DOOR_W },
 	})
+	wall(F.Floor3, "Third_Library", "X", -50, Z0, 120, LEVELS[4], HEADS[4], { { 40, 40 + DOOR_W } })
+	wall(
+		F.Floor3,
+		"Third_Museum",
+		"X",
+		-25,
+		120,
+		Z1,
+		LEVELS[4],
+		HEADS[4],
+		{ { 160, 160 + DOOR_W } }
+	)
 
-	-- No floor beam. It was a glowing strip and Chris did not want one.
-	-- The lit lamp posts outside the open doors are the signpost now.
-
-	finish(F.Basement, "StoreFloorDark", -W, CORE_X1, 150, Z1, B, C.dark)
-
-	-- ------------------------------------------------- the back hall
-	-- Chris, asked which wing to make rooms of first: "Do the basement back
-	-- hall first - it's the floor people actually use."
-	--
-	-- Everything north of the landing was bare slab: 180 by 144 studs of real
-	-- floor you could walk onto, outside every room anybody had programmed.
-	-- It was lit in the last commit, and lighting an empty room only makes it
-	-- a lit empty room.
-	--
-	-- A corridor across the back of the landing, entered through the doorway
-	-- already cut in LandingNorth, with a room either side. Both are things
-	-- the hub needed and had nowhere to put: the Good Cheer Club has been
-	-- named on the fingerpost and on a board in the kitchen without ever
-	-- having a room, and the supply tiers in data/loot.json feed
-	-- WorkshopUpgrades with no counter in the building to hand anything over.
+	-- -------------------------------------------------------------- the core
+	-- NOT one stack. The plans put the stair in the centre on the lower
+	-- floors and move it to the east bay for the upper ones, with the
+	-- elevator always beside it. The old build stacked one identical core on
+	-- every level, and that single fact is most of why the hub read as a
+	-- warren rather than a building.
 	do
-		local CEIL = HEADS[1]
-		-- The Long Room's door lines up with the landing door at x -30..-2,
-		-- so the walk continues straight instead of crossing the corridor to
-		-- find a way on.
-		wall(F.Basement, "BackSpine", "Z", BH_SPINE, CORE_X1, W, B, CEIL, C.stone, {
-			{ -24, -24 + DOOR_W },
-			{ 72, 72 + DOOR_W },
-		})
-		wall(F.Basement, "BackDivide", "X", BH_DIVIDE, BH_SPINE, Z1, B, CEIL, C.stone, {
-			{ 168, 168 + DOOR_W },
-		})
-		coffers(F.Basement, "BackCorridorCeiling", CORE_X1, W, 86, BH_SPINE, CEIL, 40, C.plaster)
-		coffers(
-			F.Basement,
-			"LongRoomCeiling",
-			CORE_X1,
-			BH_DIVIDE,
-			BH_SPINE,
-			Z1,
-			CEIL,
-			44,
-			C.stencil
-		)
-		coffers(F.Basement, "StoreCeiling", BH_DIVIDE, W, BH_SPINE, Z1, CEIL, 40, C.plaster)
-		baseband(F.Basement, "BackCorridorBase", CORE_X1, W, 86, BH_SPINE, B)
-		baseband(F.Basement, "LongRoomBase", CORE_X1, BH_DIVIDE, BH_SPINE, Z1, B)
-		baseband(F.Basement, "StoreBase", BH_DIVIDE, W, BH_SPINE, Z1, B)
-		finish(
-			F.Basement,
-			"LongRoomFloor",
-			CORE_X1,
-			BH_DIVIDE,
-			BH_SPINE,
-			Z1,
-			B,
+		flight(F.Core, "Stair_0_1", 2, 38, 80, 186, LEVELS[1], LEVELS[2])
+		flight(F.Core, "Stair_1_2", 2, 38, 186, 80, LEVELS[2], LEVELS[3])
+		flight(F.Core, "Stair_2_3", 62, 98, 128, 226, LEVELS[3], LEVELS[4])
+
+		local LX0, LX1, LZ0, LZ1 = 68, 98, 252, 288
+		wall(F.Core, "LiftShaftW", "X", LX0, LZ0, LZ1, 0, TOP, {})
+		wall(F.Core, "LiftShaftE", "X", LX1, LZ0, LZ1, 0, TOP, {})
+		wall(F.Core, "LiftShaftN", "Z", LZ1, LX0, LX1, 0, TOP, {})
+		for i, lvl in ipairs(LEVELS) do
+			box(
+				F.Core,
+				`LiftSurround_{i}`,
+				LX0 - 2,
+				LX1 + 2,
+				lvl,
+				lvl + 14,
+				LZ0 - 2.6,
+				LZ0 - 1,
+				C.brass,
+				Enum.Material.Metal
+			)
+		end
+		local car = box(
+			F.Core,
+			"LiftCar",
+			LX0 + 2,
+			LX1 - 2,
+			-2,
+			0,
+			LZ0 + 2,
+			LZ1 - 2,
 			C.timber,
 			Enum.Material.WoodPlanks
 		)
+		car:SetAttribute("Stops", "0,18,44,72")
+		CollectionService:AddTag(car, "Lift")
+	end
 
-		-- Two columns a room, on the same grid the landing uses, so the back
-		-- of the building reads as the same building.
-		for i = 0, 1 do
-			column(F.Basement, `LongRoomColumn_{i}`, -28 + i * 44, 150 + i * 40, B, CEIL, 9)
-			column(F.Basement, `StoreColumn_{i}`, 58 + i * 44, 150 + i * 40, B, CEIL, 9)
-		end
+	-- ----------------------------------------------------- THE EGYPTIAN ROOM
+	-- The showpiece, and the reason the building is worth modelling at all.
+	-- Gold lotus columns painted with figures, a coffered ceiling on broad
+	-- yellow beams, blue-purple carpet, tiered teal seating round the walls,
+	-- and in the middle a gold altar with four flame-topped lamp standards.
+	do
+		local ex0, ex1, ez0, ez1 = -W, 0, Z0, 96
+		local y, head = LEVELS[3], HEADS[3]
 
-		-- ---- the Long Room ------------------------------------------------
-		-- The Good Cheer Club's actual hall: long tables down the middle, a
-		-- stove at the end, and the landmark footings along the west wall
-		-- where anyone walking past sees what the town is building.
-		for i = 0, 1 do
-			local z0 = 134 + i * 46
-			box(
-				F.Fixtures,
-				`ClubTable_{i}`,
-				-36,
-				20,
-				B + 2.2,
-				B + 3,
-				z0,
-				z0 + 30,
-				C.timber,
-				Enum.Material.WoodPlanks
-			)
-			for _, dx in ipairs({ -34, 18 }) do
+		for i = 0, 4 do
+			local z = ez0 + (ez1 - ez0) * ((i + 0.5) / 5)
+			for side, x in ipairs({ ex0 + 13, ex1 - 13 }) do
 				box(
 					F.Fixtures,
-					`ClubTableLeg_{i}_{dx}`,
-					dx,
-					dx + 2,
-					B,
-					B + 2.2,
-					z0 + 2,
-					z0 + 28,
+					`EgyptCol_{i}_{side}`,
+					x - 5,
+					x + 5,
+					y,
+					y + 22,
+					z - 5,
+					z + 5,
+					C.egyptGold,
+					Enum.Material.Concrete
+				)
+				box(
+					F.Fixtures,
+					`EgyptCap_{i}_{side}`,
+					x - 7,
+					x + 7,
+					y + 22,
+					y + 26,
+					z - 7,
+					z + 7,
+					C.egyptGold,
+					Enum.Material.Concrete
+				)
+				box(
+					F.Fixtures,
+					`EgyptBand_{i}_{side}`,
+					x - 5.4,
+					x + 5.4,
+					y + 20.6,
+					y + 22,
+					z - 5.4,
+					z + 5.4,
+					C.gilt,
+					Enum.Material.Metal
+				)
+				box(
+					F.Fixtures,
+					`EgyptPanel_{i}_{side}`,
+					x - 5.3,
+					x + 5.3,
+					y + 6,
+					y + 18,
+					z - 2.2,
+					z + 2.2,
+					C.egyptTeal
+				)
+			end
+		end
+
+		-- Inset from both end walls. The first beam sat half inside the south
+		-- shell wall, which was the only clipping in the whole building.
+		for i = 0, 5 do
+			local z = ez0 + 8 + (ez1 - ez0 - 16) * (i / 5)
+			box(
+				F.Fixtures,
+				`EgyptBeam_{i}`,
+				ex0 + 2,
+				ex1 - 2,
+				head - 5,
+				head - 1.6,
+				z - 3,
+				z + 3,
+				C.egyptGold,
+				Enum.Material.Concrete
+			)
+		end
+
+		for tier = 0, 1 do
+			local inset = 15 + tier * 9
+			local h = y + 1.6 + tier * 1.8
+			for run, spec in ipairs({
+				{ ex0 + inset - 8, ex0 + inset, ez0 + inset, ez1 - inset },
+				{ ex1 - inset, ex1 - inset + 8, ez0 + inset, ez1 - inset },
+				{ ex0 + inset, ex1 - inset, ez0 + inset - 8, ez0 + inset },
+			}) do
+				box(
+					F.Fixtures,
+					`EgyptTier_{tier}_{run}`,
+					spec[1],
+					spec[2],
+					y,
+					h,
+					spec[3],
+					spec[4],
 					C.timber,
 					Enum.Material.WoodPlanks
 				)
-			end
-			for _, dx in ipairs({ -42, 24 }) do
 				box(
 					F.Fixtures,
-					`ClubBench_{i}_{dx}`,
+					`EgyptSeat_{tier}_{run}`,
+					spec[1],
+					spec[2],
+					h,
+					h + 1.2,
+					spec[3],
+					spec[4],
+					C.egyptTeal,
+					Enum.Material.Fabric
+				)
+			end
+		end
+
+		-- The altar and its four lamp standards. Relics belong here, not on
+		-- plinths in the entrance hall - Chris: "relics shouldn't be in the
+		-- middle of the floor."
+		local cx, cz = (ex0 + ex1) / 2, (ez0 + ez1) / 2
+		local altar = box(
+			F.Markers,
+			"Altar",
+			cx - 9,
+			cx + 9,
+			y,
+			y + 7,
+			cz - 6,
+			cz + 6,
+			C.egyptGold,
+			Enum.Material.Metal
+		)
+		box(
+			F.Fixtures,
+			"AltarTop",
+			cx - 10.5,
+			cx + 10.5,
+			y + 7,
+			y + 8,
+			cz - 7.5,
+			cz + 7.5,
+			C.egyptTeal,
+			Enum.Material.Fabric
+		)
+		label(altar, "THE KEEPING ALTAR", Enum.NormalId.Front, 18)
+		for i, off in ipairs({ { -15, -11 }, { 15, -11 }, { -15, 11 }, { 15, 11 } }) do
+			local lx, lz = cx + off[1], cz + off[2]
+			box(
+				F.Fixtures,
+				`AltarLampPost_{i}`,
+				lx - 1.4,
+				lx + 1.4,
+				y,
+				y + 15,
+				lz - 1.4,
+				lz + 1.4,
+				C.egyptGold,
+				Enum.Material.Metal
+			)
+			local globe = part(
+				F.Fixtures,
+				`AltarLampGlobe_{i}`,
+				Vector3.new(4, 6, 4),
+				CFrame.new(lx, y + 18, lz),
+				Color3.fromRGB(248, 242, 228)
+			)
+			globe.CanCollide, globe.CanQuery = false, false
+			local light = Instance.new("PointLight")
+			light.Color, light.Brightness, light.Range, light.Shadows = WARM, 1.1, 42, false
+			light.Parent = globe
+		end
+
+		for i = 0, 3 do
+			local px = ex0 + 26 + i * 18
+			local slot = box(
+				F.Markers,
+				`RelicPlinth_{i}`,
+				px,
+				px + 11,
+				y,
+				y + 6,
+				ez1 - 14,
+				ez1 - 5,
+				C.egyptGold,
+				Enum.Material.Metal
+			)
+			slot:SetAttribute("Slot", i)
+			CollectionService:AddTag(slot, "RelicPlinth")
+			local plate = box(
+				F.Fixtures,
+				`RelicPlate_{i}`,
+				px + 1,
+				px + 10,
+				y + 6,
+				y + 6.6,
+				ez1 - 14.4,
+				ez1 - 13.8,
+				C.brass,
+				Enum.Material.Metal
+			)
+			label(plate, "UNNAMED", Enum.NormalId.Front, 16)
+		end
+
+		-- Lit low and warm: a lodge room is candles and gold, not an office.
+		lightRoom(
+			F.Fixtures,
+			ex0,
+			ex1,
+			ez0,
+			ez1,
+			head,
+			{ Brightness = 0.7, Range = 38, Spacing = 40 }
+		)
+	end
+
+	-- ------------------------------------------------------ the hub fittings
+	do
+		local y = LEVELS[1]
+
+		box(
+			F.Fixtures,
+			"LampWallFace",
+			WEST + 2,
+			WEST + 5,
+			y,
+			y + 18,
+			8,
+			52,
+			C.timber,
+			Enum.Material.WoodPlanks
+		)
+		local plaque = box(
+			F.Fixtures,
+			"LampWallPlaque",
+			WEST + 5,
+			WEST + 5.8,
+			y + 11,
+			y + 15,
+			14,
+			46,
+			C.timber,
+			Enum.Material.WoodPlanks
+		)
+		label(plaque, "KEEPERS OUT", Enum.NormalId.Right, 26)
+		for i = 0, 7 do
+			local g = part(
+				F.Fixtures,
+				`KeeperLamp_{i}`,
+				Vector3.new(2.6, 3.4, 2.6),
+				CFrame.new(WEST + 9, y + 9, 12 + i * 5),
+				C.brass,
+				Enum.Material.Metal
+			)
+			g.CanCollide, g.CanQuery = false, false
+			g:SetAttribute("Slot", i)
+			CollectionService:AddTag(g, "LampWallSlot")
+			if i % 3 ~= 2 then
+				local l = Instance.new("PointLight")
+				l.Color, l.Brightness, l.Range, l.Shadows = WARM, 0.8, 22, false
+				l.Parent = g
+			end
+		end
+
+		local hatch = box(
+			F.Fixtures,
+			"KitchenHatch",
+			-90,
+			-58,
+			y,
+			y + 4.2,
+			40,
+			50,
+			C.timber,
+			Enum.Material.WoodPlanks
+		)
+		label(hatch, "HAND IT IN", Enum.NormalId.Top, 22)
+		CollectionService:AddTag(hatch, "KitchenContribution")
+
+		local board = box(
+			F.Fixtures,
+			"ClubBoard",
+			-W + 4,
+			-W + 5.2,
+			y + 6,
+			y + 16,
+			150,
+			200,
+			C.timber,
+			Enum.Material.WoodPlanks
+		)
+		label(board, "THE GOOD CHEER CLUB", Enum.NormalId.Right, 24)
+		CollectionService:AddTag(board, "ClubBoard")
+
+		for i = 0, 2 do
+			local z = 140 + i * 50
+			box(
+				F.Fixtures,
+				`BanquetTable_{i}`,
+				-92,
+				-34,
+				y + 3,
+				y + 3.8,
+				z,
+				z + 32,
+				C.timber,
+				Enum.Material.WoodPlanks
+			)
+			for run, dx in ipairs({ -98, -28 }) do
+				box(
+					F.Fixtures,
+					`BanquetBench_{i}_{run}`,
 					dx,
 					dx + 6,
-					B + 1.4,
-					B + 2,
-					z0 + 2,
-					z0 + 28,
+					y + 1.8,
+					y + 2.4,
+					z + 2,
+					z + 30,
 					C.timber,
 					Enum.Material.WoodPlanks
 				)
 			end
 		end
-		local stove =
-			box(F.Fixtures, "ClubStove", 14, 28, B, B + 7, 214, 226, C.iron, Enum.Material.Metal)
-		box(F.Fixtures, "ClubFlue", 19, 23, B + 7, CEIL, 218, 222, C.iron, Enum.Material.Metal)
-		label(stove, "THE GOOD CHEER CLUB", Enum.NormalId.Front, 20)
 
-		-- Landmark footings. data/loot.json sends RestorationCrates to
-		-- LanternholdLandmarks and nothing in the building was that, so a
-		-- crate carried all the way home had nowhere to go. These are the
-		-- somewhere: three footings, named, with room to become something.
-		--
-		-- The tag is map contract offered to gameplay, exactly as
-		-- KitchenContribution and WorkshopPlot already are. Nothing consumes
-		-- it yet and nothing here assumes what it will do.
+		local vice = box(
+			F.Fixtures,
+			"WorkshopBench",
+			58,
+			100,
+			y,
+			y + 4.4,
+			220,
+			234,
+			C.timber,
+			Enum.Material.WoodPlanks
+		)
+		label(vice, "THE WORKSHOP", Enum.NormalId.Front, 20)
+		CollectionService:AddTag(vice, "WorkshopBench")
+		local plot = box(
+			F.Markers,
+			"WorkshopPlot",
+			56,
+			102,
+			y,
+			y + 0.3,
+			238,
+			268,
+			C.inlay,
+			Enum.Material.Fabric
+		)
+		plot.CanCollide = false
+		CollectionService:AddTag(plot, "WorkshopPlot")
+
+		-- The one counter in the building you buy across. data/loot.json feeds
+		-- WorkshopUpgrades and GadgetCrafting and nothing sold anything.
+		local qm = box(
+			F.Fixtures,
+			"QuartermasterCounter",
+			WEST + 8,
+			CENTRE - 8,
+			LEVELS[2],
+			LEVELS[2] + 4.2,
+			244,
+			252,
+			C.timber,
+			Enum.Material.WoodPlanks
+		)
+		label(qm, "QUARTERMASTER", Enum.NormalId.Front, 20)
+		CollectionService:AddTag(qm, "Quartermaster")
+
+		local rb = box(
+			F.Fixtures,
+			"RelicBench",
+			-100,
+			-62,
+			LEVELS[4],
+			LEVELS[4] + 4,
+			150,
+			200,
+			C.timber,
+			Enum.Material.WoodPlanks
+		)
+		label(rb, "THE WORKROOM", Enum.NormalId.Right, 18)
+		CollectionService:AddTag(rb, "RelicBench")
+
 		for i, nm in ipairs({ "THE WELL", "THE BELL TOWER", "THE LONG BRIDGE" }) do
-			local z0 = 124 + (i - 1) * 34
+			local z = 130 + (i - 1) * 54
 			local site = box(
 				F.Markers,
 				`LandmarkSite_{i}`,
-				CORE_X1 + 4,
-				CORE_X1 + 22,
-				B,
-				B + 1.6,
-				z0,
-				z0 + 24,
+				-W + 8,
+				-W + 26,
+				y,
+				y + 1.6,
+				z,
+				z + 34,
 				C.terrazzo,
 				Enum.Material.Concrete
 			)
@@ -1579,717 +1414,122 @@ function LanternholdBuilder.Build(): Model
 			CollectionService:AddTag(site, "LandmarkSite")
 		end
 
-		-- ---- the Quartermaster's store -------------------------------------
-		local counter = box(
+		box(
 			F.Fixtures,
-			"QuartermasterCounter",
-			44,
-			48,
-			B,
-			B + 3.4,
-			126,
-			168,
+			"PoolTable",
+			-30,
+			24,
+			LEVELS[4],
+			LEVELS[4] + 4.4,
+			40,
+			70,
+			C.egyptTeal,
+			Enum.Material.Fabric
+		)
+		box(
+			F.Fixtures,
+			"PoolRail",
+			-32,
+			26,
+			LEVELS[4] + 4.4,
+			LEVELS[4] + 5.2,
+			38,
+			72,
 			C.timber,
 			Enum.Material.WoodPlanks
 		)
-		label(counter, "QUARTERMASTER", Enum.NormalId.Left, 20)
-		CollectionService:AddTag(counter, "Quartermaster")
-		box(
-			F.Fixtures,
-			"QuartermasterTop",
-			42,
-			52,
-			B + 3.4,
-			B + 3.9,
-			126,
-			168,
-			C.brass,
-			Enum.Material.Metal
-		)
 
-		-- Shelving with a gangway between the runs, so the room can be walked
-		-- rather than looked into.
-		for i = 0, 2 do
-			local x0 = 62 + i * 24
-			box(
-				F.Fixtures,
-				`StoreShelf_{i}`,
-				x0,
-				x0 + 10,
-				B,
-				B + 11,
-				128,
-				196,
-				C.timber,
-				Enum.Material.WoodPlanks
-			)
-		end
 		for i = 0, 3 do
-			local x0 = 58 + i * 18
-			-- Kept clear of the north shell wall, whose inner face is at 228.
-			-- The first run of these reached 232 and two of the four stood a
-			-- third of the way inside it.
+			local z = 16 + i * 26
 			box(
 				F.Fixtures,
-				`StoreCrate_{i}`,
-				x0,
-				x0 + 12,
-				B,
-				B + 6,
-				200 + (i % 2) * 12,
-				212 + (i % 2) * 12,
+				`LibraryShelf_{i}`,
+				-W + 8,
+				-W + 20,
+				LEVELS[4],
+				LEVELS[4] + 14,
+				z,
+				z + 18,
 				C.timber,
 				Enum.Material.WoodPlanks
 			)
 		end
 	end
 
-	-- ------------------------------------------------------------- ballroom
-	-- Eight thousand square feet, built and unlit, with its chandeliers fitted
-	-- and never switched on. From the landing you see the whole volume and a
-	-- rope across the doorway.
-	local BR = LEVELS[2]
-	-- Not a black void. The ballroom is a magnificent room that happens to be
-	-- unlit, and you are meant to see that through the doorway - a coffered
-	-- ceiling on a grid of capitalled columns over a deep red-brown floor. If
-	-- it reads as an empty black box there is nothing to want.
-	wall(
-		F.Ballroom,
-		"BallroomWest",
-		"X",
-		CORE_X1,
-		Z0,
-		Z1,
-		BR,
-		HEADS[2],
-		C.stone,
-		{ { 30, 30 + DOOR_W * 2 } },
-		24
-	)
-	coffers(F.Ballroom, "BallroomCeiling", CORE_X1, W, Z0, Z1, HEADS[2], 50, C.plaster)
-	for i = 0, 2 do
-		for j = 0, 4 do
-			column(
-				F.Ballroom,
-				`BallroomColumn_{i}_{j}`,
-				-40 + i * 60,
-				24 + j * 46,
-				BR,
-				HEADS[2],
-				11
-			)
-		end
-	end
-	baseband(F.Ballroom, "BallroomBase", CORE_X1, W, Z0, Z1, BR)
-	-- The chandeliers were modelled and dead. They are the room's own fitting,
-	-- so they carry the light rather than a grid of lamps hung beside them -
-	-- but five fittings in a line at x = 20 cannot cover a room 180 wide, so a
-	-- weaker grid fills the flanks behind them.
-	for i = 0, 4 do
-		local z = 30 + i * 42
-		local body = part(
-			F.Ballroom,
-			`Chandelier_{i}`,
-			Vector3.new(14, 2, 14),
-			CFrame.new(20, HEADS[2] - 10, z),
-			C.brass,
-			Enum.Material.Metal
-		)
-		part(
-			F.Ballroom,
-			`ChandelierChain_{i}`,
-			Vector3.new(0.8, 10, 0.8),
-			CFrame.new(20, HEADS[2] - 4, z),
-			C.dark,
-			Enum.Material.Metal
-		)
-		local light = Instance.new("PointLight")
-		light.Color, light.Brightness, light.Range, light.Shadows = WARM, 1.0, 46, false
-		light.Parent = body
-	end
-	lightRoom(
-		F.Ballroom,
-		"BallroomLamp",
-		CORE_X1,
-		W,
-		Z0,
-		Z1,
-		HEADS[2],
-		{ Brightness = 0.75, Range = 40 }
-	)
-	-- A rail beside the opening, not a barrier across it. At three and a half
-	-- studs spanning the whole doorway this was a wall to a Humanoid, and the
-	-- room is open now.
-	local rail = box(
-		F.Ballroom,
-		"BallroomRail",
-		CORE_X1 - 1,
-		CORE_X1 + 1,
-		BR,
-		BR + 3.4,
-		30,
-		36,
-		C.brass,
-		Enum.Material.Metal
-	)
-	rail.CanCollide = false
-	local bn = box(
-		F.Ballroom,
-		"BallroomNotice",
-		CORE_X1 - 1.8,
-		CORE_X1 - 1.2,
-		BR + 0.8,
-		BR + 3,
-		36,
-		52,
-		C.timber,
-		Enum.Material.WoodPlanks
-	)
-	label(bn, "THE BALLROOM", Enum.NormalId.Left, 18)
-
-	-- ------------------------------------------------------------- lodge
-	-- The two lodge rooms, shut and dark and visible through their doorways.
-	-- The Egyptian room in ochre; the Norman Gothic chapel in grey stone with
-	-- timber beams and a slate floor. These are the rooms worth lighting.
-	local LD = LEVELS[3]
-	finish(F.Lodge, "EgyptFloor", CORE_X1, W, Z0, 120, LD, C.egypt, Enum.Material.Slate)
-	finish(F.Lodge, "GothicFloor", CORE_X1, W, 120, Z1, LD, C.gothic, Enum.Material.Slate)
-	wall(F.Lodge, "LodgeSpine", "Z", 120, CORE_X1, W, LD, HEADS[3], C.stone, {})
-	wall(
-		F.Lodge,
-		"LodgeWest",
-		"X",
-		CORE_X1,
-		Z0,
-		Z1,
-		LD,
-		HEADS[3],
-		C.stone,
-		{ { 40, 40 + DOOR_W }, { 150, 150 + DOOR_W } },
-		18
-	)
-	for i = 0, 3 do
-		local z = 24 + i * 24
+	-- --------------------------------------------------------------- outside
+	do
+		local y = LEVELS[1]
 		box(
-			F.Lodge,
-			`EgyptColumn_{i}`,
-			30,
-			38,
-			LD,
-			HEADS[3],
-			z,
-			z + 8,
-			C.egypt,
+			F.Shell,
+			"Apron",
+			-W - 40,
+			W + 40,
+			-3,
+			-1,
+			Z0 - 92,
+			Z0 - 10,
+			C.limestone,
 			Enum.Material.Concrete
 		)
-	end
-	for i = 0, 3 do
-		local z = 136 + i * 22
-		box(
-			F.Lodge,
-			`GothicBeam_{i}`,
-			CORE_X1,
-			W,
-			HEADS[3] - 6,
-			HEADS[3] - 3,
-			z,
-			z + 4,
-			C.timber,
-			Enum.Material.WoodPlanks
-		)
-	end
-	-- Both rooms lit and open. The Egyptian room keeps its ochre and the chapel
-	-- its grey, so they still read as two different rooms rather than two lit
-	-- boxes, and the chapel sits a shade dimmer than the room below it.
-	lightRoom(
-		F.Lodge,
-		"EgyptLamp",
-		CORE_X1,
-		W,
-		Z0,
-		120,
-		HEADS[3],
-		{ Brightness = 0.85, Range = 34 }
-	)
-	lightRoom(
-		F.Lodge,
-		"GothicLamp",
-		CORE_X1,
-		W,
-		120,
-		Z1,
-		HEADS[3],
-		{ Brightness = 0.8, Range = 34 }
-	)
-	for _, spec in ipairs({
-		{ "Egypt", 40, "THE EGYPTIAN ROOM" },
-		{ "Gothic", 150, "THE CHAPEL" },
-	}) do
-		local nm, z, text = spec[1] :: string, spec[2] :: number, spec[3] :: string
-		local bar = box(
-			F.Lodge,
-			`{nm}Bar`,
-			CORE_X1 - 1,
-			CORE_X1 + 1,
-			LD,
-			LD + 3.4,
-			z,
-			z + DOOR_W,
+		local departure = box(
+			F.Markers,
+			"Departure",
+			62,
+			112,
+			-1,
+			-0.6,
+			Z0 - 74,
+			Z0 - 44,
 			C.brass,
 			Enum.Material.Metal
 		)
-		bar.CanCollide = false
-		local n = box(
-			F.Lodge,
-			`{nm}Notice`,
-			CORE_X1 - 1.8,
-			CORE_X1 - 1.2,
-			LD + 0.8,
-			LD + 3,
-			z + 1,
-			z + DOOR_W - 1,
-			C.timber,
-			Enum.Material.WoodPlanks
-		)
-		label(n, text, Enum.NormalId.Left, 16)
-	end
-
-	-- ------------------------------------------------------------- museum
-	-- The Keeping Room. Relics are the lantern-only tier, so the only way the
-	-- story arrives is by somebody taking the dangerous choice.
-	local MU = LEVELS[4]
-	finish(F.Museum, "StorageFloor", CORE_X1, W, 120, Z1, MU, C.dark)
-	wall(
-		F.Museum,
-		"MuseumWest",
-		"X",
-		CORE_X1,
-		Z0,
-		Z1,
-		MU,
-		HEADS[4],
-		C.stone,
-		{ { 30, 30 + DOOR_W } }
-	)
-	wall(
-		F.Museum,
-		"MuseumNorth",
-		"Z",
-		120,
-		CORE_X1,
-		W,
-		MU,
-		HEADS[4],
-		C.stone,
-		{ { 20, 20 + DOOR_W } }
-	)
-	coffers(F.Museum, "MuseumCeiling", CORE_X1, W, Z0, Z1, HEADS[4], 44, C.plaster, true)
-	baseband(F.Museum, "MuseumBase", CORE_X1, W, Z0, 120, MU)
-	-- Three lamps in a line at x = 20 lit a stripe up the middle of a floor
-	-- 180 studs wide. Both the Keeping Room and the storage room get a grid.
-	lightRoom(
-		F.Museum,
-		"MuseumLamp",
-		CORE_X1,
-		W,
-		Z0,
-		120,
-		HEADS[4],
-		{ Brightness = 0.95, Range = 34 }
-	)
-	lightRoom(
-		F.Museum,
-		"StorageLamp",
-		CORE_X1,
-		W,
-		120,
-		Z1,
-		HEADS[4],
-		{ Brightness = 0.8, Range = 34 }
-	)
-	-- The plinths stand on the HUB floor, not up here. Shelving a relic is
-	-- something a keeper does between runs, and up here it cost 568 studs of
-	-- walking for 112 of distance - a detour of 5.1, by far the worst thing in
-	-- the building and most of what Chris meant by "lots of nooks and crannies
-	-- that are awkward". Everything else in the hall walks at 1.0 to 1.2.
-	--
-	-- The museum keeps the burnt case below, and keeps being worth the climb
-	-- for its own sake. It just stops being on the critical path.
-	for i = 0, 3 do
-		local x = 36 + i * 16
-		box(F.Fixtures, `Plinth_{i}`, x, x + 12, B, B + 4, 44, 54, C.trim, Enum.Material.Concrete)
-		local slot = box(
-			F.Fixtures,
-			`RelicSlot_{i}`,
-			x + 1,
-			x + 11,
-			B + 4,
-			B + 4.4,
-			45,
-			53,
-			C.brass,
-			Enum.Material.Metal
-		)
-		slot.CanCollide = false
-		slot:SetAttribute("Slot", i)
-		CollectionService:AddTag(slot, "RelicPlinth")
-		local plate = box(
-			F.Fixtures,
-			`Plaque_{i}`,
-			x + 1,
-			x + 11,
-			B + 1.6,
-			B + 2.2,
-			43.2,
-			43.8,
-			C.brass,
-			Enum.Material.Metal
-		)
-		label(plate, "UNNAMED", Enum.NormalId.Front, 18)
-	end
-	-- The case that can never be filled: the order's earliest records burned
-	-- long before any flood, so nothing from a run goes in here. The oldest
-	-- things in the room are the ones nobody can name, and they stay that way.
-	box(F.Fixtures, "BurntCase", 96, 112, MU, MU + 1, 30, 70, C.trim, Enum.Material.Concrete)
-	box(
-		F.Fixtures,
-		"BurntCaseGlass",
-		96,
-		112,
-		MU + 1,
-		MU + 7,
-		30,
-		70,
-		C.glass,
-		Enum.Material.Glass,
-		0.72
-	)
-	local burnt = box(
-		F.Fixtures,
-		"BurntCasePlaque",
-		94.8,
-		95.4,
-		MU + 2,
-		MU + 5,
-		34,
-		66,
-		C.timber,
-		Enum.Material.WoodPlanks
-	)
-	label(burnt, "THE YEARS BEFORE THE FIRE — NOTHING RECOVERED", Enum.NormalId.Left, 16)
-
-	-- ------------------------------------------------- the north wings
-	-- Chris: "do the north wings on the upper floors next."
-	--
-	-- Same fault as the back hall, three floors up and three times over. West
-	-- of the core and north of the stair, every upper level carried 76 by 138
-	-- studs of bare slab - floor you could walk onto, outside every room, with
-	-- nothing on it. Lit in an earlier commit, which made them lit empty
-	-- rooms.
-	--
-	-- Built as one loop rather than three hand-written rooms. The structure is
-	-- identical on every floor - the core is in the same place on all of them
-	-- - so the only thing that varies is what the room is for, and that is the
-	-- table below. Three copies of this written out by hand is three places
-	-- for the next change to the core to go stale.
-	--
-	-- Each room is entered from the core landing through one door, centred on
-	-- the landing's own width so the walk off the stair continues straight.
-	do
-		local WING_WALL = 100 -- the room's south wall, clear of stair and lift
-		local DOOR_AT = -80 -- door runs DOOR_AT .. DOOR_AT + DOOR_W
-
-		for i = 2, #LEVELS do
-			local lvl, ceil = LEVELS[i], HEADS[i]
-			local folder = if i == 2 then F.Ballroom elseif i == 3 then F.Lodge else F.Museum
-
-			wall(folder, `WingWall_{i}`, "Z", WING_WALL, CORE_X0, CORE_X1, lvl, ceil, C.stone, {
-				{ DOOR_AT, DOOR_AT + DOOR_W },
-			})
-			coffers(folder, `WingCeiling_{i}`, CORE_X0, CORE_X1, WING_WALL, Z1, ceil, 40, C.plaster)
-			baseband(folder, `WingBase_{i}`, CORE_X0, CORE_X1, WING_WALL, Z1, lvl)
-			for j = 0, 1 do
-				column(folder, `WingColumn_{i}_{j}`, -108 + j * 40, 140 + j * 50, lvl, ceil, 8)
-			end
-		end
-
-		-- The south galleries. Each upper floor's strip between the front
-		-- wall and the core landing: 76 by 16, already joined to the landing
-		-- at z = 16, and bare slab on all three floors. Sixteen studs deep is
-		-- a gallery, not a room, so it is finished as one - floor, skirting, a
-		-- bench run against the front wall and its name - rather than having
-		-- furniture invented for it.
-		for i = 2, #LEVELS do
-			local lvl, ceil = LEVELS[i], HEADS[i]
-			local folder = if i == 2 then F.Ballroom elseif i == 3 then F.Lodge else F.Museum
-			finish(
-				folder,
-				`GalleryFloor_{i}`,
-				CORE_X0,
-				CORE_X1,
-				Z0,
-				CORE_Z0,
-				lvl,
-				C.terrazzo,
-				Enum.Material.Concrete
-			)
-			baseband(folder, `GalleryBase_{i}`, CORE_X0, CORE_X1, Z0, CORE_Z0, lvl)
-			coffers(
-				folder,
-				`GalleryCeiling_{i}`,
-				CORE_X0,
-				CORE_X1,
-				Z0,
-				CORE_Z0,
-				ceil,
-				38,
-				C.plaster
-			)
-			-- The bench starts at -108, not at the gallery's west end: the
-			-- shell's corner Tower fills x -140..-114, so the first twelve
-			-- studs of this strip are inside it. Three bench legs stood two
-			-- thirds buried in the tower on the first run, one per floor.
+		departure.CanCollide = false
+		label(departure, "TO THE ROAD", Enum.NormalId.Top, 24)
+		CollectionService:AddTag(departure, "Departure")
+		for i, x in ipairs({ 58, 116 }) do
 			box(
-				F.Fixtures,
-				`GalleryBench_{i}`,
-				-108,
-				CORE_X1 - 8,
-				lvl + 1.4,
-				lvl + 2,
-				5,
-				11,
-				C.timber,
-				Enum.Material.WoodPlanks
+				F.Markers,
+				`RoadLampPost_{i}`,
+				x - 1.2,
+				x + 1.2,
+				-1,
+				12,
+				Z0 - 61,
+				Z0 - 57,
+				C.iron,
+				Enum.Material.Metal
 			)
-			for _, bx in ipairs({ -104, -84, CORE_X1 - 12 }) do
-				box(
-					F.Fixtures,
-					`GalleryBenchLeg_{i}_{bx}`,
-					bx,
-					bx + 3,
-					lvl,
-					lvl + 1.4,
-					6,
-					10,
-					C.timber,
-					Enum.Material.WoodPlanks
-				)
-			end
-			local plate = box(
-				F.Fixtures,
-				`GalleryPlate_{i}`,
-				-96,
-				-64,
-				lvl + 6,
-				lvl + 9,
-				2.2,
-				2.8,
-				C.board,
-				Enum.Material.WoodPlanks
-			)
-			label(plate, `THE SOUTH GALLERY — FLOOR {i - 1}`, Enum.NormalId.Back, 16)
-		end
-
-		-- Level two, over the ballroom: the Muster Room. Where a crew forms up
-		-- before going out - benches down both walls, pegs for kit, and a
-		-- board. The ballroom next door is for the town; this is for the
-		-- keepers, and the hub had no room that was.
-		do
-			local lvl = LEVELS[2]
-			finish(
-				F.Ballroom,
-				"MusterFloor",
-				CORE_X0,
-				CORE_X1,
-				WING_WALL,
-				Z1,
-				lvl,
-				C.timber,
-				Enum.Material.WoodPlanks
-			)
-			for _, x in ipairs({ CORE_X0 + 6, CORE_X1 - 12 }) do
-				box(
-					F.Fixtures,
-					`MusterBench_{x}`,
-					x,
-					x + 6,
-					lvl + 1.4,
-					lvl + 2,
-					112,
-					216,
-					C.timber,
-					Enum.Material.WoodPlanks
-				)
-				box(
-					F.Fixtures,
-					`MusterPegs_{x}`,
-					x,
-					x + 2,
-					lvl + 9,
-					lvl + 10,
-					112,
-					216,
-					C.iron,
-					Enum.Material.Metal
-				)
-			end
-			local board = box(
-				F.Fixtures,
-				"MusterBoard",
-				-100,
-				-62,
-				lvl + 5,
-				lvl + 13,
-				226,
-				227,
-				C.board,
-				Enum.Material.WoodPlanks
-			)
-			label(board, "THE MUSTER ROOM", Enum.NormalId.Front, 22)
-		end
-
-		-- Level three, beside the lodge rooms: the Workroom. Relics feed
-		-- SpecialCrafting in data/loot.json and there was no bench in the
-		-- building to do it at - the Keeping Room names a relic and the
-		-- workshop downstairs is for Supplies. A lodge keeps its preparation
-		-- room on the lodge floor, so this is where that goes.
-		do
-			local lvl = LEVELS[3]
-			finish(
-				F.Lodge,
-				"WorkroomFloor",
-				CORE_X0,
-				CORE_X1,
-				WING_WALL,
-				Z1,
-				lvl,
-				C.gothic,
-				Enum.Material.Slate
-			)
-			local bench = box(
-				F.Fixtures,
-				"RelicBench",
-				-112,
-				-96,
-				lvl,
-				lvl + 3.4,
-				120,
-				190,
-				C.timber,
-				Enum.Material.WoodPlanks
-			)
-			box(
-				F.Fixtures,
-				"RelicBenchTop",
-				-114,
-				-94,
-				lvl + 3.4,
-				lvl + 3.9,
-				120,
-				190,
+			local head = box(
+				F.Markers,
+				`RoadLamp_{i}`,
+				x - 2.6,
+				x + 2.6,
+				12,
+				15,
+				Z0 - 62,
+				Z0 - 56,
 				C.brass,
 				Enum.Material.Metal
 			)
-			label(bench, "THE WORKROOM", Enum.NormalId.Right, 18)
-			CollectionService:AddTag(bench, "RelicBench")
-			for j = 0, 2 do
-				local z0 = 124 + j * 30
-				box(
-					F.Fixtures,
-					`WorkroomRack_{j}`,
-					-70,
-					-56,
-					lvl,
-					lvl + 12,
-					z0,
-					z0 + 20,
-					C.timber,
-					Enum.Material.WoodPlanks
-				)
-			end
-			box(
-				F.Fixtures,
-				"WorkroomStool",
-				-90,
-				-84,
-				lvl,
-				lvl + 2.4,
-				150,
-				156,
-				C.timber,
-				Enum.Material.WoodPlanks
-			)
+			local l = Instance.new("PointLight")
+			l.Color, l.Brightness, l.Range, l.Shadows = WARM, 1.2, 38, false
+			l.Parent = head
 		end
 
-		-- Level four, beside the Keeping Room: the Archive. The museum names a
-		-- relic; this is where the naming is written down and kept. Shelving,
-		-- a reading desk under the lamp, and a map table.
-		do
-			local lvl = LEVELS[4]
-			finish(
-				F.Museum,
-				"ArchiveFloor",
-				CORE_X0,
-				CORE_X1,
-				WING_WALL,
-				Z1,
-				lvl,
-				C.timber,
-				Enum.Material.WoodPlanks
-			)
-			for j = 0, 3 do
-				local z0 = 116 + j * 28
-				box(
-					F.Fixtures,
-					`ArchiveShelf_{j}`,
-					-120,
-					-106,
-					lvl,
-					lvl + 13,
-					z0,
-					z0 + 20,
-					C.timber,
-					Enum.Material.WoodPlanks
-				)
-			end
-			local desk = box(
-				F.Fixtures,
-				"ArchiveDesk",
-				-92,
-				-62,
-				lvl,
-				lvl + 3,
-				136,
-				160,
-				C.timber,
-				Enum.Material.WoodPlanks
-			)
-			label(desk, "THE ARCHIVE", Enum.NormalId.Top, 18)
-			box(
-				F.Fixtures,
-				"ArchiveChair",
-				-80,
-				-74,
-				lvl,
-				lvl + 2.6,
-				164,
-				170,
-				C.timber,
-				Enum.Material.WoodPlanks
-			)
-			box(
-				F.Fixtures,
-				"ArchiveMapTable",
-				-100,
-				-60,
-				lvl + 2.6,
-				lvl + 3.2,
-				190,
-				216,
-				C.cloth,
-				Enum.Material.Fabric
-			)
-		end
+		local ret =
+			box(F.Markers, "ReturnPoint", -16, 16, y, y + 0.4, 18, 44, C.brass, Enum.Material.Metal)
+		ret.CanCollide = false
+		CollectionService:AddTag(ret, "ReturnPoint")
+
+		-- A real SpawnLocation, so arriving in the hub does not depend on a
+		-- script running in the right order.
+		local pad = Instance.new("SpawnLocation")
+		pad.Name = "HallSpawn"
+		pad.Size = Vector3.new(30, 1, 24)
+		pad.CFrame = CFrame.new(0, y + 0.5, 31)
+		pad.Anchored, pad.Neutral, pad.CanCollide = true, true, false
+		pad.Transparency = 1
+		pad.Parent = F.Markers
 	end
 
 	M.Parent = Workspace
