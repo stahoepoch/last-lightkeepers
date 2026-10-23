@@ -273,9 +273,9 @@ end
 -- Stair A arrives at z 186 on the 1st, B at z 80 on the 2nd, C at z 226 on
 -- the 3rd, and each well stops on that line.
 local WELLS: { [number]: { { number } } } = {
-	[2] = { { 0, 22, 78, 190 }, { 93, 107, 208, 225 } },
-	[3] = { { 20, 42, 78, 188 }, { 93, 107, 208, 225 } },
-	[4] = { { 62, 86, 126, 228 }, { 93, 107, 208, 225 } },
+	[2] = { { 0, 22, 78, 190 }, { 89, 103, 208, 225 } },
+	[3] = { { 20, 42, 78, 188 }, { 89, 103, 208, 225 } },
+	[4] = { { 62, 86, 126, 228 }, { 89, 103, 208, 225 } },
 }
 
 --- Everything in `rect` that is not inside any of `holes`, as a list of
@@ -488,19 +488,30 @@ local function lightRoom(
 	-- which is exactly how the Galleria's ground concourse ended up lit by a
 	-- stripe down the middle. Twenty two studs is above head height and still
 	-- over the floor.
-	local mount = math.min(head - 4, floorY + 22)
+	-- Chris: "lights are suspended from nowhere." Two faults. The rod only
+	-- got built when there were more than 5 studs of it, so in a 26 stud
+	-- room - the whole bottom floor - the fitting hung in mid air with no rod
+	-- at all. And where a rod WAS built it stopped at head - 1, a stud short
+	-- of the ceiling it was supposed to hang from.
+	-- Sixteen studs up, not twenty-two. Every light here has Shadows off, so
+	-- a lamp hung high does not just light its own room, it pours through the
+	-- slab into the storey above: the 1st floor measured nearly twice the
+	-- light of the bottom floor purely from being sandwiched between the
+	-- lamps below it and the lamps above. Hung lower, more of each pool lands
+	-- on the floor it belongs to. Still well above head height.
+	local mount = math.min(head - 4, floorY + 16)
 	for i = 0, nx - 1 do
 		for j = 0, nz - 1 do
 			local lx = x0 + (x1 - x0) * ((i + 0.5) / nx)
 			local lz = z0 + (z1 - z0) * ((j + 0.5) / nz)
-			if head - 4 > mount + 1 then
+			if head > mount + 0.4 then
 				local rod = box(
 					parent,
 					"LampRod",
 					lx - 0.3,
 					lx + 0.3,
 					mount,
-					head - 1,
+					head,
 					lz - 0.3,
 					lz + 0.3,
 					C.iron,
@@ -680,44 +691,131 @@ local function flight(
 		nose.CanCollide, nose.CanQuery, nose.CanTouch = false, false, false
 	end
 
-	-- The rail follows the flight, and nothing on a stair collides: a
-	-- handrail you walk into is worse than one you clip through.
+	-- THE BALUSTRADE COLLIDES, and this is why Chris said the stairs were
+	-- "kind of hard to get up". The flight is 18 studs wide in a 22 stud
+	-- well, pitched at 15 degrees, and NOTHING on it was solid - posts and
+	-- handrail were both CanCollide false. Walk anywhere but the centre line
+	-- and you went straight off the side into the drop the well cuts, so
+	-- getting up meant threading the middle of a ramp with no edges.
+	--
+	-- The old comment said a handrail you walk into is worse than one you
+	-- clip through. That was true of the version that laid one horizontal
+	-- bar through the whole flight at its average height; it is not true of
+	-- a balustrade that steps with the treads, which is what this is now.
+	--
+	-- A solid dado from the tread up to 3.6 stops you walking off, the
+	-- handrail above it stops you vaulting it, and the gap between the two
+	-- keeps it reading as a balustrade rather than a trench.
+	local segs = math.max(6, math.floor(steps / 2))
 	for side, sideX in ipairs({ { x0 - 1.4, x0 - 0.2 }, { x1 + 0.2, x1 + 1.4 } }) do
-		local rails = math.max(3, math.floor(steps / 2))
-		for i = 0, rails do
-			local t = i / rails
+		for i = 0, segs do
+			local t = i / segs
 			local z = zLow + dz * t
 			local ry = yLow + dy * t
-			local post = box(
+			box(
 				parent,
 				`{name}_RailPost_{side}_{i}`,
 				sideX[1],
 				sideX[2],
 				ry,
-				ry + 7,
-				z - 0.5,
-				z + 0.5,
+				ry + 7.4,
+				z - 0.6,
+				z + 0.6,
 				C.iron,
 				Enum.Material.Metal
 			)
-			post.CanCollide, post.CanQuery = false, false
-			if i < rails then
-				local nt = (i + 1) / rails
+			if i < segs then
+				local nt = (i + 1) / segs
 				local nz, ny = zLow + dz * nt, yLow + dy * nt
-				local hand = box(
+				local za, zb = math.min(z, nz), math.max(z, nz)
+				-- the solid part, which is the bit that keeps you on the stair
+				box(
 					parent,
-					`{name}_RailHand_{side}_{i}`,
+					`{name}_RailDado_{side}_{i}`,
 					sideX[1],
 					sideX[2],
+					math.min(ry, ny),
+					math.max(ry, ny) + 3.6,
+					za,
+					zb,
+					C.iron,
+					Enum.Material.Metal
+				)
+				box(
+					parent,
+					`{name}_RailHand_{side}_{i}`,
+					sideX[1] - 0.3,
+					sideX[2] + 0.3,
 					math.min(ry, ny) + 6.2,
 					math.max(ry, ny) + 7.4,
-					math.min(z, nz),
-					math.max(z, nz),
+					za,
+					zb,
 					C.timber,
 					Enum.Material.WoodPlanks
 				)
-				hand.CanCollide, hand.CanQuery = false, false
 			end
+		end
+	end
+end
+
+--- A balustrade round the open edges of a floor well, so you cannot walk
+--- into it from the floor above. `skip` names the one edge the stair arrives
+--- through, which has to stay open: "n", "s", "e", "w" or nil for all four.
+local function wellRail(
+	parent: Instance,
+	name: string,
+	x0: number,
+	x1: number,
+	z0: number,
+	z1: number,
+	y: number,
+	skip: string?
+)
+	local T = 1.4
+	-- The flanking guards STOP SHORT of the edge the stair comes through.
+	-- Run full length and they wrap past its corner, and the gap left
+	-- between the end of the guard and the room's own wall was 3.6 studs -
+	-- narrower than the 5 stud player, so the landing at the top of stair 1
+	-- was sealed off from the rest of the floor and everything above the
+	-- 1st floor went unreachable. The landing bridges the well at that end
+	-- anyway, so there is nothing there to fence.
+	local zA = (skip == "s") and z0 + 6 or z0 - T
+	local zB = (skip == "n") and z1 - 6 or z1 + T
+	local xA = (skip == "w") and x0 + 6 or x0 - T
+	local xB = (skip == "e") and x1 - 6 or x1 + T
+	local sides = {
+		{ "w", x0 - T, x0, zA, zB },
+		{ "e", x1, x1 + T, zA, zB },
+		{ "s", xA, xB, z0 - T, z0 },
+		{ "n", xA, xB, z1, z1 + T },
+	}
+	for _, sd in ipairs(sides) do
+		if sd[1] ~= skip then
+			box(
+				parent,
+				`{name}_Guard_{sd[1]}`,
+				sd[2],
+				sd[3],
+				y,
+				y + 3.6,
+				sd[4],
+				sd[5],
+				C.iron,
+				Enum.Material.Metal
+			)
+			local cap = box(
+				parent,
+				`{name}_Cap_{sd[1]}`,
+				sd[2] - 0.3,
+				sd[3] + 0.3,
+				y + 3.6,
+				y + 4.4,
+				sd[4],
+				sd[5],
+				C.timber,
+				Enum.Material.WoodPlanks
+			)
+			cap.CanQuery = false
 		end
 	end
 end
@@ -831,9 +929,18 @@ function LanternholdBuilder.Build(): Model
 			-- Smaller pools closer together is the fix rather than fewer:
 			-- range 30 on a 34 grid leaves the worst point between four lamps
 			-- 24 away, inside reach, while barely reaching the next room.
+			-- Range 34 on a 36 grid, not 40. Chris: "theres a strange bright
+			-- glow everywhere". At range 40 on a 36 grid every point on the
+			-- floor is inside four pools at once, and DONTFUCKUPTHELIGHTS.md
+			-- calls that exact failure out: "it is three or four reaching the
+			-- same patch of floor". The 1st floor measured a mean of 1.29
+			-- with 64% of it over the 1.2 ceiling the contract sets, because
+			-- every room on that floor is full weight and the ballroom is
+			-- 95 by 300. Pulling the range inside the grid spacing leaves the
+			-- pools touching instead of piling up.
 			lightRoom(folder, room.x0, room.x1, room.z0, room.z1, y, head, {
 				Brightness = (room.light :: number) * 0.62,
-				Range = 40,
+				Range = 34,
 				Spacing = 36,
 			})
 		end
@@ -862,7 +969,9 @@ function LanternholdBuilder.Build(): Model
 	-- Two ways in, on two levels: the ramp into the bottom floor at the east
 	-- end of the south front, and the outside steps into the 1st floor at the
 	-- middle of it. The old build had one.
-	wall(F.Shell, "WallSouth", "Z", Z0, -W, W, 0, TOP, { { 58, 100 } })
+	-- Solid. This gap was the head of the ramp; with the ramp gone it was
+	-- a doorway onto nothing.
+	wall(F.Shell, "WallSouth", "Z", Z0, -W, W, 0, TOP, {})
 
 	-- The entrance bay: a projecting block of fluted pilasters, the single
 	-- most recognisable thing about the outside.
@@ -978,13 +1087,14 @@ function LanternholdBuilder.Build(): Model
 				title = "LANTERNHOLD",
 			},
 			{
-				name = "RampEntrance",
+				-- Was "THE RAMP", which was a door and a slope and no room.
+				name = "Parlour",
 				x0 = CENTRE,
 				x1 = EAST,
 				z0 = Z0,
 				z1 = 95,
-				light = 1.0,
-				title = "THE RAMP",
+				light = 0.95,
+				title = "THE PARLOUR",
 			},
 			-- Chris: "why the washrooms are all connected on the side". They
 			-- were the corridor: the east strip ran ramp -> washroom ->
@@ -1001,12 +1111,15 @@ function LanternholdBuilder.Build(): Model
 				light = 0.95,
 			},
 			{
+				-- A 40 by 50 room rounds to a single lamp on the 36 stud grid,
+				-- so the small rooms need a heavier weight to land in the
+				-- same place as the big ones.
 				name = "BathroomA",
 				x0 = 70,
 				x1 = EAST,
 				z0 = 95,
 				z1 = 145,
-				light = 0.8,
+				light = 1.3,
 				title = "WASHROOM",
 			},
 			{
@@ -1015,7 +1128,7 @@ function LanternholdBuilder.Build(): Model
 				x1 = EAST,
 				z0 = 145,
 				z1 = 195,
-				light = 0.8,
+				light = 1.3,
 				title = "WASHROOM",
 			},
 			{
@@ -1080,20 +1193,10 @@ function LanternholdBuilder.Build(): Model
 		Enum.Material.Concrete
 	)
 	terrazzo(F.Floor0, "ExitFloor", -17, 17, Z1, Z1 + 25, 0)
-	for i = 0, 10 do
-		box(
-			F.Floor0,
-			`Ramp_{i}`,
-			70,
-			104,
-			-1 - i * 0.62,
-			0.4 - i * 0.62,
-			Z0 - 4 - i * 4,
-			Z0 + 2 - i * 4,
-			C.limestone,
-			Enum.Material.Concrete
-		)
-	end
+	-- The ramp is gone. Chris: "the ramp? lets just lose it and decorate
+	-- that room." It ran eleven steps out into open ground south of the
+	-- building to a door nobody needed, now that you leave for a raid from
+	-- the arrival hall. The opening it served is closed with it, below.
 
 	-- ------------------------------------------------------------ 1ST FLOOR
 	for _, r in
@@ -1172,7 +1275,7 @@ function LanternholdBuilder.Build(): Model
 		-- One door, on the lift's axis, so front steps -> lift -> vaults is a
 		-- straight line up the east side instead of two parallel lanes.
 		wall(F.Floor1, `First_East_{z}`, "Z", z, CENTRE, EAST, LEVELS[2], HEADS[2], {
-			{ 94, 94 + DOOR_W },
+			{ 90, 90 + DOOR_W },
 		})
 	end
 
@@ -1451,6 +1554,15 @@ function LanternholdBuilder.Build(): Model
 			)
 		end
 
+		-- A BALUSTRADE ROUND EVERY STAIR WELL. Chris: "big open space over
+		-- the stairs?" - and nothing at all guarded those edges, so the hole
+		-- the stair climbs through was an unfenced drop on the floor above
+		-- it. The edge the flight arrives through stays open; the other
+		-- three are fenced.
+		wellRail(F.Core, "Well_1", 0, 22, 78, 190, LEVELS[2], "n")
+		wellRail(F.Core, "Well_2", 20, 42, 78, 188, LEVELS[3], "s")
+		wellRail(F.Core, "Well_3", 62, 86, 126, 228, LEVELS[4], "n")
+
 		-- ON THE EAST WALL, and a lift rather than a room. Chris: "the
 		-- elevator at one point brings u to an inescapable room, well,
 		-- actually, i fell through the floor so i did get out lol."
@@ -1464,7 +1576,12 @@ function LanternholdBuilder.Build(): Model
 		-- It also stood 4 studs clear of its own well on every side, which is
 		-- the hole he fell down: a trench right across the mouth you stepped
 		-- into on the way out. The well is now the car plus half a stud.
-		local LX0, LX1, LZ0, LZ1 = 92, 108, 208, 226
+		-- x 88..104, not 92..108. Chris: "the lift's entrance is just
+		-- sideways and weird" - the east jamb ran x 106.5..110 and the shell
+		-- wall occupies 108.5..111.5, so half of that jamb was buried in the
+		-- outside wall and the frame read as one-sided. Four studs west puts
+		-- both jambs in the room and the opening centred between them.
+		local LX0, LX1, LZ0, LZ1 = 88, 104, 208, 226
 		wall(F.Core, "LiftShaftW", "X", LX0, LZ0, LZ1, 0, TOP, {})
 		wall(F.Core, "LiftShaftE", "X", LX1, LZ0, LZ1, 0, TOP, {})
 		wall(F.Core, "LiftShaftN", "Z", LZ1, LX0, LX1, 0, TOP, {})
@@ -1511,7 +1628,7 @@ function LanternholdBuilder.Build(): Model
 			sign.CanCollide, sign.CanQuery = false, false
 			label(sign, "LIFT", Enum.NormalId.Front, 26)
 			local sl = Instance.new("PointLight")
-			sl.Color, sl.Brightness, sl.Range, sl.Shadows = WARM, 1.5, 40, false
+			sl.Color, sl.Brightness, sl.Range, sl.Shadows = WARM, 0.7, 22, false
 			sl.Parent = sign
 			local lintel = box(
 				F.Core,
@@ -2157,21 +2274,30 @@ function LanternholdBuilder.Build(): Model
 		-- Needs at least 34 studs of width: stalls are set out from the left
 		-- wall and basins from the right, and under that they meet in the
 		-- middle and leave no lane a player can walk down.
+		-- The door into these is in the x0 wall, in the middle of it. Chris:
+		-- "bathrooms have toilets at their entrances" - and they did: the
+		-- stalls were set out from x0, so the first thing through the door
+		-- was a partition across your face and a pan behind it.
+		--
+		-- Stalls go against the FAR wall now and the basins sit at the two
+		-- ends of the near wall, which leaves the middle of the near wall -
+		-- where you come in - clear, and gives you the length of the room to
+		-- walk down. Needs 34 studs of width for the two runs plus a lane.
 		local function washroom(x0: number, x1: number, z0: number, z1: number, y: number)
 			assert(x1 - x0 >= 34, `washroom {x0}..{x1} is too narrow to walk into`)
 			for i = 0, 2 do
 				local z = z0 + 6 + i * 11
-				box(F.Fixtures, "StallWall", x0 + 4, x0 + 20, y, y + 11, z, z + 0.8, C.trim)
-				box(F.Fixtures, "Pan", x0 + 8, x0 + 13, y, y + 3.4, z + 3, z + 8, C.plaster)
+				box(F.Fixtures, "StallWall", x1 - 18, x1, y, y + 11, z, z + 0.8, C.trim)
+				box(F.Fixtures, "Pan", x1 - 14, x1 - 9, y, y + 3.4, z + 3, z + 8, C.plaster)
 			end
-			for i = 0, 2 do
-				local z = z0 + 8 + i * 10
-				box(F.Fixtures, "Basin", x1 - 12, x1 - 4, y + 4, y + 5.4, z, z + 7, C.plaster)
+			-- basins at the ends of the near wall, clear of the doorway
+			for i, z in ipairs({ z0 + 3, z1 - 10 }) do
+				box(F.Fixtures, `Basin_{i}`, x0 + 2, x0 + 10, y + 4, y + 5.4, z, z + 7, C.plaster)
 				box(
 					F.Fixtures,
-					"Mirror",
-					x1 - 3.4,
-					x1 - 2.8,
+					`Mirror_{i}`,
+					x0 + 1.2,
+					x0 + 1.8,
 					y + 7,
 					y + 15,
 					z,
@@ -2211,7 +2337,7 @@ function LanternholdBuilder.Build(): Model
 			)
 			chain.CanCollide, chain.CanQuery = false, false
 			local l = Instance.new("PointLight")
-			l.Color, l.Brightness, l.Range, l.Shadows = WARM, 0.75, 44, false
+			l.Color, l.Brightness, l.Range, l.Shadows = WARM, 0.5, 34, false
 			l.Parent = body
 		end
 		box(
@@ -2692,8 +2818,8 @@ function LanternholdBuilder.Build(): Model
 			"DepartureBoard",
 			22,
 			44,
-			HEADS[1] - 11,
-			HEADS[1] - 3,
+			HEADS[1] - 17,
+			HEADS[1] - 10,
 			87,
 			88.2,
 			C.brass,
