@@ -15,6 +15,7 @@ local Loot = require(Balance:WaitForChild("loot"))
 local Enemies = require(Balance:WaitForChild("enemies"))
 local Lantern = require(Balance:WaitForChild("lantern"))
 local Workshop = require(Balance:WaitForChild("workshop"))
+local Town = require(Balance:WaitForChild("town"))
 
 local Config = {
 	StormCharge = StormCharge,
@@ -22,6 +23,7 @@ local Config = {
 	Enemies = Enemies,
 	Lantern = Lantern,
 	Workshop = Workshop,
+	Town = Town,
 }
 
 -- Session shape, from the handoff's product position: 6-10 minutes door-to-door.

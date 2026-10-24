@@ -17,20 +17,28 @@
 -- place behaves exactly as it did before.
 
 local CollectionService = game:GetService("CollectionService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 
 local RunStateService = require(script.Parent:WaitForChild("RunStateService"))
 local PlayerDataService = require(script.Parent:WaitForChild("PlayerDataService"))
 local TownService = require(script.Parent:WaitForChild("TownService"))
+local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 
 local TAG_LAMP = "LampWallSlot"
 local TAG_HANDIN = "KitchenContribution"
 local TAG_PLINTH = "RelicPlinth"
 local TAG_BOARD = "ClubBoard"
+local TAG_LANDMARK = "LandmarkSite"
 
 local LIT = Color3.fromRGB(255, 214, 160)
 local OUT = Color3.fromRGB(38, 36, 40)
 local REACH = 12
+
+-- Landmark plates: unlit stone until the town pays for them, gilt after.
+local LANDMARK_DONE = Color3.fromRGB(198, 164, 92)
+local LANDMARK_TODO = Color3.fromRGB(116, 112, 104)
+local LANDMARK_REFRESH = 20
 
 local HubService = {}
 
@@ -222,8 +230,9 @@ local function handIn(player: Player, prompt: ProximityPrompt)
 
 	-- And to the town itself, which is one figure shared by every server.
 	-- `club.crates` above is this session's roll and resets with the server;
-	-- this is the number the landmarks will read when they are built.
+	-- this is the number the landmarks read.
 	TownService.contribute(crates)
+	writeLandmarks()
 
 	writeBoard()
 	prompt.ActionText = string.format("%d in, thank you", crates)
@@ -284,6 +293,120 @@ local function shelve(player: Player, slot: BasePart, prompt: ProximityPrompt)
 	prompt.Enabled = false
 end
 
+-- ------------------------------------------------------------- landmarks
+--
+-- READ-ONLY, by instruction. Chris, 2026-10-24: "keep it read-only: it should
+-- only reflect the global total and change hub visuals. The crate store needs
+-- a live published-place test before we trust actual contributions, but
+-- thresholds don't need to wait."
+--
+-- So nothing here writes. It reads TownService's one global figure and dresses
+-- three floor plates with it. A landmark finishing lights the plate and says
+-- so, and that is the whole reward - Chris's call: they are the town coming
+-- back, and a stat bonus would turn a monument into a grind target.
+
+--- The plate's own label, made by the map's `label()` helper.
+local function landmarkLabel(site: BasePart): TextLabel?
+	local gui = site:FindFirstChildOfClass("SurfaceGui")
+	return gui and gui:FindFirstChildOfClass("TextLabel") or nil
+end
+
+local function landmarkLight(site: BasePart): PointLight
+	local light = site:FindFirstChildOfClass("PointLight")
+	if not light then
+		light = Instance.new("PointLight")
+		light.Range = 26
+		light.Shadows = false
+		light.Parent = site
+	end
+	return light :: PointLight
+end
+
+--- The catalogue entry whose title matches this plate. The map tags each plate
+--- with its name in a `Landmark` attribute, so the two meet on that string and
+--- neither has to know the other's ordering.
+local function landmarkFor(site: BasePart)
+	local name = site:GetAttribute("Landmark")
+	for _, mark in ipairs((Config.Town and Config.Town.landmarks) or {}) do
+		if mark.title == name then
+			return mark
+		end
+	end
+	return nil
+end
+
+--- Dress every plate from the town total. Called at init, after a hand-in, and
+--- on a timer - the total refreshes from other servers in the background, so a
+--- plate that only updated on local hand-ins would lag the town.
+local function writeLandmarks()
+	local scope = TownService.scope()
+	local known = scope ~= "unknown"
+	-- An unpublished place has no global town, so its figure is this server's
+	-- own and is labelled as such. Never shown as the town's.
+	local suffix = if scope == "local" then " (local)" else ""
+	local total = TownService.total()
+	for _, site in ipairs(CollectionService:GetTagged(TAG_LANDMARK)) do
+		if site:IsA("BasePart") then
+			local mark = landmarkFor(site)
+			if mark then
+				local done = known and total >= mark.crates
+				site.Color = if done then LANDMARK_DONE else LANDMARK_TODO
+				local light = landmarkLight(site)
+				light.Color = LIT
+				light.Enabled = done
+				light.Brightness = 1.1
+				local label = landmarkLabel(site)
+				if label then
+					local line
+					if not known then
+						-- Never show 0 of 10 when we simply have not read the
+						-- store. "The town has done nothing" is the worse lie.
+						line = "restoration unknown"
+					elseif done then
+						line = mark.restored .. suffix
+					else
+						line = string.format("%d of %d crates%s", total, mark.crates, suffix)
+					end
+					label.Text = string.format("%s\n%s", mark.title, line)
+				end
+			end
+		end
+	end
+end
+
+--- Pressing a plate reads the town back to you. It changes nothing.
+local function readLandmark(site: BasePart, prompt: ProximityPrompt)
+	local mark = landmarkFor(site)
+	if not mark then
+		return
+	end
+	local text
+	local scope = TownService.scope()
+	if scope == "unknown" then
+		text = "restoration unknown - no town total"
+	else
+		local suffix = if scope == "local" then " (this server only)" else ""
+		local total = TownService.total()
+		text = if total >= mark.crates
+			then string.format("%s - restored%s", mark.title, suffix)
+			else string.format(
+				"%s - %d of %d crates%s",
+				mark.title,
+				total,
+				mark.crates,
+				suffix
+			)
+	end
+	prompt.ActionText = text
+	task.delay(4, function()
+		prompt.ActionText = "Read the restoration"
+	end)
+end
+
+function HubService.refreshLandmarks()
+	writeLandmarks()
+end
+
 -- ---------------------------------------------------------------- wiring
 
 local function promptOn(part: BasePart, action: string, object: string): ProximityPrompt
@@ -323,6 +446,22 @@ function HubService.init()
 			end)
 		end
 	end
+
+	for _, site in ipairs(CollectionService:GetTagged(TAG_LANDMARK)) do
+		if site:IsA("BasePart") then
+			local prompt = promptOn(site, "Read the restoration", "The Town")
+			prompt.Triggered:Connect(function()
+				readLandmark(site, prompt)
+			end)
+		end
+	end
+	writeLandmarks()
+	task.spawn(function()
+		while true do
+			task.wait(LANDMARK_REFRESH)
+			writeLandmarks()
+		end
+	end)
 
 	writeBoard()
 	Players.PlayerRemoving:Connect(HubService.release)

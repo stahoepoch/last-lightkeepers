@@ -68,11 +68,31 @@ local everRead = false
 
 local TownService = {}
 
---- False when the total cannot be trusted: no store, or we have never managed
---- a clean read. Callers should show nothing rather than show zero - "the town
---- has done nothing" is a worse lie than "we do not know yet".
+--- How much the total is worth believing. Three answers, because two very
+--- different situations were collapsed into one and it made the whole feature
+--- untestable:
+---
+---   "global"   the store answered. This is the town, everywhere.
+---   "local"    there is NO store - an unpublished place. There is no global
+---              town to be wrong about, so this server's own crates are shown
+---              and callers must label them as local.
+---   "unknown"  a store exists but has never read cleanly. Something is wrong
+---              and we must not guess: show nothing rather than zero.
+---
+--- The distinction matters. Treating a test place as "unknown" meant the
+--- landmarks read "restoration unknown" forever in Studio, so the thresholds
+--- could never be seen to work; treating a failed live read as "local" would
+--- quietly show one server's crates as if they were the town's.
+function TownService.scope(): string
+	if not store then
+		return "local"
+	end
+	return if everRead then "global" else "unknown"
+end
+
+--- True when the total means something a player can be shown.
 function TownService.available(): boolean
-	return store ~= nil and everRead
+	return TownService.scope() ~= "unknown"
 end
 
 --- Crates delivered to the town, everywhere, ever.

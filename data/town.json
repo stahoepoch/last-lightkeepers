@@ -1,0 +1,28 @@
+{
+  "_comment": "Town restoration. The three landmarks on the Lanternhold's arrival floor and the crate counts that finish them. Chris's numbers, 2026-10-24: 10 / 25 / 50, spectacle only - finishing one lights the plate and nothing else. No stat bonus. 'They're the town coming back; a stat bonus would turn a monument into a grind target.'",
+
+  "_source": "The total these count against is TownService's, which is ONE figure for the whole experience rather than per-server. Chris: 'The landmarks are the whole town coming back - not one server's temporary room... Per-server would make the Bell Tower randomly finished for one group and gone for the next, which kills the premise.'",
+
+  "_readOnly": "Anything reading this is read-only by instruction: it reflects the global total and changes hub visuals, and must never write to the store or alter a contribution. The crate store still wants a live published-place test before anyone trusts real contributions; the thresholds did not need to wait for it.",
+
+  "landmarks": [
+    {
+      "id": "Well",
+      "title": "THE WELL",
+      "crates": 10,
+      "restored": "Drawing clean water again."
+    },
+    {
+      "id": "BellTower",
+      "title": "THE BELL TOWER",
+      "crates": 25,
+      "restored": "Ringing the hour over the valley."
+    },
+    {
+      "id": "LongBridge",
+      "title": "THE LONG BRIDGE",
+      "crates": 50,
+      "restored": "Open to the far bank."
+    }
+  ]
+}

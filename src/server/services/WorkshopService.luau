@@ -53,7 +53,9 @@ local PENDING: { { tag: string, action: string, object: string } } = {
 	{ tag = "WorkshopBench", action = "Workshop - not open yet", object = "The Workshop" },
 	{ tag = "WorkshopPlot", action = "Workshop - not open yet", object = "The Workshop" },
 	{ tag = "RelicBench", action = "Relic study - not open yet", object = "The Workroom" },
-	{ tag = "LandmarkSite", action = "Restoration - not open yet", object = "The Town" },
+	-- LandmarkSite is no longer here: HubService drives those plates from the
+	-- town total now, so they say where the restoration has got to instead of
+	-- saying they are shut.
 }
 
 --- The order materials are read out in: biggest decisions last.
