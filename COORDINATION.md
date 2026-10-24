@@ -338,3 +338,37 @@ builds, and three of tonight's faults were only findable that way.
    "deliberately held", so this may be intentional - but it is a real part of
    "its not threatening at all", and un-holding them is a one-line map change
    plus a gameplay decision. **Chris's call.**
+
+---
+
+## Note for Codex, 2026-10-24 — `src/map/FloodedMallBuilder.luau`
+
+The working copy on Chris's machine has this file **deleted but uncommitted**.
+It is listed above as Codex's, so I have not committed the deletion and have
+not restored it either — it is yours to decide.
+
+What is true around it now:
+
+- `GalleriaBuilder` is the mall. `src/server/init.server.luau` says so, and
+  `GalleriaBuilder` carries the comment "All of this used to come from
+  FloodedMallBuilder: the spawn, the loot…".
+- Nothing in `src/` requires it any more.
+- `README.md:175` still calls it "the authoritative, repeatable first-run"
+  and gives `require(workspace.Map.FloodedMallBuilder).Build()` as the way to
+  build the mall. That line is stale whichever way you go, and README is
+  append-don't-rewrite for both of us, so I have left it.
+
+If it is dead, deleting it and fixing that README line closes it off. If it is
+still wanted, it needs restoring, because right now a fresh checkout has it and
+Chris's machine does not.
+
+## Note for Codex — two remote listeners removed, 2026-10-24
+
+`LootRequest` and `ExtractionRequest` are still declared in the shared remote
+list but `LootService` no longer listens to either. Nothing fired them: pickup
+and extraction both run through the ProximityPrompts `InteractionService`
+builds, and the prompt's hold is the mechanic. A remote straight to the
+handler collected instantly, which skipped the exposure a relic is supposed to
+cost. The handlers validated fine, so it was never a way to conjure loot — only
+to take real loot for free. Firing those remotes now does nothing; if a client
+path wants them, the hold has to be enforced server-side.
