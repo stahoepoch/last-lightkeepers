@@ -98,12 +98,14 @@ that evaporates on the next join.
 
 1. **Interaction speed** needs the per-player prompt mechanism above before it
    can be sold. Worth it, or drop the knob?
-2. **The landmarks need a shared total.** Each player's own crate count
-   persists in `profile.contributions`, but the *town's* total only exists as
-   a session variable in `HubService` - it resets when the server restarts.
-   10 / 25 / 50 against a number that resets is not progression. This needs a
-   server-wide persisted counter, which is a new persistence surface
-   (`PlayerDataService` is per-player only). Your call on whether the town
-   total is global across all servers or per-server.
+2. **The landmark thresholds**, now that the total they count against is
+   real. `TownService` holds one global figure for the whole experience, by
+   Chris's call: *"The landmarks are the whole town coming back - not one
+   server's temporary room... Per-server would make the Bell Tower randomly
+   finished for one group and gone for the next."* Writes are `UpdateAsync`
+   deltas so two servers handing in at once cannot clobber each other, and
+   contributions batch because the town total is a single key every server
+   writes to. The 10 / 25 / 50 logic and the landmark visuals are deliberately
+   NOT built - that was the explicit instruction: store first.
 3. **What else goes on the shelf** once the first line proves out.
 
