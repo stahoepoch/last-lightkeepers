@@ -182,7 +182,7 @@ function WorkshopService.purchase(player: Player): (boolean, string)
 		-- purchase, because DataStore is unavailable until the place is on
 		-- the web - so the message says that rather than leaving Chris to
 		-- find out by testing a counter that always refuses.
-		return false, "shop needs a published place - no profile to save to"
+		return false, "test profile unavailable - cannot sell without a saveable profile"
 	end
 
 	local up = nextFor(profile)

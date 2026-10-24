@@ -21,6 +21,7 @@ local Players = game:GetService("Players")
 
 local RunStateService = require(script.Parent:WaitForChild("RunStateService"))
 local PlayerDataService = require(script.Parent:WaitForChild("PlayerDataService"))
+local TownService = require(script.Parent:WaitForChild("TownService"))
 
 local TAG_LAMP = "LampWallSlot"
 local TAG_HANDIN = "KitchenContribution"
@@ -78,7 +79,7 @@ local function setLamp(lamp: BasePart, name: string?)
 	end
 	local label = (plate :: BillboardGui):FindFirstChild("Name") :: TextLabel
 	label.Text = name or ""
-	;(plate :: BillboardGui).Enabled = name ~= nil
+	(plate :: BillboardGui).Enabled = name ~= nil
 end
 
 local function lamps(): { BasePart }
@@ -165,7 +166,8 @@ local function takeCarried(player: Player, tier: string, amount: number)
 	end
 	local state = run.lightkeepers[player.UserId]
 	if state then
-		state.haul.carried[tier :: any] = math.max(0, (state.haul.carried[tier :: any] or 0) - amount)
+		state.haul.carried[tier :: any] =
+			math.max(0, (state.haul.carried[tier :: any] or 0) - amount)
 	end
 end
 
@@ -185,7 +187,10 @@ local function writeBoard()
 			table.sort(names, function(a, b)
 				return a.n > b.n
 			end)
-			local lines = { "THE GOOD CHEER CLUB", string.format("%d crates toward the next room", club.crates) }
+			local lines = {
+				"THE GOOD CHEER CLUB",
+				string.format("%d crates toward the next room", club.crates),
+			}
 			for i = 1, math.min(#names, 6) do
 				table.insert(lines, string.format("%s  %d", names[i].name, names[i].n))
 			end
@@ -211,8 +216,14 @@ local function handIn(player: Player, prompt: ProximityPrompt)
 
 	local profile = PlayerDataService.load(player)
 	profile.contributions = profile.contributions or {}
-	profile.contributions.RestorationCrates = (profile.contributions.RestorationCrates or 0) + crates
+	profile.contributions.RestorationCrates = (profile.contributions.RestorationCrates or 0)
+		+ crates
 	PlayerDataService.save(player)
+
+	-- And to the town itself, which is one figure shared by every server.
+	-- `club.crates` above is this session's roll and resets with the server;
+	-- this is the number the landmarks will read when they are built.
+	TownService.contribute(crates)
 
 	writeBoard()
 	prompt.ActionText = string.format("%d in, thank you", crates)
