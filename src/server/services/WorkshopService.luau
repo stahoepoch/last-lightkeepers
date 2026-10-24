@@ -39,8 +39,10 @@
 -- world, so a mall-only test place behaves exactly as it did before.
 
 local CollectionService = game:GetService("CollectionService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local PlayerDataService = require(script.Parent:WaitForChild("PlayerDataService"))
+local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 
 local TAG_QUARTERMASTER = "Quartermaster"
 local REACH = 12
@@ -89,50 +91,172 @@ local function stockLines(materials: { [string]: number }): { string }
 	return lines
 end
 
---- Read the counter back to whoever pressed it. ActionText is the channel the
---- rest of the hub uses for this, and it needs no client code.
-local function readStock(player: Player, prompt: ProximityPrompt)
+--- What the player is carrying, as one line.
+local function stockSummary(profile: any): string
+	local lines = stockLines(profile.materials)
+	if #lines == 0 then
+		return if profile.runsCompleted > 0
+			then "nothing banked yet"
+			else "nothing banked - no runs finished"
+	end
+	return table.concat(lines, "   ")
+end
+
+-- ------------------------------------------------------------- the shop
+
+--- Catalogue order is the order they are offered in; `requires` chains them.
+local function catalogue(): { any }
+	local w = Config.Workshop
+	return (w and w.upgrades) or {}
+end
+
+local function owns(profile: any, id: string): boolean
+	return profile.upgrades[id] == true
+end
+
+--- The next thing this player could buy: first in catalogue order that they do
+--- not own and whose prerequisite they do. nil when the shop is exhausted.
+local function nextFor(profile: any): any?
+	for _, up in ipairs(catalogue()) do
+		if not owns(profile, up.id) then
+			if not up.requires or owns(profile, up.requires) then
+				return up
+			end
+			-- a locked upgrade stops the line: it is the next thing, once the
+			-- one it needs is bought
+			return nil
+		end
+	end
+	return nil
+end
+
+local function priceOf(up: any): string
+	local parts = {}
+	for _, tier in ipairs(Config.Workshop.currency) do
+		local n = up.cost[tier]
+		if n and n > 0 then
+			table.insert(parts, string.format("%d %s", n, tier))
+		end
+	end
+	return table.concat(parts, " + ")
+end
+
+local function canAfford(profile: any, up: any): boolean
+	for tier, n in pairs(up.cost) do
+		if (profile.materials[tier] or 0) < n then
+			return false
+		end
+	end
+	return true
+end
+
+local IDLE = "Buy / check stock"
+
+local function say(prompt: ProximityPrompt, text: string, seconds: number)
+	prompt.ActionText = text
+	task.delay(seconds, function()
+		prompt.ActionText = IDLE
+	end)
+end
+
+--- One press, always informative: buy the next upgrade if it is affordable,
+--- otherwise say what you are carrying and what the next thing costs.
+---
+--- The server owns every step. The client never names a price, an upgrade or
+--- an amount - it presses a prompt, and everything else is decided here.
+---
+--- Returns (bought, message) so the purchase path is reachable from a test. A
+--- ProximityPrompt's Triggered cannot be fired from the server, so a handler
+--- that existed only as a closure could never be exercised without a human
+--- standing at the counter.
+function WorkshopService.purchase(player: Player): (boolean, string)
 	local profile = PlayerDataService.load(player)
 	if profile.loadFailed then
 		-- Never imply a stash is empty when the read failed: that reads as
 		-- "my progress is gone" and it is the one lie worth guarding against.
-		prompt.ActionText = "stock unavailable - profile did not load"
-		task.delay(3, function()
-			prompt.ActionText = "Check your stock"
-		end)
-		return
+		--
+		-- And never SELL against it either. PlayerDataService refuses to save
+		-- a profile that did not load cleanly, so a purchase here would take
+		-- materials the player may really have and hand back an upgrade that
+		-- evaporates on the next join. In an unpublished place this is every
+		-- purchase, because DataStore is unavailable until the place is on
+		-- the web - so the message says that rather than leaving Chris to
+		-- find out by testing a counter that always refuses.
+		return false, "shop needs a published place - no profile to save to"
 	end
 
-	local lines = stockLines(profile.materials)
-	local summary
-	if #lines == 0 then
-		summary = if profile.runsCompleted > 0
-			then "nothing banked yet"
-			else "nothing banked - no runs finished"
-	else
-		summary = table.concat(lines, "   ")
+	local up = nextFor(profile)
+	if not up then
+		return false, string.format("%s   (nothing left to buy)", stockSummary(profile))
 	end
-	prompt.ActionText = summary
-	task.delay(4, function()
-		prompt.ActionText = "Check your stock"
-	end)
+
+	if not canAfford(profile, up) then
+		return false,
+			string.format("%s   %s needs %s", stockSummary(profile), up.title, priceOf(up))
+	end
+
+	for tier, n in pairs(up.cost) do
+		profile.materials[tier] = (profile.materials[tier] or 0) - n
+	end
+	profile.upgrades[up.id] = true
+	PlayerDataService.save(player)
+	WorkshopService.refreshSigns()
+	return true, string.format("%s - bought. %s", up.title, stockSummary(profile))
 end
 
---- The counter's own sign, so the stash is readable without pressing anything.
+local function atCounter(player: Player, prompt: ProximityPrompt)
+	local bought, message = WorkshopService.purchase(player)
+	say(prompt, message, if bought then 5 else 4)
+end
+
+--- The best (lowest) relic burden multiplier this player owns. 1 means no
+--- upgrade: the full penalty, which is what everyone starts on.
+function WorkshopService.relicBurdenMultiplier(player: Player): number
+	local profile = PlayerDataService.load(player)
+	local best = 1
+	for _, up in ipairs(catalogue()) do
+		local m = up.effect and up.effect.relicBurdenMultiplier
+		if m and owns(profile, up.id) and m < best then
+			best = m
+		end
+	end
+	return best
+end
+
+--- The counter's own sign: what is for sale and what it costs, readable
+--- without pressing anything.
 local function writeCounter(counter: BasePart)
 	local gui = counter:FindFirstChildOfClass("SurfaceGui")
 	local label = gui and gui:FindFirstChildOfClass("TextLabel")
-	if label then
-		label.Text = "QUARTERMASTER\nnothing to buy yet"
+	if not label then
+		return
+	end
+	local lines = { "QUARTERMASTER" }
+	local list = catalogue()
+	if #list == 0 then
+		table.insert(lines, "nothing to buy yet")
+	else
+		for _, up in ipairs(list) do
+			table.insert(lines, string.format("%s   %s", up.title, priceOf(up)))
+		end
+	end
+	label.Text = table.concat(lines, "\n")
+end
+
+function WorkshopService.refreshSigns()
+	for _, counter in ipairs(CollectionService:GetTagged(TAG_QUARTERMASTER)) do
+		if counter:IsA("BasePart") then
+			writeCounter(counter)
+		end
 	end
 end
 
 function WorkshopService.init()
 	for _, counter in ipairs(CollectionService:GetTagged(TAG_QUARTERMASTER)) do
 		if counter:IsA("BasePart") then
-			local prompt = promptOn(counter, "Check your stock", "The Quartermaster")
+			local prompt = promptOn(counter, IDLE, "The Quartermaster")
 			prompt.Triggered:Connect(function(player)
-				readStock(player, prompt)
+				atCounter(player, prompt)
 			end)
 			writeCounter(counter)
 		end

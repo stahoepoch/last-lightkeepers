@@ -14,18 +14,22 @@ local StormCharge = require(Balance:WaitForChild("storm-charge"))
 local Loot = require(Balance:WaitForChild("loot"))
 local Enemies = require(Balance:WaitForChild("enemies"))
 local Lantern = require(Balance:WaitForChild("lantern"))
+local Workshop = require(Balance:WaitForChild("workshop"))
 
 local Config = {
 	StormCharge = StormCharge,
 	Loot = Loot,
 	Enemies = Enemies,
 	Lantern = Lantern,
+	Workshop = Workshop,
 }
 
 -- Session shape, from the handoff's product position: 6-10 minutes door-to-door.
 Config.Run = {
 	targetMinSeconds = 6 * 60,
-	targetMaxSeconds = 10 * 60,
+	-- A raid may finish early through extraction, but can never run forever.
+	-- Twenty minutes is the hard ceiling Chris chose for a deep Galleria push.
+	targetMaxSeconds = 20 * 60,
 	maxCrewSize = 4,
 }
 

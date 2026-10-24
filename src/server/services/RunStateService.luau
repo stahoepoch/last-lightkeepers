@@ -51,6 +51,7 @@ local function newLightkeeper(userId: number): Types.LightkeeperState
 		haul = emptyHaul(),
 		contactHits = 0,
 		lastContactAt = nil,
+		movementMode = "walk",
 	}
 end
 
@@ -67,6 +68,44 @@ local function humanoidOf(userId: number): Humanoid?
 	return if character then character:FindFirstChildOfClass("Humanoid") else nil
 end
 
+local function clearRescueBeacon(userId: number)
+	local root = rootOf(userId)
+	local beacon = root and root:FindFirstChild("RescueBeacon")
+	if beacon then
+		beacon:Destroy()
+	end
+	local light = root and root:FindFirstChild("RescueBeaconLight")
+	if light then
+		light:Destroy()
+	end
+end
+
+-- A readable landmark in a huge, dark mall: no asset dependency, no shadows,
+-- and attached to the keeper so a crawling player carries their distress flare.
+local function createRescueBeacon(player: Player)
+	local root = rootOf(player.UserId)
+	if not root then
+		return
+	end
+	clearRescueBeacon(player.UserId)
+	local light = Instance.new("PointLight")
+	light.Name = "RescueBeaconLight"
+	light.Color, light.Brightness, light.Range, light.Shadows =
+		Color3.fromRGB(110, 196, 255), 3, 36, false
+	light.Parent = root
+	local tag = Instance.new("BillboardGui")
+	tag.Name = "RescueBeacon"
+	tag.Size, tag.StudsOffset, tag.AlwaysOnTop, tag.MaxDistance =
+		UDim2.fromOffset(180, 36), Vector3.new(0, 5, 0), true, 170
+	tag.Parent = root
+	local label = Instance.new("TextLabel")
+	label.Size, label.BackgroundTransparency, label.Font, label.TextSize =
+		UDim2.fromScale(1, 1), 1, Enum.Font.GothamBold, 16
+	label.TextColor3, label.TextStrokeTransparency, label.Text =
+		Color3.fromRGB(160, 220, 255), 0.35, "KEEPER DOWN — " .. player.DisplayName
+	label.Parent = tag
+end
+
 --- A downed Lightkeeper cannot walk. Teammates have to come to them, which is
 --- the whole point of the knockdown rule.
 local function applyDownedMovement(userId: number, downed: boolean)
@@ -75,14 +114,75 @@ local function applyDownedMovement(userId: number, downed: boolean)
 		return
 	end
 	if downed then
-		humanoid.WalkSpeed = Config.Lantern.knockdown.downedWalkSpeed
+		-- Downed is not dead. A keeper can crawl to the rescue zone or call an
+		-- extraction, but cannot jump, loot, fight, or outrun the crew.
+		humanoid.WalkSpeed = math.max(3, Config.Lantern.knockdown.downedWalkSpeed)
 		humanoid.JumpPower = 0
-		humanoid.PlatformStand = true
+		humanoid.PlatformStand = false
 	else
-		humanoid.WalkSpeed = 16
+		local state = run and run.lightkeepers[userId]
+		local movement = Config.Lantern.movement
+		local baseSpeed = if state and state.movementMode == "sprint"
+			then movement.sprintSpeed
+			elseif state and state.movementMode == "crouch" then movement.crouchSpeed
+			else movement.walkSpeed
+		local burden = 0
+		if state then
+			for tier, amount in pairs(state.haul.carried) do
+				local def = Config.Loot.tiers[tier]
+				burden += amount * (def and def.burden or 0)
+			end
+		end
+		local burdenRule = Config.Loot.burden
+		-- The one workshop upgrade that is actually wired: a bought relic
+		-- harness scales this player's penalty per point. 1 when nothing is
+		-- owned, which is where everyone starts. Looked up lazily so the
+		-- shop stays optional - a place without WorkshopService behaves
+		-- exactly as it did before.
+		local relief = 1
+		local shop = script.Parent:FindFirstChild("WorkshopService")
+		local buyer = shop and Players:GetPlayerByUserId(userId)
+		if buyer then
+			local okRelief, value = pcall(function()
+				return (require(shop) :: any).relicBurdenMultiplier(buyer)
+			end)
+			if okRelief and type(value) == "number" then
+				relief = value
+			end
+		end
+		local penalty = math.min(
+			burden * burdenRule.speedPenaltyPerPoint * relief,
+			burdenRule.maxSpeedPenalty * relief
+		)
+		humanoid.WalkSpeed = math.max(4, baseSpeed * (1 - penalty))
 		humanoid.JumpPower = 50
 		humanoid.PlatformStand = false
 	end
+end
+
+function RunStateService.refreshMovement(player: Player)
+	local state = run and run.lightkeepers[player.UserId]
+	if state and not state.knockedDown then
+		applyDownedMovement(player.UserId, false)
+	end
+end
+
+--- Server owns the actual WalkSpeed. The client only asks for a named mode,
+--- so holding Shift cannot smuggle a custom speed into a raid.
+function RunStateService.setMovement(player: Player, requested: string)
+	local current = run
+	if not current or current.finished then
+		return
+	end
+	local state = current.lightkeepers[player.UserId]
+	if not state or state.knockedDown then
+		return
+	end
+	if requested ~= "walk" and requested ~= "sprint" and requested ~= "crouch" then
+		return
+	end
+	state.movementMode = requested :: Types.MovementMode
+	applyDownedMovement(player.UserId, false)
 end
 
 function RunStateService.current(): Types.RunState?
@@ -97,6 +197,7 @@ function RunStateService.start()
 		crossedThresholds = {},
 		lightkeepers = {},
 		finished = false,
+		finalCallStarted = false,
 	}
 	for _, player in ipairs(Players:GetPlayers()) do
 		RunStateService.addPlayer(player)
@@ -159,20 +260,38 @@ function RunStateService.guardCharacter(player: Player, character: Model)
 	-- question being asked is "did you come down a storey", and a storey is a
 	-- distance. Landing hard enough goes through the knockdown above, so a fall
 	-- downs you exactly as a Sweeper would - it does not kill outright.
+	-- Sampled on Heartbeat rather than read inside the StateChanged events,
+	-- because the character is simulated on its owner's client. The position
+	-- the server sees inside the Landed event still lags the real touchdown,
+	-- so a measured drop came out far shorter than the drop actually taken: on
+	-- a clean rig a thirty stud fall measured eleven and was survived, which
+	-- handed back the balcony shortcut this is here to close. Reading position
+	-- and FloorMaterial together, every frame, keeps the two consistent.
 	local peak: number? = nil
-	humanoid.StateChanged:Connect(function(_old, new)
-		local root = character:FindFirstChild("HumanoidRootPart")
-		if not root or not root:IsA("BasePart") then
+	local airborne = false
+	local sampler: RBXScriptConnection? = nil
+	sampler = RobloxRun.Heartbeat:Connect(function()
+		if not character.Parent then
+			if sampler then
+				sampler:Disconnect()
+			end
 			return
 		end
-		if new == Enum.HumanoidStateType.Freefall then
+		local root = character:FindFirstChild("HumanoidRootPart")
+		if not root or not root:IsA("BasePart") or humanoid.Health <= 0 then
+			return
+		end
+		local y = (root :: BasePart).Position.Y
+		if humanoid.FloorMaterial == Enum.Material.Air then
 			-- Keep the highest point of the fall: a jump at the lip of a
-			-- balcony enters freefall twice and the second entry is lower.
-			peak = math.max(peak or -math.huge, (root :: BasePart).Position.Y)
-		elseif new == Enum.HumanoidStateType.Landed then
+			-- balcony leaves the floor twice and the second exit is lower.
+			peak = math.max(peak or y, y)
+			airborne = true
+		elseif airborne then
+			airborne = false
 			local from = peak
 			peak = nil
-			if from and from - (root :: BasePart).Position.Y >= LETHAL_FALL_STUDS then
+			if from and from - y >= LETHAL_FALL_STUDS then
 				humanoid.Health = 0
 			end
 		end
@@ -201,12 +320,27 @@ function RunStateService.removePlayer(player: Player)
 	if not run then
 		return
 	end
-	-- Disconnect follows the wipe rule: banked loot is already safe, carried
-	-- loot is halved. Resolved per-player so one dropout cannot grief the crew.
+	-- Disconnect follows the wipe rule: without extraction, the entire run haul
+	-- is lost. Resolve per-player so one dropout cannot grief the crew.
 	local state = run.lightkeepers[player.UserId]
 	if state then
 		RunStateService.resolveHaul(state, false)
 		run.lightkeepers[player.UserId] = nil
+	end
+end
+
+--- Removes a successful extractor from the active roster without applying the
+--- disconnect/wipe loss rule. When the final keeper makes it out, the raid is
+--- over; otherwise an already-safe player could still keep the crew from
+--- resolving and be counted in a later wipe.
+function RunStateService.finishExtraction(player: Player)
+	if not run or run.finished or not run.lightkeepers[player.UserId] then
+		return
+	end
+	run.lightkeepers[player.UserId] = nil
+	if next(run.lightkeepers) == nil then
+		run.finished = true
+		RunStateService.onRunEnded("extracted")
 	end
 end
 
@@ -346,8 +480,26 @@ function RunStateService.knockDown(player: Player)
 		state.carryingCrate = false
 	end
 	applyDownedMovement(player.UserId, true)
+	createRescueBeacon(player)
+	-- A downed keeper is a crew emergency, not a silent state hidden in a
+	-- snapshot. Tell teammates who fell and where; clients render the flare and
+	-- directional cue, while the server remains the source of the position.
+	local root = rootOf(player.UserId)
+	for _, teammate in ipairs(Players:GetPlayers()) do
+		if teammate ~= player and run.lightkeepers[teammate.UserId] then
+			Remotes.get("DownedSignal"):FireClient(teammate, {
+				userId = player.UserId,
+				name = player.DisplayName,
+				position = if root then root.Position else nil,
+			})
+		end
+	end
 
-	-- Whole crew down: lanterns burn out, partial-loss wipe.
+	-- A whole crew down is still a dangerous state, but it is not an instant
+	-- server-side wipe. Downed keepers may crawl to the active exit and call it;
+	-- the enemy already ignores them there. Wiping here deleted their run state
+	-- while the client still showed them crawling, which made extraction
+	-- impossible. The raid clock remains the final failure condition.
 	for _, other in pairs(run.lightkeepers) do
 		if not other.knockedDown then
 			return
@@ -366,12 +518,13 @@ function RunStateService.knockDown(player: Player)
 		end
 	end
 
-	RunStateService.wipe()
+	-- Keep the run alive for the crawl-to-extract rule. Do not call wipe here.
 end
 
 local function stand(state: Types.LightkeeperState)
 	state.knockedDown = false
 	state.contactHits = 0
+	clearRescueBeacon(state.userId)
 	applyDownedMovement(state.userId, false)
 end
 
@@ -439,7 +592,9 @@ function RunStateService.completeRevive(rescuer: Player, target: Player): boolea
 	return true
 end
 
---- Moves carried loot into the bank. Banked loot survives a wipe outright.
+--- Relays may recharge a lantern, but never secure a haul. Chris locked the
+--- extraction rule after the earlier banking design: if a Lightkeeper does not
+--- leave through the active exit, everything found during that run is gone.
 function RunStateService.bank(player: Player)
 	if not run or run.finished then
 		return
@@ -448,28 +603,32 @@ function RunStateService.bank(player: Player)
 	if not state or state.knockedDown then
 		return
 	end
-	for tier, amount in pairs(state.haul.carried) do
-		state.haul.banked[tier] = (state.haul.banked[tier] or 0) + amount
-		state.haul.carried[tier] = nil
-	end
-
 	-- Off by default. See the rechargeAtRelay proposal in lantern.json - it is
-	-- Chris's call, not mine, because it softens the charge economy.
+	-- Chris's call, not mine, because it softens the charge economy. Crucially,
+	-- this is utility, not insurance: the relay does not move loot out of the
+	-- carried haul or change its wipe outcome.
 	if Config.Lantern.charge.rechargeAtRelay then
 		state.lanternCharge = 1
 	end
 end
 
---- Final payout for one Lightkeeper. `extracted` keeps everything carried.
-function RunStateService.resolveHaul(state: Types.LightkeeperState, extracted: boolean): { [Types.LootTier]: number }
-	local keptFraction = if extracted then 1 else Config.Loot.banking.unbankedKeptOnWipe
+--- Final payout for one Lightkeeper. Only extraction keeps a haul; wipes and
+--- disconnects deliberately resolve both carried and legacy-banked entries to
+--- zero. Keeping the two buckets for now avoids a data migration while making
+--- the game rule unambiguous.
+function RunStateService.resolveHaul(
+	state: Types.LightkeeperState,
+	extracted: boolean
+): { [Types.LootTier]: number }
+	local bankedFraction = if extracted then 1 else Config.Loot.banking.bankedKeptOnWipe
+	local carriedFraction = if extracted then 1 else Config.Loot.banking.unbankedKeptOnWipe
 	local payout: { [Types.LootTier]: number } = {}
 
 	for tier, amount in pairs(state.haul.banked) do
-		payout[tier] = (payout[tier] or 0) + amount
+		payout[tier] = (payout[tier] or 0) + math.floor(amount * bankedFraction)
 	end
 	for tier, amount in pairs(state.haul.carried) do
-		payout[tier] = (payout[tier] or 0) + math.floor(amount * keptFraction)
+		payout[tier] = (payout[tier] or 0) + math.floor(amount * carriedFraction)
 	end
 
 	state.haul = emptyHaul()
@@ -483,6 +642,7 @@ function RunStateService.wipe()
 	run.finished = true
 	for userId, state in pairs(run.lightkeepers) do
 		state.lanternOn = false
+		clearRescueBeacon(userId)
 		-- They wake in Lanternhold, on their feet.
 		state.knockedDown = false
 		applyDownedMovement(userId, false)
@@ -499,6 +659,9 @@ function RunStateService.wipe()
 end
 
 RunStateService.onRunEnded = function(_outcome: string) end
+RunStateService.onTimeExpired = function()
+	RunStateService.wipe()
+end
 
 --- A Sweeper reached someone. Hits accumulate and decay, so one Sweeper is
 --- survivable and a swarm is not, without giving the player a health bar.
@@ -541,6 +704,11 @@ local function buildSnapshot(state: Types.LightkeeperState): Types.RunSnapshot
 		end
 	end
 
+	local haul: { [Types.LootTier]: number } = {}
+	for tier, amount in pairs(state.haul.carried) do
+		haul[tier] = amount
+	end
+
 	return {
 		runId = current.runId,
 		stormCharge = current.stormCharge,
@@ -556,14 +724,35 @@ local function buildSnapshot(state: Types.LightkeeperState): Types.RunSnapshot
 		yourContactHits = state.contactHits,
 		hitsToKnockDown = Config.Lantern.sweeperContact.hitsToKnockDown,
 		yourCanAnchorRevive = RunStateService.canAnchorRevive(state),
+		yourMovementMode = state.movementMode,
+		yourBurden = (function()
+			local total = 0
+			for tier, amount in pairs(state.haul.carried) do
+				local def = Config.Loot.tiers[tier]
+				total += amount * (def and def.burden or 0)
+			end
+			return total
+		end)(),
+		yourHaul = haul,
 		crewDown = down,
 		crewTotal = total,
+		runSecondsRemaining = math.max(
+			0,
+			Config.Run.targetMaxSeconds - (os.clock() - current.startedAt)
+		),
 	}
 end
 
 function RunStateService.start_tick()
 	RobloxRun.Heartbeat:Connect(function(dt: number)
 		if not run or run.finished then
+			return
+		end
+		if
+			os.clock() - run.startedAt >= Config.Run.targetMaxSeconds and not run.finalCallStarted
+		then
+			run.finalCallStarted = true
+			RunStateService.onTimeExpired()
 			return
 		end
 
@@ -588,7 +777,11 @@ function RunStateService.start_tick()
 			end
 
 			-- Sweeper contact fades if you break away.
-			if state.contactHits > 0 and state.lastContactAt and now - state.lastContactAt >= contactDecay then
+			if
+				state.contactHits > 0
+				and state.lastContactAt
+				and now - state.lastContactAt >= contactDecay
+			then
 				state.contactHits -= 1
 				state.lastContactAt = now
 			end

@@ -1,0 +1,29 @@
+{
+  "_comment": "Workshop upgrades. Chris's decisions, 2026-10-24: permanent and per-player; Supplies and Components are the only currencies; relics stay named prestige and crates stay town restoration, so neither is money. Costs and effect sizes below are PROPOSALS - they are the first numbers anyone has put on this, and they are here rather than in Luau so you can retune them without touching code.",
+
+  "currency": ["Supplies", "Components"],
+
+  "_knobsChecked": "Of the three knobs proposed, only one was actually enforced in the live code. carrySlots appears in loot.json and is read by NOTHING - there is no carry cap in the game, so 'carry capacity' cannot be sold until a cap exists, and adding one would make the base game more restrictive rather than the upgrade more generous. pickupSeconds IS enforced, but only through ProximityPrompt.HoldDuration, which is one value shared by everyone looking at that prompt - a per-player interaction speed needs per-player prompts plus server-side hold timing, which is a mechanism, not a config read. The relic carry penalty was the one that already works per player, so it is the one that ships. See docs/PROGRESSION-GAP.md.",
+
+  "upgrades": [
+    {
+      "id": "RelicHarness",
+      "title": "Relic Harness",
+      "blurb": "Straps a relic tight to the back instead of carrying it in both arms.",
+      "cost": { "Supplies": 14, "Components": 4 },
+      "effect": { "relicBurdenMultiplier": 0.65 }
+    },
+    {
+      "id": "RelicCradle",
+      "title": "Padded Cradle",
+      "blurb": "A fitted frame. Two relics ride almost as easily as one.",
+      "requires": "RelicHarness",
+      "cost": { "Supplies": 30, "Components": 12 },
+      "effect": { "relicBurdenMultiplier": 0.4 }
+    }
+  ],
+
+  "_effectNote": "relicBurdenMultiplier scales loot.burden.speedPenaltyPerPoint for that player only. Base is 0.04 per burden point capped at 0.12, and relics are the only tier with burden, so three relics is 12% slower today. With the Cradle that becomes about 5%. It never reaches zero: carrying relics out is supposed to cost something, and Chris's call was a MODEST reduction, not raw run speed. If both upgrades are owned the best (lowest) multiplier applies.",
+
+  "_notSold": "Deliberately not on sale, Chris's call: revives, sprint speed, enemy durability and anything touching the lantern. Those are core tension, not shop stats. relayBanksPerRun is also not sold - it is read by nothing and is dead design baggage now that the relay is a route board."
+}
