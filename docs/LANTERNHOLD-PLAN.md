@@ -1,9 +1,9 @@
 # Lanternhold — the real building
 
 This is the Johnstown Masonic Temple, Valley Pike, read off Chris's own
-floorplans and photographs rather than guessed at. **It supersedes the room
-list in `src/map/LanternholdBuilder.luau`'s header**, which was built from a
-programme described from memory and is wrong in most of its particulars.
+floorplans and photographs rather than guessed at. It is the record of what
+the real temple contains; the section below it records what was actually
+built, which departs from the drawings wherever they fought playability.
 
 Chris, handing these over: *"we are a very special temple, you'll never see
 another one like it besides philly or england, we have a huge place and it's
@@ -12,6 +12,70 @@ ornate."*
 > **This is my reading of four hand-drawn plans and seven photographs. Check
 > it before anything gets built from it.** A misread plan is a week of
 > building in the wrong place. Anywhere I was unsure is marked ❓.
+
+---
+
+## As built, 2026-10-24 — read this first
+
+**The building that exists is laid out round one central hall.** The
+floor-by-floor tables further down are a reading of Chris's drawings and are
+kept as reference for what the real temple contains; they are NOT the layout
+in `src/map/LanternholdBuilder.luau` and nothing should be built from them
+without checking here first.
+
+Chris, on the version that did follow the drawings room for room: *"the lift's
+placement and the whole arrangement of those hallways are bad... why can't the
+design flow and structure of this building just be easy and walkable, why do
+rooms go here and there with little pathways or big crap spots"*. He was
+right, and the cause was structural: the three stairs stood at x 2..20, then
+22..40, then 64..82 — a different place on every floor — with the lift in a
+fourth place in a corner. Vertical circulation wandered across the building as
+you climbed it, so there was nothing to learn.
+
+### The frame
+
+The building is x -110..110 by z 0..300, four floors at y 0 / 30 / 72 / 118
+with heads at 26 / 68 / 114 / 148 and the roof at 154.
+
+| Band | x range | What |
+| --- | --- | --- |
+| West block | -110..-34 | big rooms |
+| **The hall** | **-34..34** | the only circulation, full depth, every floor |
+| East block | 34..110 | the rest of the rooms |
+
+- **The stair** is a switchback in two slots inside the hall — west slot
+  x -22..-8, east slot x 8..22, both z 128..260. Ground-to-1st and 2nd-to-3rd
+  climb the west slot, 1st-to-2nd climbs the east, so you step off the head of
+  one flight onto the foot of the next. Two slots matter: one stacked stair in
+  a single footprint puts the flight above 1.4 studs over the landing below,
+  which leaves no headroom and no way off.
+- **The lift** is at the head of the hall, shaft x -8..8, z 280..296, facing
+  back down it. It is a doorway cut in a wall by the same `wall()` every other
+  door uses, with landing doors that `LiftService` opens only at the car's
+  floor.
+- **Arrival and departure are both in the hall**: return point at z 18..44,
+  departure pad at z 60..100 under a stone gate at z 102..108, with four
+  destination boards on the side walls.
+
+### The rooms
+
+| Level | West block | East block |
+| --- | --- | --- |
+| Bottom | Kitchen (z 0..110), Banquet Hall (110..300) | Parlour (0..120), two washrooms (120..165, 165..210), Workshop (210..300) |
+| 1st | Ballroom (full depth) | Front Steps (0..150), Lounge (150..240), Vaults (240..300) |
+| 2nd | Egyptian Room (full depth) | York Rite Room (full depth) |
+| 3rd | Museum (full depth) | Library (0..140), Cigar Room (140..300) |
+
+Nineteen rooms including the four hall storeys. Every room opens off the hall
+and no room opens off another.
+
+### What it is verified to do
+
+Measured in a running session, not computed: 19/19 rooms and 24/24 tagged
+gameplay markers reachable on foot from the arrival hall, all three flights
+walkable end to end, the lift car reachable, no unexplained holes on any
+floor, no furniture in any of the 25 doorways, and room light at median 0.59 /
+p90 1.07 against the 0.7 / 1.2 the lighting contract asks for.
 
 ---
 
@@ -175,17 +239,15 @@ The showpiece, and the reason the building is worth modelling at all.
 
 ## What this means for the build
 
-1. **The four-level model is roughly right but the rooms are wrong.** The
-   current build has basement / ballroom / lodge / museum, which matches, but
-   almost every room within them is invented.
-2. **The stair core is wrong.** The current build stacks one identical core on
-   every floor, which is what makes it read as a warren. The real building has
-   a stair in the middle on the lower floors and **two runs on the right** on
-   the 2nd, with the elevator always to the right of them.
-3. **Two entrances, on two levels** — the basement ramp and the front steps
-   into the 1st floor. The hub currently has one.
-4. **The Egyptian Room is the Blue Lodge Room on the 2nd floor**, bottom left,
-   with a balcony. It is not a side room; it is the heart of the building.
+> Items 1-3 below are **done or overtaken** — see "As built" at the top.
+> The stair and lift are one core in the central hall on every floor, which
+> is a deliberate departure from the drawings: the real building's wandering
+> cores are what made it unwalkable. The basement ramp is gone with them,
+> because raids now leave from the arrival hall rather than from outside.
+
+4. **The Egyptian Room is the Blue Lodge Room on the 2nd floor** — built as
+   the whole west side of that floor, which is the one room you arrive at
+   rather than pass through.
 5. **Relics belong on the altar in the Egyptian Room**, not on plinths in the
    lobby. That also answers Chris's "relics shouldn't be in the middle of the
    floor".
