@@ -98,14 +98,19 @@ that evaporates on the next join.
 
 1. **Interaction speed** needs the per-player prompt mechanism above before it
    can be sold. Worth it, or drop the knob?
-2. **The landmark thresholds**, now that the total they count against is
-   real. `TownService` holds one global figure for the whole experience, by
-   Chris's call: *"The landmarks are the whole town coming back - not one
-   server's temporary room... Per-server would make the Bell Tower randomly
-   finished for one group and gone for the next."* Writes are `UpdateAsync`
-   deltas so two servers handing in at once cannot clobber each other, and
-   contributions batch because the town total is a single key every server
-   writes to. The 10 / 25 / 50 logic and the landmark visuals are deliberately
-   NOT built - that was the explicit instruction: store first.
+2. ~~The landmark thresholds~~ **done.** 10 / 25 / 50 against
+   `TownService`'s global figure, read-only: the plates reflect it and light,
+   and nothing in that path writes. Unfinished plates show "7 of 10 crates";
+   finished ones go gilt and say what came back. In an unpublished place every
+   line is labelled "(local)" - there is no global town to be wrong about
+   there, and that split is what makes the thresholds testable at all.
+
+   **What still wants doing: a live published-place test of the store.**
+   Chris: "The crate store needs a live published-place test before we trust
+   actual contributions." Until a real place has run, nothing has ever
+   exercised `UpdateAsync` against a live key - the batching, the retry and
+   the cross-server re-read are all unproven outside Studio, where there is no
+   store at all.
+
 3. **What else goes on the shelf** once the first line proves out.
 
