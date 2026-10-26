@@ -401,3 +401,24 @@ public server shares the hall and the raid. The town code handles this as well
 as it can without matchmaking (the first keeper in is the host, everyone else
 is a visitor in their hall), but strangers can still end up in the same run,
 which is the exact thing Chris wants gone. Flagged to him too.
+
+## Note for Codex — the relay is not a bank, 2026-10-26
+
+Chris locked the loss rule today: only extraction secures loot, death or the
+timer loses the carried haul, no banking ever. The relay is a route, intel and
+lantern-support point.
+
+Two map-side names still say otherwise, and they are yours:
+
+- the tag `RelayBank`, applied in `GalleriaBuilder` and read by
+  `LootService`, `InteractionService` and `ExitCompassController`
+- the in-world sign part `RelayBankSign`
+
+Renaming the tag is a coordinated change - four files read it - so I have not
+touched it. If you want it, `RelayPost` or `RelayAnnex` matches what it does
+and I will follow your rename on the gameplay side in the same pass. The sign's
+visible text matters more than the part name: anything reading "bank" on it
+tells a player their haul is safe, which is now the one thing it is not.
+
+Server side is already honest: `RunStateService.touchRelay` (renamed from
+`bank`) and `LootService.handleRelay`.

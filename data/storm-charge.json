@@ -1,5 +1,6 @@
 {
-  "_comment": "Storm Charge tuning. Portable balance data - no Roblox types in here. Anchors come from the handoff: 8 minutes to first threshold in permanent darkness; one active lantern raises the meter at roughly 2.5x baseline.",
+  "_comment": "Storm Charge tuning. Portable balance data - no Roblox types in here. RETUNED 2026-10-26 to Chris's curve, replacing the handoff's 8-minutes-to-first-threshold anchor, which left a dark crew with no escalation inside any run it would actually play. One active lantern still raises the meter 2.5x - that anchor is untouched. One charge unit is one second of darkness.",
+
   "baselineRatePerSecond": 1,
   "lantern": {
     "_comment": "multiplier = 1 + perLanternBonus * activeLanterns, clamped to maxMultiplier. One lantern = 2.5x, per the handoff. NOTE: the clamp flattens crew size - three lanterns (5.5x) and four (7x) both clamp to 5.0, so the fourth player's light is free. See curve below.",
@@ -13,26 +14,41 @@
     "diminishingDecay": 0.6,
     "_decayNote": "Only used when curve is 'diminishing'. 0.6 gives 2.5 / 3.40 / 3.94 / 4.26 for one to four lanterns, asymptote 4.75."
   },
+  "_tuning": "Chris, 2026-10-26, for a normal 10-12 minute run. Fully dark: first real pressure around minute 4-5, severe pressure near the final minutes. Lantern used regularly: first pressure around minute 2-3, serious pursuit around minute 6-7. 'So light is never an optional visual effect. It is how you see, find better loot, trigger certain enemies, and make the run escalate faster.'",
+
+  "_derivation": "regularUseSeconds assumes the lantern lit about half the time, which is multiplier 1 + 1.5*0.5 = 1.75. At 270 / 480 / 700 that gives dark 4:30 / 8:00 / 11:40 and regular use 2:34 / 4:34 / 6:40, which hits all four of Chris's anchors. oneLanternSeconds is the constant-lit case at 2.5x and is a ceiling nobody plays, not a target. Verified with: node tests/pacing.mjs",
+
+  "extractionCall": {
+    "_comment": "Chris, 2026-10-26: 'Calling extraction: a deliberate loud spike - flare, siren, enemies converging - regardless of current Storm Charge.' Extraction is the climax, not a checkbox: the argument the run builds toward is 'we have enough - call the loud extraction now, defend it, or risk one more store?'",
+    "stormChargeSpike": 180,
+    "_spikeNote": "PROPOSED, Chris to set. 180 is three minutes of darkness applied at once, which is deliberately large against thresholds of 270 / 480 / 700 - calling it mid-run should move you a stage, so that calling early and calling late are different decisions. The anchor revive's spike is 120 for comparison.",
+    "convergeAllPatrols": true,
+    "sirenSeconds": 8
+  },
+
   "thresholds": [
     {
       "id": "PatrolsAlert",
-      "value": 480,
-      "darkSeconds": 480,
-      "oneLanternSeconds": 192,
+      "value": 270,
+      "darkSeconds": 270,
+      "regularUseSeconds": 154,
+      "oneLanternSeconds": 108,
       "effect": "Patrol routes tighten and Sweepers investigate noise further from their spawn."
     },
     {
       "id": "PatrolsHunt",
-      "value": 720,
-      "darkSeconds": 720,
-      "oneLanternSeconds": 288,
+      "value": 480,
+      "darkSeconds": 480,
+      "regularUseSeconds": 274,
+      "oneLanternSeconds": 192,
       "effect": "All patrols actively hunt. Glimmer scan frequency increases."
     },
     {
       "id": "WardenConverges",
-      "value": 960,
-      "darkSeconds": 960,
-      "oneLanternSeconds": 384,
+      "value": 700,
+      "darkSeconds": 700,
+      "regularUseSeconds": 400,
+      "oneLanternSeconds": 280,
       "effect": "The Warden spawns at the rooftop stage and converges on the crew's brightest position."
     }
   ],
@@ -43,6 +59,6 @@
     "consumesFullLanternCharge": true,
     "stormChargeSpike": 120,
     "soloOnly": true,
-    "_soloOnlyNote": "LOCKED by the handoff: \"Solo players receive one Anchor Revive per run.\" It exists so a lone Lightkeeper is not hard-wiped on a first knockdown. Granting it to a crew breaks the other half of the same rule - whole crew down wakes in Lanternhold with half of unbanked loot - because a four-crew all-down would wait for someone to press R instead of wiping. Do not set false without changing the handoff first."
+    "_soloOnlyNote": "LOCKED by the handoff: \"Solo players receive one Anchor Revive per run.\" It exists so a lone Lightkeeper is not hard-wiped on a first knockdown. Granting it to a crew breaks the other half of the same rule - a whole crew down must wipe rather than wait indefinitely for someone to press R. Chris later locked the harsher haul rule: a wipe without extraction loses all run loot. Do not set false without changing the handoff first."
   }
 }

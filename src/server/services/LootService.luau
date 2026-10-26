@@ -465,8 +465,8 @@ function LootService.handlePickup(player: Player, instance: Instance)
 	instance:Destroy()
 end
 
-function LootService.handleBank(player: Player)
-	RunStateService.bank(player)
+function LootService.handleRelay(player: Player)
+	RunStateService.touchRelay(player)
 end
 
 function LootService.handleExtraction(player: Player, exitPart: Instance)
@@ -510,6 +510,22 @@ function LootService.handleExtraction(player: Player, exitPart: Instance)
 		return
 	end
 	holdoutActive = true
+
+	-- Calling the exit is the loudest thing a crew does, and it is loud whether
+	-- the meter is high or low. Chris, 2026-10-26: "Calling extraction: a
+	-- deliberate loud spike - flare, siren, enemies converging - regardless of
+	-- current Storm Charge."
+	--
+	-- The siren and the convergence were already here; the spike was not, which
+	-- made calling early strictly free. It is what turns the run's last
+	-- question into a real one: we have enough - call it now and defend, or
+	-- risk one more store? Calling at 3 minutes and calling at 9 have to cost
+	-- the same shout, so this is a flat add rather than a multiplier.
+	local call = Config.StormCharge.extractionCall
+	if call and call.stormChargeSpike and call.stormChargeSpike > 0 then
+		RunStateService.addStormCharge(call.stormChargeSpike)
+	end
+
 	setExitSignal(exitPart, "inbound")
 	local endsAt = workspace:GetServerTimeNow() + def.arrivalSeconds
 	EnemyService.beginExtractionPressure(exitPart, os.clock() + def.arrivalSeconds)
@@ -660,7 +676,7 @@ function LootService.init()
 		relay.Touched:Connect(function(hit)
 			local player = Players:GetPlayerFromCharacter(hit.Parent)
 			if player then
-				LootService.handleBank(player)
+				LootService.handleRelay(player)
 			end
 		end)
 	end

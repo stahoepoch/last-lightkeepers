@@ -8,26 +8,52 @@ Chris: "Once that 10–15 minute loop feels alive, adding floors, stores,
 enemies, and Steam-grade polish becomes building outward from a real game
 rather than hoping volume creates one."
 
-## Two blockers that sit under all five
+## The two blockers — both settled 2026-10-26
 
-Neither is a feature. Both are single decisions, and the slice cannot be
-judged until they are made, because they decide whether any of it has stakes.
+**1. The loss rule is locked.** Only extraction secures loot. Death or the
+timer running out loses the carried haul. No banking, ever. Full reasoning in
+`DECISIONS.md` O3; the risk it carries and how the design answers it are at the
+top of `BANKING.md`.
 
-**1. The loss rule.** `data/loot.json` has `bankedKeptOnWipe: 0.0` and
-`unbankedKeptOnWipe: 0.0` — a wipe costs you everything. `docs/BANKING.md`
-argues the opposite at length, `DECISIONS.md` O3 is marked ANSWERED "keep the
-bank", and `PITCH.md` still tells people they keep half. The build is the
-harshest of the three and no document on disk agrees with it. **The run
-currently has no decision point in it** — there is nothing to weigh, because
-there is no partial outcome to weigh against.
+**What the relay is now, stated once so nobody re-invents the bank:** a route,
+intel and lantern-support point. It shows the active exit on its board, and it
+may recharge a lantern if that optional tuning is enabled. It never touches a
+haul. The code says so too - `RunStateService.touchRelay`, renamed from `bank`
+on the day the rule was locked.
 
-**2. Storm Charge baseline.** Unset. At a 6–10 minute target run a fully dark
-crew meets its first threshold at 8:00 and the Warden at 15:59, so inside a
-normal run going dark is free. Until that changes, *"your lantern is the only
-way to find the good stuff — and the thing that gets you caught"* is not true
-in the game, only on the page.
+**The argument the run is built around**, in Chris's words: *"We have enough -
+call the loud extraction now, defend it, or risk one more store?"* Calling the
+exit is the loudest act in the game: a flare and a siren, every patrol
+converging, and a flat Storm Charge spike regardless of what the meter was
+sitting at. That spike is the new part - the siren and the convergence were
+already built, which meant calling early was strictly free and there was no
+argument to have.
 
-Both are Chris's. Everything below assumes they are answered.
+**2. The Storm Charge baseline is tuned**, to Chris's curve, and asserted in
+`tests/balance.test.mjs` so it cannot drift again:
+
+| | first pressure | serious pursuit | severe |
+| --- | --- | --- | --- |
+| Fully dark | 4:30 | 8:00 | 11:40 |
+| Lantern used regularly | 2:34 | 4:34 | 6:40 |
+
+Thresholds moved from 480 / 720 / 960 to **270 / 480 / 700**. The one-lantern
+2.5x anchor is untouched; only the thresholds moved. The old numbers put the
+Warden at 15:59 for a dark crew - past the end of any run anyone would play -
+so darkness carried no consequence whatsoever, which is the opposite of what
+the premise claims.
+
+**One thing this surfaced, and it is Chris's call.** The curve hits all four of
+his anchors for a solo keeper and for a pair. For three or four keepers using
+lanterns regularly it runs roughly two minutes early, because every lit lantern
+stacks: `node tests/pacing.mjs` puts a crew of three at 25% duty on the Warden
+at 5:31. Whether that is wrong depends on intent - it does make a big crew
+coordinate its darkness, which is real co-op - but it sits against "friends
+make rescues, split routes, and extraction defense more interesting rather than
+mandatory" if a four-player run is always the shortest one. The fix is a choice
+between the `diminishing` curve already written into `storm-charge.json` and
+normalising by crew so that one crew's worth of light is 2.5x no matter who is
+holding it. Nothing changed; the clamp is still `linearCapped`.
 
 ## 1. One polished mall route
 

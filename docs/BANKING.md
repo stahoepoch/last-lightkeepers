@@ -1,12 +1,31 @@
 # The relay bank — keep it, and buy its safety with light
 
 Status: **proposed**, 2026-10-21. Resolves `docs/DECISIONS.md` O3.
-**OVERTAKEN BY THE BUILD, 2026-10-26:** Chris removed banking after this was
-written - "we are not bringing loot banking back" - and the relay became a
-route board. `bankedKeptOnWipe` and `unbankedKeptOnWipe` are both 0.0, so the
-total loss this document argues against is what currently ships. The research
-below is not withdrawn; it is the case against the live rule, and it is why the
-loss rule is blocker 1 in `docs/VERTICAL-SLICE.md`.
+**SETTLED AGAINST THIS DOCUMENT, 2026-10-26.** Chris locked the opposite rule
+and the recommendation here is dead. Only extraction secures loot; death or the
+timer running out loses the carried haul; there is no banking, and the relay is
+a route, intel and lantern-support point, never insurance. See
+`docs/DECISIONS.md` O3.
+
+The research below stands as research and is kept for one reason: it names the
+real risk the locked rule now carries - that total loss drives Roblox players
+off, and that loss aversion worsens as the haul grows. The design answers that
+risk somewhere else instead of with a bank, and this page is the measuring
+stick for whether the answer works:
+
+- **Runs are short.** 10-12 minutes, so a lost haul is a lost quarter of an
+  hour, not a lost evening.
+- **The loss is bounded to the trip.** No gear, no upgrades, no hall, no roll
+  entry, nothing banked in earlier runs. Chris: "You lose the trip, never the
+  progress."
+- **Extraction became a decision rather than a door.** Calling it is loud and
+  costly, so leaving with a modest haul is a real play rather than a
+  concession.
+- **You get knocked down, not killed**, and a crewmate can pick you up.
+
+If a playtest shows people quitting after a wipe, the fix is in that list - run
+length, how much a wipe keeps of what you *didn't* carry, how early the exit
+can be called - and not in bringing the bank back.
 Evidence: `research_notes/…/banking_design.md`.
 
 Chris's worry was the right one — *"no banking loot if it is gonna make the

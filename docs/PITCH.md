@@ -1,12 +1,5 @@
 # How to explain Last Lightkeepers
 
-> **STALE IN ONE PLACE, 2026-10-26.** Two answers below describe the relay
-> bank: "bank what you're carrying… banked loot is safe no matter what happens
-> next", and "you wake up at home with half of whatever you hadn't banked".
-> Neither is true in the build. `data/loot.json` keeps **nothing** on a wipe
-> and the relay only recharges a lantern. Do not pitch the bank until the loss
-> rule is settled - see `docs/VERTICAL-SLICE.md`, blocker 1. The one line and
-> everything else on this page still stands.
 
 For saying out loud. Start with the one line; go further only if they lean in.
 
@@ -33,9 +26,10 @@ gets you caught.**
 > That's the whole game. Your light is how you find the best things. Your light
 > is also how they find you.
 >
-> You go with up to three friends. You grab what you can carry. Halfway there's
-> a safe spot where you can stash your stuff so you can't lose it. Then you
-> have to decide: leave now, or go one more room?
+> You go alone, or with up to three friends. You grab what you can carry.
+> Nothing you pick up is really yours until you get out of the building — so
+> the whole game is one argument: we've got enough, call the ride now and hold
+> them off... or risk one more store?
 >
 > If a robot gets you, you don't die — you fall down, and a friend can run over
 > and pick you back up. If *everybody* falls down, you wake up back home and
@@ -72,10 +66,13 @@ feeding every machine in the building. There's a shared meter that only ever
 rises, faster the more lanterns are lit, and when it tops out the Warden comes
 for whoever's brightest. You can't kill the Warden. You leave, or you hide.
 
-Halfway in there's a relay where you bank what you're carrying. Banked loot is
-safe no matter what happens next. Everything still on you is only half yours if
-the crew goes down. So every run ends with the same argument: bank it and walk,
-or push one more room.
+Nothing is secured until you extract. There's no stash point and no safety
+net: if the crew goes down, or the way out closes first, everything you found
+that run is gone. What there is instead is a decision about *when to be loud*.
+Calling the exit sets off a flare and a siren, spikes the meter whatever it was
+sitting at, and brings everything in the building toward one room — then you
+hold that room until the ride arrives. So every run ends with the same
+argument: we have enough, call it now and defend it, or risk one more store?
 
 What you bring back rebuilds the hall. Not stats — *lights*. Rooms that were
 dark open up, one at a time, paid for by name on the Good Cheer Club roll. And
@@ -89,13 +86,16 @@ No. You can't really fight back. You hide, you distract, you carry each other,
 you run. The skill is deciding when to light up and when to leave.
 
 **"So it's like those extraction games?"**
-Same family, much kinder. No PvP, nobody can steal from you, runs are short,
-and you can bank your haul halfway so one bad moment doesn't cost you the whole
-trip. The tension comes from greed, not from other players.
+Same family, much kinder in the ways that matter and harsher in one. No PvP,
+nobody can steal from you, no gear to lose, runs are short, and you get knocked
+down rather than killed. The harsh part: get out or lose the haul. There's no
+stash point, so the tension comes from your own greed and from the clock,
+never from other players.
 
 **"What happens when I lose?"**
-You wake up at home with half of whatever you hadn't banked. That's it. No
-losing your gear, no starting over.
+You wake up at home and that run's haul is gone. What you already brought home
+on earlier runs is untouched, your upgrades and your hall are permanent, and
+nobody can take anything off you. You lose the trip, never the progress.
 
 **"What's the point of the loot?"**
 It turns the lights on at home. The town is mostly dark on purpose — you can

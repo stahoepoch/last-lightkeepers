@@ -109,14 +109,43 @@ marked *proposed*. Lanternhold has been **built** from one of them. A proposal
 that is being built from is canon whether or not anyone said so. Chris to
 ratify or reject each.
 
-### O3. Does the relay bank cost anything? — ANSWERED, THEN REVERSED
+### O3. Does the relay bank cost anything? — CLOSED 2026-10-26
 
-**Reopened in effect, 2026-10-26.** The answer below was implemented and then
-undone: Chris cut banking entirely, the relay became a route board, and the
-live rule is total loss on a wipe. The reversal was never logged here, which
-is how a resolved decision and a shipped rule came to contradict each other
-for two days. What follows is the original reasoning, still the best case
-against the current rule.
+**There is no bank.** Chris, in his own words, locking it:
+
+- Only extraction secures loot.
+- Death or the timer reaching zero loses the carried haul.
+- No banking loot. The relay is a route/intel point or lantern-support point,
+  never insurance.
+- "The real argument is: 'We have enough — call the loud extraction now, defend
+  it, or risk one more store?'"
+
+**Why this is the better answer than the one below.** The bank was supposed to
+create the run's central decision and it created a checkpoint instead: once
+your haul is safe, the only thing left to weigh is whether you feel like more.
+Moving the decision onto *extraction itself* puts the cost and the climax in
+the same place — calling the exit is loud, it spikes the meter whatever it was
+sitting at, it pulls the building toward one room, and then you have to hold
+that room. Chris: "It also gives extraction its proper role as the climax
+instead of a checkbox."
+
+**What carries the risk the research below identified.** Total loss is the
+thing `docs/BANKING.md` warns about, and the answer is not a bank: short runs,
+a loss bounded strictly to the trip, and a knockdown rather than a death. That
+list is now the measuring stick, written down at the top of `BANKING.md`.
+
+**Built:** `data/loot.json` already kept nothing on a wipe, so no value
+changed. What changed is that the code stopped lying about it —
+`RunStateService.bank` is now `touchRelay`, because a function called `bank`
+that banks nothing is how the next reader concludes the mechanic exists.
+
+**History below.** The original O3 answer kept the bank, was implemented, and
+was then reversed without being logged, which is how a resolved decision and a
+shipped rule contradicted each other for two days.
+
+### O3a. The original answer, superseded
+
+
 
 **Keep the bank; its cost is exposure, and the exposure is light.** Banking
 requires the lantern lit for the transfer, so the safe act and the dangerous

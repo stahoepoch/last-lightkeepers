@@ -592,10 +592,15 @@ function RunStateService.completeRevive(rescuer: Player, target: Player): boolea
 	return true
 end
 
---- Relays may recharge a lantern, but never secure a haul. Chris locked the
---- extraction rule after the earlier banking design: if a Lightkeeper does not
---- leave through the active exit, everything found during that run is gone.
-function RunStateService.bank(player: Player)
+--- Stepping into a relay. It may recharge a lantern; it never secures a haul.
+---
+--- Named `bank` until 2026-10-26, which was a trap: a function called bank
+--- that banks nothing is how a reader concludes the mechanic exists. Chris
+--- locked the rule that day - "Only extraction secures loot... No banking
+--- loot. The relay is a route/intel point or lantern-support point, never
+--- insurance." If a Lightkeeper does not leave through the active exit,
+--- everything found during that run is gone.
+function RunStateService.touchRelay(player: Player)
 	if not run or run.finished then
 		return
 	end

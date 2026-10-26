@@ -223,7 +223,9 @@ plinths. The plinths exist and are tagged.
 where found. Two sentences, about a person not the world, never explaining a
 mechanic. Three of them say *unknown* — the burnt-records gap is the point.
 
-### C4. The first sixty seconds, specified
+### C4. The first sixty seconds, specified — DONE 2026-10-26
+
+See `docs/FIRST-SIXTY-SECONDS.md`.
 
 **Why.** CHI 2012 across 45,000 players found tutorials are only justified in
 the most complex games, and that *context-sensitive* help is the form that

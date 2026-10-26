@@ -45,11 +45,31 @@ console.log("\nStorm Charge");
   check("thresholds ascend", thresholds.every((t, i) => i === 0 || t.value > thresholds[i - 1].value));
   check("WardenConverges is the last threshold", thresholds.at(-1).id === "WardenConverges");
 
-  // The handoff's anchor: 8 minutes to the first threshold in permanent darkness.
+  // Chris's curve, 2026-10-26, replacing the handoff's 8-minute anchor: for a
+  // normal 10-12 minute run, a fully dark crew meets its first real pressure
+  // around minute 4-5 and severe pressure near the final minutes. The old
+  // anchor put the Warden at 15:59, past the end of any run anyone would play,
+  // so darkness carried no consequence at all.
   check(
-    "first threshold is 8 min in darkness",
-    near(thresholds[0].value / base, 480, 2),
+    "dark crew meets first pressure in minute 4-5",
+    thresholds[0].value / base >= 240 && thresholds[0].value / base <= 300,
     `got ${(thresholds[0].value / base).toFixed(0)}s`,
+  );
+  check(
+    "dark crew meets the Warden inside a 10-12 minute run",
+    thresholds.at(-1).value / base >= 600 && thresholds.at(-1).value / base <= 720,
+    `got ${(thresholds.at(-1).value / base).toFixed(0)}s`,
+  );
+  // The other half of the curve: lantern lit about half the time is 1.75x.
+  check(
+    "regular lantern use pulls first pressure into minute 2-3",
+    thresholds[0].value / (base * 1.75) >= 120 && thresholds[0].value / (base * 1.75) <= 180,
+    `got ${(thresholds[0].value / (base * 1.75)).toFixed(0)}s`,
+  );
+  check(
+    "regular lantern use pulls serious pursuit into minute 6-7",
+    thresholds.at(-1).value / (base * 1.75) >= 360 && thresholds.at(-1).value / (base * 1.75) <= 420,
+    `got ${(thresholds.at(-1).value / (base * 1.75)).toFixed(0)}s`,
   );
 
   // The handoff's other anchor: one active lantern ≈ 2.5× baseline.
@@ -85,16 +105,16 @@ console.log("\nLoot and banking");
   check("crates are not pocketable", loot.rules.restorationCratesArePocketable === false);
   check("crates block combat", tiers.RestorationCrates.blocksCombatWhileCarried === true);
 
-  // The trust promise. Never sell a way around this.
-  check("banked loot fully survives a wipe", loot.banking.bankedKeptOnWipe === 1);
-  check("unbanked loot is partially lost", loot.banking.unbankedKeptOnWipe > 0 && loot.banking.unbankedKeptOnWipe < 1);
+  // The extraction promise. Never sell a way around this.
+  check("banked loot is lost without extraction", loot.banking.bankedKeptOnWipe === 0);
+  check("carried loot is lost without extraction", loot.banking.unbankedKeptOnWipe === 0);
   check("disconnect uses the wipe rule", loot.banking.disconnectUsesSameRule === true);
 
   const dock = loot.extraction.LoadingDock;
   const lift = loot.extraction.FreightLift;
   check("the deeper exit pays more", lift.payoutModifier > dock.payoutModifier);
-  check("the early exit is instant", dock.arrivalSeconds === 0);
-  check("the freight lift takes 20s", lift.arrivalSeconds === 20);
+  check("the dock requires a 20-second hold", dock.arrivalSeconds === 20);
+  check("the freight lift takes 30 seconds", lift.arrivalSeconds === 30);
   check("rooftop is not an exit", !("Rooftop" in loot.extraction));
 }
 
@@ -106,12 +126,26 @@ console.log("\nEnemies");
   // Locked 2026-10-19: 2s scan, 20s tag, no meter tax, no permanent waypoint.
   check("Glimmer scan is 2s", enemies.Glimmers.scanSeconds === 2);
   check("Glimmer tag is 20s", enemies.Glimmers.tagSeconds === 20);
+  check(
+    "Glimmer scan stays local",
+    enemies.Glimmers.scanRange > 0 && enemies.Glimmers.scanRange <= 35,
+    `got ${enemies.Glimmers.scanRange} studs; the scan should pressure one court, not the whole mall`,
+  );
   check("Glimmer tag adds no Storm Charge", enemies.Glimmers.tagAddsStormCharge === 0);
   check("Glimmer tag gives no Warden waypoint", enemies.Glimmers.tagGivesWardenPermanentWaypoint === false);
   check("Glimmer tag reveals to all robots", enemies.Glimmers.tagRevealsPositionToAllRobots === true);
 
+  check("Window Walker wakes at a local range", enemies.WindowWalkers.wakeRange > 0 && enemies.WindowWalkers.wakeRange <= 40);
+  check("Window Walker walks slower than a Sweeper", enemies.WindowWalkers.moveSpeed < enemies.Sweepers.moveSpeed);
+  check("Window Walker needs lantern light to wake", enemies.WindowWalkers.wakeRequiresActiveLantern === true);
+
   // Light attracts danger. No small-enemy repulsion exception in v1.
   check("light makes Sweepers more aware", enemies.Sweepers.aggroRadiusLit > enemies.Sweepers.aggroRadiusDark);
+  check(
+    "the Alert sweep radius is larger than dark detection",
+    enemies.Sweepers.swarmCallRadius > enemies.Sweepers.aggroRadiusDark,
+    "PatrolsAlert needs to change dark-run pressure rather than be a no-op",
+  );
 
   for (const [name, def] of Object.entries(enemies)) {
     if (name.startsWith("_")) continue;
@@ -146,6 +180,11 @@ console.log("\nLantern, knockdown, revive");
     lantern.sweeperContact.hitDecaySeconds > lantern.sweeperContact.contactCooldownSeconds,
     "otherwise a lone Sweeper can never stack a knockdown",
   );
+  check("sprint is faster than walking", lantern.movement.sprintSpeed > lantern.movement.walkSpeed);
+  check("crouch is slower than walking", lantern.movement.crouchSpeed < lantern.movement.walkSpeed);
+  check("valuable loot takes longer to gather", loot.tiers.Relics.pickupSeconds > loot.tiers.Supplies.pickupSeconds);
+  check("restoration crates take longest to gather", loot.tiers.RestorationCrates.pickupSeconds > loot.tiers.Relics.pickupSeconds);
+  check("relics are heavier than supplies", loot.tiers.Relics.burden > loot.tiers.Supplies.burden);
 }
 
 console.log("\nLantern multiplier curve");
