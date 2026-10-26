@@ -109,7 +109,14 @@ marked *proposed*. Lanternhold has been **built** from one of them. A proposal
 that is being built from is canon whether or not anyone said so. Chris to
 ratify or reject each.
 
-### O3. Does the relay bank cost anything? — ANSWERED
+### O3. Does the relay bank cost anything? — ANSWERED, THEN REVERSED
+
+**Reopened in effect, 2026-10-26.** The answer below was implemented and then
+undone: Chris cut banking entirely, the relay became a route board, and the
+live rule is total loss on a wipe. The reversal was never logged here, which
+is how a resolved decision and a shipped rule came to contradict each other
+for two days. What follows is the original reasoning, still the best case
+against the current rule.
 
 **Keep the bank; its cost is exposure, and the exposure is light.** Banking
 requires the lantern lit for the transfer, so the safe act and the dangerous

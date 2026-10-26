@@ -1,5 +1,13 @@
 # How to explain Last Lightkeepers
 
+> **STALE IN ONE PLACE, 2026-10-26.** Two answers below describe the relay
+> bank: "bank what you're carrying… banked loot is safe no matter what happens
+> next", and "you wake up at home with half of whatever you hadn't banked".
+> Neither is true in the build. `data/loot.json` keeps **nothing** on a wipe
+> and the relay only recharges a lantern. Do not pitch the bank until the loss
+> rule is settled - see `docs/VERTICAL-SLICE.md`, blocker 1. The one line and
+> everything else on this page still stands.
+
 For saying out loud. Start with the one line; go further only if they lean in.
 
 ## The one line

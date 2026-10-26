@@ -1,6 +1,12 @@
 # The relay bank — keep it, and buy its safety with light
 
 Status: **proposed**, 2026-10-21. Resolves `docs/DECISIONS.md` O3.
+**OVERTAKEN BY THE BUILD, 2026-10-26:** Chris removed banking after this was
+written - "we are not bringing loot banking back" - and the relay became a
+route board. `bankedKeptOnWipe` and `unbankedKeptOnWipe` are both 0.0, so the
+total loss this document argues against is what currently ships. The research
+below is not withdrawn; it is the case against the live rule, and it is why the
+loss rule is blocker 1 in `docs/VERTICAL-SLICE.md`.
 Evidence: `research_notes/…/banking_design.md`.
 
 Chris's worry was the right one — *"no banking loot if it is gonna make the
