@@ -98,19 +98,39 @@ that evaporates on the next join.
 
 1. **Interaction speed** needs the per-player prompt mechanism above before it
    can be sold. Worth it, or drop the knob?
-2. ~~The landmark thresholds~~ **done.** 10 / 25 / 50 against
-   `TownService`'s global figure, read-only: the plates reflect it and light,
-   and nothing in that path writes. Unfinished plates show "7 of 10 crates";
-   finished ones go gilt and say what came back. In an unpublished place every
-   line is labelled "(local)" - there is no global town to be wrong about
-   there, and that split is what makes the thresholds testable at all.
+2. ~~The landmark thresholds~~ **done, and rebuilt 2026-10-26.** They now
+   read the **host keeper's own** crates rather than a global total - Chris
+   changed the shape of the game: "Make raids solo or with your friends, not
+   one giant persistent world... Your personal Lanternhold: upgrades, relic
+   displays, personal restoration progress." Still read-only: the plates
+   reflect the figure, light when it passes a threshold, and write nothing.
 
-   **What still wants doing: a live published-place test of the store.**
-   Chris: "The crate store needs a live published-place test before we trust
-   actual contributions." Until a real place has run, nothing has ever
-   exercised `UpdateAsync` against a live key - the batching, the retry and
-   the cross-server re-read are all unproven outside Studio, where there is no
-   store at all.
+   A plate is one part in the world, so it can only show one town - the
+   host's, since a party raids from the host's hall. Every plate therefore
+   carries a third line naming whose Lanternhold it is, and pressing one shows
+   a visitor both figures, the hall's and their own.
+
+   **The published-place test is no longer needed.** It existed because the
+   global store's `UpdateAsync` path had never run against a live key and
+   could not in Studio. A keeper's crates sit in
+   `profile.contributions.RestorationCrates`, which `PlayerDataService` has
+   persisted and exercised since banking landed. In an unpublished place there
+   is still no DataStore, so the hall shows this session's own tally labelled
+   "(this session only)" - visible, testable, and never passed off as saved.
+
+   **Two things want your decision:**
+
+   - **Who a hand-in credits.** Built as the whole crew: every keeper in the
+     hall advances their own town by the same crates. The alternative is
+     host-only, which leaves a visitor with nothing for a night in a friend's
+     hold and breaks entirely once the host logs off. One line in
+     `TownService.contribute` reverses it.
+   - **The numbers.** 10 / 25 / 50 were set when the total was pooled across
+     every player in the experience. Against one keeper's own crates, 50 is a
+     far longer road. I have not touched them - they are yours - but if a run
+     brings home 2-3 crates, the Long Bridge is roughly a twenty-run goal and
+     the Well a four-run one, which may be the shape you want or may be
+     double what you want.
 
 3. **What else goes on the shelf** once the first line proves out.
 

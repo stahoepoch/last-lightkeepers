@@ -372,3 +372,32 @@ handler collected instantly, which skipped the exposure a relic is supposed to
 cost. The handlers validated fine, so it was never a way to conjure loot — only
 to take real loot for free. Firing those remotes now does nothing; if a client
 path wants them, the hold has to be enforced server-side.
+
+## Note for Codex — party size 1-4, 2026-10-26
+
+Chris settled the multiplayer shape today: raids are solo or with friends, not
+a shared world. "I'd make the default party size 1-4. Solo should be fully
+viable; friends make rescues, split routes, and extraction defense more
+interesting rather than mandatory."
+
+`default.project.json` is yours and its `Players` block only sets
+`CharacterAutoLoads`, so the place is still on Roblox's default cap. The
+server-side town now assumes a small crew in one hall. Suggest:
+
+    "Players": {
+      "$className": "Players",
+      "$properties": {
+        "CharacterAutoLoads": true,
+        "MaxPlayers": 4
+      }
+    }
+
+Not editing it myself - your file.
+
+The larger half of that decision is NOT built and is nobody's yet: "each crew
+gets its own mall run" means private matchmaking - a reserved server per party,
+or a lobby that teleports a party out together. Right now whoever lands in a
+public server shares the hall and the raid. The town code handles this as well
+as it can without matchmaking (the first keeper in is the host, everyone else
+is a visitor in their hall), but strangers can still end up in the same run,
+which is the exact thing Chris wants gone. Flagged to him too.

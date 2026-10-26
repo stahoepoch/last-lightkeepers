@@ -1,9 +1,9 @@
 {
-  "_comment": "Town restoration. The three landmarks on the Lanternhold's arrival floor and the crate counts that finish them. Chris's numbers, 2026-10-24: 10 / 25 / 50, spectacle only - finishing one lights the plate and nothing else. No stat bonus. 'They're the town coming back; a stat bonus would turn a monument into a grind target.'",
+  "_comment": "Town restoration. The three landmarks on a keeper's Lanternhold arrival floor and the crate counts that finish them. NOTE, 2026-10-26: these numbers were chosen for a GLOBAL total pooled across every player, and now count one keeper's own crates, so the same 50 is a much longer road than it was. Unchanged here because they are Chris's to set - see docs/PROGRESSION-GAP.md for the proposal. Chris's numbers, 2026-10-24: 10 / 25 / 50, spectacle only - finishing one lights the plate and nothing else. No stat bonus. 'They're the town coming back; a stat bonus would turn a monument into a grind target.'",
 
-  "_source": "The total these count against is TownService's, which is ONE figure for the whole experience rather than per-server. Chris: 'The landmarks are the whole town coming back - not one server's temporary room... Per-server would make the Bell Tower randomly finished for one group and gone for the next, which kills the premise.'",
+  "_source": "The total these count against is the HOST keeper's own crates - profile.contributions.RestorationCrates - not a global figure. Changed 2026-10-26; the 10/25/50 above are unchanged and still Chris's. Chris: 'Your personal Lanternhold: upgrades, relic displays, personal restoration progress. Friends can visit... the Well, Bell Tower, and Long Bridge are rebuilt by you and the people you play with, which is much more emotionally satisfying than contributing a crate to an invisible global number.'",
 
-  "_readOnly": "Anything reading this is read-only by instruction: it reflects the global total and changes hub visuals, and must never write to the store or alter a contribution. The crate store still wants a live published-place test before anyone trusts real contributions; the thresholds did not need to wait for it.",
+  "_readOnly": "Anything reading this is read-only by instruction: it reflects the total and changes hub visuals, and must never alter a contribution. The published-place test this once needed is gone with the global store - a keeper's crates live in their own profile, which has been persisted and exercised all along.",
 
   "landmarks": [
     {

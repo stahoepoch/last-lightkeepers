@@ -21,7 +21,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 
 local RunStateService = require(script.Parent:WaitForChild("RunStateService"))
-local PlayerDataService = require(script.Parent:WaitForChild("PlayerDataService"))
 local TownService = require(script.Parent:WaitForChild("TownService"))
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 
@@ -222,17 +221,17 @@ local function handIn(player: Player, prompt: ProximityPrompt)
 	club.crates += crates
 	club.roll[player.DisplayName] = (club.roll[player.DisplayName] or 0) + crates
 
-	local profile = PlayerDataService.load(player)
-	profile.contributions = profile.contributions or {}
-	profile.contributions.RestorationCrates = (profile.contributions.RestorationCrates or 0)
-		+ crates
-	PlayerDataService.save(player)
-
-	-- And to the town itself, which is one figure shared by every server.
-	-- `club.crates` above is this session's roll and resets with the server;
-	-- this is the number the landmarks read.
+	-- And to the towns. `club.crates` above is this session's roll and resets
+	-- with the server; a keeper's own roll is their Lanternhold's restoration
+	-- and persists. TownService owns that write for everyone in the hall now,
+	-- including the hander - crediting them here as well would count their
+	-- crates twice.
 	TownService.contribute(crates)
-	writeLandmarks()
+	-- Through the table, not the local: `writeLandmarks` is defined further
+	-- down this file, so calling it by name from up here resolved to a nil
+	-- global and threw on every hand-in. HubService is declared at the top and
+	-- the field is assigned at load, so this is safe from anywhere.
+	HubService.refreshLandmarks()
 
 	writeBoard()
 	prompt.ActionText = string.format("%d in, thank you", crates)
@@ -296,14 +295,25 @@ end
 -- ------------------------------------------------------------- landmarks
 --
 -- READ-ONLY, by instruction. Chris, 2026-10-24: "keep it read-only: it should
--- only reflect the global total and change hub visuals. The crate store needs
--- a live published-place test before we trust actual contributions, but
--- thresholds don't need to wait."
+-- only reflect the ... total and change hub visuals."
 --
--- So nothing here writes. It reads TownService's one global figure and dresses
--- three floor plates with it. A landmark finishing lights the plate and says
--- so, and that is the whole reward - Chris's call: they are the town coming
--- back, and a stat bonus would turn a monument into a grind target.
+-- So nothing here writes. It reads a figure and dresses three floor plates
+-- with it. A landmark finishing lights the plate and says so, and that is the
+-- whole reward - Chris's call: they are the town coming back, and a stat bonus
+-- would turn a monument into a grind target.
+--
+-- WHOSE TOWN, since 2026-10-26
+--
+-- The figure used to be one global number for the whole experience. It is now
+-- the host keeper's own restoration - Chris: "Your personal Lanternhold...
+-- the Well, Bell Tower, and Long Bridge are rebuilt by you and the people you
+-- play with, which is much more emotionally satisfying than contributing a
+-- crate to an invisible global number."
+--
+-- A plate is one part in the world, so it can only show one town, and the
+-- host's is the one the party came to see. That means the plates have to SAY
+-- whose hall this is, or a visitor reads a stranger's Bell Tower as their own
+-- and the satisfaction Chris is after goes to the wrong person.
 
 --- The plate's own label, made by the map's `label()` helper.
 local function landmarkLabel(site: BasePart): TextLabel?
@@ -335,16 +345,20 @@ local function landmarkFor(site: BasePart)
 	return nil
 end
 
---- Dress every plate from the town total. Called at init, after a hand-in, and
---- on a timer - the total refreshes from other servers in the background, so a
---- plate that only updated on local hand-ins would lag the town.
+--- Dress every plate from the host's restoration. Called at init, after a
+--- hand-in, when the host changes and on a timer.
 local function writeLandmarks()
 	local scope = TownService.scope()
-	local known = scope ~= "unknown"
-	-- An unpublished place has no global town, so its figure is this server's
-	-- own and is labelled as such. Never shown as the town's.
-	local suffix = if scope == "local" then " (local)" else ""
+	local known = scope == "home" or scope == "offline"
+	-- An unpublished place has no profile to read, so the figure is this
+	-- session's own. Shown, because otherwise none of this can be seen
+	-- working in Studio - but never shown as the keeper's saved town.
+	local suffix = if scope == "offline" then "  (this session only)" else ""
 	local total = TownService.total()
+	local whose = TownService.hostName()
+	-- Third line on every plate, so nobody mistakes a host's progress for
+	-- their own. An empty hall has no town to name.
+	local owner = if whose then string.format("%s's Lanternhold", whose) else nil
 	for _, site in ipairs(CollectionService:GetTagged(TAG_LANDMARK)) do
 		if site:IsA("BasePart") then
 			local mark = landmarkFor(site)
@@ -358,44 +372,66 @@ local function writeLandmarks()
 				local label = landmarkLabel(site)
 				if label then
 					local line
-					if not known then
-						-- Never show 0 of 10 when we simply have not read the
-						-- store. "The town has done nothing" is the worse lie.
+					if scope == "empty" then
+						line = "no keeper has arrived"
+					elseif not known then
+						-- Never show 0 of 10 when the profile simply would not
+						-- read. "Your town has done nothing" is the worse lie,
+						-- and in an unpublished place it is every join.
 						line = "restoration unknown"
 					elseif done then
 						line = mark.restored .. suffix
 					else
 						line = string.format("%d of %d crates%s", total, mark.crates, suffix)
 					end
-					label.Text = string.format("%s\n%s", mark.title, line)
+					label.Text = if owner
+						then string.format("%s\n%s\n%s", mark.title, line, owner)
+						else string.format("%s\n%s", mark.title, line)
 				end
 			end
 		end
 	end
 end
 
---- Pressing a plate reads the town back to you. It changes nothing.
-local function readLandmark(site: BasePart, prompt: ProximityPrompt)
+--- Pressing a plate reads the restoration back. It changes nothing.
+---
+--- A visitor gets both figures: the hall's and their own. ActionText is one
+--- shared string - the same press shows to everyone nearby - so this is
+--- worded in names rather than "you", which would be wrong for all but one of
+--- the people reading it.
+local function readLandmark(player: Player, site: BasePart, prompt: ProximityPrompt)
 	local mark = landmarkFor(site)
 	if not mark then
 		return
 	end
+
+	local function progress(total: number): string
+		return if total >= mark.crates
+			then "restored"
+			else string.format("%d of %d", total, mark.crates)
+	end
+
 	local text
 	local scope = TownService.scope()
-	if scope == "unknown" then
-		text = "restoration unknown - no town total"
+	if scope == "empty" then
+		text = string.format("%s - no keeper has arrived", mark.title)
 	else
-		local suffix = if scope == "local" then " (this server only)" else ""
-		local total = TownService.total()
-		text = if total >= mark.crates
-			then string.format("%s - restored%s", mark.title, suffix)
-			else string.format(
-				"%s - %d of %d crates%s",
+		local suffix = if scope == "offline" then " (this session only)" else ""
+		if TownService.isHost(player) then
+			text = string.format("%s - %s%s", mark.title, progress(TownService.total()), suffix)
+		else
+			local mine = TownService.totalFor(player)
+			local whose = TownService.hostName() or "this hall"
+			text = string.format(
+				"%s - %s %s, %s %s%s",
 				mark.title,
-				total,
-				mark.crates,
+				whose,
+				progress(TownService.total()),
+				player.DisplayName,
+				progress(mine),
 				suffix
 			)
+		end
 	end
 	prompt.ActionText = text
 	task.delay(4, function()
@@ -450,12 +486,23 @@ function HubService.init()
 	for _, site in ipairs(CollectionService:GetTagged(TAG_LANDMARK)) do
 		if site:IsA("BasePart") then
 			local prompt = promptOn(site, "Read the restoration", "The Town")
-			prompt.Triggered:Connect(function()
-				readLandmark(site, prompt)
+			prompt.Triggered:Connect(function(player)
+				readLandmark(player, site, prompt)
 			end)
 		end
 	end
 	writeLandmarks()
+	-- The host is whoever arrives first, and in a fresh server that is after
+	-- init, so the plates would otherwise read "no keeper has arrived" for up
+	-- to a full refresh period to the very person whose town they show.
+	Players.PlayerAdded:Connect(function(player)
+		-- Claim here as well as in TownService. It is idempotent, and relying
+		-- on two PlayerAdded handlers firing in connection order to get the
+		-- host set before the plates are drawn is the kind of assumption that
+		-- holds until it doesn't.
+		TownService.claim(player)
+		writeLandmarks()
+	end)
 	task.spawn(function()
 		while true do
 			task.wait(LANDMARK_REFRESH)

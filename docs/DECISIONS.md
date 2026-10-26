@@ -133,3 +133,43 @@ deleted its own central cost.
 
 Us, or players submitting it? Player-authored is enormously cheaper and
 enormously riskier, and on Roblox it needs moderation.
+
+### O5. How many people share a run, and a town? — ANSWERED 2026-10-26
+
+**A crew, not a world.** Chris: "Make raids solo or with your friends, not one
+giant persistent world. Each crew gets its own mall run, its own enemies, its
+own extraction choices, and its own consequences. That gives us reliable
+tension without random strangers ruining a run or making the map feel
+crowded." Party size **1-4**, solo fully viable: "friends make rescues, split
+routes, and extraction defense more interesting rather than mandatory."
+
+The town follows the same shape, which reverses a decision taken two days
+earlier. On 2026-10-24 the restoration total was built as one atomic global
+figure for the whole experience, on the reasoning that "per-server would make
+the Bell Tower
+randomly finished for one group and gone for the next, which kills the
+premise." The new answer keeps that objection and removes its cause: the total
+is not per-server, it is **per keeper**.
+
+- **Your own Lanternhold** holds your upgrades, your relic displays and your
+  own restoration progress.
+- **Friends visit yours**: a party raids from the host's hall and sees what
+  the host has rebuilt.
+- **A shared community goal is a seasonal event later**, not the spine.
+
+Chris's reason, which is the whole point: the Well, the Bell Tower and the
+Long Bridge are "rebuilt by you and the people you play with, which is much
+more emotionally satisfying than contributing a crate to an invisible global
+number." It also removes the persistence problem rather than solving it - there
+is no cross-server key to keep atomic, and a player sees their own town change
+the moment they hand crates in.
+
+**What this cost:** `TownService` was rewritten from a global DataStore key
+with batched `UpdateAsync` deltas, retries and a cross-server re-read down to a
+read of `profile.contributions.RestorationCrates`, which the profile has
+carried all along. The global version could never be trusted until a live
+published place had exercised it; that test requirement is gone with it.
+
+**Still to settle:** whether a visitor's hand-in should credit the whole crew
+or only the host. Built as crew-credit - every keeper in the hall advances
+their own town - and the reasoning is at the top of `TownService.luau`.
