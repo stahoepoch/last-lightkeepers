@@ -131,9 +131,19 @@ failed want to go again immediately.
 
 ## 5. One visible Lanternhold improvement
 
-**The largest unbuilt thing in the whole design.** `HubService` manages the
-lamp wall, the relic plinths, the roll board and three landmark plates. **There
-are no rooms that open.** The hall is already dark in the right way, but
+**Half built, 2026-10-26.** Chris chose this over the first store rung, and the
+systems side is done: `src/server/services/LedgerService.luau` holds the hall's
+rooms and the ledger board, `data/ledger.json` holds four rooms at 1 / 3 / 6 /
+10 crates (proposed figures), the costs are committed out of a keeper's credited
+crates without ever subtracting from the credit, and only the host's rooms show
+or open. **What is missing is geometry** - four sealed doorways tagged
+`HallRoom` and one board tagged `LedgerBoard`, which is the map lane's. The tag
+contract is in `COORDINATION.md`. Until it is tagged, the service is a no-op,
+like every other hall fixture without its part.
+
+**What it was before today.** `HubService` managed the lamp wall, the relic
+plinths, the roll board and three landmark plates. **There were no rooms that
+open.** The hall is already dark in the right way, but
 nothing in it changes because of a run except a plate's colour.
 
 This is the first session's entire payoff, the pitch's biggest hook — "whole

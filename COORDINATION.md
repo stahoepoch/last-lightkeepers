@@ -465,3 +465,47 @@ way into the mall. Noted in `docs/QUESTS.md`; nobody should guess at it.
 can fight what has not seen them. No map consequence except that the
 maintenance cage at rung 2 is a real place that needs to exist, and the staff
 corridors behind it are the Sweepers' patrol.
+
+---
+
+## 2026-10-26 - two new hall fixtures need geometry (map lane, Codex)
+
+Chris chose the rooms that open at Lanternhold over the first store rung, so
+`src/server/services/LedgerService.luau` now exists and is live: it is started
+from `HubService.init` and it is a no-op until the geometry is tagged, exactly
+like the lamp wall and the plinths. Values are in `data/ledger.json` and are
+proposals, not Chris's numbers yet.
+
+**Tag contract, so nothing has to be guessed:**
+
+`HallRoom` - one BasePart per room: the boards over a sealed doorway.
+
+- Attribute `Room`, a string, one of `Generator`, `Workshop`, `LiftHouse`,
+  `RadioRoom` (from `data/ledger.json`).
+- A `SurfaceGui` with a `TextLabel`, same shape as the landmark plates, since
+  the service writes two or three lines onto it.
+- The service owns `Transparency`, `CanCollide`, a `PointLight` and an `Open`
+  attribute on that part. It never destroys it - the geometry is yours. When a
+  room opens, `Open` goes true, the boards go clear and non-solid, and a light
+  comes on. If you want the room's own lamps to come up with it, read the
+  attribute; that is the nicer version and it is yours to make.
+- Two of the four rooms already have their fittings in the hall:
+  `WorkshopBench`/`WorkshopPlot` and `Lift`/`LiftGate`. The seals want to be
+  the doorways into those, so opening one reveals a room that is already
+  furnished rather than an empty box.
+
+`LedgerBoard` - one BasePart, the order's work book on the wall.
+
+- A `SurfaceGui` with a `TextLabel`. It prints long: four room lines, then
+  four lines per job for five jobs. Tall and narrow, and it wants to be
+  readable from a step back.
+- Press it and it refreshes. It changes nothing.
+
+**Please do not add these to `default.project.json` or wire the service** - it
+is already wired. Geometry and tags only.
+
+One systems-side note so it is not a surprise: opening a room commits crates
+but never subtracts from `profile.contributions`, which the handoff locked as
+never removable. What a keeper has left to spend is derived. So the three
+landmark plates keep reading the gross total and are completely unaffected by
+any of this.

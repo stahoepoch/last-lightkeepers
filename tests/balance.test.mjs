@@ -228,6 +228,53 @@ console.log("\nSolo rule");
   check("it costs a full charge", anchor.consumesFullLanternCharge === true);
 }
 
+console.log("\nThe ledger and the rooms");
+{
+  const ledger = load("ledger.json");
+  const rungIds = new Set(ledger.rungs.map((r) => r.id));
+
+  check(
+    "every rung states its trade",
+    ledger.rungs.every((r) => r.title && r.job && r.opens && r.wakes),
+    "docs/QUESTS.md rule 2: the trade is stated before the player accepts it",
+  );
+  check("rung ids are unique", rungIds.size === ledger.rungs.length);
+
+  const roomIds = new Set(ledger.rooms.map((r) => r.id));
+  check("room ids are unique", roomIds.size === ledger.rooms.length);
+  check(
+    "every room names its sealed and restored state",
+    ledger.rooms.every((r) => r.room && r.sealed && r.restored),
+  );
+  check(
+    "every room costs at least one crate",
+    ledger.rooms.every((r) => Number.isInteger(r.crates) && r.crates > 0),
+    "a free room is not a decision, and the hand-in that pays for it has nothing to feel",
+  );
+  check(
+    "every room points at a real rung",
+    ledger.rooms.every((r) => rungIds.has(r.rung)),
+    "a room with no job behind it is a door that opens for no reason",
+  );
+
+  // The first room has to be reachable on a first run, or the first session
+  // ends without the one beat docs/FIRST-SIXTY-SECONDS.md is built around.
+  const cheapest = Math.min(...ledger.rooms.map((r) => r.crates));
+  check("one room opens on a single crate", cheapest === 1, `cheapest is ${cheapest}`);
+
+  // Rooms are paid for out of credited crates and never subtract from them, so
+  // the landmark plates keep reading the gross figure. If the rooms cost more in
+  // total than the last landmark, a keeper finishes the whole town with rooms
+  // still sealed, which reads as a bug rather than as a choice.
+  const roomTotal = ledger.rooms.reduce((n, r) => n + r.crates, 0);
+  const lastLandmark = Math.max(...load("town.json").landmarks.map((l) => l.crates));
+  check(
+    "the rooms cost less than the whole town",
+    roomTotal <= lastLandmark,
+    `rooms ${roomTotal}, last landmark ${lastLandmark}`,
+  );
+}
+
 console.log(`\n${checks - failures}/${checks} passed`);
 if (failures > 0) {
   console.log(`${failures} FAILED\n`);

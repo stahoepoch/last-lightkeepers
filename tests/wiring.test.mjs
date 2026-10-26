@@ -99,6 +99,26 @@ console.log("\nConfig against data/*.json");
     const varToJson = new Map(
       all(/local (\w+) = require[(]Balance:WaitForChild[(]"([^"]+)"[)][)]/g, configFile.src).map((m) => [m[1], m[2]]),
     );
+
+    // The guarded form, for a balance module that may not have synced into an
+    // older Studio place:
+    //
+    //   local XModule = Balance:WaitForChild("x", 10)
+    //   local X = if XModule then require(XModule) else nil
+    //
+    // A bare WaitForChild never gives up, and Config is required by everything,
+    // so a missing file would hang the whole game rather than one feature. Read
+    // in two steps so the section still resolves to its JSON here.
+    {
+      const moduleVarToJson = new Map(
+        all(/local (\w+) = Balance:WaitForChild[(]"([^"]+)",\s*\d+[)]/g, configFile.src).map((m) => [m[1], m[2]]),
+      );
+      for (const m of all(/local (\w+) = if (\w+) then require[(](\w+)[)] else nil/g, configFile.src)) {
+        if (m[2] !== m[3]) continue;
+        const jsonName = moduleVarToJson.get(m[2]);
+        if (jsonName) varToJson.set(m[1], jsonName);
+      }
+    }
     const sectionToVar = new Map(all(/^\s+(\w+) = (\w+),$/gm, configFile.src).map((m) => [m[1], m[2]]));
 
     const sections = new Map();

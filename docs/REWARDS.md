@@ -135,5 +135,14 @@ Specified in `docs/VERTICAL-SLICE.md`.
 **What changed on 2026-10-26:** the rooms now have names and jobs rather than
 being an abstract "rooms open". The ladder in `docs/QUESTS.md` gives each one a
 repair, a visible home and a cost — the departure generator, the workshop
-tools, the radio. The hole is the same size; it is no longer the same kind of
-hole, because nobody has to invent what goes in it.
+tools, the radio.
+
+**And later the same day the hole stopped being a hole.** Four rooms are in
+`data/ledger.json` and `LedgerService` opens them: the generator room, the
+workshop, the lift house, the radio room, at 1 / 3 / 6 / 10 crates. The crates
+are **committed, never deducted** — `contributions` is credit and the handoff
+locked it as never removable, so what a keeper has left to spend is derived
+from the total minus the rooms already opened. Which means the landmark plates
+still read the gross figure and are untouched: the landmarks record what you
+brought home, the rooms record what you did with it. All that is left is the
+geometry, which is the map lane's.

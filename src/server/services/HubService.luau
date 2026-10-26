@@ -1,5 +1,5 @@
 --!strict
--- Lanternhold's three fixtures, bound to run state.
+-- Lanternhold's fixtures, bound to run state.
 --
 -- The map (src/map/LanternholdBuilder.luau) places and tags these; nothing in
 -- it knows what they mean. This is where they start meaning something:
@@ -15,6 +15,9 @@
 --
 -- All three are no-ops when the hub is not in the world, so a mall-only test
 -- place behaves exactly as it did before.
+--
+-- The ledger board and the hall's rooms live in LedgerService and are started
+-- from this file's `init`. They follow the same rule: absent geometry, no-op.
 
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -22,6 +25,7 @@ local Players = game:GetService("Players")
 
 local RunStateService = require(script.Parent:WaitForChild("RunStateService"))
 local TownService = require(script.Parent:WaitForChild("TownService"))
+local LedgerService = require(script.Parent:WaitForChild("LedgerService"))
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 
 local TAG_LAMP = "LampWallSlot"
@@ -232,6 +236,9 @@ local function handIn(player: Player, prompt: ProximityPrompt)
 	-- global and threw on every hand-in. HubService is declared at the top and
 	-- the field is assigned at load, so this is safe from anywhere.
 	HubService.refreshLandmarks()
+	-- And the rooms, which is the half of a hand-in a player can actually feel:
+	-- the crate that just went over the counter may have paid for a door.
+	LedgerService.refresh()
 
 	writeBoard()
 	prompt.ActionText = string.format("%d in, thank you", crates)
@@ -512,6 +519,13 @@ function HubService.init()
 
 	writeBoard()
 	Players.PlayerRemoving:Connect(HubService.release)
+
+	-- The ledger and the hall's rooms are the same fixture family as the three
+	-- above, so they come up with them. Started from here rather than from
+	-- init.server.luau on purpose: that file currently requires an untracked
+	-- ExpeditionService (WORKLIST A8), so anything added to it cannot be
+	-- committed without handing someone a broken checkout.
+	LedgerService.init()
 end
 
 return HubService

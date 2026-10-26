@@ -17,6 +17,17 @@ local Lantern = require(Balance:WaitForChild("lantern"))
 local Workshop = require(Balance:WaitForChild("workshop"))
 local Town = require(Balance:WaitForChild("town"))
 
+-- The newest balance file, and the only one fetched with a timeout.
+--
+-- A bare WaitForChild never gives up, and this require sits in the one module
+-- every other module requires. Any Studio place saved before ledger.json
+-- existed would therefore hang on Config forever and take the whole game down
+-- rather than the one feature - a worse failure than the feature being absent.
+-- So: wait, give up, and let the readers find nil. Every reader of
+-- Config.Ledger already guards for it, the same way Config.Town is guarded.
+local LedgerModule = Balance:WaitForChild("ledger", 10)
+local Ledger = if LedgerModule then require(LedgerModule) else nil
+
 local Config = {
 	StormCharge = StormCharge,
 	Loot = Loot,
@@ -24,6 +35,7 @@ local Config = {
 	Lantern = Lantern,
 	Workshop = Workshop,
 	Town = Town,
+	Ledger = Ledger,
 }
 
 -- Session shape, from the handoff's product position: 6-10 minutes door-to-door.

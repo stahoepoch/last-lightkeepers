@@ -29,6 +29,11 @@ export type Profile = {
 	upgrades: { [string]: boolean },
 	cosmetics: { [string]: boolean },
 	contributions: { [string]: number }, -- credited by name, never removable
+	-- Which rooms of this keeper's own hall have been opened. Permanent: a room
+	-- never closes, so this only ever grows. The crates a room cost are not
+	-- subtracted from `contributions` - that total is credit and cannot be spent
+	-- away - so what a keeper has left to commit is derived from the two.
+	rooms: { [string]: boolean },
 	runsCompleted: number,
 	-- Set when the DataStore read failed. Never persisted; it exists only to stop
 	-- a blank profile overwriting a real one.
@@ -41,6 +46,7 @@ local function defaultProfile(): Profile
 		upgrades = {},
 		cosmetics = {},
 		contributions = {},
+		rooms = {},
 		runsCompleted = 0,
 	}
 end
