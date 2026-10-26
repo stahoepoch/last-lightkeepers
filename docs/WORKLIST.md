@@ -125,6 +125,35 @@ written down. The hub wiring's four call sites survive.
 
 ---
 
+### A9. Rung one - the departure generator
+
+**Why.** Chris locked a ladder of practical recovery jobs on 2026-10-26
+(`docs/QUESTS.md`, decision 29) and rung one is the smallest end-to-end proof
+of it: salvage fuses and wiring from the ground floor, restore the generator,
+get reliable departures and map markers - and the powered lights wake the
+Window Walkers. It exercises every part a later rung needs: a ledger line, a
+broken place, a cost, a thing that opens, a thing that wakes.
+
+**Done when.** One rung is completable in a session, the thing it opens is
+visible from where the player stands, the thing it wakes actually wakes, and
+the trade was stated in the ledger before the player accepted it. No quest
+state machine - a flag and a cost.
+
+### A10. The fight you start
+
+**Why.** Five of six enemies have had a health value since the handoff and
+`EnemyService` writes it onto a real Humanoid in four places; nothing in the
+game can reduce it. `data/loot.json` has `blocksCombatWhileCarried` describing
+a system that does not exist. Settled 2026-10-26: keepers can fight what has
+not seen them (`docs/COMBAT.md`, decisions 30 and 31).
+
+**Done when.** A dormant enemy can be removed with a hold, a found tool and the
+lantern compete for one hand, and nothing a keeper carries can kill an enemy
+that is already hunting them. The Warden is untouched. Values in a new
+`data/tools.json` are Chris's.
+
+---
+
 # Lane B — integration, map and build
 
 Owner: Codex.
@@ -254,3 +283,15 @@ person to join cannot find them.
 
 **Done when.** One file lists every locked decision, what it was, who made it,
 when, and where the reasoning lives.
+
+### C7. Reconcile the exits with the ladder
+
+**Why.** `data/loot.json` has LoadingDock as the reliable 1.0x exit and
+FreightLift gated behind `SubBasementBreakerRestored`. The ladder makes rung
+one's departure generator the thing that makes departures reliable, and rung
+five's dock gate the way into the mall rather than a way out of it. Those are
+compatible but not aligned, and two lanes would guess differently.
+
+**Done when.** One line from Chris says whether the breaker flag is the
+generator, and whether the dock gate is an exit at all. Then `loot.json` and
+`docs/QUESTS.md` say the same thing.

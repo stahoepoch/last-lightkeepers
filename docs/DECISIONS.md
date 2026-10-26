@@ -19,6 +19,8 @@ down, not yet ratified. `OPEN` — named, undecided, waiting on someone.
 | 2 | No PvP, ever. Adding it later would replace the design, not extend it | LOCKED | Chris, handoff | Handoff, "Resolved design decisions"; backed by `reports/` — PvE is the million-CCU tier on Roblox |
 | 3 | Do not expand scope before the v1 loop passes its playtest question | LOCKED | Chris, handoff | Handoff. The question: do testers kill their lanterns, bank, and argue for one more room? |
 | 4 | One mall, and it is the Galleria | LOCKED | Chris, 2026-10-21 | "Whatever mall u built is our mall… let's unify and stop having 8 malls." `NOTES-FOR-CODEX.md` |
+| 28 | Version one is **one sealed department store**, furnished top to bottom. The rest of the Galleria is earned, not cut | LOCKED | Chris, 2026-10-26 | "The whole Galleria can be the eventual world, but the game begins with one sealed department store and earns its expansion." `docs/THE-STORE.md` |
+| 29 | Progression is a ladder of **practical recovery jobs**. Each one changes something visible, opens a route or a tool, and wakes a new threat. Never "collect ten glowing widgets" | LOCKED | Chris, 2026-10-26 | The opening five rungs are his. `docs/QUESTS.md` |
 
 ## The core rules
 
@@ -27,11 +29,13 @@ down, not yet ratified. `OPEN` — named, undecided, waiting on someone.
 | 5 | Light reveals value and attracts danger. There is **no** "light repels enemies" exception | LOCKED | Chris, handoff | Handoff, "Important simplification". Softening this deletes the game's only decision |
 | 6 | Storm Charge only ever rises. Darkness slows it; nothing reverses it | LOCKED | Chris, handoff | Handoff |
 | 7 | The Warden is unkillable and drops nothing | LOCKED | Chris, handoff | It is the meter with a body. If it can be killed, the meter stops meaning anything |
-| 8 | Banked loot survives a wipe entirely; carried loot is halved. Disconnect uses the same rule | LOCKED | Chris, handoff | Handoff. Never sell a way around it |
+| 8 | ~~Banked loot survives a wipe entirely; carried loot is halved~~ **SUPERSEDED 2026-10-26.** Only extraction secures loot; a wipe or an expired timer loses the whole carried haul. Disconnect uses the same rule | LOCKED | Chris, 2026-10-26 | O3 below. The handoff's banking rule was retired with the bank itself |
 | 9 | The Anchor Revive is **solo-only** — one per run, paid for with a Storm Charge spike | LOCKED | Handoff; enforced by Claude 2026-10-20 | Commit `2bb8b84`. Granting it to a crew silently breaks the whole-crew-down wipe |
 | 10 | Lantern charge is unlimited — the cost of light is the meter, not a fuel gauge | LOCKED | Chris, 2026-10-20 | "i don't think the lantern should ever run out… the risk is always having it on." `data/lantern.json` |
 | 11 | A downed Lightkeeper keeps the crate | LOCKED | Chris, 2026-10-20 | `data/lantern.json`. The old flag only cleared the carry slot, so the drop was cosmetic |
 | 12 | Lantern multiplier uses `linearCapped` by default; a `diminishing` curve exists and is not enabled | PROPOSED | Claude, 2026-10-20 | Commit `b4b1813`. The clamp makes a fourth lantern free; diminishing fixes that and preserves the 2.5x anchor exactly |
+| 30 | Keepers **can** fight back, earned at ladder rung 2 and bounded by one rule: you win the fights you start. Nothing carried kills an enemy that has already seen you | PROPOSED | Chris + Claude, 2026-10-26 | "We might need to fight them." `docs/COMBAT.md`. Settles a contradiction the handoff shipped: five enemies have health, the code writes it, nothing could ever reduce it |
+| 31 | The lantern and a tool compete for the same hand. Never both | PROPOSED | Claude, 2026-10-26 | `docs/COMBAT.md`. Makes combat cost light instead of costing a new resource, and gives a crew two jobs |
 
 ## Content
 

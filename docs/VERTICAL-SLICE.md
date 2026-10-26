@@ -57,13 +57,20 @@ holding it. Nothing changed; the clamp is still `linearCapped`.
 
 ## 1. One polished mall route
 
+**Narrowed 2026-10-26.** The slice's route is now inside **one sealed
+department store**, not the whole Galleria — Chris: *"furnishing one building
+from top to bottom."* The Galleria is not cut; it is what the last rung of the
+ladder opens. See `docs/THE-STORE.md` and `docs/QUESTS.md`.
+
 **Exists:** the Galleria is built and audited — perimeter sealed, 81% of the
 contract unlit, four extractions all reachable. Exits include `LoadingDock` and
 `FreightLift`. `RaidDirector` applies one wrinkle per raid.
 
 **Missing:** a route is not a map. Nothing currently *shapes* a path — there is
 no intended short way and long way, no reason to take one, no sightline that
-teaches you the next room before you enter it.
+teaches you the next room before you enter it. The ladder supplies the missing
+motive: a rung makes one floor tonight's floor. The dressing supplies the rest,
+and signage is most of it.
 
 **Done when:** a new player walking in at the spawn finds the dock run without
 being told, and a player on their tenth run deliberately ignores it because the
@@ -95,7 +102,13 @@ files exist for three. Audio cues are stubbed pending Chris's uploads.
 **Missing:** choreography. Six enemies that each work is not an encounter. The
 slice needs one scene that is *staged* — a Window Walker you walk past twice in
 the dark before anything happens, so that the moment your lantern catches it
-the room retroactively becomes a different room.
+the room retroactively becomes a different room. The ladder stages this for
+free: rung 1 powers the lights and wakes the Walkers, so the floor the player
+already knows is the floor that changes.
+
+**And they can now be fought, within one rule** — you win the fights you start.
+Settled 2026-10-26; see `docs/COMBAT.md`. The health values five of the six
+have been carrying since the handoff finally mean something.
 
 **Done when:** the first time is frightening and the tenth time is a route
 decision. If the tenth time is still frightening it is noise; if the first time
@@ -131,6 +144,12 @@ another light on" — and the reason anyone plays run two.
 unfinished, each with a crate cost and a name on the roll when it opens; the
 side room lit at the start, because the order really did meet in a side room
 for years while the hall stood unpaid for.
+
+**The ladder names them**, which it did not before: the generator, the
+maintenance cage's tools, the radio. Each is a repair with a visible home at
+both ends — `docs/QUESTS.md`, and `docs/THE-STORE.md` for the
+department-to-room mapping that gives every floor of the store a room at home
+it supplies.
 
 **Done when:** a player finishes their first run, hands in, watches one door
 open, and goes back out without being asked to.

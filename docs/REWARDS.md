@@ -106,7 +106,22 @@ Both found by audit, both still in `data/loot.json`, both read by nothing:
 
 Deleting either is a value change in a data file, so both are left for Chris.
 
-## The hole this page cannot close
+## What a crate is for, more precisely — added 2026-10-26
+
+A crate is **stamped with the department it came from**, and a room at home is
+restored by crates from the department that would have supplied it. The
+dormitory wants bedding off the second floor; the kitchen wants housewares off
+the third; the meeting room wants the auditorium's chairs, four floors up with
+one way in, which is why the hardest room at home is the last to open.
+
+This adds **no fifth resource** and the rule at the top of this page still
+holds: a crate answers exactly one question, *what does home look like?* It
+gains one attribute — where it came from — and what that buys is a route
+decision. Reasoning and the full mapping are in `docs/THE-STORE.md`; it is one
+field on the crate spawn plus a cost line per room, and both figures are
+Chris's.
+
+## The hole this page could not close — now named, still unbuilt
 
 Crates are the only thing that restores the hall, and **the hall currently has
 nothing to restore**. The only progress visuals in `HubService` are the lamp
@@ -116,3 +131,9 @@ rooms that open.
 That is the first session's whole payoff — "you come home and a light comes
 on" — and it is the largest unbuilt thing in the design, bigger than any zone.
 Specified in `docs/VERTICAL-SLICE.md`.
+
+**What changed on 2026-10-26:** the rooms now have names and jobs rather than
+being an abstract "rooms open". The ladder in `docs/QUESTS.md` gives each one a
+repair, a visible home and a cost — the departure generator, the workshop
+tools, the radio. The hole is the same size; it is no longer the same kind of
+hole, because nobody has to invent what goes in it.

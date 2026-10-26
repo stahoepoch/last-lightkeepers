@@ -2,6 +2,13 @@
 
 Status: **proposed**, 2026-10-20. Read `docs/PREMISE.md` first.
 
+**Zone one is now one building, not the whole mall.** Chris, 2026-10-26: *"the
+whole Galleria can be the eventual world, but the game begins with one sealed
+department store and earns its expansion."* The Galleria below stays exactly as
+written and exactly as built - it is what the store's loading dock gate opens
+onto, at the end of the ladder in `docs/QUESTS.md`. Read `docs/THE-STORE.md`
+for the building itself.
+
 **Nothing past zone one gets built yet.** The handoff gates even the solar farm
 behind the playtest question: *do testers kill their lanterns, bank their haul,
 and argue for one more room?* If no, more maps will not fix the loop. This
@@ -20,7 +27,8 @@ went.
 | | Place | Terrain | What it does to light |
 | --- | --- | --- | --- |
 | Hub | **Lanternhold** — the hall, out past the farms | Safe | Yours, and warm |
-| 1 | **The Galleria** — hilltop mall near the airport | Enclosed, flat, short sightlines | Light is scarce. You choose to make it |
+| 1a | **The store** — one sealed anchor inside it | Enclosed, vertical, four floors and water | Light is scarce. You choose to make it |
+| 1b | **The Galleria** — hilltop mall near the airport, earned | Enclosed, flat, short sightlines | Light is scarce. You choose to make it |
 | 2 | **The solar farm** — the next hilltop over | Open, flat, long sightlines | Darkness is scarce. You hunt for it |
 | 3 | **The rail yard** — the line where the hills give out | Linear, long sightlines | Cover sits between you and where you are going |
 | 4 | **The works** — the old mill on the valley floor | Vertical, tangled | Both, at different heights |
@@ -56,7 +64,9 @@ landscaping.
 
 **Locals** — derived from that site's work:
 
-- **Galleria**: Stockers, Window Walkers, the Ficus. All retail.
+- **Galleria**: Stockers, Window Walkers, the Ficus. All retail - and all three
+  of them already worked in a department store, which is why one was the right
+  first building. The ladder introduces five of the six one rung at a time.
 - **Solar farm**: whatever tends an array — sun-trackers, cable crawlers,
   something that washes panels.
 - **The works**: heavy things. Loaders, pourers. The first machines you meet

@@ -3,6 +3,12 @@
 Status: **proposed**, 2026-10-26. Chris's shape, written out. Nothing here sets
 a number; every figure is a placeholder marked `?` for him to set.
 
+**Updated the same day.** The middle game below asked "why does someone play
+their tenth run" and answered it with routes and a three-way choice. Chris
+named the real engine that afternoon: a ladder of practical recovery jobs, each
+one opening something and waking something. See `docs/QUESTS.md`, and
+`docs/THE-STORE.md` for the one building it all happens in.
+
 The test this page has to pass: *why does someone play their tenth run, and
 their hundredth?* If a section below does not answer that, it is not done.
 
@@ -38,8 +44,13 @@ stops being a place you survive and becomes a place you know.
 
 What changes in the player:
 
+- **The ladder starts.** The departure generator, then the workshop tools, then
+  the lift parts. Each run has a job with a name, each job changes something
+  the player can see, and each one hands the building something back. This is
+  the week's real spine (`docs/QUESTS.md`).
 - **Routes become decisions.** The dock is reliable and pays less; the long way
-  pays more and closes earlier. Learning the building is the skill.
+  pays more and closes earlier. Learning the building is the skill — and the
+  ladder is what makes a particular floor tonight's floor.
 - **The three-way choice arrives**, and it is the middle game's whole engine:
   the crate for the hall, the relic for the collection, or the supplies for
   your own kit. One trip cannot carry all three. (Rewards: `docs/REWARDS.md`.)
@@ -65,8 +76,9 @@ yourself against.
   a blacked-out wing, a shutter open that should not be, a beacon pulling
   everything toward it. This is the seam the endgame plugs into: more
   conditions, rarer, sometimes two at once.
-- **Deeper interiors.** The department store backs, the service corridors —
-  the parts of the building a new keeper never had a reason to reach.
+- **The mall itself.** The last rung of the store ladder opens the concourse,
+  so the Galleria is not the second zone — it is the back half of the first
+  one, and it arrives because the player built the door.
 - **Variants, not bigger numbers.** A Window Walker that does not freeze. A
   Sweeper crew that patrols as one. Derived from the same jobs, per `ZONES.md`.
 - **Collections and mysteries.** Relic sets that only mean something complete,

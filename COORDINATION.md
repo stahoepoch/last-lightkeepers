@@ -422,3 +422,46 @@ tells a player their haul is safe, which is now the one thing it is not.
 
 Server side is already honest: `RunStateService.touchRelay` (renamed from
 `bank`) and `LootService.handleRelay`.
+
+---
+
+## 2026-10-26 - the scope narrowed to one department store (map lane, Codex)
+
+Chris, today: *"The whole Galleria can be the eventual world, but the game
+begins with one sealed department store and earns its expansion."* Locked as
+`DECISIONS.md` 28.
+
+**Nothing you built is cut.** The Galleria stays the zone, the perimeter audit
+stands, and the concourse becomes what the store's loading dock gate opens onto
+at the end of a five-rung ladder. Please do not delete or rework mall geometry
+on the strength of this.
+
+**What it means for the map lane, when you get to it:**
+
+- One anchor store is the whole playable interior for v1. Four floors, a
+  flooded basement, a roof that is not an exit. Recommend Boswell's of the four
+  trademark-free anchors in `DECISIONS.md` 19 - Chris's call, not mine.
+- The ruin is a vertical gradient, not even wear: basement flooded, ground
+  floor tide-marked at chest height, second floor eerily intact, third rained
+  through from above, fourth open to the sky. Spec in `docs/THE-STORE.md`.
+- Density comes from repetition with intent plus signage, not from unique
+  meshes: per department, five fixture meshes, one or two merchandise meshes
+  instanced in bulk, the ruin kit, and exactly one landmark object. Department
+  names, price cards and a directory board do more for "not just Roblox" than
+  any geometry would.
+- The store needs sealed service doors onto the concourse, because rung five
+  opens them.
+
+Everything in `docs/THE-STORE.md` is a spec, not an instruction - geometry and
+tags are yours per decision 25.
+
+**Two things in the data want Chris's eye before either of us builds exits:**
+`data/loot.json` has LoadingDock as the reliable 1.0x exit and FreightLift
+gated behind `SubBasementBreakerRestored`, while the ladder makes rung 1's
+generator the thing that makes departures reliable and rung 5's dock gate the
+way into the mall. Noted in `docs/QUESTS.md`; nobody should guess at it.
+
+**Combat is now a thing** (`docs/COMBAT.md`, decision 30, proposed): keepers
+can fight what has not seen them. No map consequence except that the
+maintenance cage at rung 2 is a real place that needs to exist, and the staff
+corridors behind it are the Sweepers' patrol.

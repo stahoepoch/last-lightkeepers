@@ -32,8 +32,12 @@ gets you caught.**
 > them off... or risk one more store?
 >
 > If a robot gets you, you don't die — you fall down, and a friend can run over
-> and pick you back up. If *everybody* falls down, you wake up back home and
-> lose half of whatever you didn't stash.
+> and pick you back up. If *everybody* falls down, you wake up back home with
+> nothing from that trip. Everything you brought home before is still yours.
+>
+> You start in one big old department store, and most of it is shut. You get in
+> deeper by fixing it — the lights, the lift, the radio. But the store notices
+> that somebody is turning it back on.
 >
 > And home is the best part. Home is a huge old building, and most of it is
 > dark. There are whole rooms you can see into but can't go in yet. Everything
@@ -60,6 +64,16 @@ You go up from Lanternhold, the old hall out past the farms where what's left
 of the order lives, and you scavenge whatever the storm left behind. Runs are
 short — six to twenty minutes door to door.
 
+It is **one building**: a sealed department store on the hilltop, four floors
+and a flooded basement, still stocked. You get further into it by repairing it
+— the departure generator, the maintenance cage, the lift, the radio, the dock
+gate — and every repair cuts both ways. Power the lights and the mannequins
+wake up. Open the staff corridors and the cleaning crews use them. Fix the
+radio and you get warnings, and it broadcasts you. You are not levelling up;
+you are rebuilding the tools you need to reach farther into a place that
+notices it is being reopened. The rest of the mall is behind the last door, and
+it is earned.
+
 Your lantern is the whole decision. Off, you're hard to find, but you can only
 take what's lying in plain sight. On, you can see the rare caches — and you're
 feeding every machine in the building. There's a shared meter that only ever
@@ -82,8 +96,12 @@ of what happened here.
 ## If they ask
 
 **"Is it a shooter?"**
-No. You can't really fight back. You hide, you distract, you carry each other,
-you run. The skill is deciding when to light up and when to leave.
+No — there are no guns. You can fight, but only the fights you start: you can
+take apart something that hasn't noticed you yet, and you can make a tool that
+buys you a few seconds. Once something is hunting you, you hide, you distract,
+you carry each other, you run. And you can't hold your lantern and a tool at
+once, so every swing is taken in the dark. The skill is still deciding when to
+light up and when to leave.
 
 **"So it's like those extraction games?"**
 Same family, much kinder in the ways that matter and harsher in one. No PvP,
@@ -98,8 +116,11 @@ on earlier runs is untouched, your upgrades and your hall are permanent, and
 nobody can take anything off you. You lose the trip, never the progress.
 
 **"What's the point of the loot?"**
-It turns the lights on at home. The town is mostly dark on purpose — you can
-see what you haven't rebuilt yet. That's the hook: there's always another room.
+It turns the lights on at home, and it opens the next door at the store. A
+department store is a building full of the things that finish buildings — beds,
+lamps, tables, chairs — and your hall is unfinished. You are stripping one
+building to dress another, and both are rendered. The town is mostly dark on
+purpose: you can see what you haven't rebuilt yet.
 
 **"Why does it have to be dark?"**
 Because the machines run on light. In daylight they're all awake and there's no
