@@ -1,5 +1,26 @@
 # Worklist — sliced, evidenced, ready to pick up
 
+> ## FROZEN — 2026-10-27
+>
+> **Last Lightkeepers is a Steam game now** (`docs/DECISIONS.md` row 1,
+> LOCKED). Everything below is the Roblox prototype's worklist, and the Roblox
+> project is a design reference and prototype archive — not a product (row 33).
+>
+> **Do not pick up a slice from this document as if it were work.** The lanes,
+> the owners, the tag contracts and the "done when" lines all describe an
+> engine we are no longer shipping on.
+>
+> It is kept, unedited below this line, because it is the most detailed
+> statement of *what the systems are supposed to do* that the project has, and
+> because the reasoning in each slice — the Dredge rule, the Badlanders
+> warning, the Dome Keeper lift — is about design, not about Roblox. Read it as
+> a specification, mine it for the UE5 build, do not execute it.
+>
+> The next real work is `docs/DECISIONS.md` row 35: lock the engine. Then one
+> PC-quality department-store vertical slice, whose first job is still the
+> question nobody has answered — do testers kill their lanterns, bank, and
+> argue for one more room? See `docs/PLATFORM.md`.
+
 Written 2026-10-21 from `reports/Roblox extraction games and tooling.md`.
 
 Each slice is roughly an hour, independent of the others in its lane, and

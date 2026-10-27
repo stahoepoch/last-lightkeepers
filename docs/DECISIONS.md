@@ -15,12 +15,17 @@ down, not yet ratified. `OPEN` — named, undecided, waiting on someone.
 
 | # | Decision | Status | Who, when | Reasoning |
 | --- | --- | --- | --- | --- |
-| 1 | Roblox first; a desktop/Steam edition only if the loop proves out, and as a rebuild rather than an export | LOCKED | Chris, handoff | Handoff PDF, "Future Steam path" |
-| 2 | No PvP, ever. Adding it later would replace the design, not extend it | LOCKED | Chris, handoff | Handoff, "Resolved design decisions"; backed by `reports/` — PvE is the million-CCU tier on Roblox |
+| 1 | **Steam, PC-first.** Last Lightkeepers is a desktop game. There is no parallel Roblox version | LOCKED | Chris, 2026-10-27 | "Choose Steam. PC-first. No parallel Roblox version." Reverses the handoff's sequencing rather than advancing it. The authored thing this design asks for - a dense department store, serious lighting, sound, animation, private expeditions - is a small Steam game, not an experience that must also hold up on a phone at low graphics, where shadow quality degrades and dense lights are the headline performance cost. Nothing in `src/` ports. `docs/PLATFORM.md` |
+| 2 | No PvP in this game. Adding it would replace the design, not extend it | LOCKED | Chris, handoff; re-scoped 2026-10-27 | Handoff, "Resolved design decisions". The supporting evidence in `reports/` - PvE is the million-CCU tier on Roblox - went with row 1; **the rule did not.** On 2026-10-27 Chris named "Counterstrike style multiplayer or something way later" as a thing to consider. That is logged as **O6**, undecided, and a later competitive mode would be a different product sharing a setting - it does not unlock this row for Last Lightkeepers |
 | 3 | Do not expand scope before the v1 loop passes its playtest question | LOCKED | Chris, handoff | Handoff. The question: do testers kill their lanterns, bank, and argue for one more room? |
 | 4 | One mall, and it is the Galleria | LOCKED | Chris, 2026-10-21 | "Whatever mall u built is our mall… let's unify and stop having 8 malls." `NOTES-FOR-CODEX.md` |
 | 28 | Version one is **one sealed department store**, furnished top to bottom. The rest of the Galleria is earned, not cut | LOCKED | Chris, 2026-10-26 | "The whole Galleria can be the eventual world, but the game begins with one sealed department store and earns its expansion." `docs/THE-STORE.md` |
 | 29 | Progression is a ladder of **practical recovery jobs**. Each one changes something visible, opens a route or a tool, and wakes a new threat. Never "collect ten glowing widgets" | LOCKED | Chris, 2026-10-26 | The opening five rungs are his. `docs/QUESTS.md` |
+| 33 | The Roblox project is a **design reference and prototype archive**. Not a second product, not maintained, not shipped | LOCKED | Chris, 2026-10-27 | "Keep the Roblox project only as a design reference and prototype archive - not a second product to maintain." Nothing is deleted; nothing is advanced either. Lanes, tag contracts and worklists in this repo describe a frozen prototype from here on |
+| 34 | The first PC build is **one department store, vertical slice**. Do not rebuild the whole Galleria yet | LOCKED | Chris, 2026-10-27 | "Build one PC-quality department-store vertical slice. Do not try to recreate the whole mall yet." Carries row 28 across the platform change unaltered - the sealed store was always the shape of version one. The full level list still stands as the eventual game: "I plan on having all those levels, we discussed and more" |
+| 35 | Engine: **Unreal Engine 5** | PROPOSED | Chris, 2026-10-27 | "The next real decision is engine, not platform. My recommendation is Unreal Engine 5." The reasoning is his: the strongest path to wet, decayed department-store lighting, dense interiors, cinematic sound and believable enemies - "the right kind of hard, because we would be building the actual game once." Left PROPOSED because he framed it as a recommendation and as the next decision, not as one taken. **This is the choice that costs the most to reverse later.** His to lock |
+| 36 | Solo, or private co-op for 1-4 friends. No public matchmaking | LOCKED | Chris, 2026-10-26, restated 2026-10-27 | **O5** decided this before the platform did, and PC makes it cheaper rather than harder: no server browser, no strangers, no persistent world. "Definitely single player or co op" |
+| 37 | Wider testing uses a **Steam Playtest child app**, not main-game beta keys | LOCKED | Chris, 2026-10-27 | Steam's own recommendation, and a Playtest can be opened or closed without touching the main game's store or review state. The reserved packages have roles now: Developer Comp for us, Beta Testing for a few trusted players, Playtest for anything wider. `docs/PLATFORM.md` |
 
 ## The core rules
 
@@ -62,7 +67,7 @@ down, not yet ratified. `OPEN` — named, undecided, waiting on someone.
 
 | # | Decision | Status | Who, when | Reasoning |
 | --- | --- | --- | --- | --- |
-| 23 | Sell belonging, identity and decoration. Never power, revives, capacity, loot odds, or keeping a haul after a wipe | LOCKED | Chris, handoff | Handoff. `reports/` notes this forfeits real revenue — Robux self-revives are an established Roblox pattern — and judges the forfeiture defensible |
+| 23 | Sell belonging, identity and decoration. Never power, revives, capacity, loot odds, or keeping a haul after a wipe | LOCKED | Chris, handoff; re-read 2026-10-27 | Handoff. `reports/` notes this forfeits real revenue — Robux self-revives are an established Roblox pattern — and judges the forfeiture defensible. **Row 1 makes most of this moot in the best way:** a PC game charges once at the door, so there is no shop to keep power out of. The list stands as a design guardrail - nothing may be sold *inside* the game either - but the revenue it was forfeiting is revenue a price tag gives back. What a paid game costs is **O7** |
 | 24 | Everything we ship, we own. A `rbxassetid` is a pointer, not an asset | LOCKED | Chris, 2026-10-20 | "we make our own assets and sounds then to carry." `docs/ASSETS.md` |
 
 ## Process
@@ -214,3 +219,44 @@ published place had exercised it; that test requirement is gone with it.
 **Still to settle:** whether a visitor's hand-in should credit the whole crew
 or only the host. Built as crew-credit - every keeper in the hall advances
 their own town - and the reasoning is at the top of `TownService.luau`.
+
+### O6. Competitive multiplayer, named for "way later"
+
+Chris, 2026-10-27, in the same message that chose Steam: "Consider
+Counterstrike style multiplayer or something way later."
+
+**This is logged, not decided, and it does not touch row 2.** Recording it
+rather than acting on it, for one reason: row 2 is a LOCKED guardrail whose
+whole text is that adding PvP would *replace* this design. An aside about
+something way later is not an unlock, and a guardrail that can be loosened by
+an aside is not a guardrail.
+
+The honest reading is that a competitive mode would be **a different product
+sharing a setting** - different pacing, different netcode, different art
+budget, a different reason to open it. There is a real version of that
+(Lightkeepers as a setting with a PvE game and a PvP game in it) and it costs
+nothing today to leave the door open, as long as nobody designs the PvE game
+*for* it. Nothing in the vertical slice should bend toward a competitive mode.
+
+**Chris's to answer, and not soon:** whether this is a someday-product or a
+passing thought. Until he says otherwise it is a passing thought.
+
+### O7. What does a paid game cost, and what does that change?
+
+Row 1 replaced a free-to-play economy with a price at the door, and nothing in
+the repo has caught up. Three things are undecided that Roblox's shape used to
+answer for us:
+
+- **The price.** The genre's proof points - the 4-player co-op horror
+  extraction games that actually sold - sit around $10-15. That is a decision
+  with a scope attached, because it is the budget the vertical slice has to
+  justify.
+- **Whether there is anything to buy after that.** Row 23 says never sell
+  power. A premium game can honour that trivially by selling nothing at all,
+  which is the recommendation.
+- **What `reports/` is now worth.** Those files are Roblox market research -
+  CCU tiers, discovery signals, Robux patterns, moderation load. The
+  *behavioural* findings still hold (loss aversion, Dredge's rule that position
+  must come from a choice about time, Dome Keeper's lift deleting its own
+  cost). The *platform* findings are history. Nobody should cite a CCU tier at
+  a Steam decision again.

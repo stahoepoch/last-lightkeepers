@@ -3,6 +3,30 @@
 Three parties touch this repo. This file exists so two agents don't overwrite
 each other's work. Agreed 2026-10-19.
 
+> ## STOP — the Roblox lanes are closed, 2026-10-27
+>
+> **Codex, this one is for you.** Chris chose Steam, PC-first, with no parallel
+> Roblox version — `docs/DECISIONS.md` row 1, LOCKED. The Roblox project is now
+> a design reference and prototype archive (row 33).
+>
+> **Every outstanding geometry request in this file is void.** Do not build or
+> tag the four `HallRoom` seals, the `LedgerBoard`, or the `RestorationPanel`.
+> The services that were waiting on them (`LedgerService`,
+> `RestorationService`) stay inert and that is now their final state. Nothing
+> in `src/` should be advanced by anyone.
+>
+> The tag contracts below are kept deliberately, because each one is a precise
+> statement of what a piece of the map has to *do* — "a sealed room that opens
+> when crates are handed in", "a panel that takes salvage and makes the
+> departure board reliable". That is specification the UE5 build needs. It is
+> not a build order any more.
+>
+> Lane ownership below still governs this archive: if you need a change outside
+> your lane in the frozen tree, write it down rather than editing it. New PC
+> work gets a new agreement, not this one.
+>
+> Start at `docs/PLATFORM.md`.
+
 ## Lanes
 
 | Party     | Owns                                                                                    |

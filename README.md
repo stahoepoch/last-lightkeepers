@@ -1,4 +1,17 @@
-# Last Lightkeepers — Roblox scaffold
+# Last Lightkeepers — Roblox prototype (archived 2026-10-27)
+
+> **This repo is no longer the product.** On 2026-10-27 Chris chose Steam,
+> PC-first, with no parallel Roblox version — `docs/DECISIONS.md` row 1,
+> LOCKED. The Roblox project is kept as a design reference and prototype
+> archive (row 33): nothing here is deleted, and nothing here is advanced.
+>
+> **Start at `docs/PLATFORM.md`.** It says what the decision is, what moves to
+> the PC build (the 3,075 lines of design docs and the eight `data/*.json`
+> value files — all of it engine-neutral) and what does not (15,080 lines of
+> Luau, and every Roblox API it touches).
+>
+> The rest of this README describes the archived prototype accurately. It is
+> still the fastest way to understand what each system does.
 
 Week-one graybox skeleton. Source of truth for design is the project handoff
 (`last-lightkeepers-claude-handoff-2026-10-19.pdf`); this repo implements it and
