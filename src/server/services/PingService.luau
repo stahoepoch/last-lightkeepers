@@ -17,18 +17,34 @@ local COOLDOWN = 1.2
 
 function PingService.init()
 	Remotes.get("PingRequest").OnServerEvent:Connect(function(player, position)
-		if typeof(position) ~= "Vector3" then return end
+		if typeof(position) ~= "Vector3" then
+			return
+		end
 		local run = RunStateService.current()
 		local state = run and run.lightkeepers[player.UserId]
 		local character = player.Character
 		local root = character and character:FindFirstChild("HumanoidRootPart")
-		if not run or run.finished or not state or state.knockedDown or not root or not root:IsA("BasePart") then return end
-		if (root.Position - position).Magnitude > MAX_RANGE then return end
+		if
+			not run
+			or run.finished
+			or not state
+			or state.knockedDown
+			or not root
+			or not root:IsA("BasePart")
+		then
+			return
+		end
+		if (root.Position - position).Magnitude > MAX_RANGE then
+			return
+		end
 		local now = os.clock()
-		if now - (lastPing[player.UserId] or -math.huge) < COOLDOWN then return end
+		if now - (lastPing[player.UserId] or -math.huge) < COOLDOWN then
+			return
+		end
 		lastPing[player.UserId] = now
 		for _, teammate in ipairs(Players:GetPlayers()) do
-			Remotes.get("PingSignal"):FireClient(teammate, { position = position, caller = player.DisplayName })
+			Remotes.get("PingSignal")
+				:FireClient(teammate, { position = position, caller = player.DisplayName })
 		end
 	end)
 end

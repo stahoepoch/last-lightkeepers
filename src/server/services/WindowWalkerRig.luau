@@ -31,7 +31,13 @@ local function weld(root: BasePart, part: BasePart)
 	constraint.Parent = part
 end
 
-local function part(model: Model, root: BasePart, name: string, size: Vector3, offset: Vector3): BasePart
+local function part(
+	model: Model,
+	root: BasePart,
+	name: string,
+	size: Vector3,
+	offset: Vector3
+): BasePart
 	local item = Instance.new("Part")
 	item.Name = name
 	item.Size = size

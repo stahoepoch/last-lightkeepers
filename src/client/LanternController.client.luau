@@ -37,14 +37,20 @@ end
 
 local function ensureLanternProp(): PointLight?
 	local character = player.Character
-	if not character then return nil end
+	if not character then
+		return nil
+	end
 	local mount = lanternMount(character)
-	if not mount then return nil end
+	if not mount then
+		return nil
+	end
 	local existing = character:FindFirstChild("KeeperLantern")
 	if existing then
 		local lens = existing:FindFirstChild("Lens", true)
 		local existingLight = lens and lens:FindFirstChildOfClass("PointLight")
-		if existingLight then return existingLight end
+		if existingLight then
+			return existingLight
+		end
 		existing:Destroy()
 	end
 
@@ -80,7 +86,8 @@ local function ensureLanternProp(): PointLight?
 	joint.Part0, joint.Part1, joint.Parent = mount, handle, handle
 	local created = Instance.new("PointLight")
 	created.Name = "Lantern"
-	created.Color, created.Range, created.Brightness, created.Shadows = LANTERN_COLOUR, LANTERN_RANGE, 2.4, false
+	created.Color, created.Range, created.Brightness, created.Shadows =
+		LANTERN_COLOUR, LANTERN_RANGE, 2.4, false
 	created.Enabled = false
 	created.Parent = lens
 	model.Parent = character

@@ -9,7 +9,6 @@ local STORE_NAME = "LightkeeperProfile_v1"
 local store: GlobalDataStore? = nil
 
 do
-
 	local ok, result = pcall(function()
 		return DataStoreService:GetDataStore(STORE_NAME)
 	end)

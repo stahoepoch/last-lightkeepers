@@ -59,7 +59,12 @@ local function build(): Model
 	for i = 0, 5 do
 		local angle = i * 60
 		local r = math.rad(angle)
-		leaf(model, root, Vector3.new(math.cos(r) * 1.05, 3.55 + (i % 2) * 0.35, math.sin(r) * 1.05), angle)
+		leaf(
+			model,
+			root,
+			Vector3.new(math.cos(r) * 1.05, 3.55 + (i % 2) * 0.35, math.sin(r) * 1.05),
+			angle
+		)
 	end
 
 	local sound = Instance.new("Sound")
@@ -88,7 +93,9 @@ function FicusRig.ensure(): Model
 		folder.Name, folder.Parent = FOLDER_NAME, ReplicatedStorage
 	end
 	local existing = folder:FindFirstChild(RIG_NAME)
-	if existing and existing:IsA("Model") then return existing end
+	if existing and existing:IsA("Model") then
+		return existing
+	end
 	local model = build()
 	model.Parent = folder
 	return model

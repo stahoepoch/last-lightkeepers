@@ -54,7 +54,7 @@ function EnemyService.pickTarget(fromPosition: Vector3, kind: Types.EnemyKind): 
 			continue
 		end
 
-		local distance = (((root :: BasePart).Position) - fromPosition).Magnitude
+		local distance = ((root :: BasePart).Position - fromPosition).Magnitude
 
 		-- A completed Glimmer tag overrides range and darkness entirely.
 		if state.taggedUntil then
@@ -175,41 +175,41 @@ function EnemyService.driveSweeper(model: Model)
 			-- which makes the holdout a location the mall converges on.
 			destination = destination or extractionDestination()
 			if destination then
-					-- AgentCanJump is a STOPGAP, not a design choice. A floor
-					-- cleaner should not hop.
-					--
-					-- Codex's two-level mall has grand stairs the navmesh will
-					-- not climb: measured tread to tread, the east stair returns
-					-- NoPath with jumping off and Success with it on, while the
-					-- upper deck paths fine once you are on it. The geometry
-					-- looks right - 1.35 rise, 3.2 going, edge to edge, 5 studs
-					-- of headroom - but a stack of discrete step boxes is what
-					-- the navmesh refuses without a sloped surface over it.
-					--
-					-- Left off, the upper gallery is a room no enemy can reach,
-					-- and the relic - the rarest tier, the whole reason to light
-					-- up - sits in it. A safe room holding the best loot is worse
-					-- than a robot that hops a step. Set this back to false once
-					-- the stairs are walkable; NOTES-FOR-CODEX.md has the
-					-- measurements.
-					local path = PathfindingService:CreatePath({
-						AgentRadius = 2,
-						AgentHeight = 4,
-						AgentCanJump = true,
-					})
-					local ok = pcall(function()
-						path:ComputeAsync((root :: BasePart).Position, destination)
-					end)
-					if ok and path.Status == Enum.PathStatus.Success then
-						for _, waypoint in ipairs(path:GetWaypoints()) do
-							if not model.Parent or humanoid.Health <= 0 then
-								return
-							end
-							humanoid:MoveTo(waypoint.Position)
-							humanoid.MoveToFinished:Wait()
+				-- AgentCanJump is a STOPGAP, not a design choice. A floor
+				-- cleaner should not hop.
+				--
+				-- Codex's two-level mall has grand stairs the navmesh will
+				-- not climb: measured tread to tread, the east stair returns
+				-- NoPath with jumping off and Success with it on, while the
+				-- upper deck paths fine once you are on it. The geometry
+				-- looks right - 1.35 rise, 3.2 going, edge to edge, 5 studs
+				-- of headroom - but a stack of discrete step boxes is what
+				-- the navmesh refuses without a sloped surface over it.
+				--
+				-- Left off, the upper gallery is a room no enemy can reach,
+				-- and the relic - the rarest tier, the whole reason to light
+				-- up - sits in it. A safe room holding the best loot is worse
+				-- than a robot that hops a step. Set this back to false once
+				-- the stairs are walkable; NOTES-FOR-CODEX.md has the
+				-- measurements.
+				local path = PathfindingService:CreatePath({
+					AgentRadius = 2,
+					AgentHeight = 4,
+					AgentCanJump = true,
+				})
+				local ok = pcall(function()
+					path:ComputeAsync((root :: BasePart).Position, destination)
+				end)
+				if ok and path.Status == Enum.PathStatus.Success then
+					for _, waypoint in ipairs(path:GetWaypoints()) do
+						if not model.Parent or humanoid.Health <= 0 then
+							return
 						end
+						humanoid:MoveTo(waypoint.Position)
+						humanoid.MoveToFinished:Wait()
 					end
 				end
+			end
 			task.wait(REPATH_INTERVAL)
 		end
 	end)
@@ -223,7 +223,8 @@ local function spawnExtractionWave(exitPart: BasePart, count: number)
 		end
 	end
 	table.sort(points, function(a, b)
-		return (a.Position - exitPart.Position).Magnitude < (b.Position - exitPart.Position).Magnitude
+		return (a.Position - exitPart.Position).Magnitude
+			< (b.Position - exitPart.Position).Magnitude
 	end)
 	-- Do not materialise a robot in the holdout circle. Starting from the
 	-- nearest legal sweeper post past the first two means the response arrives
@@ -303,7 +304,12 @@ local function findAnyLitGlimmerTarget(): Player?
 	return nil
 end
 
-local function hasLineOfSight(from: BasePart, target: BasePart, glimmer: Model, character: Model): boolean
+local function hasLineOfSight(
+	from: BasePart,
+	target: BasePart,
+	glimmer: Model,
+	character: Model
+): boolean
 	local parameters = RaycastParams.new()
 	parameters.FilterType = Enum.RaycastFilterType.Exclude
 	parameters.FilterDescendantsInstances = { glimmer, character }
@@ -384,7 +390,11 @@ local function pickWalkerTarget(from: BasePart, walker: Model, range: number, de
 		local targetRoot = character and character:FindFirstChild("HumanoidRootPart")
 		if character and targetRoot and targetRoot:IsA("BasePart") then
 			local distance = (targetRoot.Position - from.Position).Magnitude
-			if distance <= range and distance < bestDistance and hasLineOfSight(from, targetRoot, walker, character) then
+			if
+				distance <= range
+				and distance < bestDistance
+				and hasLineOfSight(from, targetRoot, walker, character)
+			then
 				closest, bestDistance = player, distance
 			end
 		end
@@ -420,12 +430,18 @@ function EnemyService.driveWindowWalker(model: Model)
 	task.spawn(function()
 		local contact = Config.Lantern.sweeperContact
 		while model.Parent and humanoid.Health > 0 do
-			if awake and telegraphedAt and os.clock() - telegraphedAt >= def.audioTelegraphSeconds then
+			if
+				awake
+				and telegraphedAt
+				and os.clock() - telegraphedAt >= def.audioTelegraphSeconds
+			then
 				for _, player in ipairs(Players:GetPlayers()) do
 					local character = player.Character
 					local targetRoot = character and character:FindFirstChild("HumanoidRootPart")
 					if targetRoot and targetRoot:IsA("BasePart") then
-						if (root.Position - targetRoot.Position).Magnitude <= contact.contactRange then
+						if
+							(root.Position - targetRoot.Position).Magnitude <= contact.contactRange
+						then
 							RunStateService.registerContact(player)
 						end
 					end
@@ -437,7 +453,8 @@ function EnemyService.driveWindowWalker(model: Model)
 
 	task.spawn(function()
 		while model.Parent and humanoid.Health > 0 do
-		local target = pickWalkerTarget(root, model, if awake then def.sightRange else def.wakeRange, def)
+			local target =
+				pickWalkerTarget(root, model, if awake then def.sightRange else def.wakeRange, def)
 			if target and not awake then
 				wake()
 			end
@@ -460,7 +477,9 @@ end
 function EnemyService.driveFicus(model: Model)
 	local humanoid = model:FindFirstChildOfClass("Humanoid")
 	local root = model:FindFirstChild("HumanoidRootPart")
-	if not humanoid or not root or not root:IsA("BasePart") then return end
+	if not humanoid or not root or not root:IsA("BasePart") then
+		return
+	end
 	local def = Config.Enemies.Ficus
 	humanoid.WalkSpeed, humanoid.MaxHealth, humanoid.Health = def.moveSpeed, def.health, def.health
 	local sound = root:FindFirstChild("Telegraph") :: Sound?
@@ -468,11 +487,20 @@ function EnemyService.driveFicus(model: Model)
 	task.spawn(function()
 		local contact = Config.Lantern.sweeperContact
 		while model.Parent and humanoid.Health > 0 do
-			if awake and telegraphedAt and os.clock() - telegraphedAt >= def.audioTelegraphSeconds then
+			if
+				awake
+				and telegraphedAt
+				and os.clock() - telegraphedAt >= def.audioTelegraphSeconds
+			then
 				for _, player in ipairs(Players:GetPlayers()) do
 					local character = player.Character
 					local targetRoot = character and character:FindFirstChild("HumanoidRootPart")
-					if targetRoot and targetRoot:IsA("BasePart") and (root.Position - targetRoot.Position).Magnitude <= contact.contactRange then
+					if
+						targetRoot
+						and targetRoot:IsA("BasePart")
+						and (root.Position - targetRoot.Position).Magnitude
+							<= contact.contactRange
+					then
 						RunStateService.registerContact(player)
 					end
 				end
@@ -482,14 +510,17 @@ function EnemyService.driveFicus(model: Model)
 	end)
 	task.spawn(function()
 		while model.Parent and humanoid.Health > 0 do
-			local target = pickWalkerTarget(root, model, if awake then def.sightRange else def.wakeRange, def)
+			local target =
+				pickWalkerTarget(root, model, if awake then def.sightRange else def.wakeRange, def)
 			if target and not awake then
 				awake, telegraphedAt = true, os.clock()
 				if sound and sound.SoundId ~= "" then
 					sound:Play()
 				end
 			end
-			local targetRoot = target and target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+			local targetRoot = target
+				and target.Character
+				and target.Character:FindFirstChild("HumanoidRootPart")
 			if awake and targetRoot and targetRoot:IsA("BasePart") then
 				humanoid:MoveTo(targetRoot.Position)
 			else
@@ -563,7 +594,9 @@ function EnemyService.spawnGlimmerForLitTarget()
 	end
 	local clone = template:Clone()
 	-- Spawn inside the same nearby court, never directly on top of a player.
-	clone:PivotTo(CFrame.new(targetRoot.Position + Vector3.new(Config.Enemies.Glimmers.scanRange - 5, 3, 0)))
+	clone:PivotTo(
+		CFrame.new(targetRoot.Position + Vector3.new(Config.Enemies.Glimmers.scanRange - 5, 3, 0))
+	)
 	clone.Parent = workspace
 	EnemyService.driveGlimmer(clone)
 end
@@ -577,7 +610,11 @@ function EnemyService.spawnWindowWalkerForPlayer(spawnPoint: BasePart?)
 	for userId, state in pairs(run.lightkeepers) do
 		if not state.knockedDown then
 			local candidate = Players:GetPlayerByUserId(userId)
-			if candidate and candidate.Character and candidate.Character:FindFirstChild("HumanoidRootPart") then
+			if
+				candidate
+				and candidate.Character
+				and candidate.Character:FindFirstChild("HumanoidRootPart")
+			then
 				target = candidate
 				break
 			end
@@ -593,7 +630,9 @@ function EnemyService.spawnWindowWalkerForPlayer(spawnPoint: BasePart?)
 	-- Prefer a known enemy marker to an arbitrary point in the new mall. This
 	-- keeps the map authoritative about safe spawnable floor while still letting
 	-- the Walker exist without its own map tag.
-	local spawnPosition = if spawnPoint then spawnPoint.Position + Vector3.new(0, 3, 0) else targetRoot.Position + Vector3.new(24, 3, 0)
+	local spawnPosition = if spawnPoint
+		then spawnPoint.Position + Vector3.new(0, 3, 0)
+		else targetRoot.Position + Vector3.new(24, 3, 0)
 	if not spawnPoint then
 		local nearestDistance = math.huge
 		for _, point in ipairs(CollectionService:GetTagged("SweeperSpawn")) do
@@ -630,9 +669,13 @@ function EnemyService.spawnWindowWalkersAtStoreMarkers()
 end
 
 function EnemyService.spawnFicusAt(point: Instance, offset: Vector3?)
-	if not point:IsA("BasePart") then return end
+	if not point:IsA("BasePart") then
+		return
+	end
 	local template = ficusTemplate()
-	if not template then return end
+	if not template then
+		return
+	end
 	local clone = template:Clone()
 	clone:PivotTo(point.CFrame * CFrame.new(offset or Vector3.new(0, 3, 0)))
 	clone.Parent = Workspace
@@ -666,7 +709,17 @@ function EnemyService.clearSweepers()
 	extractionBeacon = nil
 	extractionBeaconEndsAt = 0
 	for _, model in ipairs(workspace:GetChildren()) do
-		if model:IsA("Model") and (model.Name == "Sweeper" or model.Name == "Stocker" or model.Name == "Glimmer" or model.Name == "WindowWalker" or model.Name == "Ficus" or model.Name == "Warden") then
+		if
+			model:IsA("Model")
+			and (
+				model.Name == "Sweeper"
+				or model.Name == "Stocker"
+				or model.Name == "Glimmer"
+				or model.Name == "WindowWalker"
+				or model.Name == "Ficus"
+				or model.Name == "Warden"
+			)
+		then
 			model:Destroy()
 		end
 	end
@@ -679,27 +732,41 @@ function EnemyService.spawnSweepersAtTaggedPoints()
 end
 
 function EnemyService.spawnStockerAt(point: Instance)
-	if not point:IsA("BasePart") then return end
+	if not point:IsA("BasePart") then
+		return
+	end
 	local enemies = ReplicatedStorage:FindFirstChild("Enemies")
 	local template = enemies and enemies:FindFirstChild("Sweeper")
-	if not template or not template:IsA("Model") then return end
+	if not template or not template:IsA("Model") then
+		return
+	end
 	local model = template:Clone()
 	model.Name = "Stocker"
 	model:PivotTo(point.CFrame * CFrame.new(0, 3, 0))
 	model.Parent = Workspace
-	local humanoid, root = model:FindFirstChildOfClass("Humanoid"), model:FindFirstChild("HumanoidRootPart")
-	if not humanoid or not root or not root:IsA("BasePart") then model:Destroy(); return end
+	local humanoid, root =
+		model:FindFirstChildOfClass("Humanoid"), model:FindFirstChild("HumanoidRootPart")
+	if not humanoid or not root or not root:IsA("BasePart") then
+		model:Destroy()
+		return
+	end
 	local def = Config.Enemies.Stockers
 	humanoid.WalkSpeed, humanoid.MaxHealth, humanoid.Health = def.moveSpeed, def.health, def.health
 	local cue = root:FindFirstChild("Telegraph")
-	if cue and cue:IsA("Sound") then cue:Play() end
+	if cue and cue:IsA("Sound") then
+		cue:Play()
+	end
 	task.spawn(function()
 		while model.Parent and humanoid.Health > 0 do
 			local target = EnemyService.pickTarget(root.Position, "Stockers")
-			local targetRoot = target and target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+			local targetRoot = target
+				and target.Character
+				and target.Character:FindFirstChild("HumanoidRootPart")
 			if targetRoot and targetRoot:IsA("BasePart") then
 				humanoid:MoveTo(targetRoot.Position)
-				if (root.Position - targetRoot.Position).Magnitude <= 7 then RunStateService.knockDown(target :: Player) end
+				if (root.Position - targetRoot.Position).Magnitude <= 7 then
+					RunStateService.knockDown(target :: Player)
+				end
 			end
 			task.wait(REPATH_INTERVAL)
 		end
@@ -707,7 +774,9 @@ function EnemyService.spawnStockerAt(point: Instance)
 end
 
 function EnemyService.spawnStockersAtTaggedPoints()
-	for _, point in ipairs(CollectionService:GetTagged("StockerSpawn")) do EnemyService.spawnStockerAt(point) end
+	for _, point in ipairs(CollectionService:GetTagged("StockerSpawn")) do
+		EnemyService.spawnStockerAt(point)
+	end
 end
 
 --- Storm Charge thresholds are the only pacing dial for enemy pressure.
@@ -734,22 +803,34 @@ function EnemyService.spawnWarden()
 	for userId, state in pairs(run.lightkeepers) do
 		if not state.knockedDown then
 			local player = Players:GetPlayerByUserId(userId)
-			local root = player and player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-			if root and root:IsA("BasePart") then target = root break end
+			local root = player
+				and player.Character
+				and player.Character:FindFirstChild("HumanoidRootPart")
+			if root and root:IsA("BasePart") then
+				target = root
+				break
+			end
 		end
 	end
-	if not target then return end
+	if not target then
+		return
+	end
 	local warden = template:Clone()
 	warden.Name = "Warden"
 	warden:PivotTo(CFrame.new(target.Position + Vector3.new(70, 4, 70)))
 	warden.Parent = Workspace
 	local humanoid = warden:FindFirstChildOfClass("Humanoid")
 	local root = warden:FindFirstChild("HumanoidRootPart")
-	if not humanoid or not root or not root:IsA("BasePart") then warden:Destroy() return end
+	if not humanoid or not root or not root:IsA("BasePart") then
+		warden:Destroy()
+		return
+	end
 	humanoid.WalkSpeed = Config.Enemies.Warden.moveSpeed
 	humanoid.MaxHealth, humanoid.Health = math.huge, math.huge
 	local sound = root:FindFirstChild("Telegraph")
-	if sound and sound:IsA("Sound") then sound:Play() end
+	if sound and sound:IsA("Sound") then
+		sound:Play()
+	end
 	task.spawn(function()
 		while warden.Parent and RunStateService.current() == run and not run.finished do
 			local nearest: BasePart? = nil
@@ -757,10 +838,14 @@ function EnemyService.spawnWarden()
 			for userId, state in pairs(run.lightkeepers) do
 				if not state.knockedDown then
 					local player = Players:GetPlayerByUserId(userId)
-					local candidate = player and player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+					local candidate = player
+						and player.Character
+						and player.Character:FindFirstChild("HumanoidRootPart")
 					if candidate and candidate:IsA("BasePart") then
 						local d = (candidate.Position - root.Position).Magnitude
-						if d < distance then nearest, distance = candidate, d end
+						if d < distance then
+							nearest, distance = candidate, d
+						end
 					end
 				end
 			end
@@ -768,12 +853,16 @@ function EnemyService.spawnWarden()
 				humanoid:MoveTo(nearest.Position)
 				if distance < 7 then
 					local player = Players:GetPlayerFromCharacter(nearest.Parent)
-					if player then RunStateService.knockDown(player) end
+					if player then
+						RunStateService.knockDown(player)
+					end
 				end
 			end
 			task.wait(Config.Enemies.Warden.retargetIntervalSeconds)
 		end
-		if warden.Parent then warden:Destroy() end
+		if warden.Parent then
+			warden:Destroy()
+		end
 	end)
 end
 
@@ -808,7 +897,9 @@ function EnemyService.init()
 		-- the spawn still introduces one during the opening push.
 		for _ = 1, 20 do
 			task.wait(2)
-			if not RunStateService.current() then return end
+			if not RunStateService.current() then
+				return
+			end
 			if not Workspace:FindFirstChild("Glimmer") then
 				EnemyService.spawnGlimmerForLitTarget()
 			end
@@ -818,11 +909,13 @@ function EnemyService.init()
 	-- extraction and relay watchers.
 	if not watchingSpawnerTags then
 		watchingSpawnerTags = true
-		CollectionService:GetInstanceAddedSignal("SweeperSpawn"):Connect(EnemyService.spawnSweeperAt)
+		CollectionService:GetInstanceAddedSignal("SweeperSpawn")
+			:Connect(EnemyService.spawnSweeperAt)
 	end
 	if not watchingStockerTags then
 		watchingStockerTags = true
-		CollectionService:GetInstanceAddedSignal("StockerSpawn"):Connect(EnemyService.spawnStockerAt)
+		CollectionService:GetInstanceAddedSignal("StockerSpawn")
+			:Connect(EnemyService.spawnStockerAt)
 	end
 end
 

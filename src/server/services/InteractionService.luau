@@ -27,7 +27,12 @@ local TAG_EXTRACTION = "Extraction"
 
 local InteractionService = {}
 
-local function makePrompt(parent: Instance, actionText: string, objectText: string, holdSeconds: number): ProximityPrompt
+local function makePrompt(
+	parent: Instance,
+	actionText: string,
+	objectText: string,
+	holdSeconds: number
+): ProximityPrompt
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = actionText
 	prompt.ObjectText = objectText
@@ -94,7 +99,9 @@ local function attachExtractionPrompt(instance: Instance)
 
 	local id = instance:GetAttribute("ExtractionId")
 	if typeof(id) ~= "string" or Config.Loot.extraction[id] == nil then
-		warn(`[InteractionService] extraction "{instance:GetFullName()}" has an invalid ExtractionId`)
+		warn(
+			`[InteractionService] extraction "{instance:GetFullName()}" has an invalid ExtractionId`
+		)
 		return
 	end
 
@@ -125,9 +132,13 @@ local function watchForDowns()
 		-- teammate interaction when a teammate is actually close enough to use it.
 		for _, rescuer in ipairs(Players:GetPlayers()) do
 			if rescuer ~= target then
-				local rescuerRoot = rescuer.Character and rescuer.Character:FindFirstChild("HumanoidRootPart")
+				local rescuerRoot = rescuer.Character
+					and rescuer.Character:FindFirstChild("HumanoidRootPart")
 				if rescuerRoot and rescuerRoot:IsA("BasePart") then
-					if (rescuerRoot.Position - root.Position).Magnitude <= Config.Lantern.revive.maxReviveDistance then
+					if
+						(rescuerRoot.Position - root.Position).Magnitude
+						<= Config.Lantern.revive.maxReviveDistance
+					then
 						return true
 					end
 				end

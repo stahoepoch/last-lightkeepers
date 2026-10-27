@@ -123,15 +123,19 @@ haulFrame.Parent = screen
 
 local haulTitle = Instance.new("TextLabel")
 haulTitle.Name = "Title"
-haulTitle.Position, haulTitle.Size, haulTitle.BackgroundTransparency = UDim2.fromOffset(12, 6), UDim2.fromOffset(166, 20), 1
-haulTitle.Font, haulTitle.TextSize, haulTitle.TextXAlignment = Enum.Font.GothamBold, 13, Enum.TextXAlignment.Left
+haulTitle.Position, haulTitle.Size, haulTitle.BackgroundTransparency =
+	UDim2.fromOffset(12, 6), UDim2.fromOffset(166, 20), 1
+haulTitle.Font, haulTitle.TextSize, haulTitle.TextXAlignment =
+	Enum.Font.GothamBold, 13, Enum.TextXAlignment.Left
 haulTitle.TextColor3, haulTitle.Text = Color3.fromRGB(255, 222, 161), "CARRIED — LOSE ON WIPE"
 haulTitle.Parent = haulFrame
 
 local haulLines = Instance.new("TextLabel")
 haulLines.Name = "Items"
-haulLines.Position, haulLines.Size, haulLines.BackgroundTransparency = UDim2.fromOffset(12, 29), UDim2.fromOffset(166, 78), 1
-haulLines.Font, haulLines.TextSize, haulLines.TextXAlignment, haulLines.TextYAlignment = Enum.Font.GothamMedium, 14, Enum.TextXAlignment.Left, Enum.TextYAlignment.Top
+haulLines.Position, haulLines.Size, haulLines.BackgroundTransparency =
+	UDim2.fromOffset(12, 29), UDim2.fromOffset(166, 78), 1
+haulLines.Font, haulLines.TextSize, haulLines.TextXAlignment, haulLines.TextYAlignment =
+	Enum.Font.GothamMedium, 14, Enum.TextXAlignment.Left, Enum.TextYAlignment.Top
 haulLines.TextColor3, haulLines.TextWrapped = Color3.fromRGB(221, 230, 239), true
 haulLines.Parent = haulFrame
 
@@ -145,7 +149,9 @@ local function updateHaul(haul: { [string]: number }?, burden: number?)
 			table.insert(lines, string.format("%s  x%d", names[tier] or tier, amount))
 		end
 	end
-	haulTitle.Text = if burden and burden > 0 then string.format("CARRIED — %d%% SLOWER", math.floor(math.min(burden * 4.5, 42) + 0.5)) else "CARRIED — LOSE ON WIPE"
+	haulTitle.Text = if burden and burden > 0
+		then string.format("CARRIED — %d%% SLOWER", math.floor(math.min(burden * 4.5, 42) + 0.5))
+		else "CARRIED — LOSE ON WIPE"
 	haulFrame.Visible = #lines > 0
 	haulLines.Text = table.concat(lines, "\n")
 end
@@ -219,7 +225,9 @@ extractionAlert.Parent = screen
 Remotes.get("DownedSignal").OnClientEvent:Connect(function(signal)
 	crewAlert.Text = string.format("KEEPER DOWN: %s — FIND THEM", tostring(signal.name))
 	crewAlert.Visible = true
-	task.delay(7, function() crewAlert.Visible = false end)
+	task.delay(7, function()
+		crewAlert.Visible = false
+	end)
 end)
 
 Remotes.get("ExtractionState").OnClientEvent:Connect(function(state)
@@ -231,19 +239,33 @@ Remotes.get("ExtractionState").OnClientEvent:Connect(function(state)
 	task.spawn(function()
 		while extractionAlert.Visible and state.endsAt do
 			local left = math.max(0, state.endsAt - workspace:GetServerTimeNow())
-			local root = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+			local root = Players.LocalPlayer.Character
+				and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
 			-- Multiple doors begin open. The server tells us which physical door
 			-- was called so this message never judges distance to a different exit.
-			local activeExit = if typeof(state.exit) == "Instance" and state.exit:IsA("BasePart")
+			local activeExit = if typeof(state.exit) == "Instance"
+					and state.exit:IsA("BasePart")
 				then state.exit
 				else nil
 			-- Match the server's forgiving physical exit zone. The visible dock/lift
 			-- footprint is larger than its tiny marker part, so the HUD must not say
 			-- "GET TO THE EXIT" while the server will successfully extract you.
-			local zone = if root and activeExit and activeExit:IsA("BasePart") then (root.Position - activeExit.Position).Magnitude <= 24 else false
+			local zone = if root
+					and activeExit
+					and activeExit:IsA("BasePart")
+				then (root.Position - activeExit.Position).Magnitude <= 24
+				else false
 			local place = if zone then "YOU ARE IN THE EXIT" else "GET TO THE EXIT"
-			extractionAlert.Text = string.format("%s CALLED BY %s — %ds — %s", tostring(state.via), tostring(state.caller), math.ceil(left), place)
-			if left <= 0 then break end
+			extractionAlert.Text = string.format(
+				"%s CALLED BY %s — %ds — %s",
+				tostring(state.via),
+				tostring(state.caller),
+				math.ceil(left),
+				place
+			)
+			if left <= 0 then
+				break
+			end
 			task.wait(0.1)
 		end
 	end)
@@ -289,7 +311,9 @@ Remotes.get("RunSnapshot").OnClientEvent:Connect(function(snapshot)
 	local limit = snapshot.hitsToKnockDown or 3
 	if hits > lastHits and not snapshot.yourKnockedDown then
 		local left = math.max(limit - hits, 0)
-		hit.Text = if left == 1 then "HIT - one more and you are down" else string.format("HIT - %d more and you are down", left)
+		hit.Text = if left == 1
+			then "HIT - one more and you are down"
+			else string.format("HIT - %d more and you are down", left)
 		hit.Visible = true
 		hitShownAt = os.clock()
 	end
@@ -346,7 +370,12 @@ Remotes.get("RunSnapshot").OnClientEvent:Connect(function(snapshot)
 	elseif (snapshot.crewDown or 0) > 0 then
 		label.Text = string.format("%d down - go get them", snapshot.crewDown)
 	elseif lanterns > 0 then
-		label.Text = string.format("%d lantern%s lit - storm rising %.1fx", lanterns, if lanterns == 1 then "" else "s", multiplier)
+		label.Text = string.format(
+			"%d lantern%s lit - storm rising %.1fx",
+			lanterns,
+			if lanterns == 1 then "" else "s",
+			multiplier
+		)
 	else
 		label.Text = "Dark - storm still rising"
 	end
@@ -369,5 +398,6 @@ Remotes.get("RunEnded").OnClientEvent:Connect(function(result)
 		then string.format("Extracted via %s", tostring(result.via))
 		else "The storm took the haul - extract or lose everything"
 
-	label.Text = headline .. (if #lines > 0 then "  |  " .. table.concat(lines, ", ") else "  |  nothing recovered")
+	label.Text = headline
+		.. (if #lines > 0 then "  |  " .. table.concat(lines, ", ") else "  |  nothing recovered")
 end)
