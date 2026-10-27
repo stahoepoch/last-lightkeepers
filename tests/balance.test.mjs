@@ -288,6 +288,97 @@ console.log("\nThe ledger and the rooms");
   );
 }
 
+console.log("\nRung one, the departure generator");
+{
+  const ledger = load("ledger.json");
+  const loot = load("loot.json");
+  const built = ledger.rungs.filter((r) => r.restoration);
+
+  check(
+    "exactly one rung is built",
+    built.length === 1 && built[0].id === "DepartureGenerator",
+    `built: ${built.map((r) => r.id).join(", ") || "none"}`,
+  );
+
+  const r = built[0].restoration;
+
+  // The room is the home half of the same job: crates open it, salvage makes
+  // the thing inside it run. A rung pointing at a room that does not exist
+  // would be unreachable rather than hard.
+  check(
+    "the rung's room is a real room",
+    ledger.rooms.some((room) => room.id === r.requiresRoom),
+    `wants ${r.requiresRoom}`,
+  );
+  check(
+    "the room points back at the rung",
+    ledger.rooms.some((room) => room.id === r.requiresRoom && room.rung === built[0].id),
+    "a rung and its room must agree, or one of them is for something else",
+  );
+
+  // Salvage is spent out of `materials`, so every tier named has to be a tier
+  // the game actually pays out.
+  const tiers = Object.keys(loot.tiers);
+  const asked = Object.keys(r.salvage);
+  check("the salvage costs something", asked.length > 0);
+  check(
+    "every salvage tier is a real loot tier",
+    asked.every((tier) => tiers.includes(tier)),
+    `asked ${asked.join(", ")}; tiers ${tiers.join(", ")}`,
+  );
+  check(
+    "salvage amounts are whole and positive",
+    asked.every((tier) => Number.isInteger(r.salvage[tier]) && r.salvage[tier] > 0),
+  );
+  // Chris's job line is fuses and wiring, which loot.json files under
+  // Components. A rung asking for relics would break REWARDS.md, which keeps
+  // relics for cosmetics and landmarks.
+  check(
+    "rung one does not spend relics",
+    !asked.includes("Relics"),
+    "docs/REWARDS.md keeps relics out of progression costs",
+  );
+
+  // What it opens has to be worth the trip, and what it wakes has to be real.
+  const d = r.departure;
+  check(
+    "restoring the board makes departures faster",
+    d.poweredSeconds < d.unpoweredSeconds,
+    `${d.unpoweredSeconds}s unpowered, ${d.poweredSeconds}s powered`,
+  );
+  check(
+    "an unpowered departure can actually fail",
+    d.unpoweredFalseStartChance > 0 && d.unpoweredFalseStartChance < 1,
+    `got ${d.unpoweredFalseStartChance} - at 0 "reliable departures" is not a reward, at 1 the game cannot start`,
+  );
+  check(
+    "a powered departure is still a wait",
+    d.poweredSeconds > 0,
+    "the countdown is what lets a crew see the road open",
+  );
+
+  // The complication. Every enemy it names has to exist and has to be one that
+  // waking to light means anything for.
+  const enemies = load("enemies.json");
+  const woken = r.wakesWithoutLantern;
+  check("the rung wakes something", Array.isArray(woken) && woken.length > 0);
+  check(
+    "every woken enemy is in the roster",
+    woken.every((name) => enemies[name]),
+    `names ${woken.join(", ")}`,
+  );
+  check(
+    "every woken enemy woke to lantern light before",
+    woken.every((name) => enemies[name].wakeRequiresActiveLantern === true),
+    "powered light only changes an enemy that was waiting for light; naming any other is a no-op",
+  );
+  check(
+    "the rung's own prose says it wakes them",
+    /window walker/i.test(built[0].wakes),
+    `wakes: "${built[0].wakes}"`,
+  );
+}
+
 console.log(`\n${checks - failures}/${checks} passed`);
 if (failures > 0) {
   console.log(`${failures} FAILED\n`);

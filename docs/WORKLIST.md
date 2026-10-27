@@ -139,6 +139,18 @@ visible from where the player stands, the thing it wakes actually wakes, and
 the trade was stated in the ledger before the player accepted it. No quest
 state machine - a flag and a cost.
 
+**DONE 2026-10-27.** `data/ledger.json` gained a `restoration` block on rung
+one; `RestorationService` owns the flag and the cost; the generator room is the
+half the crates pay for and 4 Components is the half the store pays for.
+Reliable departures and the markers are real: an unpowered board winds up for
+twelve seconds and fails about a third of the time, a powered one takes five and
+holds, and once restored the board prints the ways out with their holds and
+payouts. The complication is real too - `wakesWithoutLantern` means going dark
+stops protecting a keeper from Window Walkers once the lights are on. Every
+number is proposed and Chris's to set. **Still needs one tag from the map lane,**
+`RestorationPanel`, contract in `COORDINATION.md`; until then the service is
+inert like every other hall fixture. Nothing has been seen in Studio.
+
 ### A10. The fight you start
 
 **Why.** Five of six enemies have had a health value since the handoff and

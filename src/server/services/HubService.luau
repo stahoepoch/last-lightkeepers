@@ -16,8 +16,11 @@
 -- All three are no-ops when the hub is not in the world, so a mall-only test
 -- place behaves exactly as it did before.
 --
--- The ledger board and the hall's rooms live in LedgerService and are started
--- from this file's `init`. They follow the same rule: absent geometry, no-op.
+-- The ledger board and the hall's rooms live in LedgerService, and the ladder's
+-- rungs in RestorationService. Both are started from `init.server.luau` and
+-- follow the same rule as the three above: absent geometry, no-op. This file
+-- only pokes LedgerService.refresh() on a hand-in, because the crate that just
+-- went over the counter may have paid for a door.
 
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -519,13 +522,6 @@ function HubService.init()
 
 	writeBoard()
 	Players.PlayerRemoving:Connect(HubService.release)
-
-	-- The ledger and the hall's rooms are the same fixture family as the three
-	-- above, so they come up with them. Started from here rather than from
-	-- init.server.luau on purpose: that file currently requires an untracked
-	-- ExpeditionService (WORKLIST A8), so anything added to it cannot be
-	-- committed without handing someone a broken checkout.
-	LedgerService.init()
 end
 
 return HubService

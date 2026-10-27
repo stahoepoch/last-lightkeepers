@@ -8,7 +8,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Remotes = require(Shared:WaitForChild("Remotes"))
 
+local RestorationService = require(script.Parent:WaitForChild("RestorationService"))
+
 local ExpeditionService = {}
+
+-- The board's own luck, not the run's. One generator rolls one false start.
+local rng = Random.new()
 local routes = {
 	Galleria = {
 		title = "The Galleria",
@@ -30,6 +35,10 @@ local function snapshot(message: string?)
 		launching = launching,
 		raidActive = raidActive,
 		departureEndsAt = departureEndsAt,
+		-- What the board runs on, and what that costs. Sent on every snapshot
+		-- so the trade is on the board before anyone presses launch, which is
+		-- the whole reason rung one's reward reads as a reward.
+		power = RestorationService.departureLines(),
 		message = message or "Choose a raid destination.",
 	}
 end
@@ -83,15 +92,30 @@ local function request(player: Player, action: any, route: any)
 		selected = route
 		broadcast(`Route selected: {routes[selected].title}`)
 	elseif action == "launch" then
+		-- An unpowered board winds up slowly and sometimes dies instead. This
+		-- is rung one's reward stated as a cost: restoring the generator buys
+		-- five seconds and certainty. RestorationService owns both numbers, so
+		-- nothing here knows which rung powers the board.
+		local seconds, falseStart = RestorationService.departureTiming()
 		launching = true
-		departureEndsAt = workspace:GetServerTimeNow() + 5
+		departureEndsAt = workspace:GetServerTimeNow() + seconds
 		token += 1
 		local mine = token
-		broadcast("Leaving Lanternhold in 5 seconds.")
-		task.delay(5, function()
-			if launching and token == mine then
-				launch()
+		broadcast(`Leaving Lanternhold in {seconds} seconds.`)
+		task.delay(seconds, function()
+			if not launching or token ~= mine then
+				return
 			end
+			-- Rolled at the end rather than at the press, so a failure costs
+			-- the wait. A board that refused instantly would cost nothing and
+			-- teach nobody to want the generator fixed.
+			if falseStart > 0 and rng:NextNumber() < falseStart then
+				launching = false
+				departureEndsAt = nil
+				broadcast("The board goes dark. Nothing leaves. Try it again.")
+				return
+			end
+			launch()
 		end)
 	end
 end

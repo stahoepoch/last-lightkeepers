@@ -33,6 +33,11 @@ export type Profile = {
 	-- subtracted from `contributions` - that total is credit and cannot be spent
 	-- away - so what a keeper has left to commit is derived from the two.
 	rooms: { [string]: boolean },
+	-- Which ladder rungs this keeper has restored, by rung id. Permanent, like
+	-- `rooms`: docs/QUESTS.md locks that no restoration is reversible. Unlike
+	-- `rooms`, the price is not crates but salvage out of `materials`, which is
+	-- really spent - so this table is the only record that it was spent.
+	restorations: { [string]: boolean },
 	runsCompleted: number,
 	-- Set when the DataStore read failed. Never persisted; it exists only to stop
 	-- a blank profile overwriting a real one.
@@ -46,6 +51,7 @@ local function defaultProfile(): Profile
 		cosmetics = {},
 		contributions = {},
 		rooms = {},
+		restorations = {},
 		runsCompleted = 0,
 	}
 end

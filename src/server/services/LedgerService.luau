@@ -128,6 +128,14 @@ local function committedBy(player: Player): number
 	return spent
 end
 
+--- Whether one room of this keeper's hall is open, and whether that is
+--- persisted rather than session-only. RestorationService asks this: rung one
+--- cannot be done until the generator room it is in has been opened.
+function LedgerService.isOpen(player: Player, roomId: string): (boolean, boolean)
+	local opened, persisted = roomsOf(player)
+	return opened[roomId] == true, persisted
+end
+
 --- What this keeper has left to commit, and whether the figure is persisted.
 function LedgerService.availableFor(player: Player): (number, string)
 	local total, scope = TownService.totalFor(player)
@@ -368,6 +376,14 @@ local function press(player: Player, seal: BasePart, prompt: ProximityPrompt)
 	end
 
 	opened[room.id] = true
+	-- A room that just opened may have been the one a rung was waiting inside,
+	-- so whoever cares gets told. A seam rather than a require, because
+	-- RestorationService requires THIS module to ask whether its room is open
+	-- and the two cannot require each other. Wired in init.server.luau.
+	local told, err = pcall(LedgerService.onRoomOpened, player, room.id)
+	if not told then
+		warn(`[LedgerService] onRoomOpened failed for {room.id}: {err}`)
+	end
 	if hostScope == "offline" then
 		-- Visible, never passed off as saved. Same rule the landmark plates follow.
 		warn(`[LedgerService] {room.id} opened for this session only: no profile to save it to`)
@@ -375,6 +391,10 @@ local function press(player: Player, seal: BasePart, prompt: ProximityPrompt)
 	LedgerService.refresh()
 	say(prompt, string.format("%s - open", room.room), back)
 end
+
+--- Called after a room opens, for anything downstream of a door. Replaced in
+--- `init.server.luau`; a no-op by default so this module works alone.
+LedgerService.onRoomOpened = function(_player: Player, _roomId: string) end
 
 -- ------------------------------------------------------------- wiring
 

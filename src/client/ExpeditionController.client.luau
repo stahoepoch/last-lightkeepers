@@ -62,7 +62,26 @@ Remotes.get("ExpeditionState").OnClientEvent:Connect(function(state)
 	selected = state.selected or selected
 	local routeData = state.routes and state.routes[selected]
 	if routeData then
-		route.Text = `  {routeData.title}\n  {routeData.subtitle}  •  {routeData.danger} danger`
+		local lines = {
+			` {routeData.title}`,
+			` {routeData.subtitle}  •  {routeData.danger} danger`,
+		}
+		-- What the board runs on, straight from the server. It is on the board
+		-- before anyone presses launch on purpose: an unpowered departure that
+		-- fails is only fair if the board said in advance that it might.
+		local power = state.power
+		if type(power) == "table" then
+			table.insert(lines, "")
+			table.insert(lines, ` {tostring(power.line)}`)
+			if type(power.exits) == "table" and #power.exits > 0 then
+				table.insert(lines, "")
+				table.insert(lines, " WAYS OUT")
+				for _, exit in ipairs(power.exits) do
+					table.insert(lines, `   {tostring(exit)}`)
+				end
+			end
+		end
+		route.Text = table.concat(lines, "\n")
 	end
 	status.Text = tostring(state.message or "")
 	departureEndsAt = if typeof(state.departureEndsAt) == "number"

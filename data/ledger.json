@@ -48,7 +48,24 @@
       "title": "RESTORE THE DEPARTURE GENERATOR",
       "job": "Salvage fuses and wiring from the ground floor.",
       "opens": "Reliable departures, and markers on the board.",
-      "wakes": "Powered lights. The Window Walkers stand up."
+      "wakes": "Powered lights. The Window Walkers stand up.",
+
+      "restoration": {
+        "_comment": "The mechanical half of rung one, and the only rung that has one yet. Chris's four prose fields above are untouched; this says what they mean in code. Shape: a room that must be open, salvage that is spent, a thing that changes, a thing that wakes. A later rung adds a block like this one and needs no new system.",
+        "_values": "EVERY NUMBER IN THIS BLOCK IS PROPOSED, by Claude, not chosen by Chris. Written as real values rather than zeroes so the rung can be played and felt. 4 Components is roughly one careful ground-floor sweep; the false start is the whole reason 'reliable' is a reward.",
+        "requiresRoom": "Generator",
+        "_requiresRoomNote": "Both halves of the same job: the crates open the room at home, the salvage makes the generator in it turn over. The room's own 'restored' line - 'The generator turns over. The board lights.' - is this event, which is why the room and the rung were already linked.",
+        "salvage": { "Components": 4 },
+        "_salvageNote": "Chris's job line is 'salvage fuses and wiring from the ground floor'. Fuses and wiring are Components in data/loot.json. Spent, not credited: unlike crates, which the handoff locked as never removable from a keeper's roll, these leave the stash. WorkshopService already spends materials this way.",
+        "wakesWithoutLantern": ["WindowWalkers"],
+        "_wakesNote": "Powered light is light the keepers do not carry, so going dark stops protecting them from anything that wakes to light. Named explicitly rather than applied to every light-waking enemy, because Chris said the Window Walkers stand up and said nothing about the ficus, which wakes the same way and is approved but undefined.",
+        "departure": {
+          "unpoweredSeconds": 12,
+          "poweredSeconds": 5,
+          "unpoweredFalseStartChance": 0.35
+        },
+        "_departureNote": "What 'reliable departures' is a reward FOR. Before the generator the board runs on whatever is left in the room: a twelve-second wind-up that fails better than a third of the time and sends the crew back to the board. After it, five seconds, every time. The board states this before a keeper presses it - a trade you find out about afterwards is not a trade."
+      }
     },
     {
       "id": "WorkshopTools",
@@ -81,5 +98,7 @@
     }
   ],
 
-  "_rungState": "The rungs above are read-only text today. Whether a rung is BEGUN or DONE is store-side work that is not built yet (docs/WORKLIST.md A9), so the board prints every rung as not begun and states its trade. The board is already shaped to print the state when there is one; nothing about it needs redesigning then."
+  "_rungState": "Rung one is built end to end as of 2026-10-27 (docs/WORKLIST.md A9): it has a `restoration` block above, RestorationService owns the flag and the cost, and the ledger board prints it as DONE once a keeper has done it. The other four rungs are still read-only text and print as not begun with their trade stated. Each one becomes real by gaining a `restoration` block - there is no quest state machine to extend, which was the point of doing the first one small.",
+
+  "_restorationRule": "A restoration is one flag per keeper, persisted on their profile beside `rooms`, and it never reverses. It is not a run-scoped buff and it is not purchasable: the only way to set it is to open the room and spend the salvage. Values here are proposed; the shape is not. See docs/QUESTS.md for why no restoration is reversible and why nothing on the ladder ever makes light free."
 }

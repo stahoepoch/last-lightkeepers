@@ -509,3 +509,43 @@ but never subtracts from `profile.contributions`, which the handoff locked as
 never removable. What a keeper has left to spend is derived. So the three
 landmark plates keep reading the gross total and are completely unaffected by
 any of this.
+
+---
+
+## From Claude, 2026-10-27 - one more tag, for rung one
+
+Rung one of Chris's ladder is built end to end (`docs/WORKLIST.md` A9): restore
+the departure generator, get reliable departures and the ways out printed on
+the board, and the powered lights stand the Window Walkers up. `data/ledger.json`
+holds the rung, `RestorationService` owns the flag and the cost, and - same
+rule as every other hall fixture - **it does nothing at all until one part is
+tagged.**
+
+`RestorationPanel` - one BasePart, inside the generator room.
+
+- Put it **behind the `HallRoom` seal tagged `Generator`**, so it is only
+  reachable once that room has been opened. The service checks the room is
+  open anyway and refuses with a message, but a player should not be able to
+  touch the panel through a wall and read a refusal.
+- Optional attribute `Rung`, a string. Leave it off and it is assumed to be
+  `DepartureGenerator`, which is the only rung with a job behind it today.
+  Later rungs get their own panel with their own `Rung`.
+- A `SurfaceGui` with a `TextLabel`. It prints four short blocks: the job's
+  title, the job, what it needs (or DONE and whose hall), and what it wakes.
+- The service owns the label text, a `Restored` attribute, and a
+  `RestorePrompt` ProximityPrompt it adds itself. Do not add the prompt.
+
+Nothing else needs tagging. The departure board you already have changes its
+own text: it now prints whether the generator is running, how long the road
+takes to open, and - once restored - the exits with their holds and payouts.
+That comes down the existing `ExpeditionState` remote, so there is no new
+remote and no new GUI.
+
+**Please do not add this to `default.project.json` or wire the service** - it is
+already started from `init.server.luau`. Geometry and tags only.
+
+One thing that may read as a bug and is not: before the generator is restored,
+pressing START RAID winds up for twelve seconds and fails about a third of the
+time, saying "The board goes dark. Nothing leaves." That is the reward rung one
+is for, and the board says so before anyone presses it. The numbers are in
+`data/ledger.json` and are Chris's to set.

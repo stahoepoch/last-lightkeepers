@@ -43,12 +43,8 @@ local LootService = require(Services:WaitForChild("LootService"))
 local EnemyService = require(Services:WaitForChild("EnemyService"))
 local PlayerDataService = require(Services:WaitForChild("PlayerDataService"))
 local InteractionService = require(Services:WaitForChild("InteractionService"))
--- HubService is committed (22bdcf9); these calls into it are not, because this
--- file also requires ExpeditionService, which is untracked. Committing it would
--- hand anyone a checkout that requires a module the repo does not contain.
---
--- So the Lanternhold wiring rides along with whoever commits this file next.
--- It hangs off four seams and nothing else: HubService.init() below,
+-- The Lanternhold wiring hangs off four seams and nothing else:
+-- HubService.init() below,
 -- HubService.lightFor on PlayerAdded and after each restart,
 -- HubService.takeDown inside LootService.onExtracted, and HubService.putOut at
 -- the top of RunStateService.onRunEnded. Move or replace any of those and the
@@ -63,6 +59,8 @@ local TownService = require(Services:WaitForChild("TownService"))
 local LiftService = require(Services:WaitForChild("LiftService"))
 local ExpeditionService = require(Services:WaitForChild("ExpeditionService"))
 local PingService = require(Services:WaitForChild("PingService"))
+local LedgerService = require(Services:WaitForChild("LedgerService"))
+local RestorationService = require(Services:WaitForChild("RestorationService"))
 
 LightingService.init()
 PlayerDataService.init()
@@ -75,6 +73,23 @@ WorkshopService.init()
 -- The Galleria's court lift. The mall is rebuilt on every expedition restart,
 -- so this is called again from the restart below or it stops answering.
 LiftService.init()
+-- The hall's rooms and the ladder's rungs. Both read the host's books, so both
+-- go after TownService.init(); both are no-ops until the map lane tags their
+-- parts, like every other hall fixture.
+--
+-- LedgerService.init() used to be called from inside HubService.init() because
+-- this file required an untracked ExpeditionService and could not be committed.
+-- That is no longer true (61e84d5), so it is started from here with everything
+-- else, where it can be found.
+LedgerService.init()
+RestorationService.init()
+-- Opening the generator room is half of rung one, so the rung's panel has to
+-- hear about it. LedgerService cannot require RestorationService - that module
+-- already requires it, to ask whether its room is open - so the two are joined
+-- here instead.
+LedgerService.onRoomOpened = function(_player, _roomId)
+	RestorationService.refresh()
+end
 ExpeditionService.init()
 PingService.init()
 

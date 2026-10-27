@@ -145,6 +145,17 @@ For whoever builds the first one, a rung is five things and no more:
 Nothing above needs a quest system in the software sense: no branching, no
 state machine, no objective markers. Five flags and five costs.
 
+**Rung one is built, 2026-10-27.** All five things, in the smallest form that
+is honestly all five: the ledger line was already Chris's; the place is the
+generator room, which the crates open; the cost is 4 Components, spent, and the
+no-relics rule above is now a test rather than a sentence; what opens is a
+departure board that takes five seconds and holds instead of twelve seconds and
+a coin flip, with the ways out printed on it; what wakes is the Window Walkers,
+who stop needing a keeper to carry light. It is one `restoration` block in
+`data/ledger.json` and one service. The other four rungs become real by gaining
+a block like it - there is no system here to extend, which was the point of
+doing the first one small.
+
 ## Open, and Chris's
 
 - **Every cost figure.** None are written here on purpose.

@@ -15,6 +15,9 @@ local Config = require(Shared:WaitForChild("Config"))
 local Types = require(Shared:WaitForChild("Types"))
 
 local RunStateService = require(script.Parent:WaitForChild("RunStateService"))
+-- Only ever asked whether the store has light of its own. No cycle: nothing
+-- RestorationService requires reaches back here.
+local RestorationService = require(script.Parent:WaitForChild("RestorationService"))
 local SweeperRig = require(script.Parent:WaitForChild("SweeperRig"))
 local GlimmerRig = require(script.Parent:WaitForChild("GlimmerRig"))
 local WindowWalkerRig = require(script.Parent:WaitForChild("WindowWalkerRig"))
@@ -374,7 +377,13 @@ end
 --- A Window Walker is inert scenery until active lantern light catches it in
 --- the same nearby space. Once awake it walks at a normal, deliberately slow
 --- pace, but never pathfinds or magically knows a player through a wall.
-local function pickWalkerTarget(from: BasePart, walker: Model, range: number, def: any): Player?
+local function pickWalkerTarget(
+	from: BasePart,
+	walker: Model,
+	range: number,
+	def: any,
+	name: string
+): Player?
 	local run = RunStateService.current()
 	if not run or run.finished then
 		return nil
@@ -382,7 +391,14 @@ local function pickWalkerTarget(from: BasePart, walker: Model, range: number, de
 	local closest: Player? = nil
 	local bestDistance = math.huge
 	for userId, state in pairs(run.lightkeepers) do
-		if state.knockedDown or (def.wakeRequiresActiveLantern and not state.lanternOn) then
+		-- Going dark stops protecting a keeper once the store has light of its
+		-- own. That is rung one's complication, not a new rule: the generator
+		-- powers the lights, and anything that wakes to light is now awake
+		-- whether or not a lantern is lit. Which enemies is data, in
+		-- `data/ledger.json` - Chris named the Window Walkers and nothing else.
+		local needsLantern = def.wakeRequiresActiveLantern
+			and not RestorationService.wakesWithoutLantern(name)
+		if state.knockedDown or (needsLantern and not state.lanternOn) then
 			continue
 		end
 		local player = Players:GetPlayerByUserId(userId)
@@ -453,8 +469,13 @@ function EnemyService.driveWindowWalker(model: Model)
 
 	task.spawn(function()
 		while model.Parent and humanoid.Health > 0 do
-			local target =
-				pickWalkerTarget(root, model, if awake then def.sightRange else def.wakeRange, def)
+			local target = pickWalkerTarget(
+				root,
+				model,
+				if awake then def.sightRange else def.wakeRange,
+				def,
+				"WindowWalkers"
+			)
 			if target and not awake then
 				wake()
 			end
@@ -510,8 +531,13 @@ function EnemyService.driveFicus(model: Model)
 	end)
 	task.spawn(function()
 		while model.Parent and humanoid.Health > 0 do
-			local target =
-				pickWalkerTarget(root, model, if awake then def.sightRange else def.wakeRange, def)
+			local target = pickWalkerTarget(
+				root,
+				model,
+				if awake then def.sightRange else def.wakeRange,
+				def,
+				"Ficus"
+			)
 			if target and not awake then
 				awake, telegraphedAt = true, os.clock()
 				if sound and sound.SoundId ~= "" then
