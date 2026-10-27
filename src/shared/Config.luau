@@ -51,15 +51,17 @@ Config.Run = {
 --
 -- Two shapes, chosen by `curve` in storm-charge.json:
 --
---   linearCapped (default) - 1 + bonus*n, hard-clamped. Simple, but the clamp
---     flattens crew size: three lanterns (5.5x) and four (7x) both clamp to
---     5.0, so the fourth player's light costs the crew nothing.
+--   diminishing (active, Chris's call on 2026-10-27) - a geometric series.
+--     Each extra lantern adds less than the last but never nothing, so no
+--     player's light is free. It preserves the locked 2.5x one-lantern anchor
+--     exactly and self-limits at 4.75x, needing no clamp.
 --
---   diminishing - a geometric series. Each extra lantern adds less than the
---     last but never nothing, so no player's light is free. It preserves the
---     locked 2.5x one-lantern anchor exactly and self-limits, needing no clamp.
+--   linearCapped - 1 + bonus*n, hard-clamped. Simple, but the clamp flattens
+--     crew size: three lanterns (5.5x) and four (7x) both clamp to 5.0, so the
+--     fourth player's light costs the crew nothing. This is why it was retired.
 --
--- The default is unchanged; switching the curve is a balance decision.
+-- Both shapes stay implemented: the curve is a balance decision and lives in
+-- the JSON, so switching it back must never need a code change.
 function Config.lanternMultiplier(activeLanterns: number): number
 	local lantern = StormCharge.lantern
 	local n = math.max(activeLanterns, 0)

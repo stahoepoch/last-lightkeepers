@@ -3,13 +3,15 @@
 
   "baselineRatePerSecond": 1,
   "lantern": {
-    "_comment": "multiplier = 1 + perLanternBonus * activeLanterns, clamped to maxMultiplier. One lantern = 2.5x, per the handoff. NOTE: the clamp flattens crew size - three lanterns (5.5x) and four (7x) both clamp to 5.0, so the fourth player's light is free. See curve below.",
+    "_comment": "multiplier = 1 + perLanternBonus * (1 - diminishingDecay^activeLanterns) / (1 - diminishingDecay). One lantern = 2.5x, per the handoff, and the diminishing curve preserves that anchor exactly. Each further lantern adds less than the one before it but never nothing, so no keeper's light is free.",
+    "_curveChoice": "Chris, 2026-10-27: 'Switch storm-charge.json to the diminishing curve so no keeper's light is free.' This closes the question docs/VERTICAL-SLICE.md raised - under linearCapped a crew of three at 25% duty met the Warden at 5:31 and a fourth lantern cost nothing, so a four-player run was always the shortest one. Diminishing was already written and tested; only this line moved.",
     "perLanternBonus": 1.5,
     "maxMultiplier": 5,
-    "curve": "linearCapped",
+    "_maxMultiplierNote": "INERT while curve is 'diminishing' - that curve self-limits at 4.75x and needs no clamp. Kept because it is the clamp linearCapped would use if the curve were ever switched back, and because the balance test still checks a cap can never sit below the one-lantern anchor.",
+    "curve": "diminishing",
     "_curveOptions": {
-      "linearCapped": "Current default. 1 + bonus*n, hard-clamped at maxMultiplier. Simple, but every lantern past the clamp is free.",
-      "diminishing": "1 + bonus*(1-decay^n)/(1-decay). Each extra lantern adds less than the last but never nothing, so no player's light is free. Preserves the locked 2.5x one-lantern anchor exactly and self-limits near 4.75x with the values below - no clamp needed."
+      "linearCapped": "1 + bonus*n, hard-clamped at maxMultiplier. Simple, but every lantern past the clamp is free: three (5.5x) and four (7x) both clamp to 5.0. Was the default until 2026-10-27.",
+      "diminishing": "ACTIVE. 1 + bonus*(1-decay^n)/(1-decay). Each extra lantern adds less than the last but never nothing, so no player's light is free. Preserves the locked 2.5x one-lantern anchor exactly and self-limits near 4.75x with the values below - no clamp needed."
     },
     "diminishingDecay": 0.6,
     "_decayNote": "Only used when curve is 'diminishing'. 0.6 gives 2.5 / 3.40 / 3.94 / 4.26 for one to four lanterns, asymptote 4.75."

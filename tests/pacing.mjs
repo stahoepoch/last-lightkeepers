@@ -1,6 +1,9 @@
 // Run-pacing simulation. A report, not a test.
 //
-// It exists to interrogate one number: maxMultiplier in storm-charge.json.
+// It existed to interrogate one number: maxMultiplier in storm-charge.json.
+// Chris retired that number on 2026-10-27 by switching the curve to
+// diminishing, which self-limits and needs no clamp. The harness still runs
+// both shapes side by side at the bottom, which is the evidence he decided on.
 // I picked 5.0 without evidence and flagged it as the most consequential
 // untested value in the project. This turns that guess into something Chris can
 // read and decide on before a playtest, rather than after.
@@ -94,7 +97,13 @@ const mmss = (s) =>
   s === undefined ? "  never" : `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`.padStart(7);
 
 console.log(`\nStorm Charge pacing`);
-console.log(`baseline ${storm.baselineRatePerSecond}/s · per-lantern +${storm.lantern.perLanternBonus} · cap ${storm.lantern.maxMultiplier}x · charge ${CHARGE_SECONDS > 0 ? CHARGE_SECONDS + "s" : "unlimited"}\n`);
+// Under diminishing the clamp never applies, so printing it as "cap" would
+// misreport what is holding the multiplier down.
+const DIMINISHING = storm.lantern.curve === "diminishing";
+const ceilingLabel = DIMINISHING
+  ? `self-limits at ${(1 + storm.lantern.perLanternBonus / (1 - storm.lantern.diminishingDecay)).toFixed(2)}x`
+  : `cap ${storm.lantern.maxMultiplier}x`;
+console.log(`baseline ${storm.baselineRatePerSecond}/s · per-lantern +${storm.lantern.perLanternBonus} · ${storm.lantern.curve}, ${ceilingLabel} · charge ${CHARGE_SECONDS > 0 ? CHARGE_SECONDS + "s" : "unlimited"}\n`);
 console.log(`crew  duty   alert    hunt  WARDEN   lantern-sec   verdict`);
 console.log(`${"-".repeat(72)}`);
 
@@ -122,10 +131,18 @@ const alwaysLit = rows.filter((r) => r.duty === 1);
 const tooFast = alwaysLit.filter((r) => r.warden !== undefined && r.warden < RUN_MIN);
 if (tooFast.length > 0) {
   console.log(`  - A fully-lit crew meets the Warden before a 6-minute run can finish at`);
-  console.log(`    crew size${tooFast.length > 1 ? "s" : ""} ${tooFast.map((r) => r.crew).join(", ")}. That is the cap biting.`);
+  console.log(
+    `    crew size${tooFast.length > 1 ? "s" : ""} ${tooFast.map((r) => r.crew).join(", ")}. ` +
+      (DIMINISHING
+        ? `Holding every lantern lit for a whole run is`
+        : `That is the cap biting.`),
+  );
+  if (DIMINISHING) {
+    console.log(`    meant to be unaffordable; the 25% rows are the ones to read.`);
+  }
 } else {
   console.log(`  - No fully-lit crew meets the Warden before a 6-minute run ends. The`);
-  console.log(`    ${storm.lantern.maxMultiplier}x cap is less punishing than it looks, because lantern charge`);
+  console.log(`    ${ceilingLabel} ceiling is less punishing than it looks, because lantern charge`);
   console.log(`    runs out first and the multiplier falls back on its own.`);
 }
 

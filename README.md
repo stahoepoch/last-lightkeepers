@@ -71,15 +71,26 @@ tagged candidates to give future maps genuine route variety.
 
 ## Tuning anchors in place
 
-From the handoff, as initial placeholders only:
+Two of the handoff's three placeholders have since been replaced by Chris's own
+numbers. What is in `data/storm-charge.json` now:
 
-- **8 minutes** to the first threshold in permanent darkness (`baselineRatePerSecond: 1.0`, first threshold at `480`).
-- **~2.5×** baseline with one active lantern (`perLanternBonus: 1.5`).
-- Thresholds at 480 / 720 / 960 → in darkness 8 / 12 / 16 min; with one lantern 3.2 / 4.8 / 6.4 min.
+- **~2.5×** baseline with one active lantern (`perLanternBonus: 1.5`). Still the
+  handoff's figure, and locked: no change to the curve may move it.
+- Thresholds at **270 / 480 / 700** → in darkness 4:30 / 8:00 / 11:40; with the
+  lantern lit about half the time 2:34 / 4:34 / 6:40. Retuned by Chris on
+  2026-10-26, replacing the handoff's 8-minutes-to-first-threshold anchor,
+  which left a dark crew with no escalation inside any run it would play.
+- The multiplier uses the **`diminishing`** curve, Chris's call on 2026-10-27:
+  2.50 / 3.40 / 3.94 / 4.26× for one to four lanterns, self-limiting at 4.75×.
+  Each further lantern adds less than the one before it but never nothing, so
+  no keeper's light is free.
 
-`maxMultiplier: 5.0` caps a fully-lit four-crew. **This cap is untested and is
-the most consequential number in the file** — a four-person lit run currently
-reaches the Warden in about 3.2 minutes. Test it before trusting it.
+`maxMultiplier: 5.0` is **inert** — the diminishing curve needs no clamp. It is
+kept only as the value `linearCapped` would use if the curve were switched
+back. Under that clamp a third and fourth lantern cost 5.00× alike, which made
+a four-player run the shortest one in the game; that is why it was retired.
+
+`node tests/pacing.mjs` prints the whole grid, both curves side by side.
 
 ## Deviations from the handoff, and why
 

@@ -43,17 +43,34 @@ Warden at 15:59 for a dark crew - past the end of any run anyone would play -
 so darkness carried no consequence whatsoever, which is the opposite of what
 the premise claims.
 
-**One thing this surfaced, and it is Chris's call.** The curve hits all four of
-his anchors for a solo keeper and for a pair. For three or four keepers using
-lanterns regularly it runs roughly two minutes early, because every lit lantern
-stacks: `node tests/pacing.mjs` puts a crew of three at 25% duty on the Warden
-at 5:31. Whether that is wrong depends on intent - it does make a big crew
-coordinate its darkness, which is real co-op - but it sits against "friends
-make rescues, split routes, and extraction defense more interesting rather than
-mandatory" if a four-player run is always the shortest one. The fix is a choice
-between the `diminishing` curve already written into `storm-charge.json` and
-normalising by crew so that one crew's worth of light is 2.5x no matter who is
-holding it. Nothing changed; the clamp is still `linearCapped`.
+**One thing this surfaced, and Chris settled it on 2026-10-27.** The curve hit
+all four of his anchors for a solo keeper and for a pair, but ran roughly two
+minutes early for three or four keepers, because every lit lantern stacked and
+the clamp then made the fourth one free. That sat against "friends make
+rescues, split routes, and extraction defense more interesting rather than
+mandatory" if a four-player run is always the shortest one.
+
+His call: **"Switch `storm-charge.json` to the diminishing curve so no keeper's
+light is free."** One line of data moved; the shape was already written and
+tested. What it bought, from `node tests/pacing.mjs`:
+
+| crew, 25% duty | Warden, `linearCapped` | Warden, `diminishing` |
+| --- | --- | --- |
+| solo | 8:15 | 8:15 |
+| two | 6:39 | **6:57** |
+| three | 5:31 | **6:41** |
+| four | 5:31 | **6:13** |
+
+The clamp is visible in that table: under `linearCapped` a crew of three and a
+crew of four reached the Warden at the *same second*, because the fourth
+lantern cost nothing. Both of those rows read WARDEN BEFORE A SHORT RUN ENDS.
+Under `diminishing` all four crew sizes land mid-run, and the marginal cost of
+the Nth lantern is +1.50 / +0.90 / +0.54 / +0.32 - smaller each time, never
+zero. A bigger crew still escalates faster, which is the co-op pressure Chris
+wanted; it just no longer stops escalating. The 2.5x one-lantern anchor is
+untouched, `maxMultiplier` is now inert, and `tests/balance.test.mjs` asserts
+that no keeper's light is free under whichever curve is actually active, so a
+quiet revert fails the suite.
 
 ## 1. One polished mall route
 

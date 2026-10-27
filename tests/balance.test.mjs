@@ -216,6 +216,19 @@ console.log("\nLantern multiplier curve");
     "diminishing self-limits below the clamp",
     1 + lamp.perLanternBonus / (1 - lamp.diminishingDecay) <= lamp.maxMultiplier,
   );
+
+  // Chris's call, 2026-10-27: "Switch storm-charge.json to the diminishing
+  // curve so no keeper's light is free." The assertions above prove the
+  // diminishing SHAPE has that property; this one proves the shape actually in
+  // use does. Without it, flipping `curve` back to linearCapped would make a
+  // fourth keeper's lantern cost the crew nothing and no test would notice.
+  const liveMarginal = [1, 2, 3, 4].map((n) => mult(n, lamp.curve) - mult(n - 1, lamp.curve));
+  check(
+    "no keeper's light is free under the active curve",
+    liveMarginal.every((x) => x > 0),
+    `${lamp.curve} marginals ${liveMarginal.map((x) => x.toFixed(2)).join(" / ")}`,
+  );
+  check("the active curve is recorded, not inferred", typeof lamp._curveChoice === "string");
 }
 
 console.log("\nSolo rule");
