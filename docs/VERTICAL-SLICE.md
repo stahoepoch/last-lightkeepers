@@ -151,7 +151,8 @@ failed want to go again immediately.
 **Half built, 2026-10-26.** Chris chose this over the first store rung, and the
 systems side is done: `src/server/services/LedgerService.luau` holds the hall's
 rooms and the ledger board, `data/ledger.json` holds four rooms at 1 / 3 / 6 /
-10 crates (proposed figures), the costs are committed out of a keeper's credited
+10 crates - Chris's figures, kept on review on 2026-10-27 - the costs are
+committed out of a keeper's credited
 crates without ever subtracting from the credit, and only the host's rooms show
 or open. **What is missing is geometry** - four sealed doorways tagged
 `HallRoom` and one board tagged `LedgerBoard`, which is the map lane's. The tag

@@ -36,6 +36,7 @@ down, not yet ratified. `OPEN` — named, undecided, waiting on someone.
 | 12 | The lantern multiplier uses the **`diminishing`** curve. No keeper's light is ever free | LOCKED | Chris, 2026-10-27 | "Switch storm-charge.json to the diminishing curve so no keeper's light is free." Proposed by Claude 2026-10-20 as `b4b1813` and left off for a week. The clamp made a fourth lantern cost the crew nothing, so a four-player run was always the shortest one; diminishing self-limits at 4.75x and keeps the 2.5x one-lantern anchor exactly. `maxMultiplier` is now inert. Closes the open call in `docs/VERTICAL-SLICE.md` |
 | 30 | Keepers **can** fight back, earned at ladder rung 2 and bounded by one rule: you win the fights you start. Nothing carried kills an enemy that has already seen you | PROPOSED | Chris + Claude, 2026-10-26 | "We might need to fight them." `docs/COMBAT.md`. Settles a contradiction the handoff shipped: five enemies have health, the code writes it, nothing could ever reduce it |
 | 31 | The lantern and a tool compete for the same hand. Never both | PROPOSED | Claude, 2026-10-26 | `docs/COMBAT.md`. Makes combat cost light instead of costing a new resource, and gives a crew two jobs |
+| 32 | The hall's four rooms cost **1 / 3 / 6 / 10** crates - a first-session door, then a widening gap | LOCKED | Chris, 2026-10-27 | "Keep the 1/3/6/10 room costs for now." Claude's proposal of 2026-10-26, read and kept rather than ratified by default. "For now" is his: a playtest may move them, and only he moves them. `data/ledger.json` |
 
 ## Content
 

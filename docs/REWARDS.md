@@ -139,7 +139,8 @@ tools, the radio.
 
 **And later the same day the hole stopped being a hole.** Four rooms are in
 `data/ledger.json` and `LedgerService` opens them: the generator room, the
-workshop, the lift house, the radio room, at 1 / 3 / 6 / 10 crates. The crates
+workshop, the lift house, the radio room, at 1 / 3 / 6 / 10 crates, which Chris
+read and kept on 2026-10-27. The crates
 are **committed, never deducted** — `contributions` is credit and the handoff
 locked it as never removable, so what a keeper has left to spend is derived
 from the total minus the rooms already opened. Which means the landmark plates
