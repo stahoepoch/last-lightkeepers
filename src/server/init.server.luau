@@ -15,21 +15,68 @@ Remotes.init()
 -- before any service scans or watches those tags. This keeps a clean Play
 -- session playable without asking a designer to run a command-bar step.
 local Map = Workspace:WaitForChild("Map")
-local FloodedMallBuilder = require(Map:WaitForChild("FloodedMallBuilder"))
-FloodedMallBuilder.Build()
+
+-- The Galleria is the mall now. FloodedMallBuilder used to be built here and
+-- on every launch, and because it owned the only SpawnLocation, every raid
+-- landed in it no matter what - Chris: "starting the raid still sends me to
+-- codex's old mall". GalleriaBuilder emits its own spawn, loot, Sweeper
+-- posts, relay and extractions, so the old generated mall is no longer built
+-- or required.
+local GalleriaBuilder = require(Map:WaitForChild("GalleriaBuilder"))
+
+-- Lanternhold, if it is in the project. Built once and well clear of the mall:
+-- the hub is where you leave from and come back to, not part of the expedition.
+-- Deliberately not parented under Workspace.Map, because FloodedMallBuilder
+-- clears every child of Map on the first line of its build. When it is absent,
+-- every hub fixture below finds nothing and does nothing.
+local LANTERNHOLD_AT = Vector3.new(-6000, 0, 0)
+local lanternholdModule = Map:FindFirstChild("LanternholdBuilder")
+if lanternholdModule and lanternholdModule:IsA("ModuleScript") then
+	local hall = require(lanternholdModule).Build()
+	hall:PivotTo(hall:GetPivot() + LANTERNHOLD_AT)
+end
 
 local Services = script:WaitForChild("services")
+local LightingService = require(Services:WaitForChild("LightingService"))
 local RunStateService = require(Services:WaitForChild("RunStateService"))
 local LootService = require(Services:WaitForChild("LootService"))
 local EnemyService = require(Services:WaitForChild("EnemyService"))
 local PlayerDataService = require(Services:WaitForChild("PlayerDataService"))
 local InteractionService = require(Services:WaitForChild("InteractionService"))
+-- HubService is committed (22bdcf9); these calls into it are not, because this
+-- file also requires ExpeditionService, which is untracked. Committing it would
+-- hand anyone a checkout that requires a module the repo does not contain.
+--
+-- So the Lanternhold wiring rides along with whoever commits this file next.
+-- It hangs off four seams and nothing else: HubService.init() below,
+-- HubService.lightFor on PlayerAdded and after each restart,
+-- HubService.takeDown inside LootService.onExtracted, and HubService.putOut at
+-- the top of RunStateService.onRunEnded. Move or replace any of those and the
+-- Lamp Wall stops updating without erroring - a player's lamp just never
+-- lights. See NOTES-FOR-CODEX.md.
+local HubService = require(Services:WaitForChild("HubService"))
+-- WorkshopService is committed and self-contained; this require and the
+-- init() below are the only seams it has, and they ride along with this file
+-- for the same reason HubService's do.
+local WorkshopService = require(Services:WaitForChild("WorkshopService"))
+local TownService = require(Services:WaitForChild("TownService"))
+local LiftService = require(Services:WaitForChild("LiftService"))
+local ExpeditionService = require(Services:WaitForChild("ExpeditionService"))
+local PingService = require(Services:WaitForChild("PingService"))
 
+LightingService.init()
 PlayerDataService.init()
 LootService.init()
-EnemyService.init()
--- After LootService: prompts call into it.
-InteractionService.init()
+-- After the hall is built: they bind to tagged fixtures that must already exist.
+-- Before HubService: the crate hand-in credits the town total.
+TownService.init()
+HubService.init()
+WorkshopService.init()
+-- The Galleria's court lift. The mall is rebuilt on every expedition restart,
+-- so this is called again from the restart below or it stops answering.
+LiftService.init()
+ExpeditionService.init()
+PingService.init()
 
 -- Client requests. Each one is validated server-side; nothing here trusts a payload.
 local lanternRequest = Remotes.get("LanternRequest")
@@ -47,26 +94,46 @@ lanternRequest.OnServerEvent:Connect(function(player, on)
 	lanternRequest:FireClient(player, RunStateService.isLanternOn(player), refusal)
 end)
 
-Remotes.get("ReviveRequest").OnServerEvent:Connect(function(player, targetUserId)
-	if type(targetUserId) ~= "number" then
-		return
+Remotes.get("MovementRequest").OnServerEvent:Connect(function(player, mode)
+	if typeof(mode) == "string" then
+		RunStateService.setMovement(player, mode)
 	end
-	if targetUserId == player.UserId then
-		-- Solo Anchor Revive: paid for with a full lantern charge.
-		RunStateService.anchorRevive(player)
-	else
-		-- Teammate revive is a hold the server advances while they stay close.
-		local target = Players:GetPlayerByUserId(targetUserId)
-		if target then
-			RunStateService.beginRevive(player, target)
-		end
-	end
+end)
+
+-- This remote is deliberately solo-only. Teammate revive owns its real
+-- ProximityPrompt hold, so accepting a player-selected target here would make
+-- that four-second interaction bypassable.
+Remotes.get("ReviveRequest").OnServerEvent:Connect(function(player)
+	RunStateService.anchorRevive(player)
 end)
 
 -- Payouts land in the profile, not in a client-sent number.
 LootService.onExtracted = function(player, payout)
 	PlayerDataService.grantPayout(player, payout)
 	PlayerDataService.save(player)
+	-- Extracting takes your lamp down off the wall rather than putting it out.
+	-- Coming back is not the same as not coming back, and the Lamp Wall is
+	-- where everyone else reads the difference.
+	HubService.takeDown(player)
+	-- A successful player returns immediately; their extraction is not held
+	-- hostage by teammates choosing to risk a longer push.
+	ExpeditionService.returnPlayerToHub(player)
+end
+
+-- The clock's last word is not an abrupt wipe: it announces a short Final
+-- Call at the currently active exit, then resolves the crew still inside.
+RunStateService.onTimeExpired = function()
+	for _, player in ipairs(Players:GetPlayers()) do
+		Remotes.get("ExtractionState"):FireClient(player, {
+			active = true,
+			final = true,
+			via = "FINAL CALL",
+			exit = LootService.finalExit(),
+			caller = "THE STORM",
+			endsAt = Workspace:GetServerTimeNow() + 15,
+		})
+	end
+	task.delay(15, LootService.finalEvacuate)
 end
 
 -- A finished run used to leave the world dead: you could still walk around, but
@@ -82,19 +149,80 @@ end
 local RESTART_DELAY_SECONDS = 6
 
 RunStateService.onRunEnded = function(_outcome: string)
+	ExpeditionService.endRaid()
+	-- Whatever is still burning belongs to somebody who did not come back.
+	HubService.putOut()
 	task.delay(RESTART_DELAY_SECONDS, function()
 		-- Order matters: clear the old robots before the rebuild re-tags the
 		-- spawn points, or the watcher adds a second set on top of the first.
 		EnemyService.clearSweepers()
-		FloodedMallBuilder.Build()
-		RunStateService.start()
+		for _, player in ipairs(Players:GetPlayers()) do
+			ExpeditionService.returnPlayerToHub(player)
+		end
 	end)
 end
 
-Players.PlayerAdded:Connect(RunStateService.addPlayer)
+ExpeditionService.onLaunch = function(_route: string)
+	-- Take the spawn off the model we just built, not out of Workspace.Map.
+	-- The Galleria deliberately parents itself beside Map rather than inside
+	-- it, because Rojo owns Map and replaces its children with the source
+	-- modules on every sync - a mall built into Map disappears mid-session.
+	local mall = GalleriaBuilder.Build()
+	-- Establish the authoritative roster before any system binds to the freshly
+	-- built map. Interactions and enemy contacts must never see a playable mall
+	-- while `RunStateService.current()` is nil.
+	RunStateService.start()
+	LootService.beginRun()
+	EnemyService.init()
+	InteractionService.init()
+	local raidSpawn: SpawnLocation? = nil
+	for _, instance in ipairs(mall:GetDescendants()) do
+		if instance:IsA("SpawnLocation") then
+			raidSpawn = instance
+			break
+		end
+	end
+	LiftService.init()
+	for _, player in ipairs(Players:GetPlayers()) do
+		HubService.lightFor(player)
+		if raidSpawn and player.Character then
+			player.Character:PivotTo(raidSpawn.CFrame * CFrame.new(0, 5, 0))
+		end
+	end
+end
+
+-- Studio's local test player often already exists by the time this script is
+-- reached.  Listening only to PlayerAdded therefore missed its first
+-- CharacterAdded event: Roblox chose the SpawnLocation inside the old,
+-- designer-preview Galleria and the road board appeared over that stale,
+-- unlit model.  Bind both present and future players before attempting the
+-- initial hub return, so the only pre-raid spawn is Lanternhold.
+local function bindPlayerToHub(player: Player)
+	local function returnAfterSpawn(character: Model)
+		-- CharacterAdded can precede Roblox applying its SpawnLocation pivot. A
+		-- short defer lets that built-in placement finish, then makes Lanternhold
+		-- authoritative rather than racing it.
+		task.delay(0.8, function()
+			-- Studio can replace the initial character while applying its chosen
+			-- SpawnLocation.  Do not require object identity here: the current
+			-- character, whichever one won that race, belongs in the hub.
+			if player.Parent and player.Character then
+				ExpeditionService.returnPlayerToHub(player)
+			end
+		end)
+	end
+	player.CharacterAdded:Connect(returnAfterSpawn)
+	if player.Character then
+		returnAfterSpawn(player.Character)
+	end
+end
+
+Players.PlayerAdded:Connect(bindPlayerToHub)
 Players.PlayerRemoving:Connect(RunStateService.removePlayer)
 
-RunStateService.start()
 RunStateService.start_tick()
+for _, player in ipairs(Players:GetPlayers()) do
+	bindPlayerToHub(player)
+end
 
 print("[LastLightkeepers] server up")

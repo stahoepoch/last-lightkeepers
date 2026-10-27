@@ -12,21 +12,27 @@
       "examples": ["fabric", "scrap", "batteries", "food"],
       "visibility": "always",
       "feeds": "WorkshopUpgrades",
-      "carrySlots": 1
+      "carrySlots": 1,
+      "pickupSeconds": 0.7,
+      "burden": 0
     },
     "Components": {
       "examples": ["medicine", "wiring", "lenses", "tools"],
       "visibility": "always",
       "sourceHint": "Logical locations - pharmacy for medicine, arcade for wiring and lenses.",
       "feeds": "GadgetCrafting",
-      "carrySlots": 1
+      "carrySlots": 1,
+      "pickupSeconds": 1.25,
+      "burden": 0
     },
     "Relics": {
       "examples": ["odd pre-storm technology"],
       "visibility": "lanternOnly",
       "sourceHint": "Rare caches. Invisible without an active lantern - this is the whole reason to turn light on.",
       "feeds": ["Cosmetics", "SpecialCrafting", "LandmarkContributions"],
-      "carrySlots": 2
+      "carrySlots": 2,
+      "pickupSeconds": 2.5,
+      "burden": 1
     },
     "RestorationCrates": {
       "examples": ["bulky town supplies"],
@@ -34,15 +40,23 @@
       "sourceHint": "Fixed spawns. Team-carried; a carrier cannot fight normally.",
       "feeds": "LanternholdLandmarks",
       "carrySlots": 0,
+      "pickupSeconds": 3.8,
+      "burden": 0,
       "blocksCombatWhileCarried": true
     }
   },
 
+  "burden": {
+    "speedPenaltyPerPoint": 0.04,
+    "maxSpeedPenalty": 0.12,
+    "_note": "Chris's playtest call: ordinary loot must not make a raid feel sluggish. Only relics impose a small movement penalty; supplies, components, and restoration crates do not."
+  },
+
   "banking": {
-    "_comment": "Partial-loss wipe rule. Never sell a way around this.",
+    "_comment": "Every item recovered during a run requires extraction. Relays never insure a haul, and no paid item may bypass this loss rule.",
     "relayBanksPerRun": 1,
-    "bankedKeptOnWipe": 1.0,
-    "unbankedKeptOnWipe": 0.5,
+    "bankedKeptOnWipe": 0.0,
+    "unbankedKeptOnWipe": 0.0,
     "disconnectUsesSameRule": true
   },
 
@@ -50,15 +64,15 @@
     "LoadingDock": {
       "reliability": "high",
       "payoutModifier": 1.0,
-      "arrivalSeconds": 0,
-      "note": "Reliable and early. Pays less than a deeper push."
+      "arrivalSeconds": 20,
+      "note": "Reliable, but never free: hold the dock for 20 seconds while the storm closes in."
     },
     "FreightLift": {
       "reliability": "risky",
       "payoutModifier": 1.6,
-      "arrivalSeconds": 20,
+      "arrivalSeconds": 30,
       "requires": "SubBasementBreakerRestored",
-      "note": "Deeper second exit. The 20-second wait is the cost."
+      "note": "Deeper second exit. Its 30-second lift wait is the cost."
     }
   },
 

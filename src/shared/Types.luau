@@ -8,7 +8,8 @@ export type ExtractionId = "LoadingDock" | "FreightLift"
 
 export type ThresholdId = "PatrolsAlert" | "PatrolsHunt" | "WardenConverges"
 
-export type EnemyKind = "Sweepers" | "Stockers" | "Glimmers" | "Warden"
+export type EnemyKind = "Sweepers" | "Stockers" | "Glimmers" | "WindowWalkers" | "Warden"
+export type MovementMode = "walk" | "sprint" | "crouch"
 
 -- A player's loot for the current run, split by whether it survives a wipe.
 export type Haul = {
@@ -28,9 +29,7 @@ export type LightkeeperState = {
 	-- Sweeper contact accumulates; decays if they break away. See lantern.json.
 	contactHits: number,
 	lastContactAt: number?,
-	-- Set while a teammate is holding a revive on this player.
-	reviveProgress: number,
-	reviveBy: number?,
+	movementMode: MovementMode,
 }
 
 export type RunState = {
@@ -40,6 +39,7 @@ export type RunState = {
 	crossedThresholds: { [ThresholdId]: boolean },
 	lightkeepers: { [number]: LightkeeperState },
 	finished: boolean,
+	finalCallStarted: boolean,
 }
 
 -- Snapshot pushed to clients for the HUD. Deliberately small: this replicates often.
@@ -66,8 +66,15 @@ export type RunSnapshot = {
 	yourContactHits: number,
 	hitsToKnockDown: number,
 	yourCanAnchorRevive: boolean,
+	yourMovementMode: MovementMode,
+	yourBurden: number,
+	-- Your carried haul only. This is sent per-player so the HUD can make the
+	-- risk of staying another minute visible without exposing another keeper's
+	-- inventory.
+	yourHaul: { [LootTier]: number },
 	crewDown: number,
 	crewTotal: number,
+	runSecondsRemaining: number,
 }
 
 return nil

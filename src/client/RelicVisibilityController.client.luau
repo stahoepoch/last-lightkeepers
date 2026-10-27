@@ -31,6 +31,7 @@ local PROMPT_WAIT_SECONDS = 15
 local lanternOn = false
 local prompts: { [BasePart]: ProximityPrompt } = {}
 local marks: { [BasePart]: Highlight } = {}
+local watched: { [BasePart]: boolean } = {}
 
 -- "Baseline loot is always visible" is a rule from the handoff, and it was only
 -- true on paper: an unlit grey box in an unlit room is invisible at any range.
@@ -112,6 +113,22 @@ end
 local function onLoot(instance: Instance)
 	track(instance)
 	markLoot(instance)
+	if instance:IsA("BasePart") then
+		local part = instance :: BasePart
+		if not watched[part] then
+			watched[part] = true
+			-- The server ranks finds after it selects this run's extraction.
+			-- A near-exit relic may become supplies and a deep battery may become
+			-- a relic, so react to the authoritative tier rather than leaving a
+			-- client with the builder's preview classification.
+			part:GetAttributeChangedSignal("Tier"):Connect(function()
+				if part:IsDescendantOf(workspace) then
+					track(part)
+					markLoot(part)
+				end
+			end)
+		end
+	end
 end
 
 for _, instance in ipairs(CollectionService:GetTagged(TAG_LOOT)) do
@@ -122,6 +139,7 @@ CollectionService:GetInstanceRemovedSignal(TAG_LOOT):Connect(function(instance)
 	if instance:IsA("BasePart") then
 		prompts[instance :: BasePart] = nil
 		marks[instance :: BasePart] = nil
+		watched[instance :: BasePart] = nil
 	end
 end)
 

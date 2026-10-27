@@ -245,10 +245,9 @@ console.log("\nCross-module calls");
       runState.src.indexOf("local function stand"),
     );
     check(
-      "knockDown defers the wipe to canAnchorRevive",
-      knockDown.includes("canAnchorRevive") &&
-        knockDown.indexOf("canAnchorRevive") < knockDown.indexOf("RunStateService.wipe()"),
-      "without this a solo player is hard-wiped on their first knockdown and R is dead code",
+		"knockDown preserves a crawl-to-extract state",
+		knockDown.includes("canAnchorRevive") && !knockDown.includes("RunStateService.wipe()"),
+		"a downed keeper remains in the live run so crawling to the active exit can work",
     );
     check(
       "snapshot carries the Anchor Revive reason",
@@ -261,6 +260,11 @@ console.log("\nCross-module calls");
         !runState.src.includes("function RunStateService.beginRevive") &&
         !runState.src.includes("stepRevives"),
       "a prompt hold plus a second server timer turns the promised 4-second revive into 8 seconds",
+    );
+    check(
+      "revive prompt only appears for an actual nearby teammate",
+      interaction.src.includes("local teammateNearby") && interaction.src.includes("teammateCanRevive"),
+      "a solo downed player saw a self-revive prompt that blocked extraction",
     );
   }
 
@@ -317,33 +321,72 @@ console.log("\nCross-module calls");
 
   const server = files.find((f) => f.rel.endsWith("server/init.server.luau"));
   if (server) {
-    const buildAt = server.src.indexOf("FloodedMallBuilder.Build()");
-    const interactionsAt = server.src.indexOf("InteractionService.init()");
+    const buildAt = server.src.indexOf("GalleriaBuilder.Build()");
+    const interactionsAt = server.src.indexOf("InteractionService.init()", buildAt);
     check(
       "server builds the tagged mall before interactions initialize",
-      buildAt >= 0 && interactionsAt > buildAt,
-      "Rojo clears Workspace.Map.GeneratedFloodedMall on sync; starting services first leaves no prompts",
+      buildAt >= 0 && interactionsAt >= 0,
+      "the mall carries the tags; starting services before it is built leaves no prompts",
     );
+    check(
+      "the raid no longer builds the retired FloodedMall",
+      !server.src.includes("FloodedMallBuilder.Build()"),
+      "every raid landed in Codex's generated mall because it owned the only SpawnLocation",
+    );
+	check(
+		"server applies the runtime lighting profile",
+		server.src.includes("LightingService.init()"),
+		"Studio Lighting cannot be safely replaced by Rojo during sync, so playtests need one runtime owner",
+	);
+  }
+
+  // 6. an ExtractionId a map hands out that the balance data does not define.
+  //    LootService.beginRun silently drops any candidate whose id is missing
+  //    from data/loot.json, so the map still looks right and the run simply
+  //    has no way out. Nothing errors.
+  {
+    const lootJson = join(root, "data", "loot.json");
+    if (existsSync(lootJson)) {
+      const defined = Object.keys(JSON.parse(readFileSync(lootJson, "utf8")).extraction ?? {});
+      for (const f of files.filter((x) => x.rel.includes("map/"))) {
+        const ids = [...f.src.matchAll(/SetAttribute\(\s*"ExtractionId"\s*,\s*"([^"]+)"/g)].map((m) => m[1]);
+        const literals = [...f.src.matchAll(/\]\s*=\s*"(LoadingDock|FreightLift|[A-Z][A-Za-z]*(?:Dock|Lift|Exit))"/g)].map(
+          (m) => m[1],
+        );
+        for (const id of new Set([...ids, ...literals])) {
+          check(
+            `${basename(f.rel)} extraction id "${id}" is defined in loot.json`,
+            defined.includes(id),
+            `LootService drops it, so that exit can never be selected (defined: ${defined.join(", ")})`,
+          );
+        }
+      }
+    }
   }
 
   if (loot) {
     check(
-      "LootService chooses one active extraction per run",
-      loot.src.includes("function LootService.beginRun") && loot.src.includes('SetAttribute("ActiveThisRun", active)'),
-      "every tagged exit was left active; a run needs one server-selected route",
+      "LootService opens every extraction before storm closures",
+      loot.src.includes("function LootService.beginRun") && loot.src.includes("setExtractionOpen(candidate, true)"),
+      "a raid should begin with multiple viable exits before the storm closes alternates",
     );
     check(
-      "LootService rejects inactive extraction requests",
-      loot.src.includes("candidate == activeExtraction"),
-      "a client could request an extraction id for a different tagged exit",
+      "Loot tiers are ranked from the selected extraction",
+      loot.src.includes("assignLootForExtraction(activeExtraction)"),
+      "loot was classified before the random escape route was known",
+    );
+    check(
+      "LootService rejects closed extraction requests",
+      loot.src.includes("openExtractions[exitPart]"),
+      "a client could request an extraction at a door the storm already closed",
     );
   }
 
   if (interaction) {
     check(
-      "inactive extraction prompts stay hidden",
+      "closed extraction prompts stay hidden",
       interaction.src.includes('prompt.Enabled = instance:GetAttribute("ActiveThisRun") == true'),
-      "all candidate exit prompts were visible despite only one route being active",
+      "a closed exit would still look callable",
     );
   }
 }

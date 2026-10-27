@@ -37,7 +37,7 @@ ContextActionService:BindAction("AnchorRevive", function(_, state)
 		return Enum.ContextActionResult.Pass
 	end
 	if downed and anchorAvailable then
-		reviveRequest:FireServer(player.UserId)
+		reviveRequest:FireServer()
 	end
 	return Enum.ContextActionResult.Sink
 end, true, Enum.KeyCode.R, Enum.KeyCode.ButtonX)

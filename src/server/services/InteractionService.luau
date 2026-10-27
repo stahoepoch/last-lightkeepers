@@ -70,11 +70,11 @@ local function attachLootPrompt(instance: Instance)
 	-- it up." An instant pickup gives you nothing to feel, and the prompt's own
 	-- fill ring is the only progress the player ever sees.
 	--
-	-- The crate stays the slower of the two. It is bulky and team-carried, so
-	-- lifting one should read as heavier than pocketing a battery. Both numbers
-	-- are feel rather than balance and are meant to be tuned by hand.
+	-- Important finds make you stand exposed longer. The timings live with the
+	-- loot tier, so a relic cache cannot accidentally collect as fast as scrap.
 	local isCrate = tier == "RestorationCrates"
-	local prompt = makePrompt(instance, if isCrate then "Lift" else "Take", tier, if isCrate then 1 else 0.4)
+	local pickupSeconds = Config.Loot.tiers[tier].pickupSeconds
+	local prompt = makePrompt(instance, if isCrate then "Lift" else "Take", tier, pickupSeconds)
 
 	-- A lantern-only tier should not advertise itself in the dark. Off here, and
 	-- turned on per viewer by RelicVisibilityController; see above.
@@ -99,13 +99,17 @@ local function attachExtractionPrompt(instance: Instance)
 	end
 
 	local def = Config.Loot.extraction[id]
-	local label = if def.arrivalSeconds > 0 then `Call lift ({def.arrivalSeconds}s)` else "Leave"
+	local label = `Hold extraction ({def.arrivalSeconds}s)`
 	local prompt = makePrompt(instance, label, "Extraction", 1)
+	prompt.Name = "ExtractionPrompt"
+	-- Every route begins open. LootService closes alternate exits as the storm
+	-- escalates, leaving one final route for Final Call.
+	prompt.Enabled = instance:GetAttribute("ActiveThisRun") == true
 
 	prompt.Triggered:Connect(function(player: Player)
 		-- handleExtraction re-resolves the tagged instance and re-checks range,
 		-- so the prompt is convenience, not authority.
-		task.spawn(LootService.handleExtraction, player, id)
+		task.spawn(LootService.handleExtraction, player, instance)
 	end)
 end
 
@@ -113,6 +117,24 @@ end
 --- go down and removed when they stand. Teammates walk up and hold.
 local function watchForDowns()
 	local hold = Config.Lantern.revive.teammateHoldSeconds
+	local function teammateCanRevive(target: Player, root: BasePart): boolean
+		-- A default ProximityPrompt is visible to its own parent character too.
+		-- Creating one while solo therefore offered "Revive yourself", then the
+		-- server correctly rejected it. That prompt sat on top of the exit prompt
+		-- and made a crawling player unable to call extraction. Only create the
+		-- teammate interaction when a teammate is actually close enough to use it.
+		for _, rescuer in ipairs(Players:GetPlayers()) do
+			if rescuer ~= target then
+				local rescuerRoot = rescuer.Character and rescuer.Character:FindFirstChild("HumanoidRootPart")
+				if rescuerRoot and rescuerRoot:IsA("BasePart") then
+					if (rescuerRoot.Position - root.Position).Magnitude <= Config.Lantern.revive.maxReviveDistance then
+						return true
+					end
+				end
+			end
+		end
+		return false
+	end
 
 	task.spawn(function()
 		while true do
@@ -126,20 +148,18 @@ local function watchForDowns()
 					if root then
 						local existing = root:FindFirstChild("RevivePrompt")
 
-						if state.knockedDown and not existing then
+						local teammateNearby = state.knockedDown and teammateCanRevive(player, root)
+						if teammateNearby and not existing then
 							local prompt = makePrompt(root, "Revive", player.DisplayName, hold)
 							prompt.Name = "RevivePrompt"
 							prompt.MaxActivationDistance = Config.Lantern.revive.maxReviveDistance
 							prompt.Triggered:Connect(function(rescuer: Player)
-								RunStateService.beginRevive(rescuer, player)
+								-- Triggered arrives only after this prompt's configured
+								-- hold completes. The server validates the finish, rather
+								-- than adding a second invisible countdown after it.
+								RunStateService.completeRevive(rescuer, player)
 							end)
-							-- The hold is advanced server-side in the run tick;
-							-- this prompt only registers intent. Releasing early
-							-- or walking off cancels it there.
-							prompt.PromptButtonHoldEnded:Connect(function()
-								RunStateService.cancelRevive(player)
-							end)
-						elseif not state.knockedDown and existing then
+						elseif existing and (not state.knockedDown or not teammateNearby) then
 							existing:Destroy()
 						end
 					end

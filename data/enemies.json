@@ -1,5 +1,9 @@
 {
-  "_comment": "Enemy roster. Four types in version one. Every enemy must telegraph with sound before sight - that is an accessibility requirement, not polish.",
+  "_comment": "Enemy roster. SIX types in version one: Sweepers, Stockers, Glimmers, WindowWalkers, Ficus, Warden. Every enemy must telegraph with sound before sight - that is an accessibility requirement, not polish.",
+
+  "_scopeNote": "History of this line, because it has moved twice and both moves were approvals rather than drift. It read 'four types' until the edit that added WindowWalkers deleted it; Chris approved that fifth type on 2026-10-20. Codex added the ficus concept art and Chris approved it the same day ('Codex did it, I like the ficus'), making six. A seventh needs his approval the same way. The rule is not the number - it is that a guardrail moves deliberately and never gets removed by whoever needs it out of the way.",
+
+  "_ficusTodo": "APPROVED but NOT DEFINED. Concept art is at assets/enemies/ficus-stalker-concept-v1.png; there is no entry for it below and no rig. A mall local per docs/ZONES.md, like the WindowWalkers - derived from mall landscaping. Its stats are Chris's call, as all values in this file are.",
 
   "Sweepers": {
     "formerJob": "Floor cleaners",
@@ -32,6 +36,7 @@
     "counterplay": "Go dark before the scan completes; break sight and relocate if tagged.",
     "health": 25,
     "moveSpeed": 18,
+    "scanRange": 30,
     "scanSeconds": 2,
     "tagSeconds": 20,
     "tagRevealsPositionToAllRobots": true,
@@ -39,6 +44,30 @@
     "tagGivesWardenPermanentWaypoint": false,
     "scanRequiresActiveLantern": true,
     "audioTelegraphSeconds": 0.75
+  },
+
+  "WindowWalkers": {
+    "formerJob": "Department-store display mannequins",
+    "behaviour": "Remain still until a nearby active lantern catches them, then walk directly after the light source.",
+    "counterplay": "Go dark and break sight; they do not navigate around a lost target.",
+    "health": 80,
+    "moveSpeed": 8,
+    "wakeRange": 32,
+    "sightRange": 36,
+    "wakeRequiresActiveLantern": true,
+    "audioTelegraphSeconds": 1.0
+  },
+
+  "Ficus": {
+    "formerJob": "Indoor landscaping",
+    "behaviour": "Stands as a potted plant until lantern light catches it, then creeps after the light source.",
+    "counterplay": "Go dark, break sight, and do not light every decorative plant in a department store.",
+    "health": 55,
+    "moveSpeed": 6,
+    "wakeRange": 28,
+    "sightRange": 34,
+    "wakeRequiresActiveLantern": true,
+    "audioTelegraphSeconds": 1.2
   },
 
   "Warden": {

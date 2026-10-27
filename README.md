@@ -10,7 +10,7 @@ does not reinterpret it.
 default.project.json     Rojo sync map
 data/                    Balance values as plain JSON — the portable layer
   storm-charge.json      Baseline rate, lantern multiplier, thresholds, Anchor Revive
-  loot.json              Tiers, visibility rules, banking, extraction
+  loot.json              Tiers, visibility rules, extraction-only payout
   enemies.json           Sweepers, Stockers, Glimmers, Warden
 src/shared/
   Config.luau            Requires the JSON, exposes stormRate() / thresholdAt()
@@ -19,9 +19,9 @@ src/shared/
 src/server/
   init.server.luau       Entry point: wires services, starts the run
   services/
-    RunStateService      Storm Charge, lanterns, knockdown/revive, banking, wipe
+    RunStateService      Storm Charge, lanterns, knockdown/revive, extraction-only wipe
     LootService          Spawning, visibility, pickup, extraction payout
-    EnemyService         Sweepers implemented; others stubbed with config in place
+    EnemyService         Sweepers, Glimmers, and Window Walkers; Stockers and Warden remain future work
     PlayerDataService    DataStore profiles, workshop materials, contributions
 src/client/
   LanternController      F / gamepad Y to toggle; server echoes authoritative state
@@ -49,11 +49,25 @@ Day 1–3 need these tags applied to parts you build:
 | Tag            | On                          | Attributes                              |
 | -------------- | --------------------------- | --------------------------------------- |
 | `Loot`         | each pickup part            | `Tier` (string), `Amount` (number)      |
-| `RelayBank`    | the mid-run relay volume    | —                                       |
+| `RelayBank`    | the mid-run relay volume    | — (utility only; never secures loot)    |
 | `Extraction`   | loading dock, freight lift  | `ExtractionId` = `LoadingDock`/`FreightLift` |
+| `RunStart`     | optional run-start marker   | — (used to choose a far-side exit)      |
 | `SweeperSpawn` | Sweeper spawn points        | —                                       |
 
 `Tier` must be one of `Supplies`, `Components`, `Relics`, `RestorationCrates`.
+
+## Extraction rule
+
+Every run has exactly one active `Extraction` candidate. The server chooses at
+random from candidates at least 70% as far from `RunStart` (or the first
+`SpawnLocation`) as the farthest candidate, so an exit beside spawn cannot be
+selected when a far-side option exists. The selected candidate receives
+`ActiveThisRun = true`; all other extraction prompts remain off.
+
+There is no banked safety net: a wipe or disconnect without extraction pays
+nothing from that run. Both current exits are held commitments (Loading Dock:
+20 seconds; Freight Lift: 30 seconds). Add at least three well-separated,
+tagged candidates to give future maps genuine route variety.
 
 ## Tuning anchors in place
 
@@ -83,21 +97,52 @@ reaches the Warden in about 3.2 minutes. Test it before trusting it.
 node tests/balance.test.mjs
 ```
 
-48 invariant checks over `data/*.json` — no Roblox, no Rojo, no Luau toolchain
-needed. They assert that the numbers still match the handoff: the 8-minute dark
-anchor, the 2.5× lantern rate, exactly one lantern-only loot tier, banked loot
-fully surviving a wipe, the Warden unkillable, the locked Glimmer scan/tag
-values, and that a lone Sweeper cannot stack a knockdown.
+Invariant checks over `data/*.json` plus static wiring checks over the Luau — no
+Roblox runtime needed. They assert that the numbers still match the handoff: the 8-minute dark
+anchor, the 2.5× lantern rate, exactly one lantern-only loot tier, extraction
+being required for all run loot, the Warden unkillable, the locked Glimmer scan/tag
+values, the one-time four-second teammate revive, and that a lone Sweeper
+cannot stack a knockdown.
 
-They do **not** test gameplay code. The Luau is still untypechecked — see
+They do **not** replace a Studio playtest. The Luau is still untypechecked — see
 `rokit.toml` for the one command that fixes that.
+
+## Toolchain and CI
+
+Install the pinned tools once from the repository root:
+
+```bash
+rokit install
+```
+
+Then run the same checks used by CI:
+
+```bash
+npm test
+stylua --check src
+selene src
+luau-lsp analyze src
+rojo build default.project.json --output Last-Lightkeepers-validation.rbxlx
+```
+
+Formatting or lint warnings in a file owned by another lane should be reported
+to that owner rather than mass-reformatted in a shared working tree.
 
 ## Not built yet
 
-Day 4 onward is deliberately incomplete, per "build one enemy before the full
-roster": Stockers, Glimmers, and the Warden have config and hooks but no
-behaviour. Lantern charge is tracked but never drains. The Lanternhold hub,
-workshop UI, and Community Kitchen landmark are untouched.
+Stockers and the Warden still have config and hooks but no behaviour. The
+Lanternhold hub, workshop UI, and Community Kitchen landmark are untouched.
+
+Glimmers are now in the vertical slice: at PatrolsHunt, one appears near a lit
+Lightkeeper, keeps sight for two seconds, then tags that player for twenty
+seconds. Going dark cancels the scan. PatrolsAlert also widens nearby Sweeper
+pressure, so a crew that stays dark still sees escalation during a normal run.
+
+Window Walkers are also physical now: at PatrolsAlert, one spawns from the
+nearest existing enemy marker and remains still. Nearby lantern light with a
+clear line of sight wakes it; it announces itself, then walks directly toward
+the lit Lightkeeper. Turning the lantern off or breaking sight makes it stop
+rather than path around the mall.
 
 ## Flooded Mall vertical slice — 2026-10-19
 

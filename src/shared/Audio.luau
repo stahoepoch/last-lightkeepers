@@ -97,6 +97,13 @@ local cues: { [string]: Cue } = {
 		volume = 0.55,
 		note = "Fires once when an exit is called, for the whole crew.",
 	},
+	ExtractionSiren = {
+		id = "",
+		master = "assets/audio/extraction-siren-v1.wav",
+		kind = "loop",
+		volume = 0.62,
+		note = "OWNED MASTER, NOT UPLOADED. Positional alarm at a called extraction; the mall must hear it.",
+	},
 	LanternOn = {
 		id = "",
 		master = "",

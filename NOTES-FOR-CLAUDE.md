@@ -208,3 +208,39 @@ is a feel decision, not a correctness one:
   revive instantly. Proximity is still server-checked.
 - Prompt taps and the HUD draws the progress from a new snapshot field. Correct
   on both axes, and the most work.
+
+## 2026-10-21 — Lanternhold lighting is unplayable (observed live by Codex)
+
+This is not a player display issue. A Studio playtest and viewport capture show
+the hub alternating between black voids and blown-white lamp rectangles.
+
+`src/map/LanternholdBuilder.luau` currently creates lamps only in four basement
+landing positions, two kitchen positions, three museum positions, and the Lamp
+Wall. The main ballroom/keeping-room route from the `ReturnPoint` has no local
+fixtures. Its pale plaster (`238,232,222`) is then lit only by the environment,
+so the hub has neither a readable ambient base nor intentional pools of light.
+
+The current `lamp` helper at lines 155-165 makes the problem worse:
+
+- glass lens: 3 x 4.5 x 3, nearly white (`255,214,160`)
+- PointLight: brightness `1.5`, range `42`
+
+At the landing spacing the lights overlap and render as white panels. A live,
+temporary preview with amber lenses (`185,132,74`), `Brightness = 0.48`,
+`Range = 28`, and shadows off removed the glare. It also exposed the missing
+central lighting, rather than pretending the hub was now usable.
+
+Recommended implementation in the builder:
+
+1. Make all existing lamp lenses amber/dim (about the preview values above);
+   do not use near-white glass for a large lens.
+2. Add sparse, low-range fixtures through the ballroom/Keeping Room and the
+   path from `ReturnPoint` to `Departure`, with warm pools that overlap only
+   slightly.
+3. Darken the plaster/stone palette by roughly 20-25%, then verify from the
+   actual player camera at `ReturnPoint` and the road board — not just in the
+   editor camera.
+
+Codex also fixed the integration-side spawn race: the player now reliably
+arrives at Lanternhold first instead of the stale old Galleria preview. The
+remaining visual issue is entirely inside this builder.

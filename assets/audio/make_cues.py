@@ -247,6 +247,22 @@ def warden():
     return lowpass(out, 900)
 
 
+def extraction_siren():
+    """A public alarm, not an enemy voice.
+
+    Mechanism: alternating rising/falling two-note sweeps over a mechanical
+    low pulse. It has to travel a long way through the mall and be immediately
+    distinct from a Glimmer's *single* rising scan.
+    """
+    out = silence(4.0)
+    for start, rising in ((0.0, True), (1.0, False), (2.0, True), (3.0, False)):
+        tone = sweep(610, 910, 0.82) if rising else sweep(910, 610, 0.82)
+        tone = [0.48 * s for s in env(tone, 0.035, 0.12, hold=0.66)]
+        out = at(out, start, tone)
+    pulse = [0.16 * s for s in env(sine(72, 4.0), 0.01, 0.3, hold=3.5)]
+    return mix(out, pulse)
+
+
 # -------------------------------------------------------------------- main
 
 CUES = {
@@ -255,6 +271,7 @@ CUES = {
     "glimmer-scan-v1.wav": glimmer,
     "window-walker-wake-v1.wav": window_walker,
     "warden-approach-v1.wav": warden,
+    "extraction-siren-v1.wav": extraction_siren,
 }
 
 

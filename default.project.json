@@ -36,7 +36,10 @@
     "Workspace": {
       "$className": "Workspace",
       "$properties": {
-        "FilteringEnabled": true
+        "FilteringEnabled": true,
+        "StreamingEnabled": true,
+        "StreamingMinRadius": 192,
+        "StreamingTargetRadius": 384
       },
       "Map": {
         "$path": "src/map"

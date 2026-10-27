@@ -29,8 +29,19 @@ const CHARGE_SECONDS = lanternCfg.charge.secondsOfLightPerFullCharge;
 // every duty cycle produce an identical row, because each lantern died on the
 // first tick and nobody ever accelerated the storm.
 const DRAIN = CHARGE_SECONDS > 0 ? 1 / CHARGE_SECONDS : 0;
-const RUN_MIN = 6 * 60;
-const RUN_MAX = 10 * 60;
+const RUN_MIN = configRunSeconds("targetMinSeconds", 6 * 60);
+// Read the real run shape out of Config.luau rather than restating it here.
+// It was hardcoded at 10 minutes and silently went stale when Chris raised the
+// ceiling to 20 for a deep Galleria push - which quietly inverted this report's
+// headline conclusion. A number that lives in two places is a number that lies
+// in one of them.
+function configRunSeconds(name, fallback) {
+  const src = readFileSync(join(root, "src", "shared", "Config.luau"), "utf8");
+  const m = src.match(new RegExp(`${name}\\s*=\\s*([0-9]+)\\s*\\*\\s*60`));
+  return m ? Number(m[1]) * 60 : fallback;
+}
+
+const RUN_MAX = configRunSeconds("targetMaxSeconds", 10 * 60);
 
 // Mirrors Config.lanternMultiplier. Kept in sync by a balance test.
 function multiplier(n, curve = storm.lantern.curve) {

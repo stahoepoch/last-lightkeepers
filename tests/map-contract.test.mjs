@@ -1,8 +1,8 @@
 // Map contracts that are easy to regress during a procedural rebuild.
 //
-// This does not own gameplay banking logic. It makes the physical map keep
-// its side of the deal: a relay is an upstairs detour, is clearly signed, and
-// declares the lantern/group contract that the gameplay service enforces.
+// This does not own gameplay routing logic. It makes the physical map keep
+// its side of the deal: the Relay Annex is an upstairs detour with a readable
+// active-exit board, rather than a fake banking interaction.
 
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -36,23 +36,18 @@ check(
   "the relay should require an upstairs detour",
 );
 check(
-  "relay declares the lit-lantern requirement",
-  src.includes('SetAttribute("RequiresLanternLit", true)'),
-  "gameplay must require light for the whole transfer",
-);
-check(
-  "relay declares the group banking requirement",
-  src.includes('SetAttribute("BanksCrewInRange", true)'),
-  "a relay must bank the crew in range together, not reward a solo runner",
+  "relay declares an active-route board",
+  src.includes('SetAttribute("RouteBoard", true)'),
+  "the relay needs a concrete player-facing job",
 );
 check(
   "relay remains tagged for the interaction system",
   src.includes('AddTag(relay, "RelayBank")'),
 );
 check(
-  "relay announces its light cost in-world",
-  src.includes("RELAY ANNEX  •  LANTERNS REQUIRED"),
-  "the player should see the commitment before using the relay",
+  "relay announces its route-board role in-world",
+  src.includes("RELAY ANNEX  •  ACTIVE ROUTE"),
+  "the player should learn what the fixture is before approaching it",
 );
 
 console.log(`\n${checks - failures}/${checks} passed`);

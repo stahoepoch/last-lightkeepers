@@ -58,6 +58,7 @@ ear:
 | `glimmer-scan-v1.wav` | Time running out | A tone rising across exactly 2.0s with ticks that *accelerate*, so the closing window is audible |
 | `window-walker-wake-v1.wav` | Stillness breaking | Silence first, then a dry crack and a rigid creak |
 | `warden-approach-v1.wav` | Dread, and distance | Two near-unison low fundamentals beating, with a long decaying tail |
+| `extraction-siren-v1.wav` | A public commitment | Alternating rising/falling alarm sweeps over a mechanical low pulse; positional at the called exit. |
 
 The Glimmer one is the one that mattered: the handoff gives the player two
 seconds to go dark, and a single hit cannot say *you have time, and it is

@@ -23,31 +23,76 @@ local LANTERN_RANGE = 34
 local wantLanternOn = false
 local light: PointLight? = nil
 
-local function ensureLight(): PointLight?
+-- A lantern that only exists as a light attached to the player's invisible
+-- root makes the main choice feel like a keyboard setting. This local prop is
+-- cosmetic; the server still owns the actual on/off state and Storm Charge.
+local function lanternMount(character: Model): BasePart?
+	local hand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
+	if hand and hand:IsA("BasePart") then
+		return hand
+	end
+	local root = character:FindFirstChild("HumanoidRootPart")
+	return if root and root:IsA("BasePart") then root else nil
+end
+
+local function ensureLanternProp(): PointLight?
 	local character = player.Character
-	local root = character and character:FindFirstChild("HumanoidRootPart")
-	if not root then
-		return nil
+	if not character then return nil end
+	local mount = lanternMount(character)
+	if not mount then return nil end
+	local existing = character:FindFirstChild("KeeperLantern")
+	if existing then
+		local lens = existing:FindFirstChild("Lens", true)
+		local existingLight = lens and lens:FindFirstChildOfClass("PointLight")
+		if existingLight then return existingLight end
+		existing:Destroy()
 	end
-	if light and light.Parent == root then
-		return light
+
+	local model = Instance.new("Model")
+	model.Name = "KeeperLantern"
+	local handle = Instance.new("Part")
+	handle.Name = "Handle"
+	handle.Size = Vector3.new(0.24, 0.78, 0.24)
+	handle.Color, handle.Material = Color3.fromRGB(62, 52, 42), Enum.Material.Metal
+	handle.CanCollide, handle.CanTouch, handle.Massless = false, false, true
+	handle.CFrame = mount.CFrame * CFrame.new(0, -0.72, -0.22)
+	handle.Parent = model
+	local housing = Instance.new("Part")
+	housing.Name = "Housing"
+	housing.Size = Vector3.new(0.62, 0.7, 0.42)
+	housing.Color, housing.Material = Color3.fromRGB(54, 48, 43), Enum.Material.Metal
+	housing.CanCollide, housing.CanTouch, housing.Massless = false, false, true
+	housing.CFrame = handle.CFrame * CFrame.new(0, -0.52, 0)
+	housing.Parent = model
+	local lens = Instance.new("Part")
+	lens.Name = "Lens"
+	lens.Shape = Enum.PartType.Ball
+	lens.Size = Vector3.new(0.38, 0.38, 0.38)
+	lens.Color, lens.Material, lens.Transparency = LANTERN_COLOUR, Enum.Material.Glass, 0.12
+	lens.CanCollide, lens.CanTouch, lens.Massless = false, false, true
+	lens.CFrame = housing.CFrame * CFrame.new(0, 0, -0.24)
+	lens.Parent = model
+	for _, part in ipairs({ housing, lens }) do
+		local joint = Instance.new("WeldConstraint")
+		joint.Part0, joint.Part1, joint.Parent = handle, part, handle
 	end
+	local joint = Instance.new("WeldConstraint")
+	joint.Part0, joint.Part1, joint.Parent = mount, handle, handle
 	local created = Instance.new("PointLight")
 	created.Name = "Lantern"
-	created.Color = LANTERN_COLOUR
-	created.Range = LANTERN_RANGE
-	created.Brightness = 2.4
-	-- Off by Chris's call, 2026-10-20: "the shadows suck, i hate them."
-	--
-	-- This was the only thing still casting. The map already runs with
-	-- Lighting.GlobalShadows false and its own lights set to Shadows false, so
-	-- a lit lantern was the one source of hard shadows in the game - every
-	-- railing and shelf throwing a sharp edge across the floor as you moved.
-	created.Shadows = false
+	created.Color, created.Range, created.Brightness, created.Shadows = LANTERN_COLOUR, LANTERN_RANGE, 2.4, false
 	created.Enabled = false
-	created.Parent = root
-	light = created
+	created.Parent = lens
+	model.Parent = character
 	return created
+end
+
+local function ensureLight(): PointLight?
+	if light and light.Parent then
+		return light
+	end
+	light = ensureLanternProp()
+	return light
 end
 
 local function applyLocalVisual(on: boolean)

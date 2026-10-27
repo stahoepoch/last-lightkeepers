@@ -34,5 +34,12 @@
     "hitsToKnockDown": 3,
     "hitDecaySeconds": 6,
     "_hitsNote": "hitsToKnockDown with decay is what makes one Sweeper survivable and four lethal, without giving players a health bar to optimise."
+  },
+
+  "movement": {
+    "walkSpeed": 16,
+    "sprintSpeed": 23,
+    "crouchSpeed": 9,
+    "_note": "Movement is a readability and route-choice tool, not a stamina minigame. Sprint gets you to an exit or away from a Sweeper; crouch gives players a deliberate slow mode for tight shops and careful approach. Neither changes Storm Charge."
   }
 }

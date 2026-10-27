@@ -106,6 +106,50 @@ label.TextColor3 = Color3.fromRGB(226, 232, 240)
 label.Text = "Storm closing"
 label.Parent = meterFrame
 
+-- The choice to keep pushing needs a visible price. This is deliberately a
+-- compact readout, not a grid backpack: it answers only "what will I lose if
+-- I do not make it out?" and is populated solely from the server snapshot.
+local haulFrame = Instance.new("Frame")
+haulFrame.Name = "HaulReadout"
+haulFrame.AnchorPoint = Vector2.new(1, 0)
+haulFrame.Position = UDim2.new(1, -20, 0, 26)
+haulFrame.Size = UDim2.fromOffset(190, 116)
+haulFrame.BackgroundColor3 = TRACK
+haulFrame.BackgroundTransparency = 0.16
+haulFrame.BorderColor3 = Color3.fromRGB(92, 113, 142)
+haulFrame.BorderSizePixel = 1
+haulFrame.Visible = false
+haulFrame.Parent = screen
+
+local haulTitle = Instance.new("TextLabel")
+haulTitle.Name = "Title"
+haulTitle.Position, haulTitle.Size, haulTitle.BackgroundTransparency = UDim2.fromOffset(12, 6), UDim2.fromOffset(166, 20), 1
+haulTitle.Font, haulTitle.TextSize, haulTitle.TextXAlignment = Enum.Font.GothamBold, 13, Enum.TextXAlignment.Left
+haulTitle.TextColor3, haulTitle.Text = Color3.fromRGB(255, 222, 161), "CARRIED — LOSE ON WIPE"
+haulTitle.Parent = haulFrame
+
+local haulLines = Instance.new("TextLabel")
+haulLines.Name = "Items"
+haulLines.Position, haulLines.Size, haulLines.BackgroundTransparency = UDim2.fromOffset(12, 29), UDim2.fromOffset(166, 78), 1
+haulLines.Font, haulLines.TextSize, haulLines.TextXAlignment, haulLines.TextYAlignment = Enum.Font.GothamMedium, 14, Enum.TextXAlignment.Left, Enum.TextYAlignment.Top
+haulLines.TextColor3, haulLines.TextWrapped = Color3.fromRGB(221, 230, 239), true
+haulLines.Parent = haulFrame
+
+local function updateHaul(haul: { [string]: number }?, burden: number?)
+	local order = { "Supplies", "Components", "Relics", "RestorationCrates" }
+	local names = { RestorationCrates = "Restoration crates" }
+	local lines = {}
+	for _, tier in ipairs(order) do
+		local amount = haul and haul[tier] or 0
+		if amount and amount > 0 then
+			table.insert(lines, string.format("%s  x%d", names[tier] or tier, amount))
+		end
+	end
+	haulTitle.Text = if burden and burden > 0 then string.format("CARRIED — %d%% SLOWER", math.floor(math.min(burden * 4.5, 42) + 0.5)) else "CARRIED — LOSE ON WIPE"
+	haulFrame.Visible = #lines > 0
+	haulLines.Text = table.concat(lines, "\n")
+end
+
 -- Once a run has ended, the summary stays on screen. Extraction does not stop
 -- the run tick, so the next snapshot - 250ms later - used to overwrite the
 -- payout line before anyone could read it, and a player never saw what they
@@ -158,6 +202,53 @@ downedHint.Font = Enum.Font.GothamMedium
 downedHint.TextColor3 = Color3.fromRGB(226, 232, 240)
 downedHint.Parent = screen
 
+local crewAlert = downed:Clone()
+crewAlert.Name = "CrewEmergency"
+crewAlert.Position = UDim2.new(0.5, 0, 0.72, 0)
+crewAlert.TextSize = 19
+crewAlert.TextColor3 = Color3.fromRGB(150, 208, 255)
+crewAlert.Visible = false
+crewAlert.Parent = screen
+
+local extractionAlert = crewAlert:Clone()
+extractionAlert.Name = "ExtractionHoldout"
+extractionAlert.Position = UDim2.new(0.5, 0, 0.18, 0)
+extractionAlert.TextColor3 = Color3.fromRGB(255, 222, 161)
+extractionAlert.Parent = screen
+
+Remotes.get("DownedSignal").OnClientEvent:Connect(function(signal)
+	crewAlert.Text = string.format("KEEPER DOWN: %s — FIND THEM", tostring(signal.name))
+	crewAlert.Visible = true
+	task.delay(7, function() crewAlert.Visible = false end)
+end)
+
+Remotes.get("ExtractionState").OnClientEvent:Connect(function(state)
+	if not state.active then
+		extractionAlert.Visible = false
+		return
+	end
+	extractionAlert.Visible = true
+	task.spawn(function()
+		while extractionAlert.Visible and state.endsAt do
+			local left = math.max(0, state.endsAt - workspace:GetServerTimeNow())
+			local root = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+			-- Multiple doors begin open. The server tells us which physical door
+			-- was called so this message never judges distance to a different exit.
+			local activeExit = if typeof(state.exit) == "Instance" and state.exit:IsA("BasePart")
+				then state.exit
+				else nil
+			-- Match the server's forgiving physical exit zone. The visible dock/lift
+			-- footprint is larger than its tiny marker part, so the HUD must not say
+			-- "GET TO THE EXIT" while the server will successfully extract you.
+			local zone = if root and activeExit and activeExit:IsA("BasePart") then (root.Position - activeExit.Position).Magnitude <= 24 else false
+			local place = if zone then "YOU ARE IN THE EXIT" else "GET TO THE EXIT"
+			extractionAlert.Text = string.format("%s CALLED BY %s — %ds — %s", tostring(state.via), tostring(state.caller), math.ceil(left), place)
+			if left <= 0 then break end
+			task.wait(0.1)
+		end
+	end)
+end)
+
 Remotes.get("RunSnapshot").OnClientEvent:Connect(function(snapshot)
 	lastRunId = snapshot.runId
 	local ratio = math.clamp(snapshot.stormCharge / wardenCharge, 0, 1)
@@ -177,6 +268,10 @@ Remotes.get("RunSnapshot").OnClientEvent:Connect(function(snapshot)
 
 	local lanterns = snapshot.activeLanterns
 	local multiplier = Config.stormRate(lanterns) / Config.StormCharge.baselineRatePerSecond
+	local remaining = math.max(0, snapshot.runSecondsRemaining or 0)
+	updateHaul(snapshot.yourHaul, snapshot.yourBurden)
+	local minutes = math.floor(remaining / 60)
+	local seconds = math.floor(remaining % 60)
 
 	-- A new expedition clears the last one's summary.
 	if runOver and snapshot.runId ~= endedRunId then
@@ -242,6 +337,10 @@ Remotes.get("RunSnapshot").OnClientEvent:Connect(function(snapshot)
 		label.Text = "THE WARDEN IS COMING"
 	elseif snapshot.yourTagged then
 		label.Text = "TAGGED - they know where you are"
+	elseif snapshot.highestThreshold == "PatrolsHunt" then
+		label.Text = "HUNT - lit players can be scanned"
+	elseif snapshot.highestThreshold == "PatrolsAlert" then
+		label.Text = "ALERT - Sweepers are ranging farther"
 	elseif lanternDrains and charge <= 0 then
 		label.Text = "Lantern dead - storm still rising"
 	elseif (snapshot.crewDown or 0) > 0 then
@@ -251,6 +350,7 @@ Remotes.get("RunSnapshot").OnClientEvent:Connect(function(snapshot)
 	else
 		label.Text = "Dark - storm still rising"
 	end
+	label.Text ..= string.format("  |  %02d:%02d left", minutes, seconds)
 end)
 
 Remotes.get("RunEnded").OnClientEvent:Connect(function(result)
@@ -258,6 +358,7 @@ Remotes.get("RunEnded").OnClientEvent:Connect(function(result)
 	endedRunId = lastRunId
 	downed.Visible = false
 	downedHint.Visible = false
+	updateHaul(nil, nil)
 	local lines = {}
 	for tier, amount in pairs(result.payout or {}) do
 		table.insert(lines, string.format("%s x%d", tier, amount))
@@ -266,7 +367,7 @@ Remotes.get("RunEnded").OnClientEvent:Connect(function(result)
 
 	local headline = if result.outcome == "extracted"
 		then string.format("Extracted via %s", tostring(result.via))
-		else "Lanterns burned out - half of what you carried is gone"
+		else "The storm took the haul - extract or lose everything"
 
 	label.Text = headline .. (if #lines > 0 then "  |  " .. table.concat(lines, ", ") else "  |  nothing recovered")
 end)
