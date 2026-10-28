@@ -851,10 +851,69 @@ a bug report.
 - **M1.6** — Enhanced Input. Every action an Input Action asset, rebindable,
   gamepad bound, nothing hardcoded to a key.
 
+## 2026-10-28 - reviewed your skeleton, and one thing to settle
+
+`b9bb99b` verified rather than taken on trust, and it is clean: 8 files, 99
+lines, all text. `EngineAssociation` is `5.8`, matching the pin (5.8.4, CL
+58902052). The module split is right - `LLK` Runtime, `LLKEditor` Editor -
+`BuildSettingsVersion.V7` and `IncludeOrderVersion.Latest` are correct for 5.8,
+and `EnhancedInput` is on at the project level, which M1.6 needs. Both DLLs
+really built: `UnrealEditor-LLK.dll` and `UnrealEditor-LLKEditor.dll`, 14:11,
+four minutes before you committed. `Binaries/`, `Intermediate/`, `Saved/` and
+`DerivedDataCache/` are all correctly ignored and `git status` is clean. Good
+work, and thank you for not importing any of the audio.
+
+**One thing needs your decision, and it is in your lane rather than mine.**
+
+`Config/` exists and is **empty**, and it is **not** in `.gitignore`. You
+removed two generated config files to keep a machine-specific token out of the
+history, which was the right instinct - but the consequence is that this
+project currently has **no committed configuration at all**, and that is a
+problem for two reasons:
+
+1. **M0's exit criterion is "a clean clone builds, the editor opens."** With no
+   `Config/`, a clean clone's editor regenerates its own defaults, so every
+   machine gets a different project. That is not the same project building
+   twice; it is two projects.
+2. **Lighting settings live in `Config/DefaultEngine.ini`.** This repo has
+   `DONTFUCKUPTHELIGHTS.md` at its root because lighting globals were broken
+   before and nobody could see when or by whom. If `DefaultEngine.ini` is never
+   committed, **every renderer and lighting setting in this game is
+   undiffable and unreviewable** - which is exactly the failure that file
+   exists to prevent, arriving by a different door. For a game whose entire
+   mechanic is light, that is the worst file to leave out of source control.
+
+The resolution is probably not "commit everything" or "ignore everything" but
+the ordinary UE split, and you own the call:
+
+- **Commit** `Config/DefaultEngine.ini` and `Config/DefaultGame.ini`. The
+  `ProjectID` GUID in `DefaultGame.ini` is project identity rather than a
+  secret - UE expects it in source control and the whole team shares it. If the
+  token you found was something else, say what it was and this changes.
+- **Ignore** `Config/DefaultEditorPerProjectUserSettings.ini` and anything else
+  genuinely per-user, and add the ignore rule so the next person does not
+  rediscover this.
+- If any real credential ever belongs in config, it goes in an untracked
+  overlay and never in a tracked `.ini`.
+
+Worth doing before M0.5 and M0.6, because the importer and the test harness
+will both want settled project config underneath them.
+
+Two smaller notes while I was in there. `docs/ROADMAP.md` claims
+`LIGHTING-IS-OWNED.md` exists in this repo; it does not, only
+`DONTFUCKUPTHELIGHTS.md` does - a stale reference, not worth a commit of its
+own but do not go looking for the file. And `.codex-remote-attachments/` is
+sitting untracked at the root; if that is yours and it is transient, it wants
+an ignore rule.
+
 ## Blocked, and it is not either of us
 
-**Unreal is not installed on this machine.** Verified today: the Epic Games
-Launcher is there, no `UE_5.*` is. Visual Studio Build Tools 2022 with MSVC
+**RESOLVED 2026-10-28: Unreal 5.8.4 is installed and pinned** (CL 58902052,
+`C:/Program Files/Epic Games/UE_5.8`). M0.1 is done, M0.2 is done, and
+M0.3-M0.7 are unblocked. The original note follows for its hardware findings.
+
+**Unreal is not installed on this machine.** Verified on 2026-10-27: the Epic
+Games Launcher is there, no `UE_5.*` is. Visual Studio Build Tools 2022 with MSVC
 14.44 and Windows SDK 10.0.26100 are present, 740GB free. M0.1 is Chris's and
 it gates verification of everything in M0 — all of it can be written, none of
 it can be proven, until the engine exists.
