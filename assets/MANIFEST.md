@@ -31,8 +31,29 @@ to `C:/Users/chris/Downloads/`. Three tier archives:
 BitTorrent — pre-allocated to full size, central directory not yet readable, so
 their contents are unverified).
 
-**Status: NOT CLEARED TO SHIP.** Not because anything is wrong with it, but
-because of what is missing:
+**Status: CLEARED TO SHIP, with three conditions.** Resolved 2026-10-28 -
+the grant was found on Function Loops' own site and recorded in
+`assets/audio/licences/function-loops-2026-10-28.md`. Commercial use in a
+**video game** is explicitly permitted and royalty-free, which was the open
+question. The conditions:
+
+1. **Ship cooked audio, never loose `.wav` files.** Shipping a work containing
+   the sounds is granted; redistributing the sounds is not. Unreal's default
+   cooking is already correct, so this costs nothing - just never add an
+   uncooked-audio packaging step.
+2. **No AI use, at all.** Function Loops prohibits AI training, fine-tuning,
+   dataset creation and generative use without written permission. This matters
+   here more than anywhere: these wavs are raw material for humans and scripts,
+   **never input to a model.** `make_cues.py` is unaffected - it is procedural
+   synthesis with no model in it.
+3. **One licensee.** The grant is to Chris. A second human needing the raw
+   library needs their own licence.
+
+One item still outstanding and it is Chris's: confirm the Humble receipt
+carries no different terms, since Humble occasionally attaches its own.
+
+The original finding that forced this check, kept because it is the reason the
+ledger exists:
 
 > **The archives contain no licence file.** The completed `bt5` tier is 180
 > `.wav` files across *Cozy Mechanics*, *Swing & Dash* and *Guns*, plus
@@ -69,7 +90,11 @@ designs; it supplies the world around them.
 
 | Pack | Used for | Licence on file | Cleared |
 | --- | --- | --- | --- |
-| *(none yet)* | — | **no** | **no** |
+| *(none referenced by the build yet)* | — | `function-loops-2026-10-28.md` | **yes, on the three conditions above** |
+
+Add a row per pack as the build starts referencing them, rather than listing
+all 38 - the ledger's job is to answer "may this ship", and a pack nobody uses
+has no answer to give.
 
 ## Source files held but not yet shipped
 
