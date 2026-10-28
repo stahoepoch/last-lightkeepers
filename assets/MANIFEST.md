@@ -26,10 +26,10 @@ gameplay session had checked it and I had not asked. Corrected 2026-10-20.
 
 Added 2026-10-28. Chris bought the **Ultimate SFX for Games** bundle (Humble
 Bundle, $25 tier, 38 packs, developer **Function Loops**, DRM-free), downloading
-to `C:/Users/chris/Downloads/`. Three tier archives:
-`bt5_…` (complete, 192 entries), `bt15_…` and `bt25_…` (still filling over
-BitTorrent — pre-allocated to full size, central directory not yet readable, so
-their contents are unverified).
+to `C:/Users/chris/Downloads/`. Three tier archives, **all complete and
+verified 2026-10-28**: `bt5_…` (192 entries), `bt15_…` (1,476) and `bt25_…`
+(6,944). All three open cleanly; the earlier "contents unverified" note is
+resolved. 38 packs as advertised.
 
 **Status: CLEARED TO SHIP, with three conditions.** Resolved 2026-10-28 -
 the grant was found on Function Loops' own site and recorded in
@@ -77,14 +77,25 @@ is the one thing that cannot be checked by listening to a `.wav`.
 3. Record per-pack rows below, as rows for the packs actually used rather than
    for all 38.
 
-**What this is probably good for**, once cleared — the packs worth wanting are
-in the two tiers still downloading: **Doors**, **Foley**, **Household Foley &
-Devices**, **Alarms & Sirens** (the extraction siren already has
-`sirenSeconds: 8` in the data), **Horror Ambience**, **Glitches**, **Granular**
-and **Techno Textures** for machine voices, and **Kitchen, Cooking** for the
-Community Kitchen, which has no audio at all today. The creature packs are
-wrong for this game on principle: row 47 says the machines do not roar, they
-work.
+**What this is good for, now read rather than guessed at.** The full
+pack-by-pack judgement lives in **`docs/FIELD-KIT.md`**; the short version is
+that **Doors** (mostly sliding and garage — a store and a loading dock),
+**Household Foley & Devices** (switches, latches, buttons), **Clothing, Fabric
+& Materials** (backpack, bandage, cable), **Alarms & Sirens** (the extraction
+siren already has `sirenSeconds: 8`), **Ui Clicks**, **Kitchen, Cooking** and
+**Foley** are the ones that match something the design already asks for.
+
+Two things the earlier guess got wrong, both worth keeping visible:
+
+- **Scale.** Every SFX pack is exactly **30 files**, and ~2,060 of the ~3,100
+  files are music-production content the roadmap rules out for now. This is a
+  seasoning library, not a foundation, and it replaces none of the six cues in
+  `assets/audio/make_cues.py`.
+- **"The creature packs are wrong on principle" understated it.** *Monsters,
+  Boss & Zombies* is **voiced English dialogue** — "Fresh meat", "I can smell
+  your fear", "Come out little mouse". Row 47 is LOCKED: the machines want
+  nothing and hate nothing. One of these in the build inverts the design's best
+  idea. Same for *Horror Screamers* against `docs/SOUND.md`'s telegraph rule.
 
 `assets/audio/make_cues.py` is unaffected and stays the method of record for
 enemy telegraphs. A bought library does not replace the six synthesised cue
