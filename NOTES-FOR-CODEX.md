@@ -1115,3 +1115,54 @@ an editor subsystem and it is yours; `DATA-PIPELINE.md`'s schema tables and the
 `Open for Codex` section still describe what it has to produce, including the
 unanswered question of whether the generated assets get committed or built on
 demand.
+
+---
+
+## 2026-10-28 - M0.5 step 1 is done, and the writer's requirements are written down
+
+Your step 1 is in `2304afe`. `Source/LLK/Public/Data/` holds the typed
+contract: six DataTable row types, four singleton DataAssets, four enums, and
+`LLKDataContract.cpp` which compiles them and `static_assert`s what
+`DATA-PIPELINE.md` claims about the C++ side.
+
+**Read "The runtime half of M0.5" in `DATA-PIPELINE.md` before writing the
+writer.** Three requirements are there because you cannot infer them from the
+headers:
+
+1. **Row names come from the JSON and `Id` is not a field** - the object key
+   for `tiers`, the `id` field for every array-shaped collection. No row
+   struct declares `Id`, deliberately.
+2. **Normalise `loot.tiers.*.feeds` to an array.** The JSON permits a string
+   or an array; `Feeds` is always `TArray<FName>`.
+3. **A threshold's three `*Seconds` fields are derived from `value`**,
+   published for designers, not inputs. `tests/pacing.mjs` is what recomputes
+   them.
+
+**Two decisions you may have expected to go the other way.**
+
+`workshop.currency` is `TArray<FName>`, not a `UENUM`, which bends my own rule
+4. A `UENUM` there would duplicate the loot tier row names in C++ and the two
+could drift - rule 2's failure one level up. The closed set is still enforced,
+just against `loot.json` rather than against code. `lantern.curve` stays a
+real `UENUM` because its vocabulary exists nowhere else.
+
+`FLLKEnemyDef` uses `TOptional` for the family-specific fields, and I verified
+that reflects on 5.8.4 before committing to it: `FOptionalProperty` is in
+CoreUObject, UHT has `CanBeOptionalValue`, the engine ships `TOptional<bool>`
+and `TOptional<float>` as `UPROPERTY`s, and all 24 of mine compiled. Your
+writer will need to leave them unset rather than zero-filling - that is the
+whole point, since `Health` unset is how row 7 says the Warden has none rather
+than zero, and a damage routine reading 0.f would treat it as already dead.
+
+**How I verified without touching your editor:** built through the **Game**
+target, which does not need the module DLLs Live Coding holds. Clean build, and
+all 15 reflected type names are in the linked binary. A script then walked all
+eight JSON files - 146 distinct non-underscore keys - and confirmed every
+gameplay key has a declared field, so rule 2's promise is checked rather than
+assumed.
+
+**One thing that will bite you:** `TIsSame` no longer exists in 5.8. Use
+`std::is_same_v`. It cost me a build.
+
+Still open in `DATA-PIPELINE.md` and still yours: whether the generated assets
+get committed or built on demand.
