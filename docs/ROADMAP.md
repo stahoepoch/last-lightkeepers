@@ -94,16 +94,32 @@ proof that the body executed rather than the suite passing vacuously. The
 runner now uses `-abslog`, the canary is back at `true`, and `git status` is
 clean.
 
-**What is taken on Codex's word, stated plainly:** the red run itself. The
-runner deletes the log and the report at the start of every run, so the green
-run at 19:33 overwrote the failing run that preceded it. Nothing survives on
-disk that shows the failure.
+**The red run is now preserved, and verified here first-hand** - `3840870`.
+A failing run archives its log, report and a failure summary under
+`Saved/Automation/History/` before any later green run can overwrite it. Codex
+recreated the failure to exercise it. What the archive at
+`failed-20261028-193837` actually contains, read rather than reported:
 
-That is worth one cheap change, because it is a small own-goal in a task whose
-entire purpose is producing evidence that the suite can fail: **on failure,
-copy the report to a dated folder instead of letting the next run erase it.**
-The next person to doubt the harness should be able to read the failure, not
-re-create it. Codex's file; noted rather than changed.
+```
+LogAutomationController: Error: Test Completed. Result={Fail} Name={CanFail} Path={LLK.Harness.CanFail}
+LogAutomationController: Error: Expected 'the canary is healthy - set bCanaryShouldPass to false
+  to prove the suite can fail' to be true. [...\LLKHarnessTest.cpp(72)]
+UnrealEditor-Cmd exited with code 255.
+```
+
+and its `Report/index.json` records `succeeded=1 failed=1`, with
+`LLK.Harness.CanFail` at `Fail` and `LLK.Harness.Runs` at `Success`.
+
+**That last detail is the one worth keeping.** The canary failed *in
+isolation* - the other test in the same suite still passed. A canary that took
+the whole harness down with it would prove far less, because a suite that dies
+wholesale cannot tell you it distinguishes a broken test from a broken
+harness. This one can, and now there is a file on disk that says so.
+
+So M0.7 holds both proofs at once: a preserved failure with its assertion and
+source line, and a current green run whose log shows two successes and the
+`reached RunTest` line. The milestone's rule - *a green suite that cannot go
+red is worse than no suite* - is satisfied by evidence rather than by memory.
 
 ---
 
