@@ -4,7 +4,7 @@
   "type": "module",
   "description": "Checks for the Last Lightkeepers Roblox project. Node only - no dependencies, no install.",
   "scripts": {
-    "test": "node tests/balance.test.mjs && node tests/wiring.test.mjs && node tests/lighting.test.mjs && node tests/map-contract.test.mjs",
+    "test": "python Tools/import_data.py && python Tools/test_import_data.py && node tests/balance.test.mjs && node tests/wiring.test.mjs && node tests/lighting.test.mjs && node tests/map-contract.test.mjs",
     "test:balance": "node tests/balance.test.mjs",
     "test:wiring": "node tests/wiring.test.mjs",
     "test:lighting": "node tests/lighting.test.mjs",
