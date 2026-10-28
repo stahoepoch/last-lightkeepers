@@ -78,6 +78,7 @@ down, not yet ratified. `OPEN` — named, undecided, waiting on someone.
 | 55 | **Three named duty profiles, each with its own contract.** `normal` 25%, `bright` 50%, `panic` 100% - and only `normal` is held to the Warden's 9-11 band | LOCKED | Chris, 2026-10-28 | His warning on row 54's table, and it was right: *"the table does not satisfy the target for every reasonable interpretation of 'normally lit'"* - at 50% duty a crew of two, three or four met the Warden at 8:32 / 8:04 / 7:44, which is not the late-night phase we had just defined. The risk he named is the real one: *"someone later will read 'normally lit crew' as 50%, see a seven-minute Warden, and correctly think the system drifted again."* **The fix is wording, held as data.** `storm-charge.json` `_dutyProfiles` names all three with the contract each must satisfy: **normal** (25%, *normal coordinated use*) is the baseline every minute target in the file is written against and must land in the band at every crew size; **bright** (50%, *deliberately bright, risky play*) may arrive earlier because light always costs, but must stay survivable and never arrive before `run.earlyExitSeconds`, so a bright crew still gets a complete early-exit raid before the closing act; **panic** (100%) is *an explicit escalation state, not regular play*, and owes only his minute-four floor. Underscore-prefixed, so they are analysis profiles for tuning and never import into the engine. Both suites now assert and print the **names** rather than bare decimals - 13 of the 119 assertions carry a profile label in their own text, so a failure says which playstyle broke |
 | 56 | **The importer strips underscore keys explicitly, reports what it stripped, and treats one reaching runtime as a hard error** | LOCKED | Chris, 2026-10-28 | "The Unreal importer should explicitly strip or reject underscore-prefixed analysis fields, not merely happen to ignore them. `_dutyProfiles` belongs to tests and tuning reports; runtime should only receive actual gameplay values. That prevents an engine-side reader from accidentally treating profile metadata as configuration later." An M0 guardrail on **M0.5**, Codex's importer. `DATA-PIPELINE.md` rule 1 said *never import* - which is "happens to ignore," and that does not survive somebody later writing a generic `JsonObjectToUStruct` call. Three obligations now: strip every `_` key in a deliberate pass **before** struct conversion, or rule 2 fails the build on the project's own documentation; **log the strip count per file**, because a silent strip cannot be audited; and declare no `USTRUCT` field whose JSON name begins with `_`, so one reaching runtime is an error rather than data to coerce. `_dutyProfiles` is the exact hazard - it holds `duty` numbers that look like gameplay values and are not. Guarded from the data side by four assertions that fail if an analysis structure ever loses its underscore |
 | 57 | **The Valley is Johnstown-shaped, not Johnstown.** Real public elevation data for the shape; fictional everything else; a tiny first exterior; the rest as unlocked districts, never one open world | LOCKED | Chris, 2026-10-28, answering `VALLEY-TERRAIN.md` open 1 | His four rules: *"Make it 'Johnstown-shaped,' not a literal reconstruction. Use real public elevation data for the valley, hills, river grades, and distant skyline. Keep the first playable exterior tiny: Lanternhold, the department-store approach, and a few visible-but-unreachable landmarks. Build the larger Valley later as unlocked districts, not one enormous open-world map."* **The reason it is one row and not a terrain note:** the fiction's progression is already topographic - Lanternhold high and far, the store on a hilltop, the solar farm the next hill over, the rail yard where the hills give out, the works on the valley floor, the city down where the water went. Height is safety and depth is danger, so row 38's rule that expansion must be *more danger* is delivered by the gradient itself with no words. Real elevation makes that legible; a literal reconstruction would only add liability and a scale problem. **USGS 3DEP is public domain and OpenStreetMap is not imported at all** - ODbL share-alike attaches to a derived database, and a road network baked into a game we sell is an argument nobody wants. Looking at OSM while authoring creates no derived database and is fine. **"Visible-but-unreachable" is row 53 at world scale**, and that is the third place this project uses the same teaching move: the relic you can see but cannot read, the zone you can see but cannot reach, the district you can see but have not opened. Each creates the want before it sells the means, which is `HOW-THE-PLAYER-LEARNS.md` channel one doing the work a tooltip would do badly. **Two things this row does NOT settle, and they are tracked rather than assumed:** the district unlock's interaction with row 50 (see `VALLEY-TERRAIN.md` open 1 - if unlock state is per-player, a friend cannot join a district they have not opened, which is row 50's banned failure in a different costume), and the compression factor, which still waits on M4. **Timing is unchanged:** the first slice is a sealed interior, so the store's *exterior approach* is not first-slice work - the backdrop is M6, the small Lanternhold exterior follows M4's gate, and a playable Landscape is M7+. `docs/VALLEY-TERRAIN.md` |
+| 58 | **District unlock is per-host. Everything else stays personal.** The host's Lanternhold decides where the party can raid; a guest plays it without inheriting the unlock | LOCKED | Chris, 2026-10-28, closing `VALLEY-TERRAIN.md` open 1 | *"The host's Lanternhold decides which districts the party can raid. Friends can always join, even if they have not personally opened that district. Guests keep their own loot, relics, workshop progress, and personal restoration contributions - but they do not permanently inherit the host's district unlock just by visiting. They can experience the rail yard with a friend tonight, then later open it in their own Lanternhold."* **This is the answer that satisfies row 50 without hollowing out row 38.** Access is the host's, progress is yours - so nobody is ever told they cannot play with their friends, a veteran can take a newcomer somewhere dangerous, and the newcomer's own hub stays their own story rather than a copy of the host's. The danger curve survives because what transfers is the *night*, not the *standing*: you have seen the rail yard, and you still have to open it. **The implementation rule that follows:** unlock state is host-scoped session data, never granted to a joining client, and a guest's save records what they earned and not where they were allowed to go. **What this row does NOT settle - see O8:** whether an extracted restoration crate credits every surviving member's ledger or only the player who carried it. `data/loot.json` has `restorationCratesArePocketable: false`, so a crate is one physical object in one person's hands, and nothing in the repo has ever decided who it pays. `docs/VALLEY-TERRAIN.md` |
 
 ## Money
 
@@ -331,3 +332,47 @@ answer for us:
   must come from a choice about time, Dome Keeper's lift deleting its own
   cost). The *platform* findings are history. Nobody should cite a CCU tier at
   a Steam decision again.
+
+### O8. Who does an extracted restoration crate pay?
+
+**Raised 2026-10-28 by row 58, which needed it and did not settle it.** Row 58
+made district access the host's and progress personal. That is coherent until
+you ask what "personal restoration contributions" means for a single physical
+object: `data/loot.json` sets `restorationCratesArePocketable: false`, so a
+crate is one thing in one person's hands, and `bankedKeptOnWipe` is 0.0, so
+only extraction pays at all. Nothing in this repo has ever decided whose
+ledger a crate advances.
+
+Both answers cost something, and Chris's four goals for row 58 do not pick
+between them.
+
+| Answer | What it costs |
+| --- | --- |
+| **Only the carrier** | Friends compete for the object that advances their own hub. The host - who chose the district and owns the unlock - has every incentive to carry every crate, and guests become bodyguards with no progression. That is worse than either honest answer, and it puts competitive pressure inside a game whose row 51 principle is *help that creates choices, not help that removes danger* |
+| **Everyone who extracts** | One crate advances up to four separate ledgers, so a four-crew restores four hubs at the rate a solo keeper restores one. Co-op becomes roughly four times more time-efficient per player for restoration, and a newcomer taken to the rail yard banks deep-zone crate flow their own skill has not earned |
+
+**Claude's recommendation: everyone who extracts, and the reason is that row
+58 already contains the mitigation.** The second column's real worry is the
+newcomer racing ahead of the danger curve - but what transfers is the night,
+not the standing. The guest's hub advances and their *access* does not; they
+still have to open the rail yard themselves. That is exactly the line Chris
+drew, applied one level down.
+
+The efficiency gap is also less than it looks, because a four-crew is not
+four solo runs: `storm-charge.json`'s diminishing curve means four lanterns
+raise the meter faster than one, four bodies make more noise, and a downed
+player costs the crew its anchor charge. They are buying that haul with
+pressure the solo keeper never faces. A crew that extracts four crates has
+earned four crates.
+
+**What would change my mind:** if restoration is meant to be the long tail
+that keeps a solo player playing for months, a 4x co-op multiplier flattens
+it, and the carrier rule - or a split - protects the curve at the cost of
+making friends compete. That is a question about what restoration is *for*,
+which is why it is open and not mine.
+
+**Not urgent.** Restoration is post-slice (row 49's staging, M5+), and the
+first slice has no second hub to disagree with. It needs answering before any
+save-data shape is written, because this decides whether crate credit is a
+per-player record or a per-run one - and that is the kind of thing that gets
+decided by accident by whoever writes the save code first.

@@ -9,8 +9,8 @@ streaming, performance budget); Chris owns the bounded area and everything in
 `Content/`, and has now settled how literal we get.
 
 **Read the timing section first.** Most of this is M7 work and saying so is the
-most useful thing on the page. **Then read the row 50 collision** under
-*Decided* - it is the one thing row 57 opened rather than closed.
+most useful thing on the page. The one thing still open here is the
+compression factor, and it waits on M4.
 
 ## The approach is right, and one line of it is righter than it looks
 
@@ -162,7 +162,7 @@ exterior, which is Codex's step 3 after M4's gate - not M1. Worth stating
 because the four rules read as one package and someone could reasonably take
 the approach as part of the slice it approaches.
 
-### The district unlock collides with row 50, and that needs an answer
+### The district unlock collided with row 50 - ANSWERED, row 58
 
 **Unlocked districts gate content. Row 50 forbids gating co-op behind
 progression.** Read strictly, row 50 is about party slots and districts are
@@ -181,19 +181,44 @@ delivered. It is a question about where the unlock **lives**:
 | **Per-host / per-lobby** | Joins anything the host has opened. Progression still means something to the host, and nobody is ever locked out of their own friends' game |
 | Per-crew, shared | Works, but needs a persistent crew entity the game does not have and row 51 deliberately avoided |
 
-The middle one is what Deep Rock, Remnant and Monster Hunter all do, and it
-costs nothing: the host's progress is the session's progress. A guest gets the
-raid without getting the host's unlock, so there is still a reason to play your
-own saves. **Chris's call, not mine** - it decides what progression is for.
+**Chris chose per-host, 2026-10-28, and sharpened it past the table:**
+
+> The host's Lanternhold decides which districts the party can raid. Friends
+> can always join, even if they have not personally opened that district.
+> Guests keep their own loot, relics, workshop progress, and personal
+> restoration contributions - but they do not permanently inherit the host's
+> district unlock just by visiting. They can experience the rail yard with a
+> friend tonight, then later open it in their own Lanternhold.
+
+The phrase that does the work is **what transfers is the night, not the
+standing.** You have seen the rail yard and you still have to open it. That
+keeps row 50 (nobody is told they cannot play with friends), keeps row 38 (the
+danger ladder still has to be climbed), and keeps a guest's hub their own
+story rather than a copy of the host's - which is the part a per-host rule
+could easily have broken by granting the unlock on arrival.
+
+Implementation rule: unlock state is host-scoped session data, never granted
+to a joining client, and a guest's save records what they *earned* and not
+where they were *allowed to go*. Row 58 has it.
+
+**It opened one question underneath itself, now `DECISIONS.md` O8:** whose
+ledger does an extracted restoration crate advance? `loot.json` has
+`restorationCratesArePocketable: false`, so a crate is one physical object in
+one person's hands, and nothing has ever decided who it pays. Crediting only
+the carrier makes friends compete for the thing that advances their own hub;
+crediting everyone makes a four-crew restore four hubs at a solo keeper's
+rate. Not urgent - restoration is post-slice - but it must be settled before
+any save-data shape is written.
 
 ## Open
 
-1. **Chris's, raised by row 57 rather than closed by it:** does district
-   unlock state live with the player or the host? See the table above; row 50
-   makes per-player the wrong answer, but it does not pick the right one.
-2. **Mine, after M4:** the compression factor, argued from how far testers
+1. **Mine, after M4:** the compression factor, argued from how far testers
    will actually cross.
+2. **Tracked in `DECISIONS.md` O8, not here:** whose ledger an extracted
+   restoration crate advances. It is a progression question rather than a
+   terrain one, so it lives there.
 
-**Closed by row 57:** how literal the valley is (Johnstown-shaped, not
+**Closed by rows 57 and 58:** how literal the valley is (Johnstown-shaped, not
 Johnstown), and whether Lanternhold's exterior needs the real ridge - the
-"keep the first playable exterior tiny" rule answers that with its own hill.
+"keep the first playable exterior tiny" rule answers that with its own hill -
+and where district unlock lives.
