@@ -36,9 +36,13 @@ we had decided not to take.
 | 36 | Solo, or private co-op for 1–4 friends. No public matchmaking |
 | 37 | Wider testing uses a Steam Playtest child app, not main-game beta keys |
 
-The full level list is unchanged as the eventual game. Chris, same day: "I plan
-on having all those levels, we discussed and more." Row 34 is the first build,
-not the final scope.
+The full level list is unchanged as the eventual game, and row 38 locks it:
+"We will have all the levels, including the whole mall. It starts off small,
+progressesion. Danger." Row 34 is a build order - where the shovel goes first -
+and says nothing about how big the game is. The whole Galleria, the solar farm,
+the rail yard, the works, the hospital wing and the city are all still the
+game, reached by progression, with each expansion arriving as more danger
+rather than more floor. `docs/ZONES.md` holds the shape.
 
 The engine was locked the same day, in his words — "We use unreal." It is the
 floor everything else now stands on: the lighting, audio, animation and art

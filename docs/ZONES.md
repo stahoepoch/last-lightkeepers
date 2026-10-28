@@ -1,6 +1,14 @@
 # Zones — the ladder in toward the city
 
-Status: **proposed**, 2026-10-20. Read `docs/PREMISE.md` first.
+Status: the **scope and the spine are LOCKED** — Chris, 2026-10-27,
+`docs/DECISIONS.md` row 38: *"We will have all the levels, including the whole
+mall. It starts off small, progressesion. Danger."* So the full ladder below is
+the game, not a wishlist, and "danger is a function of how close to the city
+you get" is the progression rather than a flavour note.
+
+Individual zone details below remain **proposed** (2026-10-20) and are still
+covered by **O2** — the terrain, the local enemies and the inversions are
+reasoned, not ratified. Read `docs/PREMISE.md` first.
 
 **Zone one is now one building, not the whole mall.** Chris, 2026-10-26: *"the
 whole Galleria can be the eventual world, but the game begins with one sealed
@@ -9,11 +17,12 @@ written and exactly as built - it is what the store's loading dock gate opens
 onto, at the end of the ladder in `docs/QUESTS.md`. Read `docs/THE-STORE.md`
 for the building itself.
 
-**Nothing past zone one gets built yet.** The handoff gates even the solar farm
-behind the playtest question: *do testers kill their lanterns, bank their haul,
-and argue for one more room?* If no, more maps will not fix the loop. This
-document exists so the shape is on paper while it is clear, not so anyone
-starts building it.
+**Nothing past zone one gets built yet, and that is a build order, not a
+scope.** Row 38 settles the scope: every level here is coming. The handoff
+gates even the solar farm behind the playtest question - *do testers kill their
+lanterns, bank their haul, and argue for one more room?* - and that gate still
+holds, because a second map cannot fix a loop the first one did not make
+frightening. Build in this order; plan for all of it.
 
 ## The spine
 
@@ -37,6 +46,13 @@ went.
 
 Each zone should invert the previous one's core constraint. That is what keeps
 a second map from being the first map with new wallpaper.
+
+**And it is now a requirement, not a preference.** Row 38 locks expansion as
+the way danger arrives: progression is not unlocking more square footage, it is
+being asked to stand somewhere worse. Every zone added has to be more dangerous
+than the one before it in a way the player can name - not a higher stat, a
+different problem. A zone that fails that test should not ship, however
+finished it looks.
 
 ## Every zone shows you the next one
 
