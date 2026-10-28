@@ -134,6 +134,28 @@ They do cost something to carry — the burden penalty — and the first worksho
 line reduces it without ever reaching zero. That is the right shape: carrying
 your prestige out is meant to be felt.
 
+### "Light is survival" — true at run scale, fatal at moment scale
+
+Chris, 2026-10-28: *"light isn't optional, it's survival."* True in the sense he
+meant it, and worth pinning down precisely, because the phrase is memorable
+enough to end up in a store page and it is one word away from the failure this
+page already warns about.
+
+| Scale | Is light optional? | Why it must be that way |
+| --- | --- | --- |
+| **Across a run** | **No.** A crew that never lights up is lost and poor — no relics, no crate stamps, no route | If darkness were a complete strategy, the lantern would be a side dish and the meter would price nothing |
+| **In any given moment** | **Always yes.** Every second lit is a choice with a cost | If light were ever *required* right now, there is no decision — just an upkeep bill |
+
+So the accurate form is **light is necessary, and never safe.** You cannot win
+without it; you cannot afford it continuously. The run-scale necessity is
+precisely what makes the moment-scale choice tense, and collapsing either half
+breaks the game in opposite directions.
+
+What this rules out, concretely: a darkness timer, a mandatory-light objective,
+a lit-only extraction, or any rule phrased *turn your light on or fall behind.*
+If a player ever says "I had to have it on," something has gone wrong — the
+sentence we want is **"we decided to light it."**
+
 ## Restoration crates — home
 
 **Found:** heavy, awkward, unmistakable. A crate is a whole-trip decision.
