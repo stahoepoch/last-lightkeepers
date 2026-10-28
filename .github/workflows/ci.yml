@@ -1,4 +1,4 @@
-name: Validate project
+name: Validate portable project contract
 
 on:
   push:
@@ -15,22 +15,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install Rokit
-        uses: CompeyDev/setup-rokit@v0.2.1
-      - name: Install pinned tools
-        run: rokit install
-      - name: Run static game checks
+      # This is deliberately the fast, engine-independent gate. Unreal
+      # automation runs locally until a maintained Windows UE 5.8.4 runner is
+      # provisioned; ubuntu-latest must not claim that it ran the editor.
+      - name: Validate portable data and archive checks
         run: npm test
-      - name: Check Luau formatting
-        run: stylua --check src
-      - name: Lint Luau
-        run: selene src
-      - name: Analyze Luau
-        run: |
-          curl --fail --location --silent --show-error \
-            https://luau-lsp.pages.dev/type-definitions/globalTypes.None.d.luau \
-            --output globalTypes.d.luau
-          rojo sourcemap default.project.json --output sourcemap.json
-          luau-lsp analyze --definitions @roblox=globalTypes.d.luau --sourcemap sourcemap.json src
-      - name: Build Rojo artifact
-        run: rojo build default.project.json --output Last-Lightkeepers-validation.rbxlx
