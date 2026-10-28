@@ -62,7 +62,13 @@ is Codex's from here** — change them rather than inheriting them, and the LFS
 decision in particular deserves a second opinion before anyone pushes 2GB.
 
 **M0.1 status, 2026-10-28 — complete.** **Unreal Engine 5.8.4 is installed
-and pinned.** The Epic Games Launcher exposes its Launch button. It is the
+and pinned.** Exact build, read off disk rather than off the launcher:
+**changelist `58902052`**, branch `++UE5+Release-5.8`, compatible changelist
+`55116800`, at `C:/Program Files/Epic Games/UE_5.8`. Source:
+`Engine/Build/Build.version`, corroborated by the editor binary's own product
+version string `++UE5+Release-5.8-CL-58902052`. The changelist is what makes
+this a pin - "5.8.4" is a launcher label and a hotfix can move under it, while
+a changelist cannot. The Epic Games Launcher exposes its Launch button. It is the
 current stable UE5 hotfix release available through the launcher. Visual Studio
 Build Tools 2022 with MSVC 14.44 and Windows SDK 10.0.26100 are present, and
 740GB is free. Opening the editor remains M0.8's explicit visual proof; M0.2–

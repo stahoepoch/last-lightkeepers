@@ -22,6 +22,55 @@ must not ship.**
 An earlier version of this row said "origin unverified", which was wrong — the
 gameplay session had checked it and I had not asked. Corrected 2026-10-20.
 
+## Purchased libraries — held, licence unresolved
+
+Added 2026-10-28. Chris bought the **Ultimate SFX for Games** bundle (Humble
+Bundle, $25 tier, 38 packs, developer **Function Loops**, DRM-free), downloading
+to `C:/Users/chris/Downloads/`. Three tier archives:
+`bt5_…` (complete, 192 entries), `bt15_…` and `bt25_…` (still filling over
+BitTorrent — pre-allocated to full size, central directory not yet readable, so
+their contents are unverified).
+
+**Status: NOT CLEARED TO SHIP.** Not because anything is wrong with it, but
+because of what is missing:
+
+> **The archives contain no licence file.** The completed `bt5` tier is 180
+> `.wav` files across *Cozy Mechanics*, *Swing & Dash* and *Guns*, plus
+> `__MACOSX` and `.DS_Store` cruft. No `LICENSE`, no `README`, no `TERMS`, no
+> EULA, in any form. The bundle's Humble page carried no licence text either.
+
+So the commercial terms exist somewhere other than the files — Function Loops'
+own site, or the Humble purchase receipt — and nobody has read them. Row 23 of
+`docs/DECISIONS.md` and `docs/ASSETS.md` both turn on licence durability, which
+is the one thing that cannot be checked by listening to a `.wav`.
+
+**What has to happen before a single one of these is referenced by the build:**
+
+1. Find the actual grant — royalty-free, perpetual, commercial, no attribution
+   requirement, and specifically **permitted inside a sold game binary** rather
+   than merely "for your projects".
+2. Save a copy of it into `assets/audio/licences/` with the date and where it
+   came from. A licence you cannot produce later is a licence you do not have.
+3. Record per-pack rows below, as rows for the packs actually used rather than
+   for all 38.
+
+**What this is probably good for**, once cleared — the packs worth wanting are
+in the two tiers still downloading: **Doors**, **Foley**, **Household Foley &
+Devices**, **Alarms & Sirens** (the extraction siren already has
+`sirenSeconds: 8` in the data), **Horror Ambience**, **Glitches**, **Granular**
+and **Techno Textures** for machine voices, and **Kitchen, Cooking** for the
+Community Kitchen, which has no audio at all today. The creature packs are
+wrong for this game on principle: row 47 says the machines do not roar, they
+work.
+
+`assets/audio/make_cues.py` is unaffected and stays the method of record for
+enemy telegraphs. A bought library does not replace the six synthesised cue
+designs; it supplies the world around them.
+
+| Pack | Used for | Licence on file | Cleared |
+| --- | --- | --- | --- |
+| *(none yet)* | — | **no** | **no** |
+
 ## Source files held but not yet shipped
 
 Concept art, reference only. Not for upload.
