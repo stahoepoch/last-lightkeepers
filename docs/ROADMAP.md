@@ -83,9 +83,29 @@ binary - so `EAutomationTestFlags::EditorContext | ProductFilter` is valid on
 this engine version. That was checked through the **Game** target, because a
 running editor holds Live Coding and owns the editor module DLLs.
 
+**The headless launch blocker, found and explained 2026-10-28.** The runner
+reported *"Automation produced no log"* and failed closed, which was the right
+behaviour on a false premise: **the editor was running the whole time.** The
+cause is one flag. `Tools/run_automation.ps1` passes `-log=<absolute path>`,
+and `GenericPlatformOutputDevices.cpp:80-91` shows why that cannot work -
+`LOG=` keeps the `FPaths::ProjectLogDir()` prefix, so an absolute path is
+appended to `Saved/Logs/` and lands nowhere writable, while `ABSLOG=` clears
+the prefix and uses the value as given. **The fix is `-log=` to `-abslog=`.**
+
+Proven rather than reasoned: two runs identical but for that flag, from a
+machine with no editor open. `-log=<abs>` wrote no file; `-abslog=<abs>` wrote
+a 244KB engine log whose line 1751 reads `Cmd: Automation RunTests LLK; Quit`,
+so `-ExecCmds` parses and the automation command executes. The fourteen lines
+of `##PlatformValidate` output that looked like an early exit are just the
+startup SDK query going to stdout; the engine's own output goes to the log.
+
+One more trap in the same function, since it fails silently: the log filename
+must end in `.log` or `.txt`, or it is discarded and the default is used. The
+runner's path already does.
+
 **What is NOT verified, and M0.7 is not done until it is:** nobody has watched
 `LLK.Harness.CanFail` go red. Both tests are `EditorContext`, so running them
-needs `Tools/run_automation.ps1` and a free editor. Step 3 of the procedure at
+needs `Tools/run_automation.ps1` with the flag above corrected. Step 3 of the procedure at
 the bottom of the test file is the deliverable; compiling is setup for it.
 A green suite nobody has seen fail is exactly the false confidence this
 milestone exists to prevent, so this line says "compiled" and not "complete".
