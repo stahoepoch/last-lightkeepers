@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -51,14 +52,19 @@ def main() -> int:
     if {item["asset"] for item in manifest["DataTables"]} != expected_tables or {item["asset"] for item in manifest["DataAssets"]} != expected_assets:
         raise AssertionError("asset manifest no longer names the eleven generated outputs")
     for item in manifest["DataTables"]:
-        if f"struct {item['rowStruct']}" not in headers:
-            raise AssertionError(f"manifest row struct is not declared: {item['rowStruct']}")
+        pattern = rf"USTRUCT\([^)]*\)\s*struct\s+{re.escape(item['rowStruct'])}\s*:"
+        if not re.search(pattern, headers):
+            raise AssertionError(f"manifest row struct is not a reflected DataTable declaration: {item['rowStruct']}")
     for item in manifest["DataAssets"]:
-        if f"class LLK_API {item['class']}" not in headers:
-            raise AssertionError(f"manifest DataAsset class is not declared: {item['class']}")
+        pattern = rf"UCLASS\([^)]*\)\s*class\s+LLK_API\s+{re.escape(item['class'])}\s*:"
+        if not re.search(pattern, headers):
+            raise AssertionError(f"manifest DataAsset class is not a reflected declaration: {item['class']}")
     loot_asset = next(item for item in manifest["DataAssets"] if item["asset"] == "DA_LootRules")
     if loot_asset.get("keyedObjectFields", {}).get("extraction") != "key-to-id-array":
         raise AssertionError("loot extraction must promote object keys into FLLKExtractionPoint.Id")
+    storm_asset = next(item for item in manifest["DataAssets"] if item["asset"] == "DA_StormCharge")
+    if storm_asset.get("derivedFields", {}).get("thresholds") != ["darkSeconds", "regularUseSeconds", "oneLanternSeconds"]:
+        raise AssertionError("storm threshold timing fields must remain writer-derived from value")
     print("PASS manifest matches the reflected Unreal contract")
     must_fail("unknown gameplay keys are errors", "lantern.json", lambda value: value["movement"].__setitem__("sprintSped", 99), "unrecognised key(s): sprintSped")
     directory = copy_data()
