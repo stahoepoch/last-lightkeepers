@@ -471,6 +471,49 @@ the fast gate is already where name correspondence is checked: every
 a matching key in the emitted payload. That runs on every push with no engine,
 and it is the same shape as the existing eleven-name check.
 
+### Fixed in `3aad558`, and the fix is right - the guard is two samples
+
+The importer now emits a second, Unreal-facing copy of every payload under
+`unreal/`, with bool keys renamed to their authored `b...` form, and the
+manifest names that directory. That is the correct shape: `data/*.json` keeps
+`killable`, C++ keeps `bKillable`, and the seam translates.
+
+**Verified by correspondence, not by sampling.** Deriving the bool properties
+from the headers and checking them against the emitted payload: **20 declared,
+20 present with the prefix, and no un-prefixed bool key survives.** The
+translation is complete today.
+
+**What guards it is thinner than what it guards.** The new test asserts two
+values - `bKillable` on the Warden and `bDropsCarriedCrate` on
+`lantern.knockdown`. Removing either from `BOOL_PROPERTY_KEYS` goes red.
+Removing any of the **other eighteen** does not:
+
+| Break | Gate |
+| --- | --- |
+| Drop `killable` from the set | red |
+| Drop `soloOnly` from the set | **green** - and the payload then carries `soloOnly`, not `bSoloOnly`, so `FLLKAnchorReviveRules::bSoloOnly` is silently back on its default |
+
+Checked by doing it, including re-running the probe after the first attempt
+failed to modify the set at all - a passing gate proves nothing if the break
+did not land.
+
+`BOOL_PROPERTY_KEYS` is also now a **fourth** copy of contract knowledge,
+after the data, the headers and the manifest. It is hand-maintained, so a bool
+added to the contract tomorrow is unguarded by construction: the header
+compiles, the data validates, the payload omits the prefix, and the asset
+quietly takes its default.
+
+The fix is the correspondence check itself rather than more samples, and it
+needs no engine, so it belongs in the fast gate beside the eleven-name check:
+
+```python
+props = set(re.findall(r'(?:TOptional<bool>|bool)\s+(b[A-Z]\w*)\s*(?:=|;)', headers))
+# every one must appear as a key somewhere in Intermediate/LLKDataImport/unreal/*.json
+```
+
+That is what produced the 20/20 above. Codex's file, so offered rather than
+applied.
+
 ## Before the writer is built: what "run it twice" can and cannot prove
 
 M0.5's acceptance says the writer must be **idempotent**, and the plan is to
