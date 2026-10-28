@@ -2,7 +2,7 @@
   "name": "last-lightkeepers",
   "private": true,
   "type": "module",
-  "description": "Checks for the Last Lightkeepers Roblox project. Node only - no dependencies, no install.",
+  "description": "Portable data checks for Last Lightkeepers. Engine-independent by design: Node and Python only, no dependencies, no install.",
   "scripts": {
     "test": "python Tools/import_data.py && python Tools/test_import_data.py && node tests/balance.test.mjs && node tests/wiring.test.mjs && node tests/lighting.test.mjs && node tests/map-contract.test.mjs",
     "test:balance": "node tests/balance.test.mjs",

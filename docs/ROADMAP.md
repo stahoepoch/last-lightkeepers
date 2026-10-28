@@ -74,6 +74,22 @@ Build Tools 2022 with MSVC 14.44 and Windows SDK 10.0.26100 are present, and
 740GB is free. Opening the editor remains M0.8's explicit visual proof; M0.2–
 M0.7 are now unblocked, but none is verified until 5.8.4 builds it.
 
+**M0.7 status, 2026-10-28 - compiled, not yet observed failing.**
+`Source/LLK/Private/Tests/LLKHarnessTest.cpp` registers `LLK.Harness.Runs`
+and `LLK.Harness.CanFail`. What has actually been verified: the file compiles
+against the pinned 5.8.4, `WITH_DEV_AUTOMATION_TESTS` is live in a Development
+build, and all four test names and assertion strings are present in the linked
+binary - so `EAutomationTestFlags::EditorContext | ProductFilter` is valid on
+this engine version. That was checked through the **Game** target, because a
+running editor holds Live Coding and owns the editor module DLLs.
+
+**What is NOT verified, and M0.7 is not done until it is:** nobody has watched
+`LLK.Harness.CanFail` go red. Both tests are `EditorContext`, so running them
+needs `Tools/run_automation.ps1` and a free editor. Step 3 of the procedure at
+the bottom of the test file is the deliverable; compiling is setup for it.
+A green suite nobody has seen fail is exactly the false confidence this
+milestone exists to prevent, so this line says "compiled" and not "complete".
+
 ---
 
 ## M1 — The keeper and the lantern
@@ -92,8 +108,8 @@ The first milestone with the game in it. One room, one mechanic, two players.
 | M1.8 | Automation tests for the storm charge rules | Claude | The curve, the multiplier and "only ever rises" (row 6) are asserted in-engine, not just in `tests/` |
 | M1.9 | Two-player test over Steam or LAN | Chris + Codex | Two machines, one host, lantern state agrees. This is where networking mistakes surface, so it happens in M1 and not M4 |
 
-**The lighting warning.** `DONTFUCKUPTHELIGHTS.md` and
-`LIGHTING-IS-OWNED.md` exist in this repo because lighting globals were broken
+**The lighting warning.** `DONTFUCKUPTHELIGHTS.md` exists at the repo root
+because lighting globals were broken
 repeatedly by people who did not know they were load-bearing. Unreal makes this
 *easier* to break and harder to notice. M1.5's grey box gets a lighting setup
 owned by Chris, and no C++ touches a global lighting value. Ever. The lantern
@@ -163,7 +179,7 @@ Written down so nobody has to ask, and so nobody quietly starts:
 
 ## Status, 2026-10-28
 
-- **Current milestone: M0.** M0.1 is complete; M0.2–M0.7 are unblocked.
+- **Current milestone: M0.** M0.1 is complete; M0.2–M0.7 are unblocked. M0.7 compiles but has not been seen to fail.
 - Engine version: **Unreal Engine 5.8.4, pinned.** No engine upgrade occurs
   inside a milestone.
 - Done today: the platform decision and its paper trail (`86c5bb8`,
