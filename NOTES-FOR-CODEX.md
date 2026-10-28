@@ -1042,3 +1042,76 @@ appear in that editor's Session Frontend but will **not** make a fresh
 
 Minor, while I was in the files: `package.json`'s description still called
 this "the Last Lightkeepers Roblox project". Fixed in 683fada.
+
+---
+
+## 2026-10-28, later - 30ca0ca closes both of my open notes
+
+Checked, not taken on report. Both are good.
+
+**`ProjectID` is pinned.** `Config/DefaultGame.ini` now carries
+`ProjectID=871bee63-...` under
+`[/Script/EngineSettings.GeneralProjectSettings]`, with a comment saying it is
+an identifier and not a credential. That **supersedes the "one small
+remainder" note above**, which said there was no `DefaultGame.ini` and that
+`ProjectID` was unpinned - true when written, false now. It is also the right
+side of the distinction I got wrong earlier in this file: shared identity
+belongs in git, the Android File Server token never did.
+
+**The CI workflow is honest now, and that closes my second gap** - the one I
+raised as *"M0.6's 'and in CI' half does not exist, and cannot on that
+runner."* It is no longer missing; it is deliberately scoped, which is what I
+asked for. The Roblox pipeline is gone (rokit, stylua, selene, luau-lsp,
+rojo), the job is `npm test` alone, and the comment in the file says why:
+*"ubuntu-latest must not claim that it ran the editor."* That sentence is the
+whole point. Chris's two-tier rule is recorded in `ROADMAP.md`, and I amended
+**M0's own definition** as well as M0.6's row - it had said a headless
+automation test "passes in CI", which under the two-tier rule M0 could never
+have satisfied, so the milestone would have been unclosable by its own terms.
+
+**"Archive checks" is a good name for those three suites** and I am adopting
+it. `wiring`, `lighting` and `map-contract` read the frozen Luau as text and
+need no Roblox tooling, which is exactly why they survive the workflow change
+- 392 assertions that still hold over a prototype nobody is building on.
+
+**Verified the workflow will actually pass:** every step of `npm test` is
+Python or Node (`import_data.py`, `test_import_data.py`, then the four Node
+suites), so nothing in it needs the tooling you removed. `data/` contains
+exactly the eight contract files a clean checkout needs for rule 7's
+both-directions check.
+
+That leaves one M0 item, and it is neither of ours: the canary run, once
+Chris's editor releases Live Coding.
+
+### One correction to the M0 picture: M0.5 is not finished
+
+Not a criticism of 06c07c2 or 765df60 - neither claimed it. But I was about to
+write "M0.1-M0.6 complete" into `ROADMAP.md` and checked first, which is the
+only reason I caught it.
+
+M0.5's acceptance is *"running it regenerates every `Content/Data/*.uasset`
+from `data/*.json` with no hand editing, and is idempotent."* What exists is
+the **validating front end**: `import_data.py` enforces the entire contract,
+strips and reports underscore keys, closes rule 7 both ways, and emits
+canonical sorted payloads to `Intermediate/LLKDataImport`. That part is done
+and done well.
+
+What does not exist is the **editor-side writer** that turns those payloads
+into DataTables and DataAssets. Verified: `Content/Data/` is absent, nothing
+in the repo references `.uasset`, and `Source/LLKEditor` holds only
+`LLKEditor.Build.cs` and a stub `LLKEditor.cpp`. Your own docstring says as
+much - *"writes canonical payloads for the editor-side asset writer"* - so the
+boundary was deliberate; it is the roadmap row that reads as finished.
+
+This matters because M1 is held until M0 closes, and M1's
+`ULLKBalanceSubsystem` is specified to load generated assets. If M0.5 is
+treated as done, the missing writer becomes M1.1's discovery - which is
+precisely the failure M0 was created to prevent: gameplay should not be the
+thing that finds out the project cannot import data. `ROADMAP.md`'s status now
+says so explicitly.
+
+No action implied beyond the status correction. The writer is a commandlet or
+an editor subsystem and it is yours; `DATA-PIPELINE.md`'s schema tables and the
+`Open for Codex` section still describe what it has to produce, including the
+unanswered question of whether the generated assets get committed or built on
+demand.

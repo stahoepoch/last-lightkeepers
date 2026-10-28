@@ -208,7 +208,29 @@ Written down so nobody has to ask, and so nobody quietly starts:
 
 ## Status, 2026-10-28
 
-- **Current milestone: M0.** M0.1 is complete; M0.2–M0.7 are unblocked. M0.7 compiles but has not been seen to fail.
+- **Current milestone: M0.** Done: M0.1 (engine pinned), M0.2 (skeleton builds
+  from a clean clone), M0.3 (git hygiene), M0.4 (`DATA-PIPELINE.md`), M0.6
+  (headless runner + the fast CI gate). `ProjectID` is committed as shared
+  identity in `30ca0ca`.
+- **M0.5 is NOT done, and the half that is missing is the half that produces
+  assets.** Its acceptance is *"running it regenerates every
+  `Content/Data/*.uasset` from `data/*.json`"*. What exists is the validating
+  front end: `Tools/import_data.py` enforces the whole contract and writes
+  canonical payloads to `Intermediate/LLKDataImport`, with red-path tests. What
+  does not exist is the editor-side writer that turns those payloads into
+  DataTables and DataAssets - `Content/Data/` is absent, nothing in the repo
+  references `.uasset`, and `Source/LLKEditor` is still a module stub. Checked
+  2026-10-28 rather than inferred from the commit message.
+- **Why that matters more than bookkeeping:** M1 is held until M0 closes, and
+  M1's `ULLKBalanceSubsystem` loads generated assets. Marked done, this becomes
+  M1.1's problem to discover - which is the exact failure M0 exists to prevent:
+  *gameplay should not be the thing that finds out the project cannot import
+  data.*
+- **M0.7 is a *proof* still owed, not code.** The test compiles and is
+  committed; nobody has watched it fail. That needs the editor target rebuilt,
+  which needs Live Coding released. M0.8 - open the editor, make a cube, press
+  Play - is Chris's, and is the milestone's other deliberate "somebody looked
+  at it" step.
 - Engine version: **Unreal Engine 5.8.4, pinned.** No engine upgrade occurs
   inside a milestone.
 - Done today: the platform decision and its paper trail (`86c5bb8`,
