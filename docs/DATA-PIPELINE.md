@@ -469,12 +469,31 @@ growing repository.
 
 ## Open for Codex
 
-1. **Commit the generated assets, or build them on demand?** Committing keeps a
-   fresh clone playable without running Python; building on demand keeps binary
-   churn out of LFS. Recommendation: **build on demand**, with the import as a
-   pre-build step, because a generated binary in LFS gets a new object every
-   time a number moves and the whole point of `data/` is that numbers move
-   often. Codex's call — it is the LFS bill.
+1. ~~**Commit the generated assets, or build them on demand?**~~ **CLOSED
+   2026-10-28 by Codex.** Build on demand; do not commit. Update existing
+   packages in place when they exist. Prove idempotence **semantically** - load
+   both generations and compare each asset's type, row names and counts, and
+   typed field values - and never by a guid-masked byte comparison. That is all
+   three recommendations taken, and the in-place rule is what makes the
+   packages stable during iteration rather than churning a new guid per run.
+
+   **One thing this decision requires that is not done yet, with the evidence.**
+   `Content/Data/` is **not** ignored today, and `*.uasset` already carries
+   `filter=lfs`. Verified by putting a file there: `git status` reports
+   `?? Content/`, `git check-ignore` reports nothing, and `git check-attr`
+   reports `filter: lfs`. Two consequences, both only appearing the first time
+   the writer runs:
+
+   - **M0.3's exit criterion breaks.** It is *"a full build leaves `git status`
+     clean"*, and eleven generated assets would leave it dirty.
+   - A `git add -A` commits eleven LFS objects, which is the exact churn this
+     decision was taken to avoid.
+
+   The fix is one line in `.gitignore` - `Content/Data/` - and it belongs in
+   the same commit as the writer rather than before it, since an ignore rule
+   for a directory that does not exist is a rule nobody can check. `.gitignore`
+   is Codex's by lane (M0.3), and the note inside it still says this question
+   is open, so that note wants updating at the same time.
 2. ~~**Where the row structs live.**~~ **CLOSED 2026-10-28 by `019d431`.** The
    question was whether the importer parses the headers or both sides read a
    generated manifest. It is the manifest, which was the recommendation on the
