@@ -28,7 +28,7 @@
     "Relics": {
       "examples": ["odd pre-storm technology"],
       "visibility": "lanternOnly",
-      "sourceHint": "Rare caches. Invisible without an active lantern - this is the whole reason to turn light on.",
+      "sourceHint": "Rare caches. Present and visible in darkness but unreadable - the object renders, its value does not. Lighting it is the whole reason to turn light on, and an invisible relic could not tempt anyone. DECISIONS.md row 53.",
       "feeds": ["Cosmetics", "SpecialCrafting", "LandmarkContributions"],
       "carrySlots": 2,
       "pickupSeconds": 2.5,

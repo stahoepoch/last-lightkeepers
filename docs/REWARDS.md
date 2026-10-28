@@ -50,8 +50,43 @@ have taken some risk.
 
 ## Relics — never currency
 
-**Found:** only with the lantern lit. They do not exist to a dark crew. This is
-the single most important asymmetry in the game and nothing may soften it.
+**Found:** only with the lantern lit. This is the single most important
+asymmetry in the game and nothing may soften it.
+
+**Corrected 2026-10-28 by `DECISIONS.md` row 53, LOCKED.** This page said
+relics *"do not exist to a dark crew"* and `data/loot.json` said *invisible*.
+Both were wrong in the same way, and Chris caught it: **an invisible reward
+cannot tempt anyone.** A dark crew was never refusing a relic — it never knew
+one was there, which quietly turned the game's signature decision into a
+hidden-object pass. Relics are **present and visible in darkness, and
+unreadable**: the object renders, its value does not. You can see something is
+on the shelf. Finding out what costs amber.
+
+### Light gates legibility, not existence — and here is where each thing lands
+
+Chris's slice requirement is that *"valuable relics, restoration crates, and
+route clues only become legible under lantern light."* Read as tier visibility
+that would break the loot table and a test, so the distinction has to be exact.
+`tests/balance.test.mjs:101` asserts **exactly one** lantern-only tier and that
+it is Relics — and that assertion stays true under all three:
+
+| Thing | Dark | Lit | Tier change |
+| --- | --- | --- | --- |
+| **Relics** | Visible. Value unreadable | Legible, and worth the risk | None — already the one `lanternOnly` tier |
+| **Restoration crates** | Visible, takeable, carryable | **Which room at home it serves** becomes readable — the department stamp from `THE-STORE.md` | **None.** Stays `always` |
+| **Route clues** | Present | Legible | **None.** Not loot. Environmental legibility, no tier involved |
+
+The crate row is the one that would otherwise get implemented wrongly. A crate
+must stay findable and carryable by a dark crew — it is the bulk reward and the
+hall depends on it. What light adds is not *whether* you can take it but
+*whether you know what it is for*, which is exactly the route decision
+`THE-STORE.md` introduced: you go to a particular floor tonight because of a
+particular room at home. A dark crew carries crates home and finds out later;
+a lit crew chooses.
+
+That keeps one tier gated, one asymmetry sacred, and still delivers his
+requirement in full: **darkness means leaving meaningful opportunity behind,
+not simply playing safer.**
 
 **What they are for:** the collection, the plinths, the plaques, and the story.
 A relic goes on a shelf with the finder's name on it and stays there.

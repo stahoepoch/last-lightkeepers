@@ -5,8 +5,31 @@ For saying out loud. Start with the one line; go further only if they lean in.
 
 ## The one line
 
-**Your lantern is the only way to find the good stuff — and the thing that
-gets you caught.**
+**Chris's, 2026-10-28, and it replaces the old one:**
+
+> **Your lantern is the only way to find what can save the town — and the
+> thing that tells the building you're there.**
+
+The previous line was *"the only way to find the good stuff — and the thing
+that gets you caught."* Three things improved, and they are worth naming so
+nobody edits them back out.
+
+**"What can save the town" instead of "the good stuff."** The stakes are in the
+sentence now. "Good stuff" is loot in any game; this says what the loot is
+*for*, which is row 46.
+
+**"Tells the building you're there" instead of "gets you caught."** Row 47 in
+eight words. Nothing is hunting you — a *building* notices, and it notices the
+way a building would. "Gets you caught" implied a pursuer with intent, which is
+the fiction we specifically rejected.
+
+**The order is value first, consequence second, and it must stay that way.**
+This matters more than it looks. *"Light attracts monsters"* is a genre
+convention — Darkwood, Amnesia, Metro, and every extraction game with a
+flashlight already did it, so leading with the danger makes this sound like
+something the listener has played. The part nobody else does is that **a dark
+crew cannot discover the things worth risking a raid for.** Lead with that.
+Chris: *"the pitch should keep leading with value, then consequence."*
 
 ## The eight-year-old version
 

@@ -134,7 +134,7 @@ says what the exam is.
 | Order | Floor | The one new idea | How the floor examines it |
 | --- | --- | --- | --- |
 | 1 | **Ground** | There are things here and you can carry them | Storm light through the windows means baseline loot is visible with the lantern off. The player loots before they learn light costs anything |
-| 2 | **Ground**, deeper in | **Light reveals value and attracts danger** | The first relic sits where the sightlines are longest. You see the thing you woke, and you have room to go dark and live |
+| 2 | **Ground**, deeper in | **Light reveals value and attracts danger** | The first relic is **visible but unreadable** in the dark (row 53) and sits where the sightlines are longest. The player can see something is there, lights up to find out what, sees the thing they woke, and has room to go dark and live |
 | 3 | **Second** | Not everything that is wrong looks wrong | The most intact floor. It teaches no mechanic. It teaches distrust, and it is where the Window Walkers stand in the display windows, exactly where they worked |
 | 4 | **Third** | The building can take away what you learned to rely on | Swollen floors, staged rooms, collapsed sightlines. Sound stops arriving from a direction you can use |
 | 5 | **Basement** | Sometimes the choice is made for you | No ambient light at all. The keeper who learned to run dark finds the floor where running dark is not available — and the best Components are down here |
@@ -151,7 +151,15 @@ introduces nothing, it is set dressing and belongs after M6.
 teach a control; nothing but experience teaches *light reveals value and
 attracts danger*. So the player has to turn the lantern on, get the relic, be
 noticed, and get away — all on the ground floor, where that sequence is
-survivable. The ground floor is the only place in the building where the wrong
+survivable.
+
+**And the sequence has to start with the player's own curiosity, not a
+prompt.** Row 53 is what makes that possible: the first relic is visible and
+unreadable, so the building poses a question — *what is that?* — and the only
+answer costs amber. Chris's reason for it is the whole of row 43 in one
+sentence: players should learn this *"in their first few minutes instead of
+from a loading-screen tip."* Nobody has to be told to light the lantern. They
+want to know. The ground floor is the only place in the building where the wrong
 answer is affordable, which is the entire reason it comes first.
 
 **It has to teach four people talking at once.** `DECISIONS.md` row 36 is 1–4
