@@ -41,6 +41,12 @@ def main() -> int:
         raise AssertionError(result.stderr)
     print("PASS valid data")
     must_fail("unknown gameplay keys are errors", "lantern.json", lambda value: value["movement"].__setitem__("sprintSped", 99), "unrecognised key(s): sprintSped")
+    directory = copy_data()
+    directory.joinpath("keepers.json").write_text("{}", encoding="utf-8")
+    result = invoke(directory)
+    if result.returncode == 0 or "unrecognised contract file(s): keepers.json" not in result.stderr:
+        raise AssertionError(f"unknown data file: stdout={result.stdout!r}, stderr={result.stderr!r}")
+    print("PASS unknown data files are errors")
     must_fail("missing gameplay keys are errors", "storm-charge.json", lambda value: value["warden"].pop("effect"), "missing required key(s): effect")
     must_fail("unknown enums are errors", "storm-charge.json", lambda value: value["lantern"].__setitem__("curve", "freeLight"), "unknown enum value")
     must_fail("enemy family shapes are errors", "enemies.json", lambda value: value["Warden"].__setitem__("health", 1), "unrecognised key(s): health")

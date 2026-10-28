@@ -171,12 +171,23 @@ def validate_ledger(data: Any) -> None:
         departure = obj(restoration["departure"], f"{path}.restoration.departure"); dep_spec = {"unpoweredSeconds": (int, float), "poweredSeconds": (int, float), "unpoweredFalseStartChance": (int, float)}; exact(departure, set(dep_spec), f"{path}.restoration.departure"); fields(departure, dep_spec, f"{path}.restoration.departure")
 
 VALIDATORS = {"enemies.json": validate_enemies, "storm-charge.json": validate_storm, "lantern.json": validate_lantern, "loot.json": validate_loot, "relics.json": validate_relics, "town.json": validate_town, "ledger.json": validate_ledger}
+CONTRACT_FILES = ("enemies.json", "storm-charge.json", "lantern.json", "loot.json", "relics.json", "workshop.json", "town.json", "ledger.json")
 
 def load(data_dir: Path) -> tuple[dict[str, Any], dict[str, int]]:
     clean, reports = {}, {}
-    for filename in ["enemies.json", "storm-charge.json", "lantern.json", "loot.json", "relics.json", "workshop.json", "town.json", "ledger.json"]:
+    # Rule 7: the file set is closed, just as rule 2 closes each object's key
+    # set. A new JSON source must arrive with an explicit importer contract;
+    # otherwise it is more dangerous to ignore than to stop the build.
+    actual_files = {path.name for path in data_dir.glob("*.json")}
+    expected_files = set(CONTRACT_FILES)
+    unexpected_files = sorted(actual_files - expected_files)
+    if unexpected_files:
+        error("data", f"unrecognised contract file(s): {', '.join(unexpected_files)}")
+    missing_files = sorted(expected_files - actual_files)
+    if missing_files:
+        error("data", f"missing contract file(s): {', '.join(missing_files)}")
+    for filename in CONTRACT_FILES:
         path = data_dir / filename
-        if not path.is_file(): error(filename, "source file is missing")
         try: raw = json.loads(path.read_text(encoding="utf-8"))
         except json.JSONDecodeError as exc: error(filename, f"invalid JSON: {exc.msg} at line {exc.lineno}, column {exc.colno}")
         count = [0]; clean[filename] = strip(raw, count); reports[filename] = count[0]
