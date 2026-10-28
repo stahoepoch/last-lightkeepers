@@ -131,12 +131,23 @@ const ceilingLabel = DIMINISHING
   ? `self-limits at ${(1 + storm.lantern.perLanternBonus / (1 - storm.lantern.diminishingDecay)).toFixed(2)}x`
   : `cap ${storm.lantern.maxMultiplier}x`;
 console.log(`baseline ${storm.baselineRatePerSecond}/s · per-lantern +${storm.lantern.perLanternBonus} · ${storm.lantern.curve}, ${ceilingLabel} · charge ${CHARGE_SECONDS > 0 ? CHARGE_SECONDS + "s" : "unlimited"}\n`);
-console.log(`crew  duty   alert    hunt  WARDEN   lantern-sec   verdict`);
+// Rows are labelled with the NAMED duty profiles from data/storm-charge.json
+// _dutyProfiles. Chris, 2026-10-28: without the names "someone later will read
+// normally lit crew as 50%, see a seven-minute Warden, and correctly think the
+// system drifted again." Only `normal` is held to the Warden band.
+const PROFILES = storm._dutyProfiles;
+const DUTY_ROWS = [
+  { duty: 0, name: "dark" },
+  { duty: PROFILES.normal.duty, name: "normal" },
+  { duty: PROFILES.bright.duty, name: "bright" },
+  { duty: PROFILES.panic.duty, name: "panic" },
+];
+console.log(`crew  duty  profile   alert    hunt  WARDEN   lantern-sec   verdict`);
 console.log(`${"-".repeat(72)}`);
 
 const rows = [];
 for (const crew of [1, 2, 3, 4]) {
-  for (const duty of [0, 0.25, 0.5, 1]) {
+  for (const { duty, name: profile } of DUTY_ROWS) {
     const { hits, lanternSecondsBurned } = simulate(crew, duty);
     const warden = hits.WardenConverges;
     let verdict;
@@ -152,14 +163,25 @@ for (const crew of [1, 2, 3, 4]) {
     // land at 9-11 minutes for a normally lit crew, just before the 10-12 minute
     // raid band opens, and LATER than that for a dark crew. Measuring it against
     // the run band made every lit row read as a failure when it was the design.
-    else if (warden < WARDEN_LOW) verdict = "EARLY - before the Warden band";
-    else if (warden <= WARDEN_HIGH) verdict = "Warden on time";
-    else if (warden <= RUN_MAX) verdict = "late - darkness bought the night";
-    else verdict = "Warden after the ceiling";
+    else if (profile === "normal")
+      verdict =
+        warden < WARDEN_LOW
+          ? "OFF TARGET - earlier than the band"
+          : warden <= WARDEN_HIGH
+            ? "on target"
+            : "OFF TARGET - later than the band";
+    else if (profile === "dark") verdict = "darkness bought the whole night";
+    else if (profile === "bright")
+      verdict =
+        warden > storm.run.earlyExitSeconds
+          ? "early by choice, still survivable"
+          : "TOO EARLY - invalidates the run";
+    else
+      verdict = warden > 300 ? "panic state, above the floor" : "BELOW THE MINUTE-FOUR FLOOR";
 
     rows.push({ crew, duty, warden, verdict });
     console.log(
-      `  ${crew}   ${String(Math.round(duty * 100)).padStart(3)}% ${mmss(hits.PatrolsAlert)} ${mmss(hits.PatrolsHunt)} ${mmss(warden)}   ${String(Math.round(lanternSecondsBurned)).padStart(5)}s        ${verdict}`,
+      `  ${crew}   ${String(Math.round(duty * 100)).padStart(3)}%  ${profile.padEnd(7)} ${mmss(hits.PatrolsAlert)} ${mmss(hits.PatrolsHunt)} ${mmss(warden)}   ${String(Math.round(lanternSecondsBurned)).padStart(5)}s        ${verdict}`,
     );
   }
 }

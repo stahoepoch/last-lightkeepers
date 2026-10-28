@@ -79,10 +79,15 @@ console.log("\nStorm Charge");
       storm.run.hardCeilingSeconds <= targetHigh + 120,
     `ceiling ${storm.run.hardCeilingSeconds}s vs band top ${targetHigh}s`,
   );
-  // One definition of "normally lit" for the whole file: a crew with its
-  // lanterns on a quarter of the night. Chris's minute targets below are all
-  // read against it, so a future retune moves one number, not four.
-  const NORMALLY_LIT_DUTY = 0.25;
+  // The three duty profiles are NAMED in data/storm-charge.json _dutyProfiles,
+  // each with its own contract, because Chris warned that "normally lit crew"
+  // is a phrase rather than a number: "someone later will read normally lit
+  // crew as 50%, see a seven-minute Warden, and correctly think the system
+  // drifted again." Assert against the names, never against bare decimals.
+  const PROFILES = storm._dutyProfiles;
+  const NORMALLY_LIT_DUTY = PROFILES.normal.duty;
+  check("the duty profiles are named in data, not implied here", 
+    PROFILES.normal.duty < PROFILES.bright.duty && PROFILES.bright.duty < PROFILES.panic.duty);
 
   // Chris's Warden arrival rule, 2026-10-28. He set the targets; lightSensitivity
   // was derived to hit them. These lock the shape so a future tuning pass cannot
@@ -112,11 +117,39 @@ console.log("\nStorm Charge");
     );
     // "Warden: the closing act, around minutes 9-11 for a normally lit crew."
     const [wardenLow, wardenHigh] = w.arrivalBandSeconds;
+
+    // PROFILE "normal" (25%) - the baseline. Must land in the band, every crew size.
     for (const crew of [1, 2, 3, 4]) {
       check(
-        `a normally lit crew of ${crew} meets the Warden inside its band (${wardenLow}-${wardenHigh}s)`,
-        wardenAt(crew, NORMALLY_LIT_DUTY) >= wardenLow && wardenAt(crew, NORMALLY_LIT_DUTY) <= wardenHigh,
-        `got ${wardenAt(crew, NORMALLY_LIT_DUTY).toFixed(0)}s`,
+        `[${PROFILES.normal.label}] crew of ${crew} meets the Warden in ${wardenLow}-${wardenHigh}s`,
+        wardenAt(crew, PROFILES.normal.duty) >= wardenLow && wardenAt(crew, PROFILES.normal.duty) <= wardenHigh,
+        `got ${wardenAt(crew, PROFILES.normal.duty).toFixed(0)}s`,
+      );
+    }
+
+    // PROFILE "bright" (50%) - MAY be early, must stay survivable. Chris,
+    // 2026-10-28: "deliberately bright/risky play; the Warden can arrive
+    // earlier, but should remain survivable and not invalidate the run." The
+    // testable form of "does not invalidate the run" is that a bright crew
+    // still gets at least a complete early-exit raid before the closing act.
+    for (const crew of [1, 2, 3, 4]) {
+      check(
+        `[${PROFILES.bright.label}] crew of ${crew} still gets a full early-exit raid first`,
+        wardenAt(crew, PROFILES.bright.duty) > storm.run.earlyExitSeconds,
+        `got ${wardenAt(crew, PROFILES.bright.duty).toFixed(0)}s vs early exit ${storm.run.earlyExitSeconds}s`,
+      );
+    }
+    check(
+      `[${PROFILES.bright.label}] is allowed to be earlier than the band - light always costs`,
+      wardenAt(4, PROFILES.bright.duty) < wardenAt(4, PROFILES.normal.duty),
+    );
+
+    // PROFILE "panic" (100%) - not regular play. One rule only: his floor.
+    for (const crew of [1, 2, 3, 4]) {
+      check(
+        `[${PROFILES.panic.label}] crew of ${crew} never meets the Warden at minute four`,
+        wardenAt(crew, PROFILES.panic.duty) > 300,
+        `got ${wardenAt(crew, PROFILES.panic.duty).toFixed(0)}s`,
       );
     }
     check(
@@ -130,11 +163,7 @@ console.log("\nStorm Charge");
       "four lit players reach the Warden earlier than a lit solo keeper",
       wardenAt(4, NORMALLY_LIT_DUTY) < wardenAt(1, NORMALLY_LIT_DUTY),
     );
-    check(
-      "no crew at any duty cycle meets the Warden at minute four",
-      wardenAt(4, 1) > 300,
-      `worst case ${wardenAt(4, 1).toFixed(0)}s`,
-    );
+
   }
 
   // Chris's stage targets, 2026-10-28: "First pressure: early, around minutes

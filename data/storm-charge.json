@@ -44,6 +44,26 @@
     "sirenSeconds": 8
   },
 
+  "_dutyProfiles": {
+    "_comment": "NAMED 2026-10-28 on Chris's warning, and underscore-prefixed on purpose: these are analysis profiles for tuning and tests, never imported into the engine (see docs/DATA-PIPELINE.md on underscore keys). They exist because 'a normally lit crew' is a phrase, not a number. His warning: 'Otherwise someone later will read normally lit crew as 50%, see a seven-minute Warden, and correctly think the system drifted again.' Each profile carries its own contract, and tests/balance.test.mjs asserts against the names rather than against bare decimals.",
+
+    "normal": {
+      "duty": 0.25,
+      "label": "normal coordinated use",
+      "contract": "THE BASELINE. Lanterns on about a quarter of the night, used deliberately and shared out. The Warden must land inside warden.arrivalBandSeconds (9-11 minutes) at every crew size. This is the profile every minute target in this file is written against."
+    },
+    "bright": {
+      "duty": 0.5,
+      "label": "deliberately bright, risky play",
+      "contract": "A crew choosing to live brightly. The Warden MAY arrive earlier than its band - light always costs - but must remain survivable and must not invalidate the run, so it may never arrive before run.earlyExitSeconds. At 0.3 sensitivity this is 7:44 to 9:29 depending on crew size."
+    },
+    "panic": {
+      "duty": 1.0,
+      "label": "panic / escalation state, not regular play",
+      "contract": "Everything lit, all night. An explicit emergency rather than a playstyle, and not a configuration the balance is tuned for. The only rule it must obey is Chris's floor: the Warden never arrives at minute four."
+    }
+  },
+
   "_thresholdsNote": "TWO entries since 2026-10-28. WardenConverges used to be a third; Chris split it into its own `warden` block below, because the Warden is a late-night escalation rather than the normal consequence of using a lantern. These two keep the building active throughout the run and are unchanged - he was explicit that raising them would push dark crews past the end of the raid again.",
   "thresholds": [
     {
