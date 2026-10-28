@@ -282,6 +282,68 @@ console.log("\nEnemies");
   }
 }
 
+console.log("\nThe underscore contract (DATA-PIPELINE.md rule 1)");
+{
+  // Chris, 2026-10-28: "the Unreal importer should explicitly strip or reject
+  // underscore-prefixed analysis fields, not merely happen to ignore them...
+  // _dutyProfiles belongs to tests and tuning reports; runtime should only
+  // receive actual gameplay values."
+  //
+  // The engine side is the importer's job and cannot be tested here. What CAN
+  // be tested here is the thing that would silently defeat it: an analysis
+  // field losing its underscore and becoming indistinguishable from a gameplay
+  // value. These guard the boundary from the data side.
+  const files = [
+    "storm-charge.json",
+    "loot.json",
+    "enemies.json",
+    "lantern.json",
+    "ledger.json",
+    "relics.json",
+    "town.json",
+    "workshop.json",
+  ];
+
+  // Analysis-only structures that must NEVER appear without their underscore.
+  // Add to this list whenever a new tuning-report structure is introduced.
+  const analysisOnly = ["dutyProfiles"];
+
+  let underscoreTotal = 0;
+  const shadowed = [];
+  const promoted = [];
+
+  const walk = (node, file) => {
+    if (Array.isArray(node)) return node.forEach((n) => walk(n, file));
+    if (node === null || typeof node !== "object") return;
+    const keys = Object.keys(node);
+    for (const k of keys) {
+      if (k.startsWith("_")) {
+        underscoreTotal += 1;
+        // `x` and `_x` in one object is how a typo turns documentation into
+        // configuration, or the reverse.
+        if (keys.includes(k.slice(1))) shadowed.push(`${file}: ${k} shadows ${k.slice(1)}`);
+      } else if (analysisOnly.includes(k)) {
+        promoted.push(`${file}: ${k} lost its underscore`);
+      }
+      walk(node[k], file);
+    }
+  };
+  for (const f of files) walk(load(f), f);
+
+  check(
+    "no analysis-only structure has been promoted to a runtime key",
+    promoted.length === 0,
+    promoted.join("; "),
+  );
+  check("no object carries both `x` and `_x`", shadowed.length === 0, shadowed.join("; "));
+  check("_dutyProfiles is underscore-prefixed, so the importer strips it", storm._dutyProfiles !== undefined);
+  check("the duty profiles carry no runtime-looking twin", storm.dutyProfiles === undefined);
+  // Rule 1b asks the importer to REPORT what it stripped. Print ours for the
+  // same reason: a silent strip cannot be audited, and if this count ever drops
+  // sharply, documentation was deleted rather than ignored.
+  console.log(`  ..   ${underscoreTotal} underscore keys across ${files.length} files (importer must strip, and say so)`);
+}
+
 console.log("\nLantern, knockdown, revive");
 {
   // Chris's call: the lantern never runs out, so the cost of light is the Storm

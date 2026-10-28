@@ -71,14 +71,42 @@ better at the call site and that is the whole point of it:
 
 These are the parts that matter. The rest is mechanical.
 
-**1. Keys beginning with `_` are documentation. Skip them, always.**
+**1. Keys beginning with `_` are documentation and analysis. The importer
+STRIPS THEM EXPLICITLY — it does not merely fail to read them.**
 Every file carries them — `_comment`, `_values`, `_curveChoice`, `_rungState`,
-`_scopeNote` — and between them they hold the reasoning for most of the
-project's balance decisions, including who approved what and on which date.
-They are load-bearing for humans and meaningless to the engine. **Fifty-four of
-them across the eight files**, counted today — `ledger.json` has 13,
-`storm-charge.json` 12, `lantern.json` 11. Never import, never warn about,
-never strip from the source.
+`_scopeNote`, `_dutyProfiles` — and between them they hold the reasoning for
+most of the project's balance decisions, including who approved what and on
+which date. They are load-bearing for humans and meaningless to the engine.
+Never import, never warn about, never strip from the *source* file.
+
+**Tightened 2026-10-28 on Chris's instruction**, and the distinction is the
+whole point: *"the Unreal importer should explicitly strip or reject
+underscore-prefixed analysis fields, not merely happen to ignore them…
+`_dutyProfiles` belongs to tests and tuning reports; runtime should only
+receive actual gameplay values."*
+
+"Happens to ignore" and "must reject" are different guarantees, and only one of
+them survives somebody later writing a generic `JsonObjectToUStruct` call. So
+the contract is now three obligations, not one:
+
+| # | The importer must | Why |
+| --- | --- | --- |
+| 1a | **Strip every `_` key before the struct conversion runs**, as a deliberate pass over the parsed object | A generic deserialiser handed the raw object would try to match them, and rule 2 would then fail the build on the project's own documentation |
+| 1b | **Report what it stripped**, as a count per file in the import log | A silent strip cannot be audited. If a real gameplay key is ever typo'd with a leading underscore, the count is the only thing that would reveal it |
+| 1c | **Treat an `_` key reaching runtime as a hard error**, not as data to coerce | This is the one Chris is actually protecting against: an engine-side reader finding `_dutyProfiles` and treating profile metadata as configuration. `UCLASS`/`USTRUCT` definitions must not declare any field whose JSON name begins with `_` |
+
+**The count is not written down here on purpose.** This page used to say
+"fifty-four of them across the eight files," which was true the day it was
+typed. `tests/balance.test.mjs` now counts them on every run and prints the
+total, which is rule 1b satisfied on the data side as well as the engine side —
+and one fewer number living in prose where it can go stale. Today it prints 69.
+
+**`_dutyProfiles` is the live example and the reason this got tightened.** It
+holds three named playstyles with a contract each (`DECISIONS.md` row 55), it
+is read by `tests/balance.test.mjs` and `tests/pacing.mjs`, and it is exactly
+the shape of thing an engine-side reader would mistake for tuning
+configuration — it has `duty` numbers in it that look like gameplay values and
+are not. Nothing in the runtime should know those profiles exist.
 
 **2. An unrecognised non-underscore key is a hard error.** Not a warning, not a
 skip. If `data/enemies.json` grows a field that `FLLKEnemyDef` does not have,
