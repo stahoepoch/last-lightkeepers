@@ -72,7 +72,7 @@
 
   "Warden": {
     "formerJob": "Mall security",
-    "behaviour": "Converges on the brightest position once Storm Charge hits WardenConverges.",
+    "behaviour": "Converges on the brightest position once the Warden's own arrival meter fills - see storm-charge.json `warden`, which Chris split out of the generic thresholds on 2026-10-28. It is a late-night escalation, not the normal consequence of using a lantern. Brightest position, never nearest player: that is what puts cause and consequence in the same pair of hands.",
     "counterplay": "Hide, kite, distract, or extract. Never kill it.",
     "killable": false,
     "dropsLoot": false,

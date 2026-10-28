@@ -44,6 +44,7 @@
     "sirenSeconds": 8
   },
 
+  "_thresholdsNote": "TWO entries since 2026-10-28. WardenConverges used to be a third; Chris split it into its own `warden` block below, because the Warden is a late-night escalation rather than the normal consequence of using a lantern. These two keep the building active throughout the run and are unchanged - he was explicit that raising them would push dark crews past the end of the raid again.",
   "thresholds": [
     {
       "id": "PatrolsAlert",
@@ -60,16 +61,25 @@
       "regularUseSeconds": 274,
       "oneLanternSeconds": 192,
       "effect": "All patrols actively hunt. Glimmer scan frequency increases."
-    },
-    {
-      "id": "WardenConverges",
-      "value": 700,
-      "darkSeconds": 700,
-      "regularUseSeconds": 400,
-      "oneLanternSeconds": 280,
-      "effect": "The Warden spawns at the rooftop stage and converges on the crew's brightest position."
     }
   ],
+  "warden": {
+    "_comment": "SPLIT FROM thresholds, 2026-10-28, on Chris's instruction: 'The Warden is an unkillable, late-night escalation - not the normal consequence of using a lantern. If a reasonably lit crew meets it at 4-8 minutes, the game teaches the wrong lesson: light means activate the unavoidable chase phase early. Players will correctly optimize toward darkness.'",
+
+    "chargeValue": 700,
+    "_chargeValueNote": "Unchanged. A dark crew still meets the Warden at 700s = 11:40, inside the 10-12 minute night, which is exactly where Chris wants it. Raising it would have pushed dark crews past the end of the raid again - which is why he said not to simply raise all thresholds.",
+
+    "arrivalBandSeconds": [540, 660],
+    "_arrivalBandNote": "Chris's target, 2026-10-28: 'Warden: the closing act, around minutes 9-11 for a normally lit crew.' Held as data so tests/balance.test.mjs and tests/pacing.mjs read it instead of each keeping a copy - the same lesson O1 taught. A fully dark crew is deliberately LATER than this band, near the end of the night, which is the point: darkness buys you the whole raid.",
+
+    "lightSensitivity": 0.3,
+    "_rule": "The Warden accrues on its own dampened meter: wardenMultiplier = 1 + lightSensitivity * (lanternMultiplier - 1). At 0 the Warden ignores light entirely and always arrives at 11:40; at 1 it behaves exactly as the old third threshold did. 0.4 means a lit crew still summons it earlier - light always costs - but using a lantern is no longer a button that starts a six-minute chase.",
+    "_derivation": "DERIVED to hit Chris's stated arrival targets, not chosen. He set: Warden at 9-11 minutes for a normally lit crew, 11-12 fully dark, four players somewhat earlier than solo but never minute four. 0.4 was tried first and put crews of three and four at 8:37-8:55, under his floor. At 0.3 every crew at 25% duty lands inside the band - solo 10:27, two 9:44, three 9:28, four 9:21 - with four players still earlier than solo, fully dark 11:39 at every crew size, and the worst case anywhere (four lanterns lit 100% of the night, the corner nobody plays) at 5:53, which clears his never-minute-four line. Verify with: node tests/pacing.mjs",
+
+    "effect": "The Warden spawns at the rooftop stage and converges on the crew's brightest position.",
+    "_keepsRow7": "Still unkillable and still drops nothing (row 7). This changes when it arrives, never what it is."
+  },
+
   "anchorRevive": {
     "_comment": "Solo rule: one self-revive per run, paid for with light.",
     "chargesPerRun": 1,

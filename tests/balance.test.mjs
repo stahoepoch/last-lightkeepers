@@ -43,7 +43,11 @@ console.log("\nStorm Charge");
 
   check("baseline rate is positive", base > 0);
   check("thresholds ascend", thresholds.every((t, i) => i === 0 || t.value > thresholds[i - 1].value));
-  check("WardenConverges is the last threshold", thresholds.at(-1).id === "WardenConverges");
+  // The Warden left this array on 2026-10-28. It is the closing act, not the
+  // normal consequence of using a lantern, so it accrues on its own dampened
+  // meter - see storm.warden and the block of checks further down.
+  check("the Warden is no longer a generic threshold", !thresholds.some((t) => t.id === "WardenConverges"));
+  check("the generic thresholds are the two that keep the building active", thresholds.length === 2);
 
   // Chris's curve, 2026-10-26, replacing the handoff's 8-minute anchor: for a
   // normal 10-12 minute run, a fully dark crew meets its first real pressure
@@ -61,8 +65,8 @@ console.log("\nStorm Charge");
   const [targetLow, targetHigh] = storm.run.targetBandSeconds;
   check(
     `dark crew meets the Warden inside the target band (${targetLow}-${targetHigh}s)`,
-    thresholds.at(-1).value / base >= targetLow && thresholds.at(-1).value / base <= targetHigh,
-    `got ${(thresholds.at(-1).value / base).toFixed(0)}s`,
+    storm.warden.chargeValue / base >= targetLow && storm.warden.chargeValue / base <= targetHigh,
+    `got ${(storm.warden.chargeValue / base).toFixed(0)}s`,
   );
   check(
     "the early exit is earlier than the target run",
@@ -75,17 +79,98 @@ console.log("\nStorm Charge");
       storm.run.hardCeilingSeconds <= targetHigh + 120,
     `ceiling ${storm.run.hardCeilingSeconds}s vs band top ${targetHigh}s`,
   );
-  // The other half of the curve: lantern lit about half the time is 1.75x.
-  check(
-    "regular lantern use pulls first pressure into minute 2-3",
-    thresholds[0].value / (base * 1.75) >= 120 && thresholds[0].value / (base * 1.75) <= 180,
-    `got ${(thresholds[0].value / (base * 1.75)).toFixed(0)}s`,
-  );
-  check(
-    "regular lantern use pulls serious pursuit into minute 6-7",
-    thresholds.at(-1).value / (base * 1.75) >= 360 && thresholds.at(-1).value / (base * 1.75) <= 420,
-    `got ${(thresholds.at(-1).value / (base * 1.75)).toFixed(0)}s`,
-  );
+  // One definition of "normally lit" for the whole file: a crew with its
+  // lanterns on a quarter of the night. Chris's minute targets below are all
+  // read against it, so a future retune moves one number, not four.
+  const NORMALLY_LIT_DUTY = 0.25;
+
+  // Chris's Warden arrival rule, 2026-10-28. He set the targets; lightSensitivity
+  // was derived to hit them. These lock the shape so a future tuning pass cannot
+  // quietly turn the lantern back into a button that starts a six-minute chase.
+  {
+    const w = storm.warden;
+    const decay = lamp.diminishingDecay;
+    const mult = (n) =>
+      storm.lantern.curve === "diminishing"
+        ? 1 + lamp.perLanternBonus * (1 - decay ** n) / (1 - decay)
+        : Math.min(1 + lamp.perLanternBonus * n, lamp.maxMultiplier);
+    // arrival for `crew` lanterns lit a `duty` fraction of the night
+    const wardenAt = (crew, duty) => {
+      const full = 1 + (mult(crew) - 1) * duty;
+      return w.chargeValue / (base * (1 + w.lightSensitivity * (full - 1)));
+    };
+
+    check("the Warden still costs light something", w.lightSensitivity > 0);
+    check(
+      "the Warden is NOT on the full lantern curve - that is the whole point of the split",
+      w.lightSensitivity < 1,
+    );
+    check(
+      "a fully dark crew meets the Warden near the end of the night, not before it",
+      wardenAt(4, 0) >= targetLow,
+      `got ${wardenAt(4, 0).toFixed(0)}s`,
+    );
+    // "Warden: the closing act, around minutes 9-11 for a normally lit crew."
+    const [wardenLow, wardenHigh] = w.arrivalBandSeconds;
+    for (const crew of [1, 2, 3, 4]) {
+      check(
+        `a normally lit crew of ${crew} meets the Warden inside its band (${wardenLow}-${wardenHigh}s)`,
+        wardenAt(crew, NORMALLY_LIT_DUTY) >= wardenLow && wardenAt(crew, NORMALLY_LIT_DUTY) <= wardenHigh,
+        `got ${wardenAt(crew, NORMALLY_LIT_DUTY).toFixed(0)}s`,
+      );
+    }
+    check(
+      "a dark crew gets the Warden LATER than a lit one - darkness buys the whole raid",
+      wardenAt(4, 0) > wardenHigh,
+      `dark ${wardenAt(4, 0).toFixed(0)}s vs band top ${wardenHigh}s`,
+    );
+    // "Four players using light should reach the Warden somewhat earlier than
+    // solo, but never at minute four."
+    check(
+      "four lit players reach the Warden earlier than a lit solo keeper",
+      wardenAt(4, NORMALLY_LIT_DUTY) < wardenAt(1, NORMALLY_LIT_DUTY),
+    );
+    check(
+      "no crew at any duty cycle meets the Warden at minute four",
+      wardenAt(4, 1) > 300,
+      `worst case ${wardenAt(4, 1).toFixed(0)}s`,
+    );
+  }
+
+  // Chris's stage targets, 2026-10-28: "First pressure: early, around minutes
+  // 3-4. Serious pursuit / normal enemy pressure: around minutes 5-7."
+  //
+  // REWRITTEN the same day, and the reason matters. The old pair measured
+  // "serious pursuit" with `thresholds.at(-1)` - which WAS the Warden. The two
+  // ideas were conflated in the test exactly as they were conflated in the
+  // data, so splitting the Warden out made this assertion fail and exposed it.
+  // "Serious pursuit" is PatrolsHunt and nothing else.
+  //
+  // Both are read at the same "normally lit" duty used for the Warden above, so
+  // the file has one definition of normal play rather than two.
+  {
+    const normallyLit = base * (1 + (1 + lamp.perLanternBonus - 1) * NORMALLY_LIT_DUTY);
+    const alertAt = thresholds[0].value / normallyLit;
+    const huntAt = thresholds[1].value / normallyLit;
+    check(
+      "a normally lit crew meets first pressure in minutes 3-4",
+      alertAt >= 180 && alertAt <= 240,
+      `got ${alertAt.toFixed(0)}s`,
+    );
+    check(
+      "a normally lit crew meets serious pursuit in minutes 5-7",
+      huntAt >= 300 && huntAt <= 420,
+      `got ${huntAt.toFixed(0)}s`,
+    );
+    // Heavier light use pulls both earlier, and that is the point - light always
+    // costs. What the Warden split fixed is that it no longer pulls the CLOSING
+    // ACT earlier by the same amount.
+    const heavilyLit = base * 1.75;
+    check(
+      "heavier light use pulls first pressure earlier still",
+      thresholds[0].value / heavilyLit < alertAt,
+    );
+  }
 
   // The handoff's other anchor: one active lantern ≈ 2.5× baseline.
   check(

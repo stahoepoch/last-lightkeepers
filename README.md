@@ -89,6 +89,7 @@ numbers. What is in `data/storm-charge.json` now:
 
 - **~2.5×** baseline with one active lantern (`perLanternBonus: 1.5`). Still the
   handoff's figure, and locked: no change to the curve may move it.
+- **Archive note, 2026-10-28:** the Warden left the threshold array (`DECISIONS.md` row 54) and now has its own dampened arrival meter in `storm-charge.json` `warden`. The two generic thresholds are unchanged. This README describes the frozen Roblox prototype, so the line below is kept as it stood.
 - Thresholds at **270 / 480 / 700** → in darkness 4:30 / 8:00 / 11:40; with the
   lantern lit about half the time 2:34 / 4:34 / 6:40. Retuned by Chris on
   2026-10-26, replacing the handoff's 8-minutes-to-first-threshold anchor,

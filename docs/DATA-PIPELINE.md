@@ -63,7 +63,7 @@ better at the call site and that is the whole point of it:
 
 | File | Asset | Holds |
 | --- | --- | --- |
-| `storm-charge.json` | `ULLKStormChargeData` | `baselineRatePerSecond`, the `lantern` block including the **diminishing** curve (row 12), the **`run` block** (`targetSeconds`, `earlyExitSeconds`, `hardCeilingSeconds` — added 2026-10-28, see below), `extractionCall`, `thresholds` (an array), `anchorRevive` |
+| `storm-charge.json` | `ULLKStormChargeData` | `baselineRatePerSecond`, the `lantern` block including the **diminishing** curve (row 12), the **`run` block** (`targetSeconds`, `earlyExitSeconds`, `hardCeilingSeconds` — added 2026-10-28, see below), `extractionCall`, `thresholds` (an array of **two** since 2026-10-28), the **`warden` block** (`chargeValue`, `arrivalBandSeconds`, `lightSensitivity` — row 54 gave the Warden its own dampened arrival meter, so it is **not** a threshold and must not be imported as one), `anchorRevive` |
 | `lantern.json` | `ULLKLanternData` | `charge`, `knockdown`, `revive`, `sweeperContact`, `movement` |
 | `loot.json` | `ULLKLootRulesData` | `rules`, `burden`, `banking`, `extraction` — everything in the file except `tiers` |
 

@@ -56,6 +56,7 @@ const RUN_TARGET = storm.run.targetSeconds;
 // here would make "the Warden arrived before a short run ended" fire against a
 // voluntary early exit rather than against a real run.
 const [RUN_MIN] = storm.run.targetBandSeconds;
+const [WARDEN_LOW, WARDEN_HIGH] = storm.warden.arrivalBandSeconds;
 
 // Mirrors Config.lanternMultiplier. Kept in sync by a balance test.
 function multiplier(n, curve = storm.lantern.curve) {
@@ -78,6 +79,7 @@ function simulate(crew, duty) {
   const charges = Array(crew).fill(1);
   let t = 0;
   let value = 0;
+  let wardenValue = 0; // the Warden's separate, dampened meter - see the loop below
   const hits = {};
   let lanternSecondsBurned = 0;
 
@@ -98,6 +100,20 @@ function simulate(crew, duty) {
     for (const th of storm.thresholds) {
       if (hits[th.id] === undefined && value >= th.value) hits[th.id] = t;
     }
+
+    // The Warden accrues on its OWN dampened meter since 2026-10-28, when Chris
+    // split it out of the generic thresholds: "The Warden is an unkillable,
+    // late-night escalation - not the normal consequence of using a lantern."
+    // wardenMultiplier = 1 + lightSensitivity * (lanternMultiplier - 1), so a
+    // lit crew still summons it earlier (light always costs) without a lantern
+    // becoming a button that starts a six-minute chase.
+    const fullMult = multiplier(active);
+    const wardenMult = 1 + storm.warden.lightSensitivity * (fullMult - 1);
+    wardenValue += storm.baselineRatePerSecond * wardenMult * DT;
+    if (hits.WardenConverges === undefined && wardenValue >= storm.warden.chargeValue) {
+      hits.WardenConverges = t;
+    }
+
     if (hits.WardenConverges !== undefined) break;
     t += DT;
   }
@@ -131,8 +147,14 @@ for (const crew of [1, 2, 3, 4]) {
     // intended raid length, which is interesting rather than automatically bad:
     // the Warden is unkillable and converges on the brightest position, so
     // meeting it early means being hunted for the rest of the night.
-    else if (warden < RUN_MIN) verdict = "Warden before the target band";
-    else if (warden <= RUN_MAX) verdict = "Warden inside the night";
+    // Judged against the WARDEN's own band (storm.warden.arrivalBandSeconds),
+    // not the run band. Chris set them separately on purpose: the Warden should
+    // land at 9-11 minutes for a normally lit crew, just before the 10-12 minute
+    // raid band opens, and LATER than that for a dark crew. Measuring it against
+    // the run band made every lit row read as a failure when it was the design.
+    else if (warden < WARDEN_LOW) verdict = "EARLY - before the Warden band";
+    else if (warden <= WARDEN_HIGH) verdict = "Warden on time";
+    else if (warden <= RUN_MAX) verdict = "late - darkness bought the night";
     else verdict = "Warden after the ceiling";
 
     rows.push({ crew, duty, warden, verdict });
@@ -145,9 +167,9 @@ for (const crew of [1, 2, 3, 4]) {
 console.log(`\nWhat this says`);
 
 const alwaysLit = rows.filter((r) => r.duty === 1);
-const tooFast = alwaysLit.filter((r) => r.warden !== undefined && r.warden < RUN_MIN);
+const tooFast = alwaysLit.filter((r) => r.warden !== undefined && r.warden < WARDEN_LOW);
 if (tooFast.length > 0) {
-  console.log(`  - A fully-lit crew meets the Warden before the ${RUN_MIN / 60}-minute target band opens, at`);
+  console.log(`  - A fully-lit crew meets the Warden before its ${WARDEN_LOW / 60}-minute band opens, at`);
   console.log(
     `    crew size${tooFast.length > 1 ? "s" : ""} ${tooFast.map((r) => r.crew).join(", ")}. ` +
       (DIMINISHING
