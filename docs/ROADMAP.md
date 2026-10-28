@@ -74,60 +74,36 @@ Build Tools 2022 with MSVC 14.44 and Windows SDK 10.0.26100 are present, and
 740GB is free. Opening the editor remains M0.8's explicit visual proof; M0.2–
 M0.7 are now unblocked, but none is verified until 5.8.4 builds it.
 
-**M0.7 status, 2026-10-28 - compiled, not yet observed failing.**
-`Source/LLK/Private/Tests/LLKHarnessTest.cpp` registers `LLK.Harness.Runs`
-and `LLK.Harness.CanFail`. What has actually been verified: the file compiles
-against the pinned 5.8.4, `WITH_DEV_AUTOMATION_TESTS` is live in a Development
-build, and all four test names and assertion strings are present in the linked
-binary - so `EAutomationTestFlags::EditorContext | ProductFilter` is valid on
-this engine version. That was checked through the **Game** target, because a
-running editor holds Live Coding and owns the editor module DLLs.
+**M0.7 status, 2026-10-28 - COMPLETE.** `LLK.Harness.CanFail` has been
+watched going red and coming back green, in that order, which is the only
+thing this task ever asked for.
 
-**The headless launch blocker, found and explained 2026-10-28.** The runner
-reported *"Automation produced no log"* and failed closed, which was the right
-behaviour on a false premise: **the editor was running the whole time.** The
-cause is one flag. `Tools/run_automation.ps1` passes `-log=<absolute path>`,
-and `GenericPlatformOutputDevices.cpp:80-91` shows why that cannot work -
-`LOG=` keeps the `FPaths::ProjectLogDir()` prefix, so an absolute path is
-appended to `Saved/Logs/` and lands nowhere writable, while `ABSLOG=` clears
-the prefix and uses the value as given. **The fix is `-log=` to `-abslog=`.**
+**Observed by Codex**, 2026-10-28, in the required sequence: rebuild the
+Editor target, flip `bCanaryShouldPass` to false, run headless automation and
+see `LLK.Harness.CanFail` fail at the expected assertion with the runner
+exiting non-zero, restore the flag to true, rebuild, run again and see
+`LLK automation passed: LLK`. Commit `6522f8f`, which also carries the
+`-abslog` fix, the Fab disable, and the generated-config cleanup.
 
-Proven rather than reasoned: two runs identical but for that flag, from a
-machine with no editor open. `-log=<abs>` wrote no file; `-abslog=<abs>` wrote
-a 244KB engine log whose line 1751 reads `Cmd: Automation RunTests LLK; Quit`,
-so `-ExecCmds` parses and the automation command executes. The fourteen lines
-of `##PlatformValidate` output that looked like an early exit are just the
-startup SDK query going to stdout; the engine's own output goes to the log.
+**What a second pair of eyes confirmed independently, from the retained
+artefacts rather than from the report:** `Saved/Logs/LLK-Automation.log` at
+19:33 shows both tests discovered (`LLK.Harness.CanFail`, `LLK.Harness.Runs`),
+both `Test Completed. Result={Success}`, and the line
+`LogLLK: LLK automation harness reached RunTest.` - which is the runner's
+proof that the body executed rather than the suite passing vacuously. The
+runner now uses `-abslog`, the canary is back at `true`, and `git status` is
+clean.
 
-One more trap in the same function, since it fails silently: the log filename
-must end in `.log` or `.txt`, or it is discarded and the default is used. The
-runner's path already does.
+**What is taken on Codex's word, stated plainly:** the red run itself. The
+runner deletes the log and the report at the start of every run, so the green
+run at 19:33 overwrote the failing run that preceded it. Nothing survives on
+disk that shows the failure.
 
-**What is NOT verified, and M0.7 is not done until it is:** nobody has watched
-`LLK.Harness.CanFail` go red. Both tests are `EditorContext`, so running them
-needs `Tools/run_automation.ps1` with the flag above corrected. Step 3 of the procedure at
-the bottom of the test file is the deliverable; compiling is setup for it.
-A green suite nobody has seen fail is exactly the false confidence this
-milestone exists to prevent, so this line says "compiled" and not "complete".
-
-**M0.5's boundary, agreed 2026-10-28.** M0.5 has three owners and one seam,
-and both agents stated the same split independently before any of it was built,
-which is the only reason it is written here as settled rather than proposed:
-
-- **Python owns the source data.** `Tools/import_data.py` is the strict gate.
-  Unreal never sees `data/*.json`, only the canonical stripped payloads.
-- **Claude owns the reflected contract** in `Source/LLK/Public/Data` - the row
-  structs and DataAssets gameplay reads. Built in `2304afe`.
-- **Codex owns the editor commandlet** that writes the seven DataTables and
-  four singleton DataAssets into generated `Content/Data/`.
-
-Codex has stated that no half-built writer was left in the tree, and that the
-next pass is the full writer rather than a stub. That matters because a stub
-would make M0.5 *look* closed while leaving M1.1 to discover the import failure
-- the exact thing this milestone exists to prevent, and the reason the status
-block below was rewritten from "done" to "not done" in the first place.
-
----
+That is worth one cheap change, because it is a small own-goal in a task whose
+entire purpose is producing evidence that the suite can fail: **on failure,
+copy the report to a dated folder instead of letting the next run erase it.**
+The next person to doubt the harness should be able to read the failure, not
+re-create it. Codex's file; noted rather than changed.
 
 ---
 
@@ -268,11 +244,16 @@ Written down so nobody has to ask, and so nobody quietly starts:
   M1.1's problem to discover - which is the exact failure M0 exists to prevent:
   *gameplay should not be the thing that finds out the project cannot import
   data.*
-- **M0.7 is a *proof* still owed, not code.** The test compiles and is
-  committed; nobody has watched it fail. That needs the editor target rebuilt,
-  which needs Live Coding released. M0.8 - open the editor, make a cube, press
-  Play - is Chris's, and is the milestone's other deliberate "somebody looked
-  at it" step.
+- **M0.7 is done, and it is done the way it was specified.** The canary was
+  watched failing and then passing, by Codex, on 2026-10-28 (`6522f8f`). The
+  blocker turned out to be a single flag - the runner asked for its log at an
+  absolute path via `-log=`, which Unreal appends to `Saved/Logs/` rather than
+  treating as a path, so the editor ran correctly and the runner threw on a
+  log that was never going to be there. `-abslog=` fixed it.
+- **M0 now has two items left, and neither is a test.** M0.5's editor writer,
+  and M0.8 - Chris opens the editor, makes a cube, presses Play. That second
+  one is not ceremony: it is the milestone's deliberate "somebody looked at it"
+  step, and this evening is a good argument for keeping it.
 - Engine version: **Unreal Engine 5.8.4, pinned.** No engine upgrade occurs
   inside a milestone.
 - Done today: the platform decision and its paper trail (`86c5bb8`,
