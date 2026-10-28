@@ -208,6 +208,38 @@ hand, a carrier and a radio operator need no light of their own. That:
 
 The field keeper carries the objective, not a flame.
 
+### The cheap version is hiding in his own list — *proposed*
+
+Chris asked whether there was an easier option. There was the one above —
+keepers never deploy — but his four examples contain something better: **two of
+the four do not need to be in the building at all.**
+
+A **navigator** who identifies one safer route, and a **radio keeper** who
+warns about an approaching threat, both work perfectly as a **voice from
+Lanternhold.** They were deeper in than you, they are home now, and they are on
+the radio. No body, no pathfinding, no follow logic, no AI — the navigator
+marks the map before you leave, the radio keeper speaks during the run, and the
+radio keeper's cost stays exactly as he designed it, because a transmission
+into a building full of machines listening for activity is a signal whether or
+not anyone is holding the handset.
+
+That gives a build order where the *feel* arrives long before the cost:
+
+| | Keeper | What it actually takes |
+| --- | --- | --- |
+| 1 | Navigator, radio — **from the hall** | Dialogue, a map marker, a timed warning. No AI of any kind |
+| 2 | Maintenance — **present but near-stationary** | Walks a short authored path to one door or one pump and works it. A scripted actor, not a companion |
+| 3 | Field keeper — **a real follower** | Navigation, carrying, being protected, reacting to the dark. The expensive one, and the only one that is |
+
+Step one is nearly free and delivers the thing his staging is actually for: the
+night the hall stops feeling empty and starts feeling like there are people in
+it worth going back for. A voice that knows your name and tells you what it saw
+on the fourth floor does that at least as well as a body following you around,
+and possibly better, because it cannot get stuck on a shelf.
+
+Step three is where the real money is, and it can wait for evidence that the
+roster is something players want more of.
+
 ### Staging, his
 
 > *"For the first slice, actual friend co-op is immediate. The first rescued
