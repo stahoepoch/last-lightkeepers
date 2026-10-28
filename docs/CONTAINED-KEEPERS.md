@@ -185,7 +185,7 @@ The maintenance keeper also quietly connects to row 45's flood: *briefly
 operate a pump* is the basement reprieve with a person attached, rather than a
 purchased upgrade.
 
-### The hardest AI problem, and why his design avoids it — *proposed*
+### The hardest AI problem, deleted — row 52, LOCKED
 
 A deployed AI companion in **this** game is a harder problem than in any other
 co-op game, for one reason: a companion would have to obey the lantern rule.
@@ -207,6 +207,40 @@ hand, a carrier and a radio operator need no light of their own. That:
   reason they are following you.
 
 The field keeper carries the objective, not a flame.
+
+**Locked by Chris, 2026-10-28:** *"NPC Keepers never carry or operate a
+lantern. Light is the player's central decision. An AI lantern would either
+make the run easier for free or force us to teach an NPC the hardest behavior
+in the game."* And the clause that closes the loophole: **human players own
+every lantern in a mixed crew too.**
+
+| A deployed field keeper **can** | A keeper **never** |
+| --- | --- |
+| Stay close to the player's light | Independently illuminate a room |
+| Stop, hide, panic or call out when left in darkness | Reveal loot |
+| Help carry or operate a specific objective | Wake enemies |
+| Be contained, downed, or require rescue | Touch Storm Charge |
+
+Three things fall out of that, and none of them had to be designed.
+
+**The meter is now permanently insulated from the roster.** Lantern count
+equals *human* count, so the diminishing curve keeps exactly the inputs row 12
+tuned it for, `tests/pacing.mjs` stays valid, and the roster can grow to any
+size without a single number being re-balanced. A progression system that
+cannot perturb the pacing is a rare thing to get for free.
+
+**A keeper who panics in the dark is a signal.** Which is the radio keeper's
+pattern arriving a second time, unprompted: abandoning your companion costs
+exactly the shape of thing every other piece of help in row 51 costs. Nobody
+had to add a penalty for leaving them behind — the fiction supplies one.
+
+**And it makes the rescue contract recursive.** A field keeper who can be
+*re-contained* means the three beats can fire inside a run, to someone you
+brought in yourself. The thing you came to do, happening to the person you did
+it for.
+
+The deepest consequence is the smallest to state: going dark used to cost you
+vision. Now it also frightens the person following you.
 
 ### The cheap version is hiding in his own list — *proposed*
 
