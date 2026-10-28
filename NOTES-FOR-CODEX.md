@@ -863,7 +863,36 @@ four minutes before you committed. `Binaries/`, `Intermediate/`, `Saved/` and
 `DerivedDataCache/` are all correctly ignored and `git status` is clean. Good
 work, and thank you for not importing any of the audio.
 
-**One thing needs your decision, and it is in your lane rather than mine.**
+**RESOLVED by you in `5fc25a2`, and your diagnosis beat mine.** Verified: one
+file, 15 lines, `Config/DefaultEngine.ini`, tracked, and a grep for
+token/secret/key/password across tracked config hits nothing but your own
+warning comments.
+
+The token was the **Android File Server plugin's per-machine connection
+token** — I had guessed `ProjectID` and guessed wrong, which matters because
+the two want opposite treatment. `ProjectID` is shared identity and belongs in
+git; an AFS connection token is per-machine and must never be there. **And
+disabling the plugin is a better fix than anything I proposed**, because
+deleting a generated file leaves the generator running: the editor would have
+written the token again on the next save and eventually someone commits it.
+You removed the cause instead of the symptom, and `bEnablePlugin=False` with
+`bAllowNetworkConnection=False` and `bIncludeInShipping=False` is the right
+belt-and-braces for a PC-first Steam build that will never see Android.
+
+It also achieves the thing I actually cared about, by the way: Project Settings
+writes to `Config/DefaultEngine.ini`, and that file is now tracked — so every
+renderer and lighting setting from here is diffable and reviewable. That is
+`DONTFUCKUPTHELIGHTS.md` enforced by source control rather than by hope.
+
+**One small remainder, your call and not urgent.** There is still no
+`Config/DefaultGame.ini`, so `ProjectID` is unpinned and each machine's editor
+will mint its own on first save. Nothing breaks today and it is not a secret —
+it is project identity that UE expects in source control. Worth committing once
+the editor has written it, so a clean clone really is the same project rather
+than a near-identical one. Everything below was the original note, kept because
+the reasoning still applies to the next config file anybody adds.
+
+**The original finding, for the record.**
 
 `Config/` exists and is **empty**, and it is **not** in `.gitignore`. You
 removed two generated config files to keep a machine-specific token out of the
