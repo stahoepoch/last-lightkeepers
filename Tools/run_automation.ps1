@@ -18,6 +18,31 @@ if (-not (Test-Path -LiteralPath $editor)) {
 
 $report = Join-Path (Split-Path $projectPath) "Saved\Automation\Report"
 $log = Join-Path (Split-Path $projectPath) "Saved\Logs\LLK-Automation.log"
+$historyRoot = Join-Path (Split-Path $projectPath) "Saved\Automation\History"
+
+function Save-FailureEvidence {
+    param([string[]]$Reasons)
+
+    $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
+    $destination = Join-Path $historyRoot "failed-$stamp"
+    New-Item -ItemType Directory -Force -Path $destination | Out-Null
+    if (Test-Path -LiteralPath $log) { Copy-Item -LiteralPath $log -Destination (Join-Path $destination "LLK-Automation.log") }
+    if (Test-Path -LiteralPath $report) { Copy-Item -LiteralPath $report -Destination (Join-Path $destination "Report") -Recurse }
+    $Reasons | Set-Content -LiteralPath (Join-Path $destination "failure.txt") -Encoding utf8
+    return $destination
+}
+
+function Clear-GeneratedAndroidFileServerToken {
+    $engineConfig = Join-Path (Split-Path $projectPath) "Config\DefaultEngine.ini"
+    if (-not (Test-Path -LiteralPath $engineConfig)) { return }
+    $contents = Get-Content -LiteralPath $engineConfig -Raw
+    $clean = $contents -replace '(?m)^SecurityToken=.*\r?\n?', ''
+    if ($clean -ne $contents) {
+        Set-Content -LiteralPath $engineConfig -Value $clean.TrimEnd() -Encoding utf8
+        Write-Host "Removed a generated Android File Server token from tracked project config."
+    }
+}
+
 Remove-Item -LiteralPath $report -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -LiteralPath $log -Force -ErrorAction SilentlyContinue
 
@@ -27,9 +52,11 @@ Remove-Item -LiteralPath $log -Force -ErrorAction SilentlyContinue
 # not reliably express individual automation failures on every UE minor.
 & $editor "-project=$projectPath" "-ExecCmds=Automation RunTests $TestFilter; Quit" "-TestExit=Automation Test Queue Empty" "-ReportExportPath=$report" "-abslog=$log" -unattended -nopause -nosplash -nullrhi -nosound
 $editorExit = $LASTEXITCODE
+Clear-GeneratedAndroidFileServerToken
 
 if (-not (Test-Path -LiteralPath $log)) {
-    throw "Automation produced no log at '$log'. The editor exited with $editorExit."
+    $evidence = Save-FailureEvidence @("Automation produced no log at '$log'.", "UnrealEditor-Cmd exited with code $editorExit.")
+    throw "Automation produced no log at '$log'. The editor exited with $editorExit. Failure evidence: '$evidence'."
 }
 
 $logText = Get-Content -LiteralPath $log -Raw
@@ -48,7 +75,8 @@ if ($editorExit -ne 0) {
 }
 
 if ($failureLines.Count -gt 0) {
-    Write-Error ("LLK automation failed:`n" + ($failureLines -join "`n"))
+    $evidence = Save-FailureEvidence $failureLines
+    Write-Error ("LLK automation failed (evidence: $evidence):`n" + ($failureLines -join "`n"))
     exit 1
 }
 
