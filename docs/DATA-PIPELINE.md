@@ -483,36 +483,21 @@ from the headers and checking them against the emitted payload: **20 declared,
 20 present with the prefix, and no un-prefixed bool key survives.** The
 translation is complete today.
 
-**What guards it is thinner than what it guards.** The new test asserts two
-values - `bKillable` on the Warden and `bDropsCarriedCrate` on
-`lantern.knockdown`. Removing either from `BOOL_PROPERTY_KEYS` goes red.
-Removing any of the **other eighteen** does not:
+**The guard was two samples, and is now a correspondence check** - `2886db4`.
+It derives every `bool` and `TOptional<bool>` property from the headers and
+requires each authored `b...` name to appear in the generated payload, with no
+un-prefixed equivalent leaking in. Confirmed by breaking it twice:
 
-| Break | Gate |
-| --- | --- |
-| Drop `killable` from the set | red |
-| Drop `soloOnly` from the set | **green** - and the payload then carries `soloOnly`, not `bSoloOnly`, so `FLLKAnchorReviveRules::bSoloOnly` is silently back on its default |
+| Break | Before `2886db4` | After |
+| --- | --- | --- |
+| Drop `soloOnly` from `BOOL_PROPERTY_KEYS` | **green**, and `bSoloOnly` silently kept its default | red - *"missing reflected boolean property key(s): bSoloOnly"* |
+| Add a new `bool bProbeOnly` to a header | **green** - nothing knew to look for it | red - *"...: bProbeOnly"* |
 
-Checked by doing it, including re-running the probe after the first attempt
-failed to modify the set at all - a passing gate proves nothing if the break
-did not land.
-
-`BOOL_PROPERTY_KEYS` is also now a **fourth** copy of contract knowledge,
-after the data, the headers and the manifest. It is hand-maintained, so a bool
-added to the contract tomorrow is unguarded by construction: the header
-compiles, the data validates, the payload omits the prefix, and the asset
-quietly takes its default.
-
-The fix is the correspondence check itself rather than more samples, and it
-needs no engine, so it belongs in the fast gate beside the eleven-name check:
-
-```python
-props = set(re.findall(r'(?:TOptional<bool>|bool)\s+(b[A-Z]\w*)\s*(?:=|;)', headers))
-# every one must appear as a key somewhere in Intermediate/LLKDataImport/unreal/*.json
-```
-
-That is what produced the 20/20 above. Codex's file, so offered rather than
-applied.
+The second is the one worth having. `BOOL_PROPERTY_KEYS` is still a
+hand-maintained list, but it is no longer a list anybody has to *remember* to
+update: adding a reflected bool to the contract now fails the fast gate by
+name until the mapping exists. That is the difference between a convention and
+a guard, and it is the same move rule 2 made for the data itself.
 
 ## Before the writer is built: what "run it twice" can and cannot prove
 
