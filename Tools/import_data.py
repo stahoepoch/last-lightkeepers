@@ -20,6 +20,27 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_DATA = ROOT / "data"
 DEFAULT_OUTPUT = ROOT / "Intermediate" / "LLKDataImport"
 
+# The editor writer consumes these payloads, never data/*.json directly.  Keep
+# this manifest text-only and deterministic: it is the seam between the
+# portable validator and Source/LLKEditor, not a second source of balance.
+ASSET_MANIFEST = {
+    "DataTables": [
+        {"asset": "DT_Enemies", "rowStruct": "FLLKEnemyDef", "source": "enemies.json", "field": None, "rows": "object"},
+        {"asset": "DT_LootTiers", "rowStruct": "FLLKLootTierDef", "source": "loot.json", "field": "tiers", "rows": "object"},
+        {"asset": "DT_LedgerRooms", "rowStruct": "FLLKRoomDef", "source": "ledger.json", "field": "rooms", "rows": "id-array"},
+        {"asset": "DT_LedgerRungs", "rowStruct": "FLLKRungDef", "source": "ledger.json", "field": "rungs", "rows": "id-array"},
+        {"asset": "DT_Relics", "rowStruct": "FLLKRelicDef", "source": "relics.json", "field": "relics", "rows": "id-array"},
+        {"asset": "DT_WorkshopUpgrades", "rowStruct": "FLLKUpgradeDef", "source": "workshop.json", "field": "upgrades", "rows": "id-array"},
+        {"asset": "DT_TownLandmarks", "rowStruct": "FLLKLandmarkDef", "source": "town.json", "field": "landmarks", "rows": "id-array"},
+    ],
+    "DataAssets": [
+        {"asset": "DA_StormCharge", "class": "ULLKStormChargeData", "source": "storm-charge.json", "exclude": []},
+        {"asset": "DA_Lantern", "class": "ULLKLanternData", "source": "lantern.json", "exclude": []},
+        {"asset": "DA_LootRules", "class": "ULLKLootRulesData", "source": "loot.json", "exclude": ["tiers"]},
+        {"asset": "DA_WorkshopRules", "class": "ULLKWorkshopRulesData", "source": "workshop.json", "exclude": ["upgrades"]},
+    ],
+}
+
 class ContractError(Exception): pass
 
 def error(path: str, message: str) -> None: raise ContractError(f"{path}: {message}")
@@ -202,6 +223,7 @@ def emit(files: dict[str, Any], output: Path) -> None:
     if staging.exists(): shutil.rmtree(staging)
     staging.mkdir(parents=True)
     for filename, value in files.items(): (staging / filename).write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    (staging / "asset-manifest.json").write_text(json.dumps(ASSET_MANIFEST, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     if output.exists(): shutil.rmtree(output)
     staging.replace(output)
 
