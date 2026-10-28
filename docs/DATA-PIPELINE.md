@@ -414,6 +414,63 @@ file - but it is a few lines and it is the same drift argument that produced
 rule 2. **Done the same evening in `318084c`** - see the section above for what
 it does and does not catch.
 
+## The `b` prefix will silently drop 13 booleans - checked in 5.8 source
+
+Both APIs the writer needs are real on 5.8.4, and one risk they carry is
+cleared: **`FOptionalProperty` is handled in both directions** by
+`FJsonObjectConverter` (`JsonObjectConverter.cpp:1200-1203` on import,
+`354-362` on export), so the 24 `TOptional` fields on `FLLKEnemyDef` will
+round-trip. The `TOptional` decision holds end to end, not just at reflection.
+
+**The naming does not.** Unreal matches JSON keys to properties by the
+property's *authored name*, and for a bool that name keeps its `b`:
+
+- `JsonObjectConverter.cpp:1338` - `GetAuthoredNameForField(Property)`
+- `Class.cpp:2558-2562` - `GetAuthoredNameForField` returns `Field->GetName()`
+- the DataTable path is no different: `DataTableUtils.cpp:447-455` builds its
+  candidate list from `Prop->GetName()` and `GetAuthoredName()`, and
+  `Field.cpp:608-616` routes `GetAuthoredName()` back to the same `GetName()`
+
+So Unreal looks for `bKillable`. Our data says `killable`. Case does not
+matter - the lookup is a case-insensitive `FString` map - but the prefix does.
+**Twenty fields are affected**: 13 plain `bool b...` across the four DataAssets
+and 7 `TOptional<bool>` on `FLLKEnemyDef`.
+
+### The two halves fail differently, and one of them fails silently
+
+| Path | On a missing key | Consequence |
+| --- | --- | --- |
+| DataTable (`CreateTableFromJSONString`) | `DataTableJSON.cpp:913` adds *"Row 'X' is missing an entry for 'bKillable'."* to the returned `TArray<FString>` | **Loud**, if the writer treats a non-empty return as failure. It should |
+| DataAsset (`JsonObjectToUStruct`) | `JsonObjectConverter.cpp:1340-1354`: without `bStrictMode` it logs nothing and `continue`s | **Silent.** The field keeps its C++ default |
+
+**The silent half is the dangerous one, because the defaults are right.**
+Those 13 defaults were chosen deliberately to match the data -
+`bDropsCarriedCrate = false` for row 59, `bRelicsRequireLanternLight = true`
+for row 53. An asset where every boolean silently fell back to its default
+would be **indistinguishable from a correct import** today. It would stay
+invisible until the first time somebody changes a boolean in `data/*.json` and
+the game ignores it - which is during balancing, months from now, and would
+read as a gameplay bug rather than an import bug.
+
+### What to do, and what not to
+
+**Not `bStrictMode = true`.** It turns the silence into an error, but it also
+demands that *every* property be present, which is wrong for a contract built
+on `TOptional` - the Warden legitimately has no `health`. That trades a silent
+wrong answer for a loud wrong failure.
+
+**Emit the `b` in the canonical payload.** The payload is the engine-facing
+form and already exists to carry exactly this kind of translation, the same
+way the manifest carries `id` promotion and derived fields. `data/*.json`
+stays human-facing camelCase; the seam does the work; nothing in C++ bends to
+accommodate JSON.
+
+**Then guard it in the fast gate**, because this is a name correspondence and
+the fast gate is already where name correspondence is checked: every
+`bool` / `TOptional<bool>` property in `Source/LLK/Public/Data/*.h` must have
+a matching key in the emitted payload. That runs on every push with no engine,
+and it is the same shape as the existing eleven-name check.
+
 ## Before the writer is built: what "run it twice" can and cannot prove
 
 M0.5's acceptance says the writer must be **idempotent**, and the plan is to
