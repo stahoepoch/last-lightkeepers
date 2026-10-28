@@ -62,6 +62,10 @@ Saved/Logs/
 
 # NOTE: Content/ is NOT ignored. It is versioned in Git LFS - see
 # .gitattributes. The one part of it that is generated is Content/Data/,
-# rebuilt from data/*.json by Tools/import_data.py (roadmap M0.5). Whether
-# generated DataTables are committed or built on demand is Codex's call;
-# docs/DATA-PIPELINE.md states the tradeoff.
+# rebuilt on demand from data/*.json by Tools/import_data.py and the Unreal
+# editor writer. Generated assets are never hand-edited or committed: keeping
+# them out of LFS avoids binary churn when balance values change.
+/Content/Data/
+
+# Local Codex attachment cache. It is tooling scratch, never project source.
+/.codex-remote-attachments/
