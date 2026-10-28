@@ -40,6 +40,26 @@ def main() -> int:
     if result.returncode:
         raise AssertionError(result.stderr)
     print("PASS valid data")
+    manifest_dir = Path(tempfile.mkdtemp()) / "payloads"
+    emitted = subprocess.run([sys.executable, str(IMPORTER), "--data-dir", str(SOURCE), "--emit", "--output", str(manifest_dir)], text=True, capture_output=True, check=False)
+    if emitted.returncode:
+        raise AssertionError(emitted.stderr)
+    manifest = json.loads((manifest_dir / "asset-manifest.json").read_text(encoding="utf-8"))
+    headers = "\n".join(path.read_text(encoding="utf-8") for path in (ROOT / "Source" / "LLK" / "Public" / "Data").glob("*.h"))
+    expected_tables = {"DT_Enemies", "DT_LootTiers", "DT_LedgerRooms", "DT_LedgerRungs", "DT_Relics", "DT_WorkshopUpgrades", "DT_TownLandmarks"}
+    expected_assets = {"DA_StormCharge", "DA_Lantern", "DA_LootRules", "DA_WorkshopRules"}
+    if {item["asset"] for item in manifest["DataTables"]} != expected_tables or {item["asset"] for item in manifest["DataAssets"]} != expected_assets:
+        raise AssertionError("asset manifest no longer names the eleven generated outputs")
+    for item in manifest["DataTables"]:
+        if f"struct {item['rowStruct']}" not in headers:
+            raise AssertionError(f"manifest row struct is not declared: {item['rowStruct']}")
+    for item in manifest["DataAssets"]:
+        if f"class LLK_API {item['class']}" not in headers:
+            raise AssertionError(f"manifest DataAsset class is not declared: {item['class']}")
+    loot_asset = next(item for item in manifest["DataAssets"] if item["asset"] == "DA_LootRules")
+    if loot_asset.get("keyedObjectFields", {}).get("extraction") != "key-to-id-array":
+        raise AssertionError("loot extraction must promote object keys into FLLKExtractionPoint.Id")
+    print("PASS manifest matches the reflected Unreal contract")
     must_fail("unknown gameplay keys are errors", "lantern.json", lambda value: value["movement"].__setitem__("sprintSped", 99), "unrecognised key(s): sprintSped")
     directory = copy_data()
     directory.joinpath("keepers.json").write_text("{}", encoding="utf-8")

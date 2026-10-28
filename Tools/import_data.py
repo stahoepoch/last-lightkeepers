@@ -34,9 +34,9 @@ ASSET_MANIFEST = {
         {"asset": "DT_TownLandmarks", "rowStruct": "FLLKLandmarkDef", "source": "town.json", "field": "landmarks", "rows": "id-array"},
     ],
     "DataAssets": [
-        {"asset": "DA_StormCharge", "class": "ULLKStormChargeData", "source": "storm-charge.json", "exclude": []},
+        {"asset": "DA_StormCharge", "class": "ULLKStormChargeData", "source": "storm-charge.json", "exclude": [], "derivedFields": {"thresholds": ["darkSeconds", "regularUseSeconds", "oneLanternSeconds"]}},
         {"asset": "DA_Lantern", "class": "ULLKLanternData", "source": "lantern.json", "exclude": []},
-        {"asset": "DA_LootRules", "class": "ULLKLootRulesData", "source": "loot.json", "exclude": ["tiers"]},
+        {"asset": "DA_LootRules", "class": "ULLKLootRulesData", "source": "loot.json", "exclude": ["tiers"], "keyedObjectFields": {"extraction": "key-to-id-array"}},
         {"asset": "DA_WorkshopRules", "class": "ULLKWorkshopRulesData", "source": "workshop.json", "exclude": ["upgrades"]},
     ],
 }
