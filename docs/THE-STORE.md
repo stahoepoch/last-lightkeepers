@@ -113,6 +113,67 @@ and you are visible from a long way off.
 **Why you come:** the story, and the auditorium is the deepest single room in
 the store with one way in.
 
+## The building is the tutorial
+
+**Chris, 2026-10-27: "The department store is the tutorial."** `DECISIONS.md`
+row 43, LOCKED. There is no training level, no tutorial mode and no narrator.
+This building teaches the whole game by being played, and that is now the
+first thing its layout is judged on.
+
+The headline is his. The curriculum below is **proposed** — it is the order the
+floors above already imply, written down so the grey-box can be built against
+it instead of discovering it later.
+
+### Why the ruin gradient is already a syllabus
+
+The floors were designed as an art direction, but they happen to run from
+*legible* to *hostile* in exactly the order a player needs to meet those
+conditions. Nothing below invents a floor. It assigns each one a lesson and
+says what the exam is.
+
+| Order | Floor | The one new idea | How the floor examines it |
+| --- | --- | --- | --- |
+| 1 | **Ground** | There are things here and you can carry them | Storm light through the windows means baseline loot is visible with the lantern off. The player loots before they learn light costs anything |
+| 2 | **Ground**, deeper in | **Light reveals value and attracts danger** | The first relic sits where the sightlines are longest. You see the thing you woke, and you have room to go dark and live |
+| 3 | **Second** | Not everything that is wrong looks wrong | The most intact floor. It teaches no mechanic. It teaches distrust, and it is where the Window Walkers stand in the display windows, exactly where they worked |
+| 4 | **Third** | The building can take away what you learned to rely on | Swollen floors, staged rooms, collapsed sightlines. Sound stops arriving from a direction you can use |
+| 5 | **Basement** | Sometimes the choice is made for you | No ambient light at all. The keeper who learned to run dark finds the floor where running dark is not available — and the best Components are down here |
+| 6 | **Fourth** | Light is not always yours to control | Roof gone, lit by the storm. Your lantern adds little and you are visible anyway. The solar farm's whole inversion, three zones early, in one room |
+| 7 | **Basement**, again | Leaving is the loudest thing you do | Extraction is at the loading dock, so the last lesson is taught by the floor that taught lesson five |
+
+### The three rules that make it teach
+
+**One new idea per floor, and the floor is the exam.** If a floor introduces
+two things, the player learns neither and blames the game. If a floor
+introduces nothing, it is set dressing and belongs after M6.
+
+**A trade-off has to be felt both ways, somewhere survivable.** A prompt can
+teach a control; nothing but experience teaches *light reveals value and
+attracts danger*. So the player has to turn the lantern on, get the relic, be
+noticed, and get away — all on the ground floor, where that sequence is
+survivable. The ground floor is the only place in the building where the wrong
+answer is affordable, which is the entire reason it comes first.
+
+**It has to teach four people talking at once.** `DECISIONS.md` row 36 is 1–4
+private co-op, which defeats text, quiet moments and anything resembling a
+cutscene. Every lesson above is carried by arrangement, light and sound,
+because those are the only channels that survive a voice call. The corollary,
+and it is uncomfortable: **the building must also teach the solo player**, who
+has no veteran in the lobby to explain it. A lesson that only lands because
+someone's friend already knew it has not been taught.
+
+### What this costs the roadmap
+
+`ROADMAP.md` M1.5 asks for a grey-box floor you "can get lost in." Row 43
+raises that: the grey-box is now judged on whether it **teaches**, not on
+whether it is navigable, and a floor that cannot be walked by someone who has
+never seen it has failed its only job.
+
+It also puts a clock on the whole thing. A tutorial that is also the first real
+level has to land inside Steam's two-hour refund window — see **O7**. The
+lessons above are deliberately front-loaded for that reason: ideas one and two,
+which are the game, are both on the ground floor.
+
 ## Massively stocked without eight thousand unique models
 
 The honest version of "feel like a real department store and not just Roblox"
@@ -182,8 +243,10 @@ Chris's call, and it is one field on the crate spawn plus a cost line per room.
 
 ## For the map lane
 
-Geometry, tags and `src/map/` are Codex's by `COORDINATION.md`. Everything on
-this page is a spec, not an instruction, and the note is in `COORDINATION.md`.
+Geometry is **Chris's alone** now — `docs/LANES.md`, and `DECISIONS.md` row 41:
+no agent opens a `.uasset`, because binary does not merge. The `COORDINATION.md`
+tag-and-`src/map/` arrangement this section used to name governs only the frozen
+Roblox archive (row 39). Everything on this page is a spec, not an instruction.
 The two pieces that belong to systems rather than map: the crate's department
 stamp, and the per-room cost at home (`HubService`, and the rooms that open —
 `docs/VERTICAL-SLICE.md` element 5).

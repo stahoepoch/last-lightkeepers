@@ -7,6 +7,20 @@ the Lanternhold lobby actually does anything to tell you."*
 He is right. Every word of the setting currently lives in `docs/`, which is
 nowhere a player will ever be. The hub has geometry and tags and says nothing.
 
+**Ratified and sharpened, 2026-10-27.** Chris: *"The department store is the
+tutorial."* `DECISIONS.md` row 43, LOCKED. This page argued that the setting
+has to arrive by arrangement rather than by text; row 43 makes that binding and
+names the instrument. There is no tutorial level, because the first real level
+is one. The floor-by-floor curriculum is in `docs/THE-STORE.md`; this page
+stays the doctrine behind it.
+
+One thing the platform change costs this page: **the third channel got
+quieter.** "Other players explaining it to each other" assumed Roblox's
+constant supply of strangers. Row 36 is 1-4 private co-op on Steam, so a lobby
+is three friends who bought the game the same day and a solo player who has
+nobody. Channel three is now a bonus, not a mechanism, and anything that was
+leaning on it has to be carried by channels one and two.
+
 ## The rule
 
 **Nobody reads a codex.** Not on Roblox, not anywhere. A wall of text in a lobby
