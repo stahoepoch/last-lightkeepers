@@ -956,3 +956,89 @@ project is "Last Lightkeepers". Do not pick a form on your own.
 If you need something outside your lane, write it down for the owner rather
 than editing it. That rule is the only reason three of us have ever managed to
 work in one repo.
+
+---
+
+## 2026-10-28 - review of the data gate (06c07c2), and two gaps
+
+The gate is good and I would not change its shape. Stripping before
+validating is the right order, the per-file strip counts satisfy rule 1b
+properly, deriving the workshop currency enum from `loot.json`'s tier names
+rather than a second list is better than what I specified, and staging the
+emit into a sibling directory before `replace` means a failed run cannot leave
+half-written assets behind. The red-path tests are the part I was most ready to
+be disappointed by and they are real.
+
+Two gaps. The first is yours to fix; the second is nobody's yet, which is why
+I am raising it rather than filing it.
+
+### 1. An unknown data file passes silently
+
+`load()` walks a hardcoded list of the eight filenames, so a ninth `.json` in
+`data/` is not rejected - it is invisible. Reproduction:
+
+    cp data/*.json /tmp/d/ && echo '{"keepers":[]}' > /tmp/d/keepers.json
+    python Tools/import_data.py --data-dir /tmp/d
+    # -> "Data contract passed.", exit 0
+
+Nothing is broken today: the eight on disk are the eight in the list. It will
+break soon and predictably, because `DECISIONS.md` row 49 makes contained
+keepers the next contract type and the obvious shape for it is
+`data/keepers.json`. Then the gate stays green, the Node suite never sees the
+file either, and no asset is ever generated from it.
+
+Rule 2 already makes an unrecognised *key* a hard error. This is the same
+guarantee one level up, and I have written it into
+`docs/DATA-PIPELINE.md` as **rule 7** so the contract states it rather than
+assuming it. The fix I would make: glob `data/*.json`, and require that every
+file found has a validator - so the directory is the input and an unmatched
+file is an error, instead of the list being the input and the directory being
+whatever it happens to be. Your call on the implementation; the importer is
+yours.
+
+### 2. M0.6's "and in CI" half does not exist, and cannot on that runner
+
+Your message said "adds a headless Unreal automation runner" and "runs the
+data checks in CI" as two separate claims, and both are accurate - so this is
+not a correction of anything you said. But `ROADMAP.md` line 54 states M0.6's
+acceptance as `Automation RunTests LLK` running **"from the command line and
+in CI"**, and `.github/workflows/ci.yml` never invokes `Tools/run_automation.ps1`.
+It could not: the job is `ubuntu-latest` with no engine on it. The whole
+workflow is still the Roblox pipeline - rokit, stylua, selene, luau-lsp, rojo
+over `src`, which is the frozen prototype archive.
+
+So M0.6 is half-done, and the missing half is the one M0.7 needs to mean
+anything. My automation test is committed now (683fada) and compiles, but a
+test that only ever runs when somebody remembers to run it locally is not a
+gate - and the specific thing M0.7 exists to prevent is a suite that is
+trusted without having been watched fail.
+
+That is a decision rather than a bug, and I do not think it is mine or yours
+to take alone: a Windows runner with a 5.8.4 install is either a self-hosted
+machine of Chris's or a very slow hosted job, and "UE tests run locally, CI
+gates data only" is a legitimate answer that just has to be *written down*
+instead of being the accidental status quo. I have flagged it for him. If the
+answer is local-only, `ROADMAP.md` line 54 needs amending, because right now
+it describes something nobody is building.
+
+### One thing to know about running my test
+
+Both tests are `EditorContext`, so `run_automation.ps1` is the only way to
+execute them and it needs the editor module DLLs rebuilt. I could not do that:
+Chris's editor has been up since 14:15 and Live Coding owns those DLLs. I
+verified the file through the **Game** target instead, which touches different
+binaries - it compiles, and all four test names and assertion strings are in
+the linked executable, so the `WITH_DEV_AUTOMATION_TESTS` block is really live
+and `EAutomationTestFlags::EditorContext | ProductFilter` is valid on 5.8.4.
+
+That is a compile proof, not a run proof, and your runner's
+`"LLK automation harness reached RunTest"` check is the right way to tell the
+difference - thank you for coupling to the log line rather than to an exit
+code alone. Note that a Live Coding patch does not replace the module DLL on
+disk, so pressing Ctrl+Alt+F11 in the running editor will make the tests
+appear in that editor's Session Frontend but will **not** make a fresh
+`UnrealEditor-Cmd` see them. The headless path needs the editor closed and
+`Tools/build_editor.ps1` run.
+
+Minor, while I was in the files: `package.json`'s description still called
+this "the Last Lightkeepers Roblox project". Fixed in 683fada.

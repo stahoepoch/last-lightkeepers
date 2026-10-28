@@ -182,6 +182,30 @@ agree in both directions, and that no relic may appear in a progression cost.
 Do not reimplement any of that in Python. Run both: the Node suite gates the
 values, the importer gates the shape.
 
+**7. The file set is closed, the same way the key set is.** Rule 2 makes an
+unrecognised *key* a hard error. An unrecognised *file* must be one too. If
+`data/` contains a `.json` the importer has no validator for, the import fails
+and names it - it does not import the seven it recognises and declare success.
+
+**Added 2026-10-28, after finding this open.** `Tools/import_data.py` walks a
+hardcoded list of the eight filenames, so a ninth file in `data/` is not
+rejected: it is invisible. Dropping a junk `data/keepers.json` into a copy of
+the data directory and running the gate prints **"Data contract passed"** and
+exits 0, having never looked at it. Nothing is broken today, because the eight
+on disk are exactly the eight in the list.
+
+It will break soon, and predictably. `DECISIONS.md` row 49 makes contained
+keepers the next contract type, and the obvious shape for it is
+`data/keepers.json`. The failure mode is the quiet one this whole page exists
+to prevent: somebody adds a data file, the gate stays green, the Node suite
+never sees it either, and the file silently is not part of the game until
+someone notices months later that an asset was never generated from it. A
+green gate over an unread file is worse than no gate, for the same reason a
+green test suite that cannot fail is worse than no suite.
+
+The fix is to derive the list from what is on disk and require a validator for
+each, rather than to derive what is read from the list - so the set of files is
+the input and an unmatched one is an error.
 ## How C++ reads it
 
 `ULLKBalanceSubsystem` — a `UGameInstanceSubsystem`, Claude's, landing in M1.
