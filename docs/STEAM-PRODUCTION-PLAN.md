@@ -59,6 +59,44 @@ doors, or collapsed escalators.
 - No five-enemy roster, procedural quest system, or generic inventory framework
   before the core run proves fun.
 
+## The night, the storm, and the machines
+
+The fiction must make mechanics clearer, not add a second clock or a second
+game. The run begins at dusk, when solar-fed service machines are on reserve,
+and ends as the storm charges the district back up.
+
+**Storm Charge is machine charge, with two inputs.** The storm is inevitable;
+the lantern is the crew's voluntary, local contribution. Going dark stops the
+crew adding to the problem but never undoes what the sky has already supplied.
+This is why Storm Charge only rises.
+
+### Production guardrails
+
+| Idea | Production rule |
+| --- | --- |
+| Storm | A forecastable escalation system, not random weather. It always telegraphs before it changes threat level. |
+| Lightning | A visible, audible, and captioned warning; it reveals the room and can wake dormant Window Walkers briefly. Never use an unannounced full-screen flash. Include an intensity/reduced-flash setting that preserves timing and gameplay information. |
+| Flood | The physical twin of Storm Charge, not a separate countdown. In the first slice, use authored, discrete water-state changes tied to charge stages—not networked real-time fluid simulation. |
+| Basement | Pumps can buy time in a basement route during a run; they must not permanently delete darkness, flood damage, or the route's risk. |
+| Lanternhold | The storm reaches the countryside, but Lanternhold has no active machine infrastructure to wake. It is shelter, not immunity from weather. |
+
+### What the machines want
+
+The recommended answer is that they do not hate people and do not need people.
+They are executing degraded maintenance, safety, stocking, and loss-prevention
+instructions in a building that never received a shutdown order. A person
+removing inventory at night is classified as an intrusion and a loss event.
+
+Use **“shoplifter” only as an internal creative shorthand**, never as a joke or
+player-facing explanation. The player should infer the truth from behavior: a
+Sweeper clears a route, a Stocker corrects an aisle, a Glimmer reports a fault,
+and the Warden turns an active departure into a lockdown. They are not villains
+with a grievance, a hidden master, or a lore-boss to defeat.
+
+This remains a discovery, not a tooltip. The Lightkeepers can believe the
+machines hate them; the player earns the more unsettling explanation by seeing
+the building work around them.
+
 ## Technical architecture
 
 | Area | First implementation | Rule |
