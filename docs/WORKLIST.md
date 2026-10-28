@@ -16,10 +16,10 @@
 > warning, the Dome Keeper lift — is about design, not about Roblox. Read it as
 > a specification, mine it for the UE5 build, do not execute it.
 >
-> The next real work is `docs/DECISIONS.md` row 35: lock the engine. Then one
-> PC-quality department-store vertical slice, whose first job is still the
-> question nobody has answered — do testers kill their lanterns, bank, and
-> argue for one more room? See `docs/PLATFORM.md`.
+> The engine is settled — **Unreal Engine 5**, `docs/DECISIONS.md` row 35,
+> LOCKED. The next real work is one PC-quality department-store vertical slice,
+> whose first job is still the question nobody has answered — do testers kill
+> their lanterns, bank, and argue for one more room? See `docs/PLATFORM.md`.
 
 Written 2026-10-21 from `reports/Roblox extraction games and tooling.md`.
 

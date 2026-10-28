@@ -32,13 +32,21 @@ we had decided not to take.
 | 1 | Steam, PC-first. No parallel Roblox version |
 | 33 | The Roblox project is a design reference and prototype archive — not maintained, not shipped |
 | 34 | The first PC build is one department store, vertical slice. Not the whole Galleria |
-| 35 | Engine: Unreal Engine 5 — **PROPOSED**, Chris's to lock |
+| 35 | Engine: **Unreal Engine 5** — LOCKED |
 | 36 | Solo, or private co-op for 1–4 friends. No public matchmaking |
 | 37 | Wider testing uses a Steam Playtest child app, not main-game beta keys |
 
 The full level list is unchanged as the eventual game. Chris, same day: "I plan
 on having all those levels, we discussed and more." Row 34 is the first build,
 not the final scope.
+
+The engine was locked the same day, in his words — "We use unreal." It is the
+floor everything else now stands on: the lighting, audio, animation and art
+decisions all assume it, and reversing it later would discard more work than
+the Roblox freeze did. Nothing in this project should be chosen as
+engine-agnostic insurance from here. The two layers that stay portable —
+`docs/` and `data/` — stay portable because they are design and values, not
+because we are keeping an option open.
 
 ## What survives the move, and what does not
 
@@ -134,8 +142,8 @@ Nobody should guess, and nobody should silently use one form in new work.
 
 ## For whoever picks this up next
 
-1. Row 35 is the live decision. UE5 is proposed, not locked, and it is the most
-   expensive thing in this document to change your mind about later.
+1. The engine is **Unreal Engine 5**, locked. Row 35. Do not re-open it, and
+   do not hedge against it.
 2. Do not advance anything in `src/`. Row 33. It is frozen, not deleted.
 3. `docs/WORKLIST.md` describes the Roblox prototype. Its lanes, owners and tag
    contracts are archive. Do not pick up a slice from it as if it were work.
