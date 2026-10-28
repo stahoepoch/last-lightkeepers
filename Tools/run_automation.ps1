@@ -25,7 +25,7 @@ Remove-Item -LiteralPath $log -Force -ErrorAction SilentlyContinue
 # replace it with a timed wait: a timeout can make an unfinished suite look
 # green. The report is parsed below because editor process exit codes alone do
 # not reliably express individual automation failures on every UE minor.
-& $editor $projectPath "-ExecCmds=Automation RunTests $TestFilter; Quit" "-TestExit=Automation Test Queue Empty" "-ReportExportPath=$report" "-log=$log" -unattended -nopause -nosplash -nullrhi -nosound
+& $editor "-project=$projectPath" "-ExecCmds=Automation RunTests $TestFilter; Quit" "-TestExit=Automation Test Queue Empty" "-ReportExportPath=$report" "-abslog=$log" -unattended -nopause -nosplash -nullrhi -nosound
 $editorExit = $LASTEXITCODE
 
 if (-not (Test-Path -LiteralPath $log)) {

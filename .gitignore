@@ -14,6 +14,11 @@ rojo-serve.err.log
 __pycache__/
 *.pyc
 
+# The editor writes device-default input axes before this project owns any
+# actions. Ignore that generated file until the deliberate Enhanced Input
+# configuration lands in M1.6.
+/Config/DefaultInput.ini
+
 # OS
 Thumbs.db
 desktop.ini
