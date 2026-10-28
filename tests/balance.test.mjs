@@ -282,6 +282,69 @@ console.log("\nEnemies");
   }
 }
 
+console.log("\nThe data contract (DATA-PIPELINE.md)");
+{
+  // Added 2026-10-28 after hand-auditing every top-level key against the
+  // contract. The audit found three keys with no home in the spec, which rule 2
+  // turns into a hard build error rather than a warning - so a stale contract
+  // breaks the build, and that is worth a test rather than a periodic reread.
+  const workshop = load("workshop.json");
+  const tierNames = Object.keys(loot.tiers);
+
+  // workshop.currency parses as an enum of loot tiers, not free text.
+  check(
+    "every workshop currency is a real loot tier",
+    workshop.currency.every((c) => tierNames.includes(c)),
+    `${workshop.currency.filter((c) => !tierNames.includes(c))} not in ${tierNames}`,
+  );
+
+  // FLLKEnemyDef is heterogeneous. The contract's decision: five universal
+  // fields required, family fields TOptional, and the importer validates by
+  // row name. These assert the shape that decision assumes, so the data cannot
+  // drift away from the spec without someone noticing.
+  const UNIVERSAL = ["formerJob", "behaviour", "counterplay", "moveSpeed", "audioTelegraphSeconds"];
+  const FAMILY = {
+    Sweepers: ["aggroRadiusDark", "aggroRadiusLit", "swarmCallRadius", "attractedToDroppedLoot"],
+    Stockers: ["sightConeDegrees", "losesTargetAfterSeconds"],
+    Glimmers: [
+      "scanRange", "scanSeconds", "scanRequiresActiveLantern", "tagSeconds",
+      "tagRevealsPositionToAllRobots", "tagAddsStormCharge", "tagGivesWardenPermanentWaypoint",
+    ],
+    Warden: ["killable", "dropsLoot", "spawnStage", "retargetIntervalSeconds"],
+  };
+  const roster = Object.keys(enemies).filter((k) => !k.startsWith("_"));
+
+  check("the roster is the six of DECISIONS row 13", roster.length === 6, roster.join(", "));
+  for (const name of roster) {
+    check(
+      `${name} carries all five universal fields`,
+      UNIVERSAL.every((f) => enemies[name][f] !== undefined),
+      UNIVERSAL.filter((f) => enemies[name][f] === undefined).join(", "),
+    );
+  }
+  // A family field must appear ONLY on its family, or the "validate by row
+  // name" guarantee that replaces rule 3 stops holding.
+  for (const [owner, fields] of Object.entries(FAMILY)) {
+    for (const f of fields) {
+      const holders = roster.filter((n) => enemies[n][f] !== undefined);
+      check(
+        `${f} belongs to ${owner} alone`,
+        holders.length === 1 && holders[0] === owner,
+        `found on ${holders.join(", ") || "nobody"}`,
+      );
+    }
+  }
+  // The Warden's missing health is a rule, not an omission (row 7). If this
+  // ever fails, either the Warden became killable or someone let the importer
+  // default it - and defaulting it to 0 inverts row 7 rather than breaking it.
+  check("the Warden has no health value at all", enemies.Warden.health === undefined);
+  check("the Warden is explicitly unkillable", enemies.Warden.killable === false);
+  check(
+    "every other enemy does have health",
+    roster.filter((n) => n !== "Warden").every((n) => typeof enemies[n].health === "number"),
+  );
+}
+
 console.log("\nThe underscore contract (DATA-PIPELINE.md rule 1)");
 {
   // Chris, 2026-10-28: "the Unreal importer should explicitly strip or reject

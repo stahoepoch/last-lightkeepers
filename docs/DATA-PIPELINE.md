@@ -63,9 +63,52 @@ better at the call site and that is the whole point of it:
 
 | File | Asset | Holds |
 | --- | --- | --- |
-| `storm-charge.json` | `ULLKStormChargeData` | `baselineRatePerSecond`, the `lantern` block including the **diminishing** curve (row 12), the **`run` block** (`targetSeconds`, `earlyExitSeconds`, `hardCeilingSeconds` — added 2026-10-28, see below), `extractionCall`, `thresholds` (an array of **two** since 2026-10-28), the **`warden` block** (`chargeValue`, `arrivalBandSeconds`, `lightSensitivity` — row 54 gave the Warden its own dampened arrival meter, so it is **not** a threshold and must not be imported as one), `anchorRevive` |
+| `storm-charge.json` | `ULLKStormChargeData` | `baselineRatePerSecond`, the `lantern` block including the **diminishing** curve (row 12), the **`run` block** (`targetSeconds`, `targetBandSeconds`, `earlyExitSeconds`, `hardCeilingSeconds` — added 2026-10-28, see below; `targetBandSeconds` is a two-element `[low, high]` array, not a scalar), `extractionCall`, `thresholds` (an array of **two** since 2026-10-28), the **`warden` block** (`chargeValue`, `arrivalBandSeconds` — a two-element `[low, high]` array — `lightSensitivity`, `effect` — row 54 gave the Warden its own dampened arrival meter, so it is **not** a threshold and must not be imported as one), `anchorRevive` |
 | `lantern.json` | `ULLKLanternData` | `charge`, `knockdown`, `revive`, `sweeperContact`, `movement` |
 | `loot.json` | `ULLKLootRulesData` | `rules`, `burden`, `banking`, `extraction` — everything in the file except `tiers` |
+| `workshop.json` | `ULLKWorkshopRulesData` | `currency` — a string array, today `["Supplies", "Components"]`. **Added to this contract 2026-10-28**; it was the one top-level key in the eight files with no home here, so the importer would have hard-errored on it per rule 2. Like `loot.json`, this file is **both** shapes: `upgrades` is a DataTable, `currency` is a singleton. Each entry must be a `Tier` name that exists in `loot.json` → `tiers`, so it parses as an enum per rule 4 rather than as free text |
+
+## `FLLKEnemyDef` is heterogeneous, and that needs deciding here
+
+Added 2026-10-28. This is the one thing in the contract that would have stopped
+M0.5 with a question, which is the exact failure M0.4's done-criterion names.
+
+The six enemy rows do **not** share a field set. Five fields are universal, one
+is near-universal, and eighteen belong to a single family each:
+
+| Scope | Fields |
+| --- | --- |
+| **All six** | `formerJob`, `behaviour`, `counterplay`, `moveSpeed`, `audioTelegraphSeconds` |
+| **Five of six** | `health` — absent on the **Warden**, and that absence is a rule, not an omission (row 7: unkillable, drops nothing) |
+| Three | `sightRange` (Stockers, Window Walkers, Ficus) |
+| Two | `wakeRange`, `wakeRequiresActiveLantern` (Window Walkers, Ficus) |
+| Sweepers | `aggroRadiusDark`, `aggroRadiusLit`, `swarmCallRadius`, `attractedToDroppedLoot` |
+| Stockers | `sightConeDegrees`, `losesTargetAfterSeconds` |
+| Glimmers | `scanRange`, `scanSeconds`, `scanRequiresActiveLantern`, `tagSeconds`, `tagRevealsPositionToAllRobots`, `tagAddsStormCharge`, `tagGivesWardenPermanentWaypoint` |
+| Warden | `killable`, `dropsLoot`, `spawnStage`, `retargetIntervalSeconds` |
+
+**The decision: one struct, two tiers of strictness.** Not per-family structs —
+a DataTable has one row type, and splitting into six tables would scatter the
+roster that `docs/ZONES.md` treats as one thing.
+
+- The **five universal fields are required**, and rule 3 applies in full: a
+  missing one is a hard error.
+- The **family-specific fields are `TOptional`**, and rule 3 is *deliberately*
+  relaxed for them — this is the only exemption in this contract, and it is
+  named here so nobody later "fixes" it by defaulting them.
+- **Silent defaults stay forbidden regardless.** An absent `TOptional` must
+  read as *absent*, never as zero. `health` on the Warden is the case that
+  proves why: defaulting it to 0 would turn "cannot be hurt" into "dies
+  instantly," which is row 7 inverted by a type system.
+- Because optionality costs rule 3's protection, the importer **validates by
+  family instead**: given the row name, the fields in the table above must be
+  present, and anything outside its row is an error. That restores the
+  guarantee rule 3 was giving, keyed on the row name rather than on the struct.
+
+`health` is the one judgement call worth stating: it is required for five and
+absent for one, so it is `TOptional` with the Warden as its only sanctioned
+absence. If a second enemy ever lacks health, that is a design change and
+should be argued in `DECISIONS.md`, not absorbed by the importer.
 
 ## The rules the importer must follow
 
