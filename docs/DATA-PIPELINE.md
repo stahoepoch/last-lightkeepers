@@ -234,6 +234,85 @@ The rule it enforces: **no gameplay class reads a DataTable directly.** One
 loader, typed accessors, and the storm charge curve implemented in exactly one
 place.
 
+## The runtime half of M0.5, built 2026-10-28
+
+`Source/LLK/Public/Data/` now holds the typed contract gameplay will read.
+Codex owns the editor-side writer that fills these; this is what it has to
+fill.
+
+| Header | Holds |
+| --- | --- |
+| `LLKDataTypes.h` | `ELLKLanternCurve`, `ELLKLootVisibility`, `ELLKExtractionReliability`, `ELLKEnemyFamily`, `FLLKSecondsBand` |
+| `LLKEnemyDef.h` | `FLLKEnemyDef` - one row type, six rows |
+| `LLKTableRows.h` | `FLLKLootTierDef`, `FLLKRoomDef`, `FLLKRungDef`, `FLLKRelicDef`, `FLLKUpgradeDef`, `FLLKLandmarkDef` |
+| `LLKStormChargeData.h` | `ULLKStormChargeData` and its five blocks |
+| `LLKLanternData.h` | `ULLKLanternData` and its five blocks |
+| `LLKLootRulesData.h` | `ULLKLootRulesData` |
+| `LLKWorkshopRulesData.h` | `ULLKWorkshopRulesData` |
+
+`Source/LLK/Private/Data/LLKDataContract.cpp` compiles them and holds
+`static_assert`s for the claims this page makes about the C++ side - that
+every row type derives from `FTableRowBase`, that the retired `linearCapped`
+curve is still a real enum entry (row 12), and that `Health` is still
+optional (row 7). A claim in a document that nothing checks is a claim that
+drifts.
+
+**Verified, not assumed:** the module builds clean against the pinned 5.8.4
+through the **Game** target, and all 15 reflected type names are present in
+the linked binary. A script walked all eight JSON files - 146 distinct
+non-underscore keys - and confirmed every gameplay key has a declared field.
+
+### `TOptional` as a `UPROPERTY` is real on 5.8, and I checked before relying on it
+
+This page decided `FLLKEnemyDef` would use `TOptional` for the
+family-specific fields. That is only viable if UHT reflects it, which it did
+not always. On the installed 5.8.4: `FOptionalProperty` exists in
+`CoreUObject/Public/UObject/PropertyOptional.h`, UHT has a `CanBeOptionalValue`
+property capability, and the engine itself ships `TOptional<bool>` and
+`TOptional<float>` as `UPROPERTY`s. All 24 optional fields compiled and
+`Module.LLK.gen.cpp` built, so UHT generated reflection for every one.
+
+**Why it is worth the unusual type.** An unset `TOptional` is the type saying
+*this family does not have this field*, which a `0.f` default cannot express.
+That distinction is not hypothetical here: `lantern.json` is full of
+deliberate zeroes - `downedWalkSpeed` is 0 because a downed keeper cannot
+move, `bleedOutSeconds` is 0 because they wait indefinitely. If `Health` were
+a plain float, the Warden's *absence* of health would read as zero health,
+which any damage routine treats as already dead. Row 7 would become a bug.
+
+### Rule 4, refined: an enum in code only when the vocabulary lives in code
+
+Rule 4 says enum strings parse strictly. Building the headers forced a
+distinction the rule did not make, and the refinement is worth stating:
+
+- **`lantern.curve` is a `UENUM`.** Its vocabulary (`linearCapped`,
+  `diminishing`) exists nowhere but in code and in row 12. A `UENUM` is the
+  closed set.
+- **`workshop.currency` is `TArray<FName>`, not a `UENUM`.** Its vocabulary is
+  the row names of the loot tier table. A `UENUM` would be a second copy of a
+  list the data already owns, and the two could drift - which is the failure
+  rule 2 exists to prevent, reintroduced one level up. The closed set is still
+  enforced at import; it is enforced against `loot.json` rather than against
+  C++.
+
+The principle: **strict parsing means the set is closed, not that the set
+lives in C++.** Put it wherever it is already defined once.
+
+### Three things the asset writer must do
+
+1. **Row names come from the JSON, and `id` is not a field.** For `tiers` the
+   row name is the object key; for every array-shaped collection it is the
+   `id`. None of the row structs declares `Id`, because storing it twice
+   invites the two to disagree.
+2. **Normalise `loot.tiers.*.feeds` to an array.** The JSON permits a string
+   or an array of strings, and `FLLKLootTierDef::Feeds` is always
+   `TArray<FName>`. Normalising once in the writer is better than every reader
+   handling both.
+3. **The three `*Seconds` fields on a threshold are derived, not inputs.** They
+   are published so a designer can read arrival times without running the Node
+   suite. Writing one that disagrees with `value` makes the asset lie, and
+   nothing in the engine would catch it - `tests/pacing.mjs` is what recomputes
+   them.
 ## Open for Codex
 
 1. **Commit the generated assets, or build them on demand?** Committing keeps a
