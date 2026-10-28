@@ -46,7 +46,7 @@ instead of debugged.
 
 | # | Task | Owner | Done when |
 | --- | --- | --- | --- |
-| M0.1 | **Install Unreal Engine** and record the exact version | Chris | `UE_5.x` exists, the version is written into this file, and it is **pinned** — no mid-milestone engine upgrades, ever. An engine upgrade is its own milestone with its own regression pass |
+| M0.1 | **Install Unreal Engine** and record the exact version | Codex | `UE_5.8.4` exists, the version is written into this file, and it is **pinned** — no mid-milestone engine upgrades, ever. An engine upgrade is its own milestone with its own regression pass |
 | M0.2 | Project skeleton: `LastLightkeepers.uproject`, `Source/LLK`, `Source/LLKEditor`, both `.Target.cs`, both `.Build.cs` | Codex | `-nocompile -game` build succeeds from a clean clone with no editor open |
 | M0.3 | Git hygiene: `.gitignore` for `Binaries/ Intermediate/ Saved/ DerivedDataCache/`, `.gitattributes` marking UE binaries `-text`, Git LFS for `Content/**` | Codex (seeded by Claude, see below) | A built project leaves `git status` clean, and `Content/` goes to LFS rather than into the pack file |
 | M0.4 | Data pipeline spec: the JSON→DataTable contract, one row type per file, with the schema written down | Claude | `docs/DATA-PIPELINE.md` exists and Codex can implement from it without asking a question |
@@ -61,12 +61,13 @@ this session. Claude has seeded them today with UE-ready entries. **Ownership
 is Codex's from here** — change them rather than inheriting them, and the LFS
 decision in particular deserves a second opinion before anyone pushes 2GB.
 
-**Blocker, honestly stated.** M0.1 is the only true blocker in the project
-right now, and it is Chris's. Verified on this machine today: the Epic Games
-Launcher is installed, **no Unreal Engine is.** Visual Studio Build Tools 2022
-with MSVC 14.44 and Windows SDK 10.0.26100 are present, which is the hard part
-usually; 740GB free, which is enough. Everything in M0 except M0.1 can be
-*written* without the engine, and none of it can be *verified* without it.
+**M0.1 status, 2026-10-28.** **Unreal Engine 5.8.4 is pinned.** It is the
+current stable UE5 hotfix release available through the Epic Games Launcher.
+The launcher is completing its final install cleanup; M0.1 is only complete
+when it exposes the editor's Launch button and the editor opens. Visual Studio
+Build Tools 2022 with MSVC 14.44 and Windows SDK 10.0.26100 are present, and
+740GB is free. M0.2–M0.7 can now be prepared; none is considered verified
+until 5.8.4 builds them.
 
 ---
 
@@ -155,10 +156,11 @@ Written down so nobody has to ask, and so nobody quietly starts:
 
 ---
 
-## Status, 2026-10-27
+## Status, 2026-10-28
 
-- **Current milestone: M0.** Blocked on M0.1, which is Chris's.
-- Engine version: **not yet installed, not yet pinned.** M0.1 fills this in.
+- **Current milestone: M0.** M0.1 is in final launcher cleanup.
+- Engine version: **Unreal Engine 5.8.4, pinned.** No engine upgrade occurs
+  inside a milestone.
 - Done today: the platform decision and its paper trail (`86c5bb8`,
   `312ea8a`, `7cde823`), these lanes and this roadmap, and the UE-ready git
   hygiene that M0.3 hands to Codex.
