@@ -214,6 +214,14 @@ strangers through the first flood, and relighting it.**
 
 Which is, finally, what a Last Lightkeeper is for.
 
+**Raised 2026-10-28 by `DECISIONS.md` row 46.** Relighting the hall is now a
+step rather than the summit. Chris: *"End goal, rebuild civilization. Find the
+library downtown, recover information, museum, history. Reclaim the past."* So
+the city holds two more places than this page listed - the **library** and the
+**museum** - and the campaign's end is knowledge rather than a building. The
+order has kept records since the first flood; the city kept its records in a
+library. `docs/THE-NIGHT.md`.
+
 Escape by train or by the Incline — both of which the player has been looking
 at from three zones away.
 

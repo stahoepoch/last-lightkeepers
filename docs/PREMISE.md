@@ -42,6 +42,14 @@ rather than replaces:
 The storm, then, is not just cover. It is the electrical event that keeps them
 alive, and the reason there is no usable daylight left anyway.
 
+**Completed 2026-10-28 by `DECISIONS.md` row 45, and read `docs/THE-NIGHT.md`
+next.** This page answers *why not daytime*. It never answered *why not all
+night*, and Chris's nightly-storm lore does: dusk is the gap, because their
+reserves are low and dormant units stand where they stopped, and the storm
+arriving is the gap closing. So the run is bounded at both ends by the same
+weather, and Storm Charge - the one major mechanic this page left as a number
+that goes up - is how much of tonight's storm has arrived.
+
 ## What this does not change
 
 **No mechanic moves.** Storm Charge still only rises, darkness still slows the
