@@ -24,6 +24,7 @@ DEFAULT_OUTPUT = ROOT / "Intermediate" / "LLKDataImport"
 # this manifest text-only and deterministic: it is the seam between the
 # portable validator and Source/LLKEditor, not a second source of balance.
 ASSET_MANIFEST = {
+    "unrealPayloadDirectory": "unreal",
     "DataTables": [
         {"asset": "DT_Enemies", "rowStruct": "FLLKEnemyDef", "source": "enemies.json", "field": None, "rows": "object"},
         {"asset": "DT_LootTiers", "rowStruct": "FLLKLootTierDef", "source": "loot.json", "field": "tiers", "rows": "object"},
@@ -40,6 +41,29 @@ ASSET_MANIFEST = {
         {"asset": "DA_WorkshopRules", "class": "ULLKWorkshopRulesData", "source": "workshop.json", "exclude": ["upgrades"]},
     ],
 }
+
+# JSON is intentionally written for humans ("killable"), while Unreal
+# reflects bool properties by their authored C++ names ("bKillable").  The
+# generated Unreal payload is the one deliberate translation layer; neither
+# source data nor runtime C++ compromises its own vocabulary for the other.
+BOOL_PROPERTY_KEYS = {
+    "autoOffAtEmpty", "rechargeAtRelay", "lanternForcedOffWhenDowned",
+    "dropsCarriedCrate", "knockdownOnContact", "baselineLootAlwaysVisible",
+    "relicsRequireLanternLight", "restorationCratesArePocketable",
+    "disconnectUsesSameRule", "convergeAllPatrols", "consumesFullLanternCharge",
+    "soloOnly", "attractedToDroppedLoot", "wakeRequiresActiveLantern",
+    "tagRevealsPositionToAllRobots", "tagGivesWardenPermanentWaypoint",
+    "scanRequiresActiveLantern", "killable", "dropsLoot", "blocksCombatWhileCarried",
+}
+
+def unreal_payload(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            ("b" + key[0].upper() + key[1:]) if key in BOOL_PROPERTY_KEYS else key: unreal_payload(child)
+            for key, child in value.items()
+        }
+    if isinstance(value, list): return [unreal_payload(child) for child in value]
+    return value
 
 class ContractError(Exception): pass
 
@@ -223,6 +247,9 @@ def emit(files: dict[str, Any], output: Path) -> None:
     if staging.exists(): shutil.rmtree(staging)
     staging.mkdir(parents=True)
     for filename, value in files.items(): (staging / filename).write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    unreal_dir = staging / ASSET_MANIFEST["unrealPayloadDirectory"]
+    unreal_dir.mkdir()
+    for filename, value in files.items(): (unreal_dir / filename).write_text(json.dumps(unreal_payload(value), indent=2, sort_keys=True) + "\n", encoding="utf-8")
     (staging / "asset-manifest.json").write_text(json.dumps(ASSET_MANIFEST, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     if output.exists(): shutil.rmtree(output)
     staging.replace(output)

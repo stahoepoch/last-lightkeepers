@@ -65,6 +65,12 @@ def main() -> int:
     storm_asset = next(item for item in manifest["DataAssets"] if item["asset"] == "DA_StormCharge")
     if storm_asset.get("derivedFields", {}).get("thresholds") != ["darkSeconds", "regularUseSeconds", "oneLanternSeconds"]:
         raise AssertionError("storm threshold timing fields must remain writer-derived from value")
+    unreal_enemy = json.loads((manifest_dir / manifest["unrealPayloadDirectory"] / "enemies.json").read_text(encoding="utf-8"))
+    if "bKillable" not in unreal_enemy["Warden"] or "killable" in unreal_enemy["Warden"]:
+        raise AssertionError("Unreal payload must use reflected bKillable, not human-facing killable")
+    unreal_lantern = json.loads((manifest_dir / manifest["unrealPayloadDirectory"] / "lantern.json").read_text(encoding="utf-8"))
+    if "bDropsCarriedCrate" not in unreal_lantern["knockdown"]:
+        raise AssertionError("Unreal payload must use reflected boolean property names")
     print("PASS manifest matches the reflected Unreal contract")
     must_fail("unknown gameplay keys are errors", "lantern.json", lambda value: value["movement"].__setitem__("sprintSped", 99), "unrecognised key(s): sprintSped")
     directory = copy_data()
