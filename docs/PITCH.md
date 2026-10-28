@@ -31,6 +31,19 @@ something the listener has played. The part nobody else does is that **a dark
 crew cannot discover the things worth risking a raid for.** Lead with that.
 Chris: *"the pitch should keep leading with value, then consequence."*
 
+## What it sounds like at the table
+
+Chris, 2026-10-28. The best single line anyone has written about what this
+game actually *is*, because it is not a description — it is the sentence a
+player says out loud to three friends:
+
+> **"We can leave with something now, or light this up and find out whether it
+> changes everything."**
+
+Worth keeping where the design can see it. Every rule in `DECISIONS.md` exists
+to make that argument possible, and any change that makes it easier to settle
+is a change that took the game away.
+
 ## The eight-year-old version
 
 > Imagine the power went out everywhere, and it never came back on.

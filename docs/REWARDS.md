@@ -88,6 +88,39 @@ That keeps one tier gated, one asymmetry sacred, and still delivers his
 requirement in full: **darkness means leaving meaningful opportunity behind,
 not simply playing safer.**
 
+### Route clues are the rule that stops the lantern becoming a detector
+
+Chris, closing this out: *"Route clues make light useful even when there is no
+loot nearby."* That sentence prevents a degenerate strategy nothing else in the
+design was guarding against, and it should be read as a requirement rather than
+a flourish.
+
+If light is only ever worth spending **at** a reward, a competent crew learns
+one habit: run dark, flick the lantern on at a shelf, flick it off, move. The
+lantern stops being a stance and becomes a **detector**, pulsed for a second at
+a time. Every rule we have survives that — the meter still rises, relics are
+still gated — and the game still gets quietly worse, because the pressure
+depends on light being something you *live in* for a stretch, not something you
+tap.
+
+Route clues fix it at the root. If the way through the building is itself
+legible only under light — which door is sound, which stair is flooded, where
+the service corridor goes — then a dark crew is not merely poorer, it is
+**lost**. Light buys *orientation*, continuously, in rooms with nothing in them
+at all. That makes a lit stretch a decision with duration, which is the only
+kind of decision a rising meter can price.
+
+It also hands the solo keeper something they badly need: a reason to light up
+that does not depend on finding anything, in a run where nobody else is
+carrying.
+
+**The four-line summary of the whole mechanic, his:**
+
+- Dark crews can still survive and haul basic crates.
+- Lit crews can identify which recovery actually matters before committing.
+- Relics are an explicit temptation rather than a hidden collectible.
+- Route clues make light useful even when there is no loot nearby.
+
 **What they are for:** the collection, the plinths, the plaques, and the story.
 A relic goes on a shelf with the finder's name on it and stays there.
 
