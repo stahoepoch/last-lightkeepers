@@ -414,6 +414,59 @@ file - but it is a few lines and it is the same drift argument that produced
 rule 2. **Done the same evening in `318084c`** - see the section above for what
 it does and does not catch.
 
+## Before the writer is built: what "run it twice" can and cannot prove
+
+M0.5's acceptance says the writer must be **idempotent**, and the plan is to
+run it twice and verify. The obvious verification - regenerate and diff the
+bytes - **cannot pass under one of the two plausible designs**, for a reason
+that has nothing to do with the data. Written here before the writer exists,
+because it is a design decision rather than a bug to find afterwards.
+
+**Checked in the 5.8 source on disk, not recalled.** Every `.uasset` carries a
+`PersistentGuid` in its package file summary
+(`CoreUObject/Public/UObject/PackageFileSummary.h:216`, editor-only data). Two
+facts decide this:
+
+- `CoreUObject/Private/UObject/Package.cpp:157-160` - *"Always generate a new
+  unique PersistentGuid, required for new disk packages"*, then
+  `PersistentGuid = FGuid::NewGuid()`. A **newly created** package gets a
+  random guid.
+- `LinkerLoad.cpp:1877` restores the stored guid when an **existing** package
+  is loaded, and `PackageFileSummary.cpp:359` round-trips it verbatim for every
+  modern file version. (The content-hash derivation below it is a legacy path
+  for files older than `VER_UE4_ADDED_PACKAGE_OWNER`, and does not apply to
+  anything 5.8 writes.)
+
+**So the design choice decides whether byte-idempotence is even possible:**
+
+| Writer design | Second run | Byte-diff across runs |
+| --- | --- | --- |
+| Delete `Content/Data/` and create fresh packages | 11 new random guids | **Always differs.** Never passes, however correct the data |
+| Load the existing package and update it in place | guids preserved | Can be identical, and the diff means something |
+
+The trap is not that one design is wrong - it is that the **failure looks like
+a data bug**. A diff on eleven files after a supposedly deterministic
+regeneration reads as non-determinism in the payloads, which is exactly what
+this contract exists to rule out, so the instinct would be to go hunting in the
+importer. The bytes that differ would be sixteen in a header.
+
+**What to assert instead, in order of preference:**
+
+1. **Load both generations and compare the data** - row counts, row names, and
+   field values. This is what idempotence actually means here and it holds
+   under either design.
+2. **Byte-compare, but only if the writer updates in place**, and then it is a
+   genuinely strong claim.
+3. Never: byte-compare with the guid excluded by hand. A comparison with a
+   hole in it is the kind of green that this milestone exists to distrust.
+
+**This also bears on open question 1 below.** If generated assets are committed
+and the writer creates fresh packages, every regeneration produces a new guid
+in all eleven files, so each run adds eleven new LFS objects **even when no
+number changed**. That is an argument for building on demand, or for updating
+in place, and it is a cost that would otherwise be discovered as a slowly
+growing repository.
+
 ## Open for Codex
 
 1. **Commit the generated assets, or build them on demand?** Committing keeps a
