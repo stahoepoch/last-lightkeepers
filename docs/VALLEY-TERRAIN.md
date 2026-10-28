@@ -1,12 +1,16 @@
 # The valley — what the geography means for play
 
-Status: **proposed**, 2026-10-28. Claude's half of the terrain brief Codex
-proposed; he owns the technical pipeline (source selection, heightmap prep,
-Landscape import, streaming, performance budget) and Chris owns how literal we
-get, the bounded area, and everything in `Content/`.
+Status: **DECIDED, 2026-10-28** - `DECISIONS.md` row 57 locks the approach.
+Chris answered this page's first open question the day it was written.
+
+This is Claude's half of the terrain brief Codex proposed. He owns the
+technical pipeline (source selection, heightmap prep, Landscape import,
+streaming, performance budget); Chris owns the bounded area and everything in
+`Content/`, and has now settled how literal we get.
 
 **Read the timing section first.** Most of this is M7 work and saying so is the
-most useful thing on the page.
+most useful thing on the page. **Then read the row 50 collision** under
+*Decided* - it is the one thing row 57 opened rather than closed.
 
 ## The approach is right, and one line of it is righter than it looks
 
@@ -125,12 +129,71 @@ compression decision, and the compression decision depends on playtest data we
 do not have — how far a crew will actually walk before it stops being tense.
 M4 answers that. Picking a scale now means picking it twice.
 
+## Decided, 2026-10-28 - row 57
+
+Chris's four rules, verbatim:
+
+> Make it "Johnstown-shaped," not a literal reconstruction. Use real public
+> elevation data for the valley, hills, river grades, and distant skyline.
+> Keep the first playable exterior tiny: Lanternhold, the department-store
+> approach, and a few visible-but-unreachable landmarks. Build the larger
+> Valley later as unlocked districts, not one enormous open-world map.
+
+That closes open 1 and open 3, confirms the OSM rule above, and matches the
+timing table. Three notes on implementing it, because two of the four rules
+are easy to read as more work than they are.
+
+### "Real elevation data for the distant skyline" is not a Landscape
+
+The skyline is the one piece the first slice genuinely needs - `THE-STORE.md`'s
+fourth floor has the roof gone, so the player looks **out**. Use 3DEP to author
+the silhouette and then **bake it**: the elevation data informs what the
+horizon's shape is, and ships as a backdrop. It does not become a runtime
+Landscape, and M6 must not wait on the terrain pipeline to get a shape onto
+the horizon. Building the pipeline in order to do this would be the most
+expensive way to do the cheapest thing on the list, which is the trap the
+timing section above exists to flag.
+
+### The store's exterior approach is not first-slice work
+
+Row 3 is LOCKED and the first slice is one **sealed** department store,
+interior. "The department-store approach" belongs to the first playable
+exterior, which is Codex's step 3 after M4's gate - not M1. Worth stating
+because the four rules read as one package and someone could reasonably take
+the approach as part of the slice it approaches.
+
+### The district unlock collides with row 50, and that needs an answer
+
+**Unlocked districts gate content. Row 50 forbids gating co-op behind
+progression.** Read strictly, row 50 is about party slots and districts are
+fine. But its *argument* transfers exactly: if unlock state is per-player,
+then a friend who has not opened the rail yard cannot join your rail yard
+raid, and "sorry, you have not unlocked this level" is the same sentence row
+50 banned, in a different costume. The refund maths is identical too - someone
+who cannot play with the people they bought it with has two hours to ask.
+
+This is not an argument against districts, which are right and are row 38
+delivered. It is a question about where the unlock **lives**:
+
+| Where unlock state lives | What happens to the friend who has not unlocked it |
+| --- | --- |
+| **Per-player** | Cannot join. Row 50's failure, renamed |
+| **Per-host / per-lobby** | Joins anything the host has opened. Progression still means something to the host, and nobody is ever locked out of their own friends' game |
+| Per-crew, shared | Works, but needs a persistent crew entity the game does not have and row 51 deliberately avoided |
+
+The middle one is what Deep Rock, Remnant and Monster Hunter all do, and it
+costs nothing: the host's progress is the session's progress. A guest gets the
+raid without getting the host's unlock, so there is still a reason to play your
+own saves. **Chris's call, not mine** - it decides what progression is for.
+
 ## Open
 
-1. **Chris's:** how literal — "Johnstown-shaped" or a looser valley that only
-   rhymes with it? Row 18 forbids the name either way; it does not settle the
-   shape.
-2. **Mine, after M4:** the compression factor, argued from how far testers will
-   actually cross.
-3. Does Lanternhold's exterior need the real ridge behind it, or is its own
-   hill enough? Cheaper if the latter, and nothing in the fiction demands more.
+1. **Chris's, raised by row 57 rather than closed by it:** does district
+   unlock state live with the player or the host? See the table above; row 50
+   makes per-player the wrong answer, but it does not pick the right one.
+2. **Mine, after M4:** the compression factor, argued from how far testers
+   will actually cross.
+
+**Closed by row 57:** how literal the valley is (Johnstown-shaped, not
+Johnstown), and whether Lanternhold's exterior needs the real ridge - the
+"keep the first playable exterior tiny" rule answers that with its own hill.
