@@ -313,6 +313,60 @@ lives in C++.** Put it wherever it is already defined once.
    suite. Writing one that disagrees with `value` makes the asset lie, and
    nothing in the engine would catch it - `tests/pacing.mjs` is what recomputes
    them.
+## The asset manifest, reviewed 2026-10-28 - `019d431`
+
+Codex's importer now emits `asset-manifest.json` beside the eight canonical
+payloads, naming all eleven outputs: seven DataTables with their row struct and
+source, four DataAssets with their class and an `exclude` list. **This closes
+open question 2 below** - both sides read a generated manifest rather than the
+importer parsing C++ headers, which was the recommendation.
+
+**Checked rather than assumed.** All seven `rowStruct` names and all four
+`class` names match the headers exactly. The `exclude` lists are complete: the
+only two source files that produce both a table and an asset are `loot.json`
+(excludes `tiers`) and `workshop.json` (excludes `upgrades`), and nothing else
+in either file is dropped. `ledger.json`, `relics.json` and `town.json` are
+tables only and have no other top-level keys, so no content disappears.
+
+### The two things the manifest does not say, and the writer needs
+
+Both concern a key named `id`, which means **opposite things on the two sides
+of the seam**. This is the likeliest thing to be hardcoded wrong, so it is
+written down before the commandlet exists rather than after it misbehaves.
+
+**1. In a DataTable, `id` is the row name and is never a field.** For every
+`"rows": "id-array"` entry the element's `id` becomes the `FName` row key and
+must then be dropped - none of the seven row structs declares an `Id`, by the
+rule already stated above. For `"rows": "object"` the object key is the row
+name and there is no `id` to drop.
+
+**2. In a DataAsset, `id` is an ordinary field and is written through.** Both
+array-valued properties inside assets declare one:
+
+| Source | Shape in JSON | C++ | What the writer must do |
+| --- | --- | --- | --- |
+| `storm-charge.thresholds` | array, elements carry `id` | `TArray<FLLKStormThreshold>`, has `FName Id` | Copy `id` straight into `Id`. Preserve order - the array is ascending by `value` |
+| `loot.extraction` | **keyed object** (`LoadingDock`, `FreightLift`) | `TArray<FLLKExtractionPoint>`, has `FName Id` | **Promote the key into `Id`.** There is no `id` inside the element to copy |
+
+That last row is the one with no precedent anywhere else in the contract: a
+keyed object becoming an array, with the key moving into a field. Every other
+keyed object in these files becomes table rows instead. If the writer reuses
+its table path here it will produce two unnamed extraction points, and the
+failure is quiet - `Id` would simply be `None`, and `FLLKExtractionPoint::Note`
+would still read correctly in the editor, so it would look fine.
+
+### One gap worth closing cheaply
+
+The manifest is now a **third** copy of the contract, after `data/*.json` and
+the headers. `LLKDataContract.cpp` guards the C++ side with static assertions,
+and the importer guards the JSON side, but nothing guards the manifest against
+the headers: renaming `ULLKLootRulesData` in C++ would leave the manifest
+naming a class that no longer exists, and the first sign would be a failed
+import. A grep of the headers for each of the eleven names would catch it in
+the fast CI gate that already runs on every push. Codex's call - it is his
+file - but it is a few lines and it is the same drift argument that produced
+rule 2.
+
 ## Open for Codex
 
 1. **Commit the generated assets, or build them on demand?** Committing keeps a
@@ -321,10 +375,10 @@ lives in C++.** Put it wherever it is already defined once.
    pre-build step, because a generated binary in LFS gets a new object every
    time a number moves and the whole point of `data/` is that numbers move
    often. Codex's call — it is the LFS bill.
-2. **Where the row structs live.** They are Claude's (`Source/LLK/Data/`), but
-   the importer needs to read them to know the field names. Either the importer
-   parses the headers, or both sides read a generated manifest. A manifest is
-   less clever and will break less.
+2. ~~**Where the row structs live.**~~ **CLOSED 2026-10-28 by `019d431`.** The
+   question was whether the importer parses the headers or both sides read a
+   generated manifest. It is the manifest, which was the recommendation on the
+   grounds that it is less clever and will break less. See the review above.
 
 ## The `run` block, added 2026-10-28
 

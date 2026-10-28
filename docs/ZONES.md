@@ -117,9 +117,9 @@ those verbs lethal.
 The player learns to read a place by what hunts them in it. It also means new
 enemies are *derived* rather than invented, which keeps them coherent.
 
-Current approved roster is five: Sweepers, Stockers, Glimmers, Window Walkers,
-the Warden. The Ficus is a sixth pending Chris's confirmation — concept art
-exists for it under `assets/enemies/`.
+Current approved roster is **six**: Sweepers, Stockers, Glimmers, Window
+Walkers, the Ficus and the Warden. The Ficus is confirmed, not pending —
+`DECISIONS.md` row 13, approved by Chris 2026-10-20. Corrected 2026-10-28.
 
 ## Zone 2 — the solar farm
 
@@ -252,7 +252,6 @@ at from three zones away.
 
 ## Open questions
 
-- Is the Ficus a sixth enemy or a Stocker under a working name?
 - Does the farm need its own locals in a first pass, or do staples plus the
   terrain inversion carry it?
 - Is the city one zone or several? It is the only entry here that might not fit

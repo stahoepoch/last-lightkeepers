@@ -3,7 +3,7 @@
 
   "_scopeNote": "History of this line, because it has moved twice and both moves were approvals rather than drift. It read 'four types' until the edit that added WindowWalkers deleted it; Chris approved that fifth type on 2026-10-20. Codex added the ficus concept art and Chris approved it the same day ('Codex did it, I like the ficus'), making six. A seventh needs his approval the same way. The rule is not the number - it is that a guardrail moves deliberately and never gets removed by whoever needs it out of the way.",
 
-  "_ficusTodo": "APPROVED but NOT DEFINED. Concept art is at assets/enemies/ficus-stalker-concept-v1.png; there is no entry for it below and no rig. A mall local per docs/ZONES.md, like the WindowWalkers - derived from mall landscaping. Its stats are Chris's call, as all values in this file are.",
+  "_ficusTodo": "APPROVED and NOW DEFINED - this note said otherwise until 2026-10-28, by which time it was wrong. The Ficus row exists below with a full stat line, and ELLKEnemyFamily carries the value. Concept art is at assets/enemies/ficus-stalker-concept-v1.png. A mall local per docs/ZONES.md, like the WindowWalkers - derived from mall landscaping. What is still outstanding is only the art and the in-engine actor; the data is done. Its stats remain Chris's call, as all values in this file are.",
 
   "Sweepers": {
     "formerJob": "Floor cleaners",

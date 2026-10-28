@@ -119,10 +119,12 @@ Concept art, reference only. Not for upload.
 - `assets/enemies/window-walker-mannequin-concept-v1.png`
 - `assets/enemies/window-walker-mannequin-concept-v2.png`
 - `assets/enemies/window-walker-mannequin-concept-v3.png`
-- `assets/enemies/ficus-stalker-concept-v1.png` — **queried.** No "ficus
-  stalker" exists in the roster, which is Sweepers, Stockers, Glimmers, Window
-  Walkers and the Warden. Either it is a Stocker concept under a working name,
-  or it is a sixth enemy nobody approved. Chris to confirm which.
+- `assets/enemies/ficus-stalker-concept-v1.png` — ~~queried~~ **answered, and
+  the query was stale when it was written.** `DECISIONS.md` row 13 is LOCKED at
+  **six** enemies including the Ficus, approved by Chris on 2026-10-20
+  (*"Codex did it, I like the ficus"*). The roster of five quoted here was
+  already out of date. `data/enemies.json` carries a complete `Ficus` row and
+  `ELLKEnemyFamily` carries the value. Closed 2026-10-28.
 - `assets/loot/relic-access-device-concept-v1.png`
 - `assets/loot/restoration-crate-concept-v1.png`
 

@@ -9,7 +9,7 @@ and should happen only after the visual direction is approved.
 | `glimmer-concept-v1.png` | Enemy dossier, loading screen, future encounter card, and visual reference for a 3D Glimmer rig. |
 | `glimmer-scan-glyph-v1.png` | HUD warning or a `ProximityPrompt`/scanner decal when a Glimmer acquires a player. |
 | `sweeper-concept-v1.png` | Reference for the low floor-polisher enemy already implemented in gameplay; its amber beacon deliberately distinguishes it from the cyan Glimmer. |
-| `ficus-stalker-concept-v1.png` | Candidate future ambush enemy and visual reference for hostile mall planters; it remains concept-only until its gameplay role is designed. |
+| `ficus-stalker-concept-v1.png` | **Approved enemy** (`DECISIONS.md` row 13, 2026-10-20), fully statted in `data/enemies.json`: indoor landscaping that stands as a potted plant until lantern light catches it. The art is still concept-only; the enemy is not. |
 | `window-walker-mannequin-concept-v3.png` | Candidate department-store stalker: a bare, genderless display mannequin with cracked plastic and a slightly wrong head tilt. Its stillness can make it read as scenery until it moves. Concept-only for now. |
 
 Both were generated locally for *Last Lightkeepers* with transparent
