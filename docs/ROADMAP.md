@@ -61,13 +61,12 @@ this session. Claude has seeded them today with UE-ready entries. **Ownership
 is Codex's from here** — change them rather than inheriting them, and the LFS
 decision in particular deserves a second opinion before anyone pushes 2GB.
 
-**M0.1 status, 2026-10-28.** **Unreal Engine 5.8.4 is pinned.** It is the
-current stable UE5 hotfix release available through the Epic Games Launcher.
-The launcher is completing its final install cleanup; M0.1 is only complete
-when it exposes the editor's Launch button and the editor opens. Visual Studio
+**M0.1 status, 2026-10-28 — complete.** **Unreal Engine 5.8.4 is installed
+and pinned.** The Epic Games Launcher exposes its Launch button. It is the
+current stable UE5 hotfix release available through the launcher. Visual Studio
 Build Tools 2022 with MSVC 14.44 and Windows SDK 10.0.26100 are present, and
-740GB is free. M0.2–M0.7 can now be prepared; none is considered verified
-until 5.8.4 builds them.
+740GB is free. Opening the editor remains M0.8's explicit visual proof; M0.2–
+M0.7 are now unblocked, but none is verified until 5.8.4 builds it.
 
 ---
 
@@ -158,7 +157,7 @@ Written down so nobody has to ask, and so nobody quietly starts:
 
 ## Status, 2026-10-28
 
-- **Current milestone: M0.** M0.1 is in final launcher cleanup.
+- **Current milestone: M0.** M0.1 is complete; M0.2–M0.7 are unblocked.
 - Engine version: **Unreal Engine 5.8.4, pinned.** No engine upgrade occurs
   inside a milestone.
 - Done today: the platform decision and its paper trail (`86c5bb8`,
