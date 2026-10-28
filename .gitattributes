@@ -1,3 +1,50 @@
 * text=auto eol=lf
+
+# Roblox archive (frozen - docs/DECISIONS.md row 33)
 *.rbxmx text eol=lf
 *.rbxlx -text
+
+# ---------------------------------------------------------------------------
+# Unreal Engine. Seeded by Claude 2026-10-27, OWNED BY CODEX from here
+# (docs/LANES.md, roadmap task M0.3).
+#
+# Two separate jobs below, and the first one is urgent:
+#
+#   -text      stops `* text=auto` from "helpfully" rewriting line endings
+#              inside binary assets. Without it, a single commit of a .uasset
+#              can corrupt the asset irreversibly. This must be in place
+#              BEFORE the first Content/ commit, not after.
+#
+#   filter=lfs keeps binary assets out of the pack file. Also must be in place
+#              before the first Content/ commit - LFS cannot retroactively
+#              rescue history without a rewrite. Requires `git lfs install`
+#              once per clone. git-lfs 3.6.0 is present on this machine.
+# ---------------------------------------------------------------------------
+
+# Content: binary, versioned in LFS, never merged
+*.uasset filter=lfs diff=lfs merge=lfs -text
+*.umap   filter=lfs diff=lfs merge=lfs -text
+*.ubulk  filter=lfs diff=lfs merge=lfs -text
+*.uexp   filter=lfs diff=lfs merge=lfs -text
+*.upack  filter=lfs diff=lfs merge=lfs -text
+
+# Source art and media, if any is ever committed
+*.fbx  filter=lfs diff=lfs merge=lfs -text
+*.psd  filter=lfs diff=lfs merge=lfs -text
+*.tga  filter=lfs diff=lfs merge=lfs -text
+*.exr  filter=lfs diff=lfs merge=lfs -text
+*.hdr  filter=lfs diff=lfs merge=lfs -text
+*.wav  filter=lfs diff=lfs merge=lfs -text
+*.ogg  filter=lfs diff=lfs merge=lfs -text
+*.mp3  filter=lfs diff=lfs merge=lfs -text
+*.mp4  filter=lfs diff=lfs merge=lfs -text
+
+# Unreal text files: diffable, keep them text
+*.uproject   text eol=lf
+*.uplugin    text eol=lf
+*.Build.cs   text eol=lf
+*.Target.cs  text eol=lf
+*.ini        text eol=lf
+*.cpp        text eol=lf
+*.h          text eol=lf
+*.cs         text eol=lf

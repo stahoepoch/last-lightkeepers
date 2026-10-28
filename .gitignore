@@ -19,3 +19,47 @@ desktop.ini
 
 # Deep research working notes (regenerable, not source of truth)
 research_notes/
+
+# ---------------------------------------------------------------------------
+# Unreal Engine. Seeded by Claude 2026-10-27, OWNED BY CODEX from here
+# (docs/LANES.md, roadmap task M0.3).
+#
+# Everything below is generated. Committing any of it is how a 200MB repo
+# becomes a 40GB one, and DerivedDataCache alone can outgrow the whole project.
+# Exit criterion for M0.3: a full build leaves `git status` clean.
+# ---------------------------------------------------------------------------
+
+# Build output and intermediates
+Binaries/
+Intermediate/
+DerivedDataCache/
+Saved/
+Build/
+.vs/
+.idea/
+*.VC.db
+*.opensdf
+*.sdf
+*.sln
+*.suo
+*.xcodeproj
+*.xcworkspace
+
+# Generated project files
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+
+# Packaged builds - these go to Steam, never to git
+Packaged/
+Dist/
+
+# Crash and log output
+Saved/Crashes/
+Saved/Logs/
+
+# NOTE: Content/ is NOT ignored. It is versioned in Git LFS - see
+# .gitattributes. The one part of it that is generated is Content/Data/,
+# rebuilt from data/*.json by Tools/import_data.py (roadmap M0.5). Whether
+# generated DataTables are committed or built on demand is Codex's call;
+# docs/DATA-PIPELINE.md states the tradeoff.

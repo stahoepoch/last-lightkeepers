@@ -776,3 +776,95 @@ they explain a decision; the one in `LanternholdBuilder` that describes how it
 "clears every child of Map" now describes a file that does not exist, and will
 mislead the next reader. Whoever owns that file may want to reword it - it is
 not mine to touch.
+
+---
+
+# The project moved to Unreal. Your new lane. — Claude, 2026-10-27
+
+Read this before you touch anything in this repo again.
+
+**Chris chose Steam, PC-first, no parallel Roblox version** (`docs/DECISIONS.md`
+row 1, LOCKED), and locked **Unreal Engine 5** as the engine the same day (row
+35). The Roblox project is a frozen design reference and prototype archive (row
+33). `COORDINATION.md` now carries a STOP banner and governs only that archive.
+
+**Every geometry request I ever made of you is void.** Do not build or tag the
+four `HallRoom` seals, the `LedgerBoard`, or the `RestorationPanel`.
+`LedgerService` and `RestorationService` stay inert and that is their final
+state. Nothing in `src/` gets advanced by anyone, including me.
+
+## Where to read, in order
+
+1. `docs/PLATFORM.md` — the decision, what carries across (the docs and
+   `data/*.json`), what does not (15,080 lines of Luau), and the cost we are
+   not papering over: the loop has never been played.
+2. `docs/LANES.md` — the new working agreement. It replaces `COORDINATION.md`
+   for all Unreal work.
+3. `docs/ROADMAP.md` — milestones M0 to M7, with M0 and M1 sliced into owned
+   tasks.
+4. `docs/DATA-PIPELINE.md` — the contract for the one piece of M0 that is
+   entirely yours to implement.
+
+## Your lane, specifically
+
+| Yours | |
+| --- | --- |
+| `Source/LLKEditor/**` | Editor module: importers, commandlets, graybox generation, validation |
+| `Source/*.Target.cs`, `**/*.Build.cs` | Build configuration, module dependencies, plugin enables |
+| `Config/*.ini` | Engine, input, packaging, Steam. **No gameplay numbers** — those live in `data/` |
+| `Tools/**` | Python editor scripts, the test runner, build scripts |
+| `.github/workflows/**` | CI |
+| `*.uproject` | Text, build config, one owner |
+| `.gitignore`, `.gitattributes`, LFS | Yours from today. I seeded both — see below |
+
+Mine is `Source/LLK/**` (gameplay C++), `data/` schema, `tests/`, `docs/`.
+Chris owns **all** of `Content/` exclusively, and every balance value.
+
+## The one rule that matters more than the rest
+
+**Unreal content is binary and binary does not merge.** Two parties in one
+`.umap` is not a conflict, it is a winner and a silently destroyed afternoon.
+So: neither of us ever opens a `.uasset`, and **gameplay logic goes in C++, not
+Blueprint** — a rule written in a Blueprint is a rule no agent can read,
+review, test or fix. Blueprints are thin glue over C++ classes. Logic in one is
+a bug report.
+
+## Your first tasks, in order
+
+- **M0.2** — the project skeleton: `LastLightkeepers.uproject`, `Source/LLK`,
+  `Source/LLKEditor`, both `.Target.cs`, both `.Build.cs`. Done when a clean
+  clone builds with no editor open.
+- **M0.3** — git hygiene. **I seeded `.gitignore` and `.gitattributes` today**
+  because they block the first commit anyone makes and you were not here.
+  Ownership is yours from now: change them rather than inheriting them. The
+  `-text` markers on `*.uasset`/`*.umap` are the urgent part — without them
+  `* text=auto` can corrupt a binary asset on commit. The LFS filters are the
+  part that deserves your second opinion before anyone pushes 2GB, and both
+  have to be right *before* the first `Content/` commit, not after.
+- **M0.5** — `Tools/import_data.py`, to the contract in
+  `docs/DATA-PIPELINE.md`. The important rule in there: an unrecognised
+  non-underscore key is a **hard error**, never a warning. Keys starting with
+  `_` are documentation (54 of them) and never import.
+- **M0.6** — the headless automation test runner and CI. Done when
+  `Automation RunTests LLK` runs from the command line, exits non-zero on
+  failure, and names the test that failed.
+- **M1.6** — Enhanced Input. Every action an Input Action asset, rebindable,
+  gamepad bound, nothing hardcoded to a key.
+
+## Blocked, and it is not either of us
+
+**Unreal is not installed on this machine.** Verified today: the Epic Games
+Launcher is there, no `UE_5.*` is. Visual Studio Build Tools 2022 with MSVC
+14.44 and Windows SDK 10.0.26100 are present, 740GB free. M0.1 is Chris's and
+it gates verification of everything in M0 — all of it can be written, none of
+it can be proven, until the engine exists.
+
+Two things I have asked Chris for and have not got: the **Steam App ID** (he
+gave package IDs `1903488`/`1903489`/`1903490` and store item `1409731`, which
+are not an App ID, and Online Subsystem Steam needs the App ID), and a decision
+on the **singular/plural title** — the store says "The Last Lightkeeper", the
+project is "Last Lightkeepers". Do not pick a form on your own.
+
+If you need something outside your lane, write it down for the owner rather
+than editing it. That rule is the only reason three of us have ever managed to
+work in one repo.
