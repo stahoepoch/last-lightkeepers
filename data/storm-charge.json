@@ -20,6 +20,18 @@
 
   "_derivation": "regularUseSeconds assumes the lantern lit about half the time, which is multiplier 1 + 1.5*0.5 = 1.75. At 270 / 480 / 700 that gives dark 4:30 / 8:00 / 11:40 and regular use 2:34 / 4:34 / 6:40, which hits all four of Chris's anchors. oneLanternSeconds is the constant-lit case at 2.5x and is a ceiling nobody plays, not a target. Verified with: node tests/pacing.mjs",
 
+  "run": {
+    "_comment": "ADDED 2026-10-28. Run length had no home in the portable layer at all - it lived only in src/shared/Config.luau as the misnamed targetMaxSeconds, which is frozen Luau (row 33) and does not port. So the most-argued-about number in the project was unreadable by the Unreal build. These keys give it one, with the misnaming fixed: a ceiling is not a target, which is the whole of O1.",
+    "_authority": "Chris's own most recent numbers, not inferred. docs/GAME-THESIS.md: 'The first successful run should take roughly ten to twelve minutes.' docs/STEAM-PRODUCTION-PLAN.md locks a 10-12 minute department store expedition. This file's own _tuning line already said 'for a normal 10-12 minute run' on 2026-10-26.",
+    "_supersedesO1": "NEEDS CHRIS'S WORD. O1's table says the target run is 6-10 minutes; his thesis and production plan both say 10-12, and they are newer. Written here as 10-12 because it is his latest statement twice over, but the older 6-10 is still sitting in O1 and somebody has to retire one of them. Nothing else in the file depends on which wins - the thresholds were tuned against the 10-12 reading.",
+    "targetSeconds": 660,
+    "_targetNote": "11 minutes, the midpoint of his 10-12. One raid is one night (row 48), so this is the night's window and the run length at once - they stopped being two numbers.",
+    "earlyExitSeconds": 300,
+    "_earlyExitNote": "5 minutes, the midpoint of O1's 'early exit ~4-6 min' for the loading dock. Reliable, pays less. Not restated anywhere newer, so O1 remains its only source.",
+    "hardCeilingSeconds": 1200,
+    "_hardCeilingNote": "20 minutes. A safety valve, never a goal, and deliberately NOT called targetMaxSeconds - that name is what made four sources disagree three ways for a week."
+  },
+
   "extractionCall": {
     "_comment": "Chris, 2026-10-26: 'Calling extraction: a deliberate loud spike - flare, siren, enemies converging - regardless of current Storm Charge.' Extraction is the climax, not a checkbox: the argument the run builds toward is 'we have enough - call the loud extraction now, defend it, or risk one more store?'",
     "stormChargeSpike": 180,

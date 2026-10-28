@@ -125,8 +125,31 @@ fully dark crew meets its first threshold at 8:00 and the Warden at 15:59, so
 within a typical run **darkness is still consequence-free**. Raising the
 ceiling did not fix that; it hid it.
 
-**Still open, and it is Chris's:** the baseline Storm Charge rate. That is the
-single most consequential untuned value in the project.
+**Mostly closed, 2026-10-28.** Three of O1's four problems are gone:
+
+1. **The target/ceiling ambiguity is settled by row 48.** One raid is one
+   night, so the night's window *is* the run - they stopped being two numbers.
+2. **The misnaming is fixed, and in the right place.** Run length had no home
+   in `data/` at all; it existed only as `Config.luau`'s misnamed
+   `targetMaxSeconds`, which is frozen Luau and does not port. `data/
+   storm-charge.json` now carries a `run` block with `targetSeconds`,
+   `earlyExitSeconds` and `hardCeilingSeconds` - separate names for separate
+   kinds of number, so the four-sources-three-numbers argument cannot recur.
+   The Luau rename never has to happen, because that field is archive.
+3. **"The baseline rate is the single most consequential untuned value" is
+   stale** and should not be quoted again. `baselineRatePerSecond: 1` is a
+   *unit definition* - one charge unit is one second of darkness - and all the
+   actual tuning lives in the thresholds, which Chris retuned to 270/480/700 on
+   2026-10-26 against four named pacing anchors. There is no untuned rate.
+
+**What is genuinely left, and it is one line of Chris's:** O1's table says the
+target run is **6-10 minutes**. `docs/GAME-THESIS.md` and
+`docs/STEAM-PRODUCTION-PLAN.md`, both committed 2026-10-28, say **10-12**, and
+this file's tuning comment has said 10-12 since 2026-10-26. The data block
+carries 10-12 as his latest statement, flagged in place. **One of the two
+numbers has to be retired by him**, and the only thing riding on it is which
+figure a future reader trusts - the thresholds were tuned against the 10-12
+reading either way.
 
 ### O2. Are the proposal docs canon?
 

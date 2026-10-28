@@ -296,11 +296,14 @@ that.
    extraction-or-wipe outcome. Row 48, LOCKED for the first build. Chris's
    reason is production as much as fiction: it keeps the pacing and the
    multiplayer session structure clean.
-3. **Run length stops being two questions.** Row 48 makes the night's window
-   *be* the run, so **O1** is no longer a design question about target versus
-   ceiling — it is one number to tune. O1 should be closed against row 48
-   rather than left open, which is the one piece of bookkeeping these two
-   decisions leave behind.
+3. **Run length stops being two questions, but not zero.** Row 48 makes the
+   night's window *be* the run, so **O1**'s target-versus-ceiling ambiguity is
+   gone — and saying it "should be closed" overstated it, which is corrected in
+   O1 itself. Acted on 2026-10-28: run length now lives in
+   `data/storm-charge.json` under three separate names rather than in frozen
+   Luau under one misleading one. What survives is a single disagreement of
+   Chris's with himself — O1 says a 6–10 minute target, his thesis and
+   production plan say 10–12 — and only he retires one.
 4. **Does the storm reach Lanternhold?** The hall is out past the farms and is
    the safe place. If the same storm hits it every night, "safe" needs a
    reason — most likely that the hall has no machines in it, which is also why

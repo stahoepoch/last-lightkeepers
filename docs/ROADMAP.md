@@ -103,6 +103,13 @@ The content is already written and should not be re-derived:
 - **M2** — thresholds and the Warden. `data/storm-charge.json` holds the
   numbers; row 7 says the Warden is unkillable and drops nothing; row 5 says
   light reveals value and attracts danger with no "light repels" exception.
+  **Enemies converge on the brightest position, never the nearest player** —
+  `data/enemies.json` and `storm-charge.json` both state it, and the archived
+  `EnemyService.luau` broke it by retargeting to nearest. **Do not inherit that
+  bug.** It is not a fidelity detail: brightest-position is what puts cause and
+  consequence in the same pair of hands, so in four-player co-op it is the
+  difference between the building teaching the lantern rule and nobody learning
+  it (`docs/THE-STORE.md`, the co-op teaching trap).
   Knockdown not death (row 11, and `docs/BANKING.md` on bounded loss). The
   Anchor Revive is solo-only (row 9).
 - **M3** — loot, burden, extraction. `data/loot.json` holds tiers, pickup

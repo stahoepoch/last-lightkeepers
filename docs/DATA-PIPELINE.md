@@ -63,7 +63,7 @@ better at the call site and that is the whole point of it:
 
 | File | Asset | Holds |
 | --- | --- | --- |
-| `storm-charge.json` | `ULLKStormChargeData` | `baselineRatePerSecond`, the `lantern` block including the **diminishing** curve (row 12), `extractionCall`, `thresholds` (an array), `anchorRevive` |
+| `storm-charge.json` | `ULLKStormChargeData` | `baselineRatePerSecond`, the `lantern` block including the **diminishing** curve (row 12), the **`run` block** (`targetSeconds`, `earlyExitSeconds`, `hardCeilingSeconds` — added 2026-10-28, see below), `extractionCall`, `thresholds` (an array), `anchorRevive` |
 | `lantern.json` | `ULLKLanternData` | `charge`, `knockdown`, `revive`, `sweeperContact`, `movement` |
 | `loot.json` | `ULLKLootRulesData` | `rules`, `burden`, `banking`, `extraction` — everything in the file except `tiers` |
 
@@ -136,3 +136,31 @@ place.
    the importer needs to read them to know the field names. Either the importer
    parses the headers, or both sides read a generated manifest. A manifest is
    less clever and will break less.
+
+## The `run` block, added 2026-10-28
+
+Recorded here because its absence was a defect in this contract, not an
+oversight in the data.
+
+**Run length did not exist in `data/` at all.** It lived only in
+`src/shared/Config.luau` as `targetMaxSeconds`, which is frozen Luau (row 33)
+and does not port — so the single most-argued-about number in the project was
+unreadable by the engine this contract exists to feed. A data layer that cannot
+express the run's length is not a portable layer.
+
+The keys also fix the naming that caused the argument. `targetMaxSeconds` held
+a *ceiling* under a name that says *target*, which is why four sources carried
+three numbers. The block separates them permanently:
+
+| Key | Meaning |
+| --- | --- |
+| `targetSeconds` | What a normal run should feel like. Row 48 makes this the night's window too |
+| `earlyExitSeconds` | The loading dock. Reliable, pays less |
+| `hardCeilingSeconds` | A safety valve nothing may exceed. Never a goal |
+
+**One value needs Chris and is flagged in the file.** O1 says the target is
+6–10 minutes; `GAME-THESIS.md` and `STEAM-PRODUCTION-PLAN.md` both say 10–12,
+and they are newer. The block carries 10–12, because it is his latest statement
+twice over and because this file's own tuning line has said "a normal 10–12
+minute run" since 2026-10-26 — but the older figure is still sitting in O1 and
+one of the two has to be retired by him rather than by an importer.
