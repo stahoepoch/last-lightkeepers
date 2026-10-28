@@ -355,7 +355,7 @@ its table path here it will produce two unnamed extraction points, and the
 failure is quiet - `Id` would simply be `None`, and `FLLKExtractionPoint::Note`
 would still read correctly in the editor, so it would look fine.
 
-### The gate was built, and then tested by breaking it - `318084c`
+### The gate was built, broken on purpose, then hardened - `318084c`, `ab27741`
 
 Codex closed the gap below the same evening, and went past it: the manifest now
 carries `keyedObjectFields` on `DA_LootRules` and `derivedFields` on
@@ -367,46 +367,39 @@ it applies to a data gate as much as to an automation test. So each claim was
 checked by deliberately breaking the thing it guards and confirming the exit
 code moved. Results, 2026-10-28:
 
-| Break | Caught |
-| --- | --- |
-| Delete a manifest entry (`DT_TownLandmarks`) | **Yes** - "no longer names the eleven generated outputs" |
-| Remove the `extraction` key-promotion marker | **Yes** - names `FLLKExtractionPoint.Id` in the message |
-| Rename `FLLKLootTierDef` to `FLLKLootTier` | **Yes** - "manifest row struct is not declared" |
-| Rename `FLLKLootTierDef` to `FLLKLootTier**DefRenamed**` | **No** |
-| Delete `USTRUCT(BlueprintType)` above a row struct | **No** |
+| Break | Before `ab27741` | After |
+| --- | --- | --- |
+| Delete a manifest entry (`DT_TownLandmarks`) | red | red |
+| Remove the `extraction` key-promotion marker | red | red |
+| Rename `FLLKLootTierDef` to `FLLKLootTier` | red | red |
+| Rename `FLLKLootTierDef` to `FLLKLootTierDefRenamed` | **green** | red |
+| Delete `USTRUCT(BlueprintType)` above a row struct | **green** | red |
+| Delete `UCLASS(BlueprintType)` above a DataAsset | **green** | red |
+| Remove the `derivedFields` declaration | **green** | red |
 
-The first three are the cases that matter most and they work. The last two are
-the same root cause and worth a line each, because the gate is slightly weaker
-than "point to real reflected C++ types" sounds:
+**Both holes were closed in `ab27741`, and the fix was re-broken to confirm
+it.** The two green rows above were a substring test satisfied by a longer
+name, and a check on declaration text rather than on reflection - so a type
+could stop being a `USTRUCT` and the gate would not notice. Both now use the
+anchored regex, which requires the reflection macro immediately above the
+declaration. `derivedFields` was marked-but-unasserted in the previous commit
+and is now a guard like the others.
 
-**1. It is a substring test, so a rename that *extends* the name passes.**
-`f"struct {rowStruct}" not in headers` is satisfied by
-`struct FLLKLootTierDefRenamed`. Not a contrived case - `…Def` to
-`…Definition` is an ordinary tidy-up, and it would sail through.
+Every row in the "after" column was produced by making the break, running
+`Tools/test_import_data.py`, and watching the exit code move - not by reading
+the diff. The suite is green at 151/297/89/6 with the tree clean.
 
-**2. It checks declaration text, not reflection.** Deleting the `USTRUCT`
-macro leaves the words `struct FLLKLootTierDef` in place, so the gate stays
-green while the type stops being a DataTable row and the writer loses the one
-thing it needs from it. `LLKDataContract.cpp` would still catch this at compile
-time via its `TIsDerivedFrom` assertions - but that is the slow local build,
-not the fast gate that runs on every push, which is the gate M0's two-tier rule
-leans on.
+**One sharpness worth knowing rather than fixing.** The `derivedFields` guard
+compares the list exactly, so *reordering* the three field names fails too,
+with a message about fields remaining "writer-derived from value" that would
+not obviously explain why. Harmless today and arguably the right strictness;
+if it ever confuses somebody, comparing sets instead of lists is the change.
 
-One regex closes both, and it is checked to match all eleven today:
-
-```python
-re.search(r'USTRUCT\([^)]*\)\s*struct\s+%s\s*:' % re.escape(name), headers)
-re.search(r'UCLASS\([^)]*\)\s*class\s+LLK_API\s+%s\s*:' % re.escape(name), headers)
-```
-
-**One thing is marked but not enforced:** `derivedFields` appears in the
-manifest and in no assertion. That is still worth having - the writer reads it,
-and it carries the rule to the place the writer looks - but removing it would
-not turn anything red, so it is documentation with a machine-readable shape
-rather than a guard. Noted so nobody later assumes it was checked.
-
-Codex's file and his call on all of the above; the evidence is here so the call
-can be made on facts rather than on my say-so.
+What this now buys: the fast gate, which is the only thing CI enforces under
+M0's two-tier rule, catches a renamed type, a lost output, a de-reflected
+struct and a dropped conversion rule before the writer runs - rather than
+leaving them to surface as a failed import, or worse, as an extraction point
+with a `None` id that still looks correct in the editor.
 
 ### One gap worth closing cheaply
 
