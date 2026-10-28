@@ -71,6 +71,31 @@ were floor cleaners, Stockers stacked shelves, Glimmers were maintenance
 drones, Window Walkers stood in display windows, the Ficus was mall
 landscaping.
 
+**Deepened 2026-10-28 by `DECISIONS.md` row 47, LOCKED.** This section had the
+rule one level too shallow. It is not only that enemies inherit a job — **the
+*place* is trying to finish the last job it was built to do**, and the enemies
+are how it does that. Chris: the storm wakes broken infrastructure, and a
+Lightkeeper is dangerous because they are *an unrecognized person inside an
+active system* — carrying equipment away, entering restricted areas, turning
+on power, disrupting an emergency protocol.
+
+So every zone on the ladder now arrives with a second question attached, next
+to the inversion test:
+
+> *What was this building built to protect or keep running — and why does a
+> Lightkeeper violate that job?*
+
+And the honesty test for the answer, in his words: a hospital enemy *"should
+not feel like a mall security guard in scrubs; it should feel like an
+emergency-care system trying to 'help' in a way that becomes horrifying when
+nobody is there to override it."* The full table of what each place thinks it
+is doing is in `docs/THE-NIGHT.md`.
+
+**The boundary that keeps this from becoming a bestiary:** no machine needs a
+murder motive. They contain, remove, restrain, reroute, retrieve and lock
+down. The flood, the storm, the dark and the inability to extract are what make
+those verbs lethal.
+
 **Staples** — everywhere, because every site employed them:
 
 - **Sweepers** — cleaning crews existed at every one of these places.

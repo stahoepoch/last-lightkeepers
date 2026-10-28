@@ -24,6 +24,22 @@ So the handoff assumed combat, the data shipped combat's numbers, the code set
 them, and the pitch denied the whole thing. Chris is not adding a system here;
 he is picking which of the three the project meant.
 
+**Row 47, LOCKED 2026-10-28, bears directly on this and narrows it.** The
+machines have no murder motive: they *contain, remove, restrain, reroute,
+retrieve and lock down*, and what makes those verbs dangerous is the flood, the
+storm, the dark, the collapsing building and the inability to extract — not
+damage. The lethality lives in the ruin.
+
+Which answers the contradiction above from a direction this page did not have.
+**An enemy's primary output is a state, not a health bar**: tagged, restrained,
+isolated, cut off, locked in, relocated. The five health values nothing can
+reduce were never the point, and row 30's *you win the fights you start* reads
+better in that light — a keeper breaks a hold, buys a route, or interrupts a
+retrieval. They do not trade damage with a maintenance system.
+
+This does not reverse row 30 or row 31, both still proposed. It says what
+fighting back is *for*.
+
 Only one locked decision touches this and it stays untouched: **`DECISIONS.md`
 7, the Warden is unkillable and drops nothing.** It is the meter with a body.
 

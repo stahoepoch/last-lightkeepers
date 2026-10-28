@@ -153,10 +153,28 @@ Which closes his own loop neatly: **the library is where you learn to stop the
 flooding.** Not a shopping list — a thing you did not know, found in the place
 that knew it.
 
-## His question: what do the machines want us for, and why do they hate us?
+## His question, answered — and then corrected
 
-**Recommended answer: they don't hate you, and they don't want anything from
-you. They never stopped working, and you are in the way of the job.**
+**LOCKED, row 47.** The core answer stood; its *scope* did not, and Chris's
+correction is the better rule. Recorded that way round because the record
+should show which part was wrong.
+
+My version was *you are a person removing merchandise from a store at night*.
+His objection, exactly right: **"That only explains the mall."** A rule derived
+from one building had quietly become the fiction of a six-zone ladder.
+
+His rule:
+
+> **The storm wakes broken infrastructure, and every place tries to finish the
+> last job it was built to do.** A Lightkeeper becomes dangerous because they
+> are *an unrecognized person inside an active system* — carrying equipment
+> away, entering restricted areas, turning on power, or disrupting an emergency
+> protocol.
+
+**They do not hate people and do not need people.** They are executing
+degraded maintenance, safety, stocking and loss-prevention instructions in a
+building that never received a shutdown order. In Chris's words: *"their idea
+of 'correcting' you is just often lethal in a ruined world."*
 
 A Sweeper sweeps. You are debris on its floor. A Stocker stocks, and you are
 stock in the wrong place. A Glimmer was maintenance — it finds a fault and
@@ -168,15 +186,56 @@ lit. The Ficus was landscaping, and it has grown.
 not a new idea — it is Chris's own locked rule, *enemies come from the job the
 place did*, taken to its conclusion. The roster already believes this answer.
 
-Then the sharper half, which explains hostility without inventing a motive:
+Everything they do to you is procedurally right. You are not hunted; you are
+**processed.**
 
-> **Their last standing order was to keep the place. You are a person removing
-> merchandise from a store at night.**
+### The boundary, and it is the discipline that makes this work
 
-Everything they do to you is procedurally right. You are not being hunted by
-something that hates you; you are being **processed as a shoplifter by a
-building that never closed.** The loot loop is not incidental to the hostility
-— it *is* the hostility. The game's central verb is the reason they come.
+Chris's rule, and nothing in the roster may breach it:
+
+> **The machines do not need a murder motive. They contain, remove, restrain,
+> reroute, retrieve and lock down.**
+
+The flood, the storm, the dark, the collapsing infrastructure and the inability
+to extract are what make those verbs dangerous. **The lethality lives in the
+ruin, not in the machine** — which is a far harder discipline than writing
+monsters, and it is why this fiction can carry six zones without becoming a
+bestiary.
+
+It also has a mechanical consequence worth noticing: an enemy's primary output
+is not damage. It is a *state* — tagged, restrained, isolated, cut off, locked
+in, relocated. `data/enemies.json` gives five of the six a health value that
+nothing in the game can reduce, a contradiction `COMBAT.md` has been carrying
+since 2026-10-26. Row 47 says those numbers were never the point.
+
+### What each place thinks it is doing — Chris's table
+
+| Zone | What the place thinks it is doing | What it does to a Lightkeeper |
+| --- | --- | --- |
+| **Mall** | Prevent loss; clean and restock | Recovers inventory, clears "debris," locks down exits |
+| **Hospital** | Triage, quarantine, protect patients | Tags, restrains, isolates, transports you to unsafe wards |
+| **Train station** | Keep people off tracks; route evacuations | Closes gates, redirects platforms, sends maintenance units, moves trains |
+| **Downtown** | Maintain utilities and disaster response | Barricades streets, runs pumps, reroutes power, treats people as obstacles |
+| **Library / museum** | Preserve records and artifacts | Locks collections down, returns items to storage, protects rooms from "contamination" |
+| **Solar farm** | Protect a dangerous power site | Enforces exclusion zones and directs enormous charge into active systems |
+
+**Every new map now arrives with a design question attached**, which is the
+part that makes this generative rather than decorative:
+
+> *What was this building built to protect or keep running — and why does a
+> Lightkeeper violate that job?*
+
+And a test for whether the answer was done honestly, in his words: a hospital
+enemy *"should not feel like a mall security guard in scrubs; it should feel
+like an emergency-care system trying to 'help' in a way that becomes
+horrifying when nobody is there to override it."*
+
+Two things fall out of the table for free. The **library** is the only place on
+the ladder whose last job is directly opposed to the player's — row 46 sends
+you to recover records from the one system built to never let records leave.
+And the **solar farm** stops being an escalation of difficulty and becomes an
+escalation of *category*: the first place whose job was to protect something
+from people.
 
 And it names the Warden, which has been called that since the handoff without
 anyone saying why:
@@ -218,18 +277,30 @@ told it. And the Lightkeepers themselves should have it wrong — an order that
 has survived generations by telling its children the machines hate them. The
 truth is worse, and nobody in the fiction knows it.
 
+**One word is banned, and it is one of mine.** Chris: use *"shoplifter"* **only
+as an internal creative shorthand, never as a joke or player-facing
+explanation.** It is good shorthand between us and it would be fatal in the
+game — it is funny, it is small, and it would convert the best idea in the
+setting into a gag in a single line of dialogue. What the player meets is a
+dead building's degraded maintenance, safety, stocking and loss-prevention
+systems classifying them as an intrusion and an inventory loss. No character,
+sign, tooltip, achievement name or store-page blurb gets to be cleverer than
+that.
+
 ## Open, and Chris's
 
-1. **Is the recommended answer the answer?** It is the spine of the fiction and
-   his call. Nothing is written into the data or the enemy docs until he says.
-2. **Does the night cycle mean one run per night?** "Get in and out before the
-   storm gets too bad" reads as a single window. If a crew can go back out, the
-   second run starts with the meter already high — which is a good rule and a
-   different game's pacing.
-3. **Run length is now a fiction, not a tuning number.** O1 has the target at
-   6–10 minutes with a ceiling of 20. A night's window is the same number
-   wearing different clothes, and it should be decided as one thing rather than
-   two.
+1. ~~Is the recommended answer the answer?~~ **ANSWERED 2026-10-28.** Yes, with
+   its scope corrected. Row 47, LOCKED.
+2. ~~Does the night cycle mean one run per night?~~ **ANSWERED 2026-10-28.**
+   One raid is one night — a single dusk-to-storm window, one deployment, one
+   extraction-or-wipe outcome. Row 48, LOCKED for the first build. Chris's
+   reason is production as much as fiction: it keeps the pacing and the
+   multiplayer session structure clean.
+3. **Run length stops being two questions.** Row 48 makes the night's window
+   *be* the run, so **O1** is no longer a design question about target versus
+   ceiling — it is one number to tune. O1 should be closed against row 48
+   rather than left open, which is the one piece of bookkeeping these two
+   decisions leave behind.
 4. **Does the storm reach Lanternhold?** The hall is out past the farms and is
    the safe place. If the same storm hits it every night, "safe" needs a
    reason — most likely that the hall has no machines in it, which is also why
