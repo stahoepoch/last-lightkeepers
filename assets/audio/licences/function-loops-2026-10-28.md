@@ -72,15 +72,20 @@ second licence, not a copy.
 
 Clause 5 invokes "the Law of Israel and other countries". Noted, not analysed.
 
-## Still to do — Chris's, not mine
+## Both outstanding items are now closed
 
-**Confirm the Humble receipt does not carry different terms.** The bundle's
-Humble page carried no licence text and the archives contain no licence file,
-so the Function Loops page above is the only grant I could find. Humble
-occasionally attaches its own terms to a bundle. Worth thirty seconds in the
-purchase receipt, and if it says anything different, that supersedes this file.
+**The Humble receipt carries nothing.** Chris checked it on 2026-10-28: *"the
+only thing i can see is from functionloops.com, the receipt does nothing."* So
+there is no competing or supplementary grant from Humble, and **this page is
+the sole governing licence for the bundle.** That is the cleaner outcome of the
+two — one document to comply with rather than two to reconcile.
 
-**Keep the authoritative copy.** Print the URL above to PDF into this folder,
-so the terms we relied on are preserved as they stood today. A licence you
-cannot produce later is a licence you do not have — and a web page can change
-without telling anyone.
+**The text is preserved.** `function-loops-license-2026-10-28.txt` beside this
+file holds the terms verbatim as retrieved, with a provenance header. It is
+Function Loops' text, retained because we are bound by it, and it is marked
+not for redistribution. Re-fetch the URL if the two ever differ; prefer the
+live page.
+
+Chain of custody, in one line: archives shipped no licence → Humble's bundle
+page showed none → Humble's receipt carries none → the vendor's own site is
+the grant, retrieved and retained 2026-10-28.

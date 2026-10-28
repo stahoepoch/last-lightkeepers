@@ -49,8 +49,10 @@ question. The conditions:
 3. **One licensee.** The grant is to Chris. A second human needing the raw
    library needs their own licence.
 
-One item still outstanding and it is Chris's: confirm the Humble receipt
-carries no different terms, since Humble occasionally attaches its own.
+**Nothing outstanding.** Chris checked the Humble receipt on 2026-10-28 and it
+carries no terms of its own, so the Function Loops page is the sole governing
+grant, and its text is retained verbatim beside the record in
+`assets/audio/licences/`.
 
 The original finding that forced this check, kept because it is the reason the
 ledger exists:

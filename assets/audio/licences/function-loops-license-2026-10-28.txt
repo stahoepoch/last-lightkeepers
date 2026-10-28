@@ -1,0 +1,54 @@
+RETAINED THIRD-PARTY DOCUMENT - FOR COMPLIANCE REFERENCE ONLY
+================================================================
+Source:    https://www.functionloops.com/license.html
+Title:     "License - Function Loops" / "Terms & Conditions (License)"
+Retrieved: 2026-10-28, by Claude, via the Claude desktop browser pane
+Covers:    "Ultimate SFX for Games" bundle (Humble Bundle, $25 tier, 38 packs,
+           developer Function Loops), purchased by Chris on 2026-10-28
+Why kept:  Chris checked the Humble receipt on 2026-10-28 and it carries no
+           terms of its own, so this page is the ONLY governing grant for the
+           bundle. A web page can change without notice, and a licence you
+           cannot produce later is a licence you do not have.
+
+This is Function Loops' text, not ours. It is retained here because we are
+bound by it. Do not redistribute it, and do not treat this file as the
+authoritative source - re-fetch the URL above, and prefer it if the two differ.
+Plain-language obligations, and what they mean for this project, are in
+function-loops-2026-10-28.md beside this file.
+================================================================
+
+Terms & Conditions (License).
+
+General License
+
+1. Loops and samples offered by Function Loops are 100% royalty free, once
+purchased - you can use them in your commercial productions (sell to labels,
+perform live, release etc.)
+
+2. You may not resell, re-license, trade, upload, copy, share or distribute the
+sounds. They are licensed only to you. Ownership remains with Function Loops.
+
+3. Sounds, loops and samples offered by Function Loops are licensed to you, not
+sold.
+
+4. You can edit or re-work the sounds. They are made to use in commercial
+productions or other musical compositions (your own tracks, songs, music, video
+games etc.).
+
+5. Unauthorized use or duplication of Function Loops products is a violation of
+the 'Terms & Conditions' and is strictly prohibited by the Law of Israel and
+other countries.
+
+AI Training & Machine Learning Prohibition
+
+Function Loops content may not be used for AI training, machine learning, model
+fine-tuning, dataset creation, voice cloning, music generation systems, or any
+other generative AI application without prior written permission from Function
+Loops.
+
+Need more info? Drop us a mail.
+
+Thank you for using products from Function Loops.
+
+[Page footer: "Function Loops LTD 2011 - 2026. All rights reserved.
+info@functionloops.com (please allow up to 5 business days)."]
