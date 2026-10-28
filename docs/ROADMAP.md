@@ -50,7 +50,7 @@ instead of debugged.
 | M0.2 | Project skeleton: `LastLightkeepers.uproject`, `Source/LLK`, `Source/LLKEditor`, both `.Target.cs`, both `.Build.cs` | Codex | `-nocompile -game` build succeeds from a clean clone with no editor open |
 | M0.3 | Git hygiene: `.gitignore` for `Binaries/ Intermediate/ Saved/ DerivedDataCache/`, `.gitattributes` marking UE binaries `-text`, Git LFS for `Content/**` | Codex (seeded by Claude, see below) | A built project leaves `git status` clean, and `Content/` goes to LFS rather than into the pack file |
 | M0.4 | Data pipeline spec: the JSON→DataTable contract, one row type per file, with the schema written down | Claude | `docs/DATA-PIPELINE.md` exists and Codex can implement from it without asking a question |
-| M0.5 | `Tools/import_data.py` — the importer that runs the contract | Codex | Running it regenerates every `Content/Data/*.uasset` from `data/*.json` with no hand editing, and is idempotent |
+| M0.5 | The importer that runs the contract, in two halves: the validating front end and the asset writer | Codex, with the runtime contract from Claude — see the boundary below | Running it regenerates every `Content/Data/*.uasset` from `data/*.json` with no hand editing, and is idempotent |
 | M0.6 | Headless test runner + CI | Codex | `Automation RunTests LLK` runs from the command line, exits non-zero on failure, and prints which test failed. Data checks gate every push in CI; the UE run is local until a self-hosted runner exists - see the two-tier rule below |
 | M0.7 | The first automation test — a trivial one that proves the harness runs | Claude | It fails when deliberately broken. A green suite that cannot go red is worse than no suite |
 | M0.8 | Open the editor, press Play, walk a cube around | Chris | He has seen it move. Nothing in this project is "done" because a test passed and nobody looked |
@@ -89,6 +89,25 @@ needs `Tools/run_automation.ps1` and a free editor. Step 3 of the procedure at
 the bottom of the test file is the deliverable; compiling is setup for it.
 A green suite nobody has seen fail is exactly the false confidence this
 milestone exists to prevent, so this line says "compiled" and not "complete".
+
+**M0.5's boundary, agreed 2026-10-28.** M0.5 has three owners and one seam,
+and both agents stated the same split independently before any of it was built,
+which is the only reason it is written here as settled rather than proposed:
+
+- **Python owns the source data.** `Tools/import_data.py` is the strict gate.
+  Unreal never sees `data/*.json`, only the canonical stripped payloads.
+- **Claude owns the reflected contract** in `Source/LLK/Public/Data` - the row
+  structs and DataAssets gameplay reads. Built in `2304afe`.
+- **Codex owns the editor commandlet** that writes the seven DataTables and
+  four singleton DataAssets into generated `Content/Data/`.
+
+Codex has stated that no half-built writer was left in the tree, and that the
+next pass is the full writer rather than a stub. That matters because a stub
+would make M0.5 *look* closed while leaving M1.1 to discover the import failure
+- the exact thing this milestone exists to prevent, and the reason the status
+block below was rewritten from "done" to "not done" in the first place.
+
+---
 
 ---
 
@@ -220,7 +239,10 @@ Written down so nobody has to ask, and so nobody quietly starts:
   does not exist is the editor-side writer that turns those payloads into
   DataTables and DataAssets - `Content/Data/` is absent, nothing in the repo
   references `.uasset`, and `Source/LLKEditor` is still a module stub. Checked
-  2026-10-28 rather than inferred from the commit message.
+  2026-10-28 rather than inferred from the commit message. **The runtime half
+  landed the same day** (`2304afe`): the row structs and DataAssets Codex's
+  writer targets now exist and compile against the pinned 5.8.4. See M0.5's
+  boundary above; the writer itself is the one piece outstanding.
 - **Why that matters more than bookkeeping:** M1 is held until M0 closes, and
   M1's `ULLKBalanceSubsystem` loads generated assets. Marked done, this becomes
   M1.1's problem to discover - which is the exact failure M0 exists to prevent:
