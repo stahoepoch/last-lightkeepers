@@ -15,7 +15,7 @@
     "downedWalkSpeed": 0,
     "lanternForcedOffWhenDowned": true,
     "dropsCarriedCrate": false,
-    "_dropsCarriedCrateNote": "Chris's call, 2026-10-20: a downed Lightkeeper keeps the crate, matching the note above - you keep your loot until the crew wipes. Was true, which did nothing useful: the flag only cleared the carry slot, so the crate still extracted at full value. If this is ever set back to true, RunStateService.knockDown must also remove RestorationCrates from state.haul.carried, or the drop is cosmetic again.",
+    "_dropsCarriedCrateNote": "Chris's call, 2026-10-20: a downed Lightkeeper keeps the crate, matching the note above - you keep your loot until the crew wipes. Was true, which did nothing useful: the flag only cleared the carry slot, so the crate still extracted at full value. If this is ever set back to true, RunStateService.knockDown must also remove RestorationCrates from state.haul.carried, or the drop is cosmetic again. DECISIONS.md row 59 now also depends on this flag: with dropsCarriedCrate false and downedWalkSpeed 0, a crate cannot be banked while its carrier is down, which is what physically enforces 'everyone protects the carrier'. Setting this true would let a crew abandon the carrier and still extract the crate, removing that enforcement.",
     "bleedOutSeconds": 0,
     "_bleedOutNote": "0 = downed players wait indefinitely. The handoff's forgiving tone argues against a bleed-out timer in v1; the wipe already comes from the whole crew going down. Set a value only if playtests show downs are being ignored."
   },
