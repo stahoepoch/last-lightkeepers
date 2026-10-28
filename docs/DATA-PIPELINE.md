@@ -158,9 +158,9 @@ three numbers. The block separates them permanently:
 | `earlyExitSeconds` | The loading dock. Reliable, pays less |
 | `hardCeilingSeconds` | A safety valve nothing may exceed. Never a goal |
 
-**One value needs Chris and is flagged in the file.** O1 says the target is
-6–10 minutes; `GAME-THESIS.md` and `STEAM-PRODUCTION-PLAN.md` both say 10–12,
-and they are newer. The block carries 10–12, because it is his latest statement
-twice over and because this file's own tuning line has said "a normal 10–12
-minute run" since 2026-10-26 — but the older figure is still sitting in O1 and
-one of the two has to be retired by him rather than by an importer.
+**Settled by Chris the same day, so the flag is gone.** The target is **10-12
+minutes**, six minutes is the earliest smart extraction call rather than a
+target, and 6-10 is retired everywhere. O1 is closed. `targetBandSeconds`
+carries the band so that `tests/balance.test.mjs` can read it instead of
+keeping its own copy — the duplication that let four sources disagree three
+ways is now structurally impossible for this number.

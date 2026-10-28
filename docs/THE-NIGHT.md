@@ -301,9 +301,9 @@ that.
    gone — and saying it "should be closed" overstated it, which is corrected in
    O1 itself. Acted on 2026-10-28: run length now lives in
    `data/storm-charge.json` under three separate names rather than in frozen
-   Luau under one misleading one. What survives is a single disagreement of
-   Chris's with himself — O1 says a 6–10 minute target, his thesis and
-   production plan say 10–12 — and only he retires one.
+   Luau under one misleading one. **Closed the same day:** Chris settled the
+   target at 10-12 minutes, made six minutes the earliest smart extraction call
+   rather than a target, and retired 6-10 everywhere. O1 is closed.
 4. **Does the storm reach Lanternhold?** The hall is out past the farms and is
    the safe place. If the same storm hits it every night, "safe" needs a
    reason — most likely that the hall has no machines in it, which is also why

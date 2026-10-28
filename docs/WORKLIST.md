@@ -259,7 +259,7 @@ Owner: this session.
 
 ### C1. Reconcile run length — do this first
 
-**Why.** Three sources disagree: the handoff says 6–10 minutes, `Config.Run`
+**Why.** (**Archive - O1 closed 2026-10-28 at a 10-12 minute target; see `data/storm-charge.json` `run`.**) Three sources disagree: the handoff says 6–10 minutes, `Config.Run`
 says 20, a collaborator's audit assumes 8–15. The research resolves it — 6–10
 is right, and the metric to engineer is **runs per session ≥ 2**, not minutes.
 Until this is one number, every pacing conclusion is unsound.

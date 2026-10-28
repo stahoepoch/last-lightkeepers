@@ -256,5 +256,7 @@ at from three zones away.
 - Does the farm need its own locals in a first pass, or do staples plus the
   terrain inversion carry it?
 - Is the city one zone or several? It is the only entry here that might not fit
-  a target run. See docs/DECISIONS.md O1: the target is 6-10 minutes, the
-  hard ceiling is 20, and those are different kinds of number.
+  a target run. **O1 closed 2026-10-28:** the target is **10-12 minutes**
+  (`data/storm-charge.json` `run.targetBandSeconds`), the early exit is six,
+  and the hard ceiling is thirteen - only enough for a last call and holdout.
+  The city is still the one entry on this ladder that might not fit a night.

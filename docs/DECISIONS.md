@@ -98,7 +98,37 @@ down, not yet ratified. `OPEN` — named, undecided, waiting on someone.
 
 ## OPEN — named, undecided
 
-### O1. Run length: target versus ceiling
+### O1. Run length — **CLOSED 2026-10-28**
+
+Chris: *"Make it 10-12 minutes for a standard successful raid. Six minutes is
+the earliest smart extraction window - not the target run... Retire 6-10
+everywhere."* The intended run is the one where *"we pushed our luck, made
+decisions, and barely got out."*
+
+**The three values now live in `data/storm-charge.json` under `run`**, with
+separate names, which is what ends the argument permanently:
+
+| Key | Value | Meaning |
+| --- | --- | --- |
+| `earlyExitSeconds` | **360** | Six minutes. A valid survival call when the crew is hurt, carrying something important, or simply has enough. Not a target |
+| `targetSeconds` / `targetBandSeconds` | **660**, band **600-720** | The intended full raid. Row 48 makes this the night's window too |
+| `hardCeilingSeconds` | **780** | Enough for a last-second call and holdout. **Not extra looting** |
+
+The 780 is derived from his rule rather than stated by him, so the arithmetic
+is the part to check: 720 at the top of the band, plus the freight lift's
+30-second commitment, plus the 8-second siren, is 758, rounded to 780. **This
+retires the old 20-minute ceiling** - his own earlier figure for "a deep
+Galleria push" - because at a 720-second target, 1200 permits eight further
+minutes of shopping, which is exactly what his new definition forbids.
+
+`tests/balance.test.mjs` now reads the band from the data instead of carrying
+its own copy, and asserts the ceiling cannot grow into a second looting window.
+The historical account of the confusion follows, kept because it is the clearest
+example in this project of why a name matters more than a number.
+
+---
+
+#### How it went wrong, kept as history
 
 **The confusion.** `src/shared/Config.luau` contradicts itself inside one block:
 the comment says "6-10 minutes door-to-door", the code sets
@@ -112,18 +142,23 @@ a ceiling is not a target. Named properly there is no conflict:
 | | Value | Meaning |
 | --- | --- | --- |
 | Early exit | ~4-6 min | The loading dock. Reliable, pays less |
-| Target run | 6-10 min | What a normal run should feel like |
+| Target run | ~~6-10 min~~ **10-12 min** | What a normal run should feel like. Corrected 2026-10-28 |
 | Hard ceiling | 20 min | Nothing may exceed it. A safety valve, not a goal |
 
 So `targetMaxSeconds` is misnamed — it is a ceiling. Renaming it would end the
 argument permanently. **That rename is a gameplay-lane change, not mine.**
 
-**The consequence nobody has faced.** My pacing simulation treats
-`targetMaxSeconds` as "a long run", which is why its verdict flipped when the
-value went to 20. At a 6-10 minute *target*, the original problem returns: a
-fully dark crew meets its first threshold at 8:00 and the Warden at 15:59, so
-within a typical run **darkness is still consequence-free**. Raising the
-ceiling did not fix that; it hid it.
+**The consequence nobody had faced — and the 10-12 answer resolves it.** The
+pacing simulation treated `targetMaxSeconds` as "a long run", which is why its
+verdict flipped when the value went to 20. Under the old numbers a fully dark
+crew met the Warden at 15:59, so within a typical run darkness was
+consequence-free, and raising the ceiling hid that rather than fixing it.
+
+At the 10-12 minute target with the thresholds Chris retuned on 2026-10-26, it
+is genuinely fixed: a dark crew meets the Warden at **11:40**, which is inside
+the band and near the end of the night. Darkness now carries a consequence
+inside a run a player would actually play, which is the thing this open question
+existed to catch.
 
 **Mostly closed, 2026-10-28.** Three of O1's four problems are gone:
 
@@ -142,14 +177,7 @@ ceiling did not fix that; it hid it.
    actual tuning lives in the thresholds, which Chris retuned to 270/480/700 on
    2026-10-26 against four named pacing anchors. There is no untuned rate.
 
-**What is genuinely left, and it is one line of Chris's:** O1's table says the
-target run is **6-10 minutes**. `docs/GAME-THESIS.md` and
-`docs/STEAM-PRODUCTION-PLAN.md`, both committed 2026-10-28, say **10-12**, and
-this file's tuning comment has said 10-12 since 2026-10-26. The data block
-carries 10-12 as his latest statement, flagged in place. **One of the two
-numbers has to be retired by him**, and the only thing riding on it is which
-figure a future reader trusts - the thresholds were tuned against the 10-12
-reading either way.
+**Nothing is left.** Settled above, 2026-10-28.
 
 ### O2. Are the proposal docs canon?
 

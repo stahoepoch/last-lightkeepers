@@ -55,10 +55,25 @@ console.log("\nStorm Charge");
     thresholds[0].value / base >= 240 && thresholds[0].value / base <= 300,
     `got ${(thresholds[0].value / base).toFixed(0)}s`,
   );
+  // The 10-12 minute band is Chris's (2026-10-28, settling O1) and now lives in
+  // data/storm-charge.json run.targetBandSeconds. Read it rather than repeating
+  // it: a duplicated number is how O1 got four sources carrying three figures.
+  const [targetLow, targetHigh] = storm.run.targetBandSeconds;
   check(
-    "dark crew meets the Warden inside a 10-12 minute run",
-    thresholds.at(-1).value / base >= 600 && thresholds.at(-1).value / base <= 720,
+    `dark crew meets the Warden inside the target band (${targetLow}-${targetHigh}s)`,
+    thresholds.at(-1).value / base >= targetLow && thresholds.at(-1).value / base <= targetHigh,
     `got ${(thresholds.at(-1).value / base).toFixed(0)}s`,
+  );
+  check(
+    "the early exit is earlier than the target run",
+    storm.run.earlyExitSeconds < targetLow,
+    `early ${storm.run.earlyExitSeconds}s vs target low ${targetLow}s`,
+  );
+  check(
+    "the hard ceiling is above the target band, and is not a second looting window",
+    storm.run.hardCeilingSeconds > targetHigh &&
+      storm.run.hardCeilingSeconds <= targetHigh + 120,
+    `ceiling ${storm.run.hardCeilingSeconds}s vs band top ${targetHigh}s`,
   );
   // The other half of the curve: lantern lit about half the time is 1.75x.
   check(
@@ -159,7 +174,7 @@ console.log("\nLantern, knockdown, revive");
   // Charge it pours into the meter and nothing else. A fuel gauge made running
   // dry a second failure state on top of the storm. These lock the new rule -
   // either light is unlimited, or it lasts long enough to be worth carrying.
-  const runMax = 10 * 60;
+  const runMax = storm.run.hardCeilingSeconds; // was hardcoded 10 * 60 - one of O1's four disagreeing sources
   const chargeSeconds = lantern.charge.secondsOfLightPerFullCharge;
   check("light is either unlimited or meaningfully long", chargeSeconds === 0 || chargeSeconds >= 60);
   if (chargeSeconds > 0) {

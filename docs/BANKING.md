@@ -131,6 +131,6 @@ crews simply never bank, which would reproduce the turtle problem the bank
 exists to solve. If that happens, the lever to soften is the duration of the
 transfer, not the exposure itself.
 
-Also noted: at a 6-10 minute target run, there may only be room for **two or
+Also noted (**at the old 6-10 minute target; it is 10-12 since 2026-10-28, so this count is low**): there may only be room for **two or
 three relay windows**. One-way commitment mechanics assume a longer run and are
 probably not available to us.

@@ -32,19 +32,30 @@ const CHARGE_SECONDS = lanternCfg.charge.secondsOfLightPerFullCharge;
 // every duty cycle produce an identical row, because each lantern died on the
 // first tick and nobody ever accelerated the storm.
 const DRAIN = CHARGE_SECONDS > 0 ? 1 / CHARGE_SECONDS : 0;
-const RUN_MIN = configRunSeconds("targetMinSeconds", 6 * 60);
-// Read the real run shape out of Config.luau rather than restating it here.
-// It was hardcoded at 10 minutes and silently went stale when Chris raised the
-// ceiling to 20 for a deep Galleria push - which quietly inverted this report's
-// headline conclusion. A number that lives in two places is a number that lies
-// in one of them.
-function configRunSeconds(name, fallback) {
-  const src = readFileSync(join(root, "src", "shared", "Config.luau"), "utf8");
-  const m = src.match(new RegExp(`${name}\\s*=\\s*([0-9]+)\\s*\\*\\s*60`));
-  return m ? Number(m[1]) * 60 : fallback;
+// Read the real run shape out of data/storm-charge.json. A number that lives in
+// two places is a number that lies in one of them - this report's headline
+// conclusion once inverted silently because the value was hardcoded at 10
+// minutes while Chris had moved the ceiling to 20.
+//
+// MOVED 2026-10-28: this used to regex targetMaxSeconds out of
+// src/shared/Config.luau, which is frozen Luau (DECISIONS row 33) and does not
+// port to Unreal. It also carried a 10-minute fallback, so once src/ goes the
+// simulation would have quietly resumed reporting against a stale number
+// instead of failing. Run length now lives in the portable layer under names
+// that distinguish a ceiling from a target, and there is deliberately no
+// fallback: if the key is missing this should stop rather than guess.
+if (!storm.run?.hardCeilingSeconds || !storm.run?.targetSeconds) {
+  throw new Error("data/storm-charge.json run block is missing hardCeilingSeconds or targetSeconds");
 }
-
-const RUN_MAX = configRunSeconds("targetMaxSeconds", 10 * 60);
+const RUN_MAX = storm.run.hardCeilingSeconds;
+const RUN_TARGET = storm.run.targetSeconds;
+// RUN_MIN is the BOTTOM OF THE TARGET BAND, not the early exit. The old code
+// read a "targetMinSeconds" with a 6-minute fallback, which was right while the
+// target was 6-10 but is wrong now: Chris made six minutes the earliest smart
+// extraction call (run.earlyExitSeconds) and the target band 600-720. Using 360
+// here would make "the Warden arrived before a short run ended" fire against a
+// voluntary early exit rather than against a real run.
+const [RUN_MIN] = storm.run.targetBandSeconds;
 
 // Mirrors Config.lanternMultiplier. Kept in sync by a balance test.
 function multiplier(n, curve = storm.lantern.curve) {
@@ -114,9 +125,15 @@ for (const crew of [1, 2, 3, 4]) {
     const warden = hits.WardenConverges;
     let verdict;
     if (warden === undefined) verdict = "no Warden";
-    else if (warden < RUN_MIN) verdict = "WARDEN BEFORE A SHORT RUN ENDS";
-    else if (warden < RUN_MAX) verdict = "Warden mid-run";
-    else verdict = "Warden after a long run";
+    // Labels are against the TARGET BAND (600-720s), not against a 6-minute
+    // floor - that floor was the old 6-10 target and is now the voluntary early
+    // exit instead. "Before the band" means a crew meets the Warden before the
+    // intended raid length, which is interesting rather than automatically bad:
+    // the Warden is unkillable and converges on the brightest position, so
+    // meeting it early means being hunted for the rest of the night.
+    else if (warden < RUN_MIN) verdict = "Warden before the target band";
+    else if (warden <= RUN_MAX) verdict = "Warden inside the night";
+    else verdict = "Warden after the ceiling";
 
     rows.push({ crew, duty, warden, verdict });
     console.log(
@@ -130,7 +147,7 @@ console.log(`\nWhat this says`);
 const alwaysLit = rows.filter((r) => r.duty === 1);
 const tooFast = alwaysLit.filter((r) => r.warden !== undefined && r.warden < RUN_MIN);
 if (tooFast.length > 0) {
-  console.log(`  - A fully-lit crew meets the Warden before a 6-minute run can finish at`);
+  console.log(`  - A fully-lit crew meets the Warden before the ${RUN_MIN / 60}-minute target band opens, at`);
   console.log(
     `    crew size${tooFast.length > 1 ? "s" : ""} ${tooFast.map((r) => r.crew).join(", ")}. ` +
       (DIMINISHING

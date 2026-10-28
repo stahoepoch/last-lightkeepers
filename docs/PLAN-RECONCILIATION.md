@@ -81,7 +81,10 @@ already removes the merge problem that Perforce's locking is for.
 ### 3. Run length: the plan locks 10–12 minutes, O1 does not
 
 The plan states a **10–12 minute** expedition as a lock. **O1** in
-`DECISIONS.md` has the target at **6–10 minutes** with a hard ceiling of 20,
+**RESOLVED 2026-10-28: the plan was right.** Chris settled it at 10-12 and
+retired 6-10 everywhere; O1 is closed and the three values live in
+`data/storm-charge.json`. The original write-up follows. At the time,
+`DECISIONS.md` had the target at **6–10 minutes** with a hard ceiling of 20,
 and notes those are different kinds of number. An agent cannot lock a row;
 only Chris can.
 
