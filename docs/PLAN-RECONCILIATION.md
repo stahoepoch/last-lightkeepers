@@ -19,7 +19,17 @@ Twelve are listed. Six need Chris and nobody else.
 
 ## Needs Chris
 
-### 1. First person or third person — never decided, and now assumed both ways
+### 1. First person or third person — **RESOLVED 2026-10-28: first person**
+
+Chris: *"First person. Lock it."* `DECISIONS.md` row 44, LOCKED. His reasoning
+went further than the recommendation below: third person is **not a fallback
+camera**, because it "creates a different, less frightening game" - so the
+lantern, hands, carry states, tools and downed crawl are first-person systems
+from day one, and the first slice needs no full-body player animation beyond
+what co-op players see of each other. He corrected `STEAM-PRODUCTION-PLAN.md`
+himself; `ROADMAP.md` M1.1 was already right. The original write-up follows.
+
+#### As first logged
 
 `ROADMAP.md` M1.1 specifies a **first-person** keeper. The plan's week 1 says
 **third-person** movement and camera. Neither document knows it is in

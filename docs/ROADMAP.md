@@ -76,7 +76,7 @@ The first milestone with the game in it. One room, one mechanic, two players.
 
 | # | Task | Owner | Done when |
 | --- | --- | --- | --- |
-| M1.1 | `ALLKCharacter` — first-person keeper, server-authoritative, speeds read from `data/lantern.json` (walk 16, sprint 23, crouch 9) | Claude | Two clients move independently on a listen server; speeds come from data, not constants |
+| M1.1 | `ALLKCharacter` — first-person keeper, server-authoritative, speeds read from `data/lantern.json` (walk 16, sprint 23, crouch 9) | Claude | Two clients move independently on a listen server; speeds come from data, not constants. **Row 44, LOCKED:** first person is not a camera setting here - the lantern, hands, carry states, tools and downed crawl are first-person systems from day one, and no third-person fallback is kept working. The saving: no full-body player animation in the first slice beyond what co-op players see of each other |
 | M1.2 | `ULLKLanternComponent` — toggle, replicated state, owns the light's on/off only | Claude | Client presses the key, server decides, both clients see the same state. No client-side authority anywhere |
 | M1.3 | The lantern actor: light, mesh, the sound of it striking | Chris | It looks and sounds like a lantern. The C++ class is complete and works with a placeholder before this exists |
 | M1.4 | `ULLKStormChargeSubsystem` — the meter, rate and multiplier from `data/storm-charge.json`, the **diminishing** curve (row 12) | Claude | Four lanterns cost more than one and no keeper's light is free. The existing 98 data assertions still pass |

@@ -157,7 +157,13 @@ answer is affordable, which is the entire reason it comes first.
 **It has to teach four people talking at once.** `DECISIONS.md` row 36 is 1–4
 private co-op, which defeats text, quiet moments and anything resembling a
 cutscene. Every lesson above is carried by arrangement, light and sound,
-because those are the only channels that survive a voice call. The corollary,
+because those are the only channels that survive a voice call. **Amended
+2026-10-28:** that sentence was half the problem it describes. Teaching
+through darkness, light and monster audio uses exactly the two single
+channels accessibility guidance warns against, and voice chat occupies one of
+them. Row 16's rewrite is the fix - every threat telegraphs on two
+distinguishable channels, one of which may be sound - so each lesson above
+needs a physical tell as well as a sound. `docs/SOUND.md`. The corollary,
 and it is uncomfortable: **the building must also teach the solo player**, who
 has no veteran in the lobby to explain it. A lesson that only lands because
 someone's friend already knew it has not been taught.
