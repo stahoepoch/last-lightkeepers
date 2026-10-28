@@ -162,6 +162,37 @@ and it is uncomfortable: **the building must also teach the solo player**, who
 has no veteran in the lobby to explain it. A lesson that only lands because
 someone's friend already knew it has not been taught.
 
+### The hole in rule two, found the same day
+
+Rule two says a trade-off has to be felt both ways. Research into tutorial-free
+teaching says something sharper that breaks it: the player has to see the rule
+applied to **their own** action. Portal's developer commentary says it, and a
+2026 study on self-modeling (N=60) measures it.
+
+In four-player co-op the default outcome is that **the player who lights the
+lantern and the player who meets the enemy are different people.** Neither one
+learns the rule. One got a relic and no consequence; the other got a
+consequence and no cause. Play it ten times and the crew still cannot tell you
+what the lantern does, because nobody ever held both halves.
+
+This was the sharpest single risk the research turned up against this page, and
+it is a hole in my own proposal rather than in Chris's decision.
+
+**The fix is already a locked rule, and it is being broken in the prototype.**
+Enemies converge on the *brightest position*, not the nearest player. If that
+holds, the lantern holder is the one who gets found, every time, and the lesson
+is personal by construction — cause and consequence land on the same pair of
+hands. The archived `EnemyService` retargets the Warden to the **nearest**
+player instead, which until now looked like a fidelity bug. It is not. It is
+the bug that would stop the building teaching, and the UE5 build must not
+inherit it.
+
+**The corollary nobody will like: solo teaches better than co-op.** Alone, the
+player necessarily holds both halves, so the ground floor's lesson cannot
+miss. That makes the solo path the one to design the teaching against, with
+co-op inheriting it — the opposite of the usual order for a co-op game, and the
+reason the brightest-position rule carries so much weight.
+
 ### What this costs the roadmap
 
 `ROADMAP.md` M1.5 asks for a grey-box floor you "can get lost in." Row 43
