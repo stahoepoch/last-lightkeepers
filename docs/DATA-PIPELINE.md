@@ -187,25 +187,40 @@ unrecognised *key* a hard error. An unrecognised *file* must be one too. If
 `data/` contains a `.json` the importer has no validator for, the import fails
 and names it - it does not import the seven it recognises and declare success.
 
-**Added 2026-10-28, after finding this open.** `Tools/import_data.py` walks a
-hardcoded list of the eight filenames, so a ninth file in `data/` is not
-rejected: it is invisible. Dropping a junk `data/keepers.json` into a copy of
-the data directory and running the gate prints **"Data contract passed"** and
-exits 0, having never looked at it. Nothing is broken today, because the eight
-on disk are exactly the eight in the list.
+**Added 2026-10-28 after finding this open, and CLOSED the same day in
+765df60.** The history is kept in the past tense below because the failure
+mode is worth remembering, not because the hole is still there.
 
-It will break soon, and predictably. `DECISIONS.md` row 49 makes contained
-keepers the next contract type, and the obvious shape for it is
+`Tools/import_data.py` walked a hardcoded list of the eight filenames, so a
+ninth file in `data/` was not rejected: it was invisible. Dropping a junk
+`data/keepers.json` into a copy of the data directory and running the gate
+printed **"Data contract passed"** and exited 0, having never looked at it.
+Nothing was broken on the day, because the eight on disk were exactly the
+eight in the list.
+
+It would have broken soon and predictably. `DECISIONS.md` row 49 makes
+contained keepers the next contract type, and the obvious shape for it is
 `data/keepers.json`. The failure mode is the quiet one this whole page exists
 to prevent: somebody adds a data file, the gate stays green, the Node suite
 never sees it either, and the file silently is not part of the game until
 someone notices months later that an asset was never generated from it. A
 green gate over an unread file is worse than no gate, for the same reason a
 green test suite that cannot fail is worse than no suite.
+**How it was closed, and it is tighter than what I asked for.** Codex made the
+directory the input: `load()` globs `data/*.json` and compares that set against
+the contract's list in **both** directions. An unrecognised file is now a hard
+error, and so is a *missing* one - named upfront rather than discovered
+part-way through a per-file read. I only raised the extra-file half; the
+missing-file half is his addition and it is the better guarantee, because a
+deleted data file and an unread one fail the same way for the same reason.
 
-The fix is to derive the list from what is on disk and require a validator for
-each, rather than to derive what is read from the list - so the set of files is
-the input and an unmatched one is an error.
+Verified against the live tooling rather than taken on report, all three ways:
+a junk `data/keepers.json` now gives `unrecognised contract file(s):
+keepers.json` and exit 1; removing `town.json` gives `missing contract
+file(s): town.json` and exit 1; the real eight still pass with exit 0.
+`Tools/test_import_data.py` asserts the first of those, so the guarantee has a
+red-path test and not just a changelog entry.
+
 ## How C++ reads it
 
 `ULLKBalanceSubsystem` — a `UGameInstanceSubsystem`, Claude's, landing in M1.

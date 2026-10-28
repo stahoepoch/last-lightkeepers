@@ -13,7 +13,7 @@ it.
 
 | | Milestone | Exit criteria — the thing that proves it is done |
 | --- | --- | --- |
-| **M0** | **It builds** | A clean clone builds, the editor opens, and a headless automation test passes in CI. Nobody writes gameplay before this |
+| **M0** | **It builds** | A clean clone builds, the editor opens, the data contract gate passes in CI, and a headless automation test passes **locally** - see the two-tier CI rule below. Nobody writes gameplay before this |
 | **M1** | **The keeper and the lantern** | Two players on a listen server in a grey-box store floor. One lights a lantern; both see the storm charge move. Movement reads from `data/lantern.json` |
 | **M2** | **The storm has teeth** | A dark run and a lit run end measurably differently. Thresholds fire, the Warden arrives, a keeper can be knocked down |
 | **M3** | **The loop closes** | A run can be won or lost. Loot visible only by light, burden slows you, the extraction call spikes the meter, extraction secures the haul and nothing else does |
@@ -51,7 +51,7 @@ instead of debugged.
 | M0.3 | Git hygiene: `.gitignore` for `Binaries/ Intermediate/ Saved/ DerivedDataCache/`, `.gitattributes` marking UE binaries `-text`, Git LFS for `Content/**` | Codex (seeded by Claude, see below) | A built project leaves `git status` clean, and `Content/` goes to LFS rather than into the pack file |
 | M0.4 | Data pipeline spec: the JSON→DataTable contract, one row type per file, with the schema written down | Claude | `docs/DATA-PIPELINE.md` exists and Codex can implement from it without asking a question |
 | M0.5 | `Tools/import_data.py` — the importer that runs the contract | Codex | Running it regenerates every `Content/Data/*.uasset` from `data/*.json` with no hand editing, and is idempotent |
-| M0.6 | Headless test runner + CI | Codex | `Automation RunTests LLK` runs from the command line and in CI, exits non-zero on failure, and prints which test failed |
+| M0.6 | Headless test runner + CI | Codex | `Automation RunTests LLK` runs from the command line, exits non-zero on failure, and prints which test failed. Data checks gate every push in CI; the UE run is local until a self-hosted runner exists - see the two-tier rule below |
 | M0.7 | The first automation test — a trivial one that proves the harness runs | Claude | It fails when deliberately broken. A green suite that cannot go red is worse than no suite |
 | M0.8 | Open the editor, press Play, walk a cube around | Chris | He has seen it move. Nothing in this project is "done" because a test passed and nobody looked |
 
@@ -92,6 +92,35 @@ milestone exists to prevent, so this line says "compiled" and not "complete".
 
 ---
 
+## The two-tier CI rule, decided 2026-10-28
+
+**Every push:** GitHub runs the fast JSON contract and data checks.
+**Unreal automation:** local for M0, and required in CI only once a
+maintained self-hosted Windows runner with the pinned UE 5.8.4 install
+exists.
+
+Codex's call, and it is the right one. An `ubuntu-latest` job cannot prove
+Unreal tests passed - it has no engine on it - and a hosted Unreal job nobody
+operates would be slow, costly and brittle this early. The alternative was a
+CI line that describes something nobody is building, which is worse than an
+honest local-only rule.
+
+**This amended two rows above, and the second one mattered more.** M0.6's
+acceptance said `Automation RunTests LLK` must run "from the command line and
+in CI". But M0's own definition - the gate for the entire milestone - said a
+headless automation test "passes in CI", which under this rule M0 can never
+satisfy. Left alone, M0 would have been unclosable by its own terms while
+every task inside it was finished, and somebody would eventually have closed
+it anyway by ignoring the line. A gate that cannot be met is a gate that gets
+waived.
+
+**What this costs, stated plainly:** between now and that runner, the Unreal
+suite is only as good as somebody remembering to run it. The data gate is the
+only thing CI actually enforces. That is an accepted risk and not an oversight
+- but it does mean M0.7's canary procedure is the whole safety net, which is
+why the evidence for it gets recorded rather than assumed.
+
+---
 ## M1 — The keeper and the lantern
 
 The first milestone with the game in it. One room, one mechanic, two players.
