@@ -142,18 +142,24 @@ Write-CommandOutput 'git-diff.txt' {
 #
 # Also picks up LastLightkeepers_2.log, the SECOND editor or PIE instance -
 # which is the co-op case this whole script exists for, and which a
-# by-name list of the first instance misses entirely.
+# by-name list of the first instance misses entirely. LAN smoke runs write
+# their host/client logs one level down under Saved\Logs\LAN; preserve that
+# directory in the bundle so identically named logs can never overwrite.
 $logsCopied = 0
 $logDir = Join-Path $saved 'Logs'
 if (Test-Path -LiteralPath $logDir) {
     # Ours only. Saved\Logs also holds cef3.log and similar, which are not
     # about this game and would take slots from the sessions that are.
-    $recent = Get-ChildItem -LiteralPath $logDir -Filter '*.log' |
-        Where-Object { $_.Name -like 'LastLightkeepers*' -or $_.Name -like 'LLK-*' } |
+    $recent = Get-ChildItem -LiteralPath $logDir -Recurse -Filter '*.log' |
+        Where-Object {
+            $_.Name -like 'LastLightkeepers*' -or $_.Name -like 'LLK-*' -or
+            $_.DirectoryName -eq (Join-Path $logDir 'LAN')
+        } |
         Sort-Object LastWriteTime -Descending |
         Select-Object -First 8
     foreach ($log in $recent) {
-        if (Copy-IfPresent $log.FullName (Join-Path $bundle "Logs\$($log.Name)")) {
+        $relativeLogPath = $log.FullName.Substring($logDir.Length).TrimStart('\')
+        if (Copy-IfPresent $log.FullName (Join-Path $bundle "Logs\$relativeLogPath")) {
             ++$logsCopied
         }
     }
@@ -190,7 +196,7 @@ $bundlePath = (Resolve-Path -LiteralPath $bundle).Path
     "Last Lightkeepers playtest diagnostics",
     "Created: $(Get-Date -Format o)",
     "Logs copied: $logsCopied (newest first, by modification time - includes",
-    "  LastLightkeepers_2.log for a second instance, and rotated -backup- logs,",
+    "  LastLightkeepers_2.log for a second instance, LAN host/client logs, and rotated -backup- logs,",
     "  because after a force-quit the freeze is in the backup and not the live one)",
     "Archived automation runs copied: $historyCopied",
     "Crash dumps included: $IncludeCrashDumps",
