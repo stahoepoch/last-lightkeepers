@@ -243,23 +243,16 @@ Written down so nobody has to ask, and so nobody quietly starts:
   from a clean clone), M0.3 (git hygiene), M0.4 (`DATA-PIPELINE.md`), M0.6
   (headless runner + the fast CI gate). `ProjectID` is committed as shared
   identity in `30ca0ca`.
-- **M0.5 is NOT done, and the half that is missing is the half that produces
-  assets.** Its acceptance is *"running it regenerates every
-  `Content/Data/*.uasset` from `data/*.json`"*. What exists is the validating
-  front end: `Tools/import_data.py` enforces the whole contract and writes
-  canonical payloads to `Intermediate/LLKDataImport`, with red-path tests. What
-  does not exist is the editor-side writer that turns those payloads into
-  DataTables and DataAssets - `Content/Data/` is absent, nothing in the repo
-  references `.uasset`, and `Source/LLKEditor` is still a module stub. Checked
-  2026-10-28 rather than inferred from the commit message. **The runtime half
-  landed the same day** (`2304afe`): the row structs and DataAssets Codex's
-  writer targets now exist and compile against the pinned 5.8.4. See M0.5's
-  boundary above; the writer itself is the one piece outstanding.
-- **Why that matters more than bookkeeping:** M1 is held until M0 closes, and
-  M1's `ULLKBalanceSubsystem` loads generated assets. Marked done, this becomes
-  M1.1's problem to discover - which is the exact failure M0 exists to prevent:
-  *gameplay should not be the thing that finds out the project cannot import
-  data.*
+- **M0.5 is done** - `3df79e6` built the editor writer and `c792f48` added one
+  fail-closed command that validates the JSON, runs the Unreal import,
+  confirms all eleven assets exist and checks git ignores them.
+  **Verified here from the artefacts, not the report:** eleven `.uasset`
+  files in `Content/Data/`, `git check-ignore` resolving them to
+  `.gitignore:73`, and the two conversions that had no precedent both landed -
+  `DA_LootRules` carries `LoadingDock` and `FreightLift` alongside `Id`,
+  `Reliability` and `PayoutModifier`, so the keyed object really did become an
+  array with its keys promoted; `DT_LedgerRungs` carries all four real rung
+  ids as row names; `DT_Enemies` carries all six enemies including the Ficus.
 - **M0.7 is done, and it is done the way it was specified.** The canary was
   watched failing and then passing, by Codex, on 2026-10-28 (`6522f8f`). The
   blocker turned out to be a single flag - the runner asked for its log at an
