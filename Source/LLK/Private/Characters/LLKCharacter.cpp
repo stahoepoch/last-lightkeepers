@@ -558,6 +558,10 @@ void ALLKCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	// row 5's trade a matter of finger stamina instead of a decision.
 	Input->BindAction(ActiveBindings.LanternToggle, ETriggerEvent::Started, this, &ALLKCharacter::OnLanternToggled);
 	Input->BindAction(ActiveBindings.Interact, ETriggerEvent::Started, this, &ALLKCharacter::OnInteract);
+	// Released as well as pressed, because a revive is a HOLD: letting go has
+	// to cancel it, which is what makes reviving a commitment of attention
+	// rather than a tap.
+	Input->BindAction(ActiveBindings.Interact, ETriggerEvent::Completed, this, &ALLKCharacter::OnInteractReleased);
 }
 
 void ALLKCharacter::OnMoveInput(const FInputActionValue& Value)
@@ -609,20 +613,23 @@ void ALLKCharacter::OnJumpStopped()
 
 void ALLKCharacter::OnInteract()
 {
-	// A keeper on the floor cannot take things off shelves. Not merely
-	// disallowed by reach - they are being contained, and reaching for a
-	// brooch while held is not a thing the fiction permits.
-	if (IsDowned())
-	{
-		return;
-	}
-
+	// **No longer gated on being downed, and that is M2.2's doing.** A keeper
+	// on the floor still cannot take things off shelves - the interactor
+	// refuses that - but they CAN spend their own anchor revive, which is the
+	// one action a contained keeper has. The gate moved from "a downed keeper
+	// does nothing" to "a downed keeper may do exactly one thing", and it
+	// lives in the interactor where it can tell the two apart.
 	if (Interactor != nullptr)
 	{
-		// Asks. The server decides whether the thing may be lifted, including
-		// row 62's live-light gate, and the prompt the player read was a
-		// courtesy rather than a promise.
-		Interactor->TryTakeFocused();
+		Interactor->BeginInteract();
+	}
+}
+
+void ALLKCharacter::OnInteractReleased()
+{
+	if (Interactor != nullptr)
+	{
+		Interactor->EndInteract();
 	}
 }
 

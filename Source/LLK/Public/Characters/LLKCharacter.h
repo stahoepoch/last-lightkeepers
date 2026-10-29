@@ -423,6 +423,7 @@ protected:
 	void OnJumpStopped();
 	void OnLanternToggled();
 	void OnInteract();
+	void OnInteractReleased();
 
 	UPROPERTY()
 	FLLKInputBindings ActiveBindings;

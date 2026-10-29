@@ -44,6 +44,20 @@
 #include "Data/LLKLanternData.h"
 #include "LLKVitalsComponent.generated.h"
 
+/** Why a revive hold stopped before it finished. The rescuer's HUD reads this. */
+UENUM(BlueprintType)
+enum class ELLKReviveCancelReason : uint8
+{
+	/** The rescuer let go. */
+	Released,
+	/** They walked out of `maxReviveDistance`. The commitment row 59 asks for. */
+	OutOfRange,
+	/** The rescuer went down themselves, which is the co-op crisis compounding. */
+	RescuerDowned,
+	/** The target is already up - somebody else got there first. */
+	NoLongerNeeded
+};
+
 /** Why a keeper went down, or got back up. For listeners and for tests. */
 UENUM(BlueprintType)
 enum class ELLKDownedReason : uint8
@@ -60,6 +74,9 @@ enum class ELLKDownedReason : uint8
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 	FLLKDownedChanged, bool, bIsDowned, ELLKDownedReason, Reason);
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(
+	FLLKReviveCancelled, ELLKReviveCancelReason, Reason);
 
 UCLASS(ClassGroup = (LLK), meta = (BlueprintSpawnableComponent))
 class LLK_API ULLKVitalsComponent : public UActorComponent
@@ -88,6 +105,59 @@ public:
 
 	/** Server only. M2.2's revive calls this; nothing else should. */
 	void StandUp(ELLKDownedReason Reason);
+
+	// ------------------------------------------------------------- M2.2
+	//
+	// **The teammate hold.** `revive.teammateHoldSeconds: 4` and
+	// `revive.maxReviveDistance: 12` studs. Server-validated every tick
+	// against the rescuer's real position, because the whole point of the
+	// rule is that reviving is a commitment of somebody's attention - row
+	// 59's "everyone protects the carrier" only means anything if walking
+	// away actually stops it.
+
+	/** Server only. Starts or continues a rescuer's hold. Idempotent per rescuer. */
+	void BeginRevive(AActor* Rescuer);
+
+	/** Server only. Stops a hold in progress and says why. */
+	void CancelRevive(ELLKReviveCancelReason Reason);
+
+	/** 0 to 1. Replicated, so the whole crew can see a rescue happening. */
+	UFUNCTION(BlueprintPure, Category = "LLK|Vitals")
+	float GetReviveProgress() const;
+
+	UFUNCTION(BlueprintPure, Category = "LLK|Vitals")
+	bool IsBeingRevived() const { return ReviveSeconds > 0.f; }
+
+	/** Who is holding, or null. Read by a HUD to name the rescuer. */
+	UFUNCTION(BlueprintPure, Category = "LLK|Vitals")
+	AActor* GetRescuer() const { return Rescuer.Get(); }
+
+	/** `revive.maxReviveDistance` in STUDS. Converted at the boundary, row 61. */
+	UFUNCTION(BlueprintPure, Category = "LLK|Vitals")
+	float GetMaxReviveDistanceStuds() const { return MaxReviveDistanceStuds; }
+
+	// ------------------------------------------- the solo keeper's one way up
+	//
+	// **`anchorRevive`, and the price is not what its own key says.**
+	// `consumesFullLanternCharge: true` has nothing to consume:
+	// `charge.secondsOfLightPerFullCharge` is 0, so light is unlimited and
+	// there is no fuel to spend. `lantern.json` says so itself - the handoff
+	// sentence pricing this at "a full lantern charge" is stale, and the real
+	// price is `chargesPerRun: 1` plus a permanent 120 on the meter. So that
+	// is what is implemented; no fuel drain is invented to justify a key.
+
+	/** Server only. One per keeper per run, solo only, and it costs the night 120. */
+	bool TryAnchorRevive();
+
+	UFUNCTION(BlueprintPure, Category = "LLK|Vitals")
+	int32 GetAnchorChargesLeft() const { return AnchorChargesLeft; }
+
+	/** True only when this is genuinely a solo run. Row 9: never for a crew. */
+	UFUNCTION(BlueprintPure, Category = "LLK|Vitals")
+	bool IsAnchorReviveAvailable() const;
+
+	UPROPERTY(BlueprintAssignable, Category = "LLK|Vitals")
+	FLLKReviveCancelled OnReviveCancelled;
 
 	/** Fires on server and clients alike, whenever the state actually changes. */
 	UPROPERTY(BlueprintAssignable, Category = "LLK|Vitals")
@@ -128,6 +198,22 @@ public:
 	float GetSecondsDownedForTest() const { return SecondsDowned; }
 	void AdvanceForTest(float Seconds) { TickDowned(Seconds); }
 
+	/** Drives the revive clock with no world, exactly as the tick does. */
+	void TickReviveForTest(float Seconds) { TickRevive(Seconds); }
+
+	void SetReviveRulesForTest(float InHoldSeconds, float InMaxDistanceStuds, int32 InAnchorCharges,
+		float InAnchorSeconds, bool bInAnchorSoloOnly)
+	{
+		TeammateHoldSeconds = InHoldSeconds;
+		MaxReviveDistanceStuds = InMaxDistanceStuds;
+		AnchorChargesLeft = InAnchorCharges;
+		AnchorReviveSeconds = InAnchorSeconds;
+		bAnchorSoloOnly = bInAnchorSoloOnly;
+	}
+
+	/** Forces the solo/crew answer, since a test has no PlayerArray. */
+	void SetSoloForTest(bool bInSolo) { bForcedSoloForTest = bInSolo; bHasForcedSolo = true; }
+
 	/**
 	 * Runs the REAL resolution path against an injected asset.
 	 *
@@ -151,6 +237,12 @@ protected:
 	void TickDowned(float DeltaSeconds);
 
 	void ResolveRules();
+
+	/** One step of the revive hold: validates range, advances, completes or cancels. */
+	void TickRevive(float DeltaSeconds);
+
+	/** True when this is a one-player game. Server-side; a test can force it. */
+	bool IsSoloRun() const;
 
 	UFUNCTION()
 	void OnRep_Downed();
@@ -193,4 +285,33 @@ protected:
 
 	/** Not replicated: every machine can count it from the moment the state arrives. */
 	float SecondsDowned = 0.f;
+
+	// ---- the revive hold, replicated so the crew can see a rescue ----------
+	UPROPERTY(Replicated)
+	float ReviveSeconds = 0.f;
+
+	UPROPERTY(Replicated)
+	TWeakObjectPtr<AActor> Rescuer;
+
+	UPROPERTY(VisibleInstanceOnly, Category = "LLK|Vitals")
+	float TeammateHoldSeconds = 4.f;
+
+	UPROPERTY(VisibleInstanceOnly, Category = "LLK|Vitals")
+	float MaxReviveDistanceStuds = 12.f;
+
+	// ---- the anchor revive -------------------------------------------------
+	UPROPERTY(Replicated)
+	int32 AnchorChargesLeft = 1;
+
+	UPROPERTY(VisibleInstanceOnly, Category = "LLK|Vitals")
+	float AnchorReviveSeconds = 8.f;
+
+	UPROPERTY(VisibleInstanceOnly, Category = "LLK|Vitals")
+	bool bAnchorSoloOnly = true;
+
+	/** Set while a solo keeper is self-reviving, so the 8 seconds are real. */
+	float AnchorSecondsHeld = 0.f;
+
+	bool bForcedSoloForTest = false;
+	bool bHasForcedSolo = false;
 };

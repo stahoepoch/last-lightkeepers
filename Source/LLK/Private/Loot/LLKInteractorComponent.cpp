@@ -6,6 +6,8 @@
 #include "GameFramework/Pawn.h"
 #include "LLK.h"
 #include "LLKUnits.h"
+#include "Storm/LLKStormChargeSubsystem.h"
+#include "Characters/LLKVitalsComponent.h"
 #include "Loot/LLKRelicComponent.h"
 #include "Net/UnrealNetwork.h"
 
@@ -37,7 +39,11 @@ void ULLKInteractorComponent::TickComponent(
 	}
 	SecondsSinceSearch = 0.f;
 
-	ULLKRelicComponent* Found = FindFocus();
+	// A body outranks loot. Resolved first so the prompt never flickers
+	// between a fallen crewmate and a brooch on the shelf behind them.
+	FocusedCasualty = FindCasualty();
+
+	ULLKRelicComponent* Found = FocusedCasualty != nullptr ? nullptr : FindFocus();
 	if (Found == Focused)
 	{
 		return;
@@ -109,6 +115,174 @@ ULLKRelicComponent* ULLKInteractorComponent::FindFocus() const
 	}
 
 	return Best;
+}
+
+ULLKVitalsComponent* ULLKInteractorComponent::FindCasualty() const
+{
+	const APawn* Keeper = Cast<APawn>(GetOwner());
+	const UWorld* World = GetWorld();
+	if (Keeper == nullptr || World == nullptr)
+	{
+		return nullptr;
+	}
+
+	// A keeper on the floor cannot rescue anybody, including a crewmate who
+	// fell beside them.
+	if (const ULLKVitalsComponent* Own = Keeper->FindComponentByClass<ULLKVitalsComponent>())
+	{
+		if (Own->IsDowned())
+		{
+			return nullptr;
+		}
+	}
+
+	const UCameraComponent* Camera = Keeper->FindComponentByClass<UCameraComponent>();
+	const FVector EyeLocation = Camera != nullptr
+		? Camera->GetComponentLocation() : Keeper->GetActorLocation();
+	const FVector ViewDirection = Camera != nullptr
+		? Camera->GetForwardVector() : Keeper->GetActorForwardVector();
+
+	// Reach is the revive rule own distance, not the loot reach: the data says
+	// 12 studs for a rescue and 9 for a shelf, and they are different numbers
+	// for different reasons.
+	ULLKVitalsComponent* Best = nullptr;
+	float BestScore = -1.f;
+
+	for (TActorIterator<APawn> It(World); It; ++It)
+	{
+		if (*It == Keeper)
+		{
+			continue;
+		}
+
+		ULLKVitalsComponent* Vitals = It->FindComponentByClass<ULLKVitalsComponent>();
+		if (Vitals == nullptr || !Vitals->IsDowned())
+		{
+			continue;
+		}
+
+		const float MaxDistance = LLKUnits::DistanceFromStuds(Vitals->GetMaxReviveDistanceStuds());
+		const FVector ToCasualty = It->GetActorLocation() - EyeLocation;
+		if (ToCasualty.SizeSquared() > MaxDistance * MaxDistance)
+		{
+			continue;
+		}
+
+		const float Aim = FVector::DotProduct(ToCasualty.GetSafeNormal(), ViewDirection);
+		if (Aim < MinAimDot)
+		{
+			continue;
+		}
+
+		if (Aim > BestScore)
+		{
+			BestScore = Aim;
+			Best = Vitals;
+		}
+	}
+
+	return Best;
+}
+
+void ULLKInteractorComponent::BeginInteract()
+{
+	const AActor* Owner = GetOwner();
+	if (Owner == nullptr)
+	{
+		return;
+	}
+
+	// A downed keeper only available action is their own anchor revive.
+	if (const ULLKVitalsComponent* Own = Owner->FindComponentByClass<ULLKVitalsComponent>())
+	{
+		if (Own->IsDowned())
+		{
+			ServerAnchorRevive();
+			return;
+		}
+	}
+
+	if (FocusedCasualty != nullptr)
+	{
+		Holding = FocusedCasualty;
+		ServerBeginRevive(FocusedCasualty);
+		return;
+	}
+
+	TryTakeFocused();
+}
+
+void ULLKInteractorComponent::EndInteract()
+{
+	if (Holding != nullptr)
+	{
+		ServerCancelRevive(Holding);
+		Holding = nullptr;
+	}
+}
+
+void ULLKInteractorComponent::ServerBeginRevive_Implementation(ULLKVitalsComponent* Target)
+{
+	AActor* Owner = GetOwner();
+	if (Owner == nullptr || !Owner->HasAuthority() || Target == nullptr)
+	{
+		return;
+	}
+
+	// Re-checked here because the client asked based on its own view. The
+	// per-tick range validation in TickRevive is what enforces the
+	// commitment; this only refuses an opening request that was never valid.
+	if (const ULLKVitalsComponent* Own = Owner->FindComponentByClass<ULLKVitalsComponent>())
+	{
+		if (Own->IsDowned())
+		{
+			return;
+		}
+	}
+
+	Target->BeginRevive(Owner);
+}
+
+void ULLKInteractorComponent::ServerCancelRevive_Implementation(ULLKVitalsComponent* Target)
+{
+	const AActor* Owner = GetOwner();
+	if (Owner == nullptr || !Owner->HasAuthority() || Target == nullptr)
+	{
+		return;
+	}
+
+	// Only the keeper actually holding may cancel, or a third party could
+	// interrupt somebody else rescue by tapping E.
+	if (Target->GetRescuer() == Owner)
+	{
+		Target->CancelRevive(ELLKReviveCancelReason::Released);
+	}
+}
+
+void ULLKInteractorComponent::ServerAnchorRevive_Implementation()
+{
+	AActor* Owner = GetOwner();
+	if (Owner == nullptr || !Owner->HasAuthority())
+	{
+		return;
+	}
+
+	ULLKVitalsComponent* Own = Owner->FindComponentByClass<ULLKVitalsComponent>();
+	if (Own == nullptr || !Own->TryAnchorRevive())
+	{
+		return;
+	}
+
+	// The price, paid by the chooser. Row 64 line three allows this precisely
+	// because it is a decision the keeper made - the same reason being
+	// contained may never move the meter.
+	if (const UWorld* World = GetWorld())
+	{
+		if (ULLKStormChargeSubsystem* Storm = World->GetSubsystem<ULLKStormChargeSubsystem>())
+		{
+			Storm->AddSpike(ELLKStormSpike::AnchorRevive);
+		}
+	}
 }
 
 void ULLKInteractorComponent::TryTakeFocused()

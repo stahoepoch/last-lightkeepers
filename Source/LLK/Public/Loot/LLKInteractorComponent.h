@@ -29,6 +29,7 @@
 #include "LLKInteractorComponent.generated.h"
 
 class ULLKRelicComponent;
+class ULLKVitalsComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FLLKFocusChanged, ULLKRelicComponent*, Focused);
 
@@ -60,6 +61,25 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "LLK|Interact")
 	void TryTakeFocused();
 
+	/**
+	 * The downed teammate in reach, or null. M2.2.
+	 *
+	 * Resolved beside the relic focus and in the same pass, because a keeper
+	 * standing over a fallen crewmate with a brooch on the shelf behind them
+	 * must not have the prompt flicker between the two. A body outranks loot:
+	 * if somebody is down in front of you, that is what E means.
+	 */
+	UFUNCTION(BlueprintPure, Category = "LLK|Interact")
+	ULLKVitalsComponent* GetFocusedCasualty() const { return FocusedCasualty; }
+
+	/** Press: begin a hold, or spend the anchor revive if this keeper is the one down. */
+	UFUNCTION(BlueprintCallable, Category = "LLK|Interact")
+	void BeginInteract();
+
+	/** Release: a hold that is let go is a hold that cancels. */
+	UFUNCTION(BlueprintCallable, Category = "LLK|Interact")
+	void EndInteract();
+
 	/** How many relics this keeper is carrying. Replicated so a HUD can show it. */
 	UFUNCTION(BlueprintPure, Category = "LLK|Interact")
 	int32 GetCarriedCount() const { return CarriedCount; }
@@ -84,11 +104,38 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void ServerTake(ULLKRelicComponent* Relic);
 
+	UFUNCTION(Server, Reliable)
+	void ServerBeginRevive(ULLKVitalsComponent* Target);
+
+	UFUNCTION(Server, Reliable)
+	void ServerCancelRevive(ULLKVitalsComponent* Target);
+
+	/**
+	 * Server. Spends this keeper's own anchor revive and pays the meter.
+	 *
+	 * The price is applied here rather than in the vitals component, and that
+	 * split is the escalation guard's doing: the knockdown path must not be
+	 * able to reach the storm at all, so the component that owns "the player
+	 * chose this" is the one that pays for it.
+	 */
+	UFUNCTION(Server, Reliable)
+	void ServerAnchorRevive();
+
+	/** Finds the nearest downed teammate in reach, by the same aim rule as loot. */
+	ULLKVitalsComponent* FindCasualty() const;
+
 	/** Picks the best focus candidate from reach and aim together. */
 	ULLKRelicComponent* FindFocus() const;
 
 	UPROPERTY()
 	TObjectPtr<ULLKRelicComponent> Focused;
+
+	UPROPERTY()
+	TObjectPtr<ULLKVitalsComponent> FocusedCasualty;
+
+	/** Who we asked the server to revive, so releasing E cancels the right hold. */
+	UPROPERTY()
+	TObjectPtr<ULLKVitalsComponent> Holding;
 
 	UPROPERTY(Replicated)
 	int32 CarriedCount = 0;
