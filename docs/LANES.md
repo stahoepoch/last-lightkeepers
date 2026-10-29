@@ -54,7 +54,7 @@ Three consequences, and they shape every lane below:
 | `.github/workflows/**` | **Codex** | CI |
 | `data/*.json` | **Claude** schema, **Chris** values | Unchanged from the Roblox project and deliberately so. See "The data pipeline" |
 | `tests/**` | **Claude** | Data and schema tests that need no engine |
-| `Source/LLK/Tests/**` | **Claude** | Unreal automation tests for gameplay rules |
+| `Source/LLK/Private/Tests/**` | **Claude** | Unreal automation tests for gameplay rules. `Private/Tests`, not `Tests` - the table named a directory that has never existed, corrected 2026-10-29 |
 | `docs/**` | **Claude** | Design docs, the decision log, this file. Chris ratifies; Codex reads |
 | `*.uproject` | **Codex** | It is text, it is build configuration, and it must have exactly one owner |
 | `.gitignore`, `.gitattributes`, LFS config | **Codex** | One owner, because getting this wrong commits 40GB of cache |
@@ -63,6 +63,26 @@ Three consequences, and they shape every lane below:
 **If you need a change outside your lane, write it down for the owner rather
 than making it.** That rule survived the platform change intact because it is
 the only reason three parties have been able to work in one repo at all.
+
+**Breached 2026-10-29, by Claude, in `Tools/**`.** Reviewing Codex's
+`collect_playtest_diagnostics.ps1` turned up four real gaps, and I fixed them
+in his file across four commits instead of handing them over. Chris restated
+the lane the same day - *"Tools/** is now Codex-only; Claude should hand off
+tool requirements, not edit the files"* - which is this table's existing row,
+not a new rule.
+
+It cost nothing, and that is the point worth recording rather than the apology.
+Codex was reading the file from a commit behind while I was writing it, and
+reported a defect I had already fixed as still outstanding. Nothing was lost
+because git serialised us and because his note was a note rather than an edit.
+Two writers in one file is not a conflict that gets resolved; it is a winner
+and a silently destroyed afternoon, which is the whole argument of row 41
+applied to text instead of binary.
+
+**The thing that was genuinely missing is narrower than the rule**: there was
+no stated channel for *review findings* on somebody else's lane. Running
+another owner's script and reading its output is how all four gaps were found,
+and nothing about the lanes forbids that or should. See the handoff list below.
 
 ---
 
@@ -152,6 +172,16 @@ not live in C++ constants. One source, one owner, one diff.
   `*.Build.cs`.
 - **Codex → Claude:** a tooling change that alters what the gameplay code can
   assume gets written down, not assumed.
+- **Review findings, in any direction:** running another owner's script,
+  reading their output and reporting what is wrong is always in bounds -
+  **editing their file to fix it is not.** A finding is handed over as the
+  symptom, the evidence and the file and line, and the owner decides. Added
+  2026-10-29 after I found four real defects in `Tools/**` by running it and
+  then fixed them myself, which was the wrong half of a good instinct.
+- **Reading each other's work means reading it at HEAD.** A review written
+  against a stale checkout reports fixed defects as open, which happened the
+  same day in the other direction. `git log --oneline origin/master..HEAD`
+  before reporting, or the finding may already be history.
 - **Anyone → Chris:** balance values, creative calls, anything binary, anything
   published. He is the only one who can press Play and the only one who can
   release.
