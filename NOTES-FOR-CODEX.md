@@ -1210,3 +1210,70 @@ mappings and five distinct actions.
 **This class is meant to be deleted.** When M1.5's grey-box floor exists it
 stops being the way to play. One file and one config line, which is why it is
 isolated rather than folded into anything.
+
+---
+
+## 2026-10-29 — the lantern's light and the storm meter (M1.3 placeholder, M1.4, M1.8)
+
+**No config change needed this time.** Nothing here needs wiring; it is live
+the moment the editor target is built. The `GlobalDefaultGameMode` line from
+the previous section is still the only config this harness wants.
+
+### What landed
+
+- `ULLKLanternLightComponent` (`Source/LLK/Public/Lantern/`) — M1.3's
+  placeholder. A code-built `USpotLightComponent`, no asset behind it,
+  attached to the camera. It **only listens**: subscribes to
+  `OnLanternStateChanged`, sets its own visibility, and the lantern component
+  still has no knowledge of it. M1.3 proper — mesh, materials, the sound of it
+  striking — is Chris's and replaces this; the subscription shape is the part
+  worth keeping.
+- `ULLKStormChargeSubsystem` (`Source/LLK/Public/Storm/`) — M1.4. A
+  `UTickableWorldSubsystem`, Game and PIE worlds only, authority-only accrual.
+  Both meters, row 54's dampening, both curves from the asset per row 12,
+  declared fallbacks when `/Game/Data/DA_StormCharge` does not exist.
+- `LLK.Storm.LanternCurve` and `LLK.Storm.Accrual` — M1.8. Six LLK tests pass
+  headless now, up from four.
+
+### The new key
+
+**F toggles the lantern.** The transient fallback is now nine mappings and six
+actions: WASD, mouse, LeftShift sprint, LeftControl crouch, Space jump, F
+lantern. `LLK.Input.TransientFallback` asserts all of it. When M1.6's real
+Input Action assets land they need a sixth action, `LanternActionAsset`, or the
+set is incomplete and the whole thing falls back wholesale — which is the
+existing all-or-nothing rule, not a new one.
+
+### Who wires whom, and why it is not the obvious way
+
+`ALLKCharacter` does the registering, in `BeginPlay`, and unregisters in
+`EndPlay`. The lantern component does **not** register itself with the
+subsystem, deliberately: its header is explicit that a component which knows
+about its listeners cannot be tested without them, and the character is the
+one thing that owns both the lantern and a world to find the meter in. If you
+add a second lantern later — a dropped one on the floor — register it the same
+way, from whatever actor owns it.
+
+The subsystem **recounts lit lanterns every tick** rather than keeping a
+counter. Do not "optimise" that into an increment on the delegate: a keeper
+downed while lit has their actor torn down, and a decrement that never arrives
+leaves the storm permanently accelerated for the rest of the night. Four
+lanterns is the whole range.
+
+### Two things for Chris, not for you
+
+1. **Light radius is not in `data/`.** `enemies.json` has `aggroRadiusLit: 38`;
+   nothing says how far a keeper can see. The placeholder is 30 studs. Do not
+   author the real value — it is a design decision and it is his.
+2. **`AddSpike` applies the extraction call's 180 to the Warden's meter
+   undampened.** That is an assumption, marked as one in the cpp. If it
+   changes it wants a `spikeReachesWarden` key in the data, not an edit here.
+
+### Verified
+
+- `LastLightkeepersEditor` Win64 Development: `Result: Succeeded`.
+- `Tools/run_automation.ps1 -TestFilter LLK`: all six `Result={Success}`.
+- The new curve guard was **proved red**: breaking `LanternMultiplier` to the
+  linear form left the 2.5x anchor passing and failed only row 12's
+  diminishing property, which is the drift it exists to catch.
+- `npm test`: 89/89 and 6/6, unchanged.

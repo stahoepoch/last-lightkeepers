@@ -11,7 +11,9 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "LLK.h"
 #include "Lantern/LLKLanternComponent.h"
+#include "Lantern/LLKLanternLightComponent.h"
 #include "LLKUnits.h"
+#include "Storm/LLKStormChargeSubsystem.h"
 #include "Net/UnrealNetwork.h"
 
 ALLKCharacter::ALLKCharacter()
@@ -26,6 +28,15 @@ ALLKCharacter::ALLKCharacter()
 	FirstPersonCamera->bUsePawnControlRotation = true;
 
 	Lantern = CreateDefaultSubobject<ULLKLanternComponent>(TEXT("Lantern"));
+
+	// M1.3's placeholder, attached to the camera rather than the capsule: a
+	// first-person keeper's light comes from where they are looking, and row
+	// 44 makes the camera the head. Slightly below and ahead of the eye so the
+	// cone is not perfectly centred on the crosshair, which reads as a held
+	// object rather than as a headlamp.
+	LanternLight = CreateDefaultSubobject<ULLKLanternLightComponent>(TEXT("LanternLight"));
+	LanternLight->SetupAttachment(FirstPersonCamera);
+	LanternLight->SetRelativeLocation(FVector(20.f, 14.f, -18.f));
 
 	// The pawn turns with the controller; the (absent) mesh does not steer it.
 	bUseControllerRotationYaw = true;
@@ -55,6 +66,49 @@ void ALLKCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	ResolveSpeeds();
+
+	// The light subscribes to the lantern; the lantern knows nothing about
+	// the light. Done here rather than in the constructor because a CDO has
+	// no delegates worth binding and because the lantern may already have
+	// replicated a state in by now, which WatchLantern matches.
+	if (LanternLight != nullptr && Lantern != nullptr)
+	{
+		LanternLight->WatchLantern(Lantern);
+	}
+
+	// The character does this wiring, not the lantern component. Its header is
+	// explicit that a component which knows about its listeners cannot be
+	// tested without them, and this actor is the one thing that owns both the
+	// lantern and a world to find the meter in.
+	if (Lantern != nullptr)
+	{
+		if (UWorld* World = GetWorld())
+		{
+			if (ULLKStormChargeSubsystem* Storm = World->GetSubsystem<ULLKStormChargeSubsystem>())
+			{
+				Storm->RegisterLantern(Lantern);
+			}
+		}
+	}
+}
+
+void ALLKCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// The subsystem holds weak pointers and recounts rather than remembering,
+	// so a missed unregister cannot accelerate the storm. Doing it anyway
+	// keeps the list from growing by one entry per death across a long night.
+	if (Lantern != nullptr)
+	{
+		if (const UWorld* World = GetWorld())
+		{
+			if (ULLKStormChargeSubsystem* Storm = World->GetSubsystem<ULLKStormChargeSubsystem>())
+			{
+				Storm->UnregisterLantern(Lantern);
+			}
+		}
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void ALLKCharacter::ResolveSpeeds()
@@ -203,6 +257,7 @@ FLLKInputBindings ALLKCharacter::BuildTransientBindings(UObject* Outer)
 	Bindings.Sprint = MakeAction(TEXT("IA_LLK_Sprint_Transient"), EInputActionValueType::Boolean);
 	Bindings.CrouchToggle = MakeAction(TEXT("IA_LLK_Crouch_Transient"), EInputActionValueType::Boolean);
 	Bindings.Jump = MakeAction(TEXT("IA_LLK_Jump_Transient"), EInputActionValueType::Boolean);
+	Bindings.LanternToggle = MakeAction(TEXT("IA_LLK_Lantern_Transient"), EInputActionValueType::Boolean);
 
 	Bindings.Context = NewObject<UInputMappingContext>(Outer, TEXT("IMC_LLK_Transient"));
 
@@ -245,6 +300,10 @@ FLLKInputBindings ALLKCharacter::BuildTransientBindings(UObject* Outer)
 	Bindings.Context->MapKey(Bindings.Sprint, EKeys::LeftShift);
 	Bindings.Context->MapKey(Bindings.CrouchToggle, EKeys::LeftControl);
 	Bindings.Context->MapKey(Bindings.Jump, EKeys::SpaceBar);
+	// F, because every game the player has already played put the flashlight
+	// there. The lantern is the one key in this scheme that is not a movement
+	// verb, and it is the one the whole game is named after.
+	Bindings.Context->MapKey(Bindings.LanternToggle, EKeys::F);
 
 	return Bindings;
 }
@@ -258,6 +317,7 @@ void ALLKCharacter::ResolveInputBindings()
 	FromAssets.Sprint = SprintActionAsset.LoadSynchronous();
 	FromAssets.CrouchToggle = CrouchActionAsset.LoadSynchronous();
 	FromAssets.Jump = JumpActionAsset.LoadSynchronous();
+	FromAssets.LanternToggle = LanternActionAsset.LoadSynchronous();
 
 	if (FromAssets.IsComplete())
 	{
@@ -271,7 +331,7 @@ void ALLKCharacter::ResolveInputBindings()
 	InputSource = ELLKInputSource::TransientFallback;
 	UE_LOG(LogLLK, Warning,
 		TEXT("ALLKCharacter: no complete Input Action asset set - running on the TRANSIENT in-code ")
-		TEXT("fallback (WASD, mouse, shift, ctrl). Nothing is rebindable until M1.6's assets exist."));
+		TEXT("fallback (WASD, mouse, shift, ctrl, space, F). Nothing is rebindable until M1.6's assets exist."));
 }
 
 void ALLKCharacter::ApplyMappingContext()
@@ -331,6 +391,9 @@ void ALLKCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	Input->BindAction(ActiveBindings.CrouchToggle, ETriggerEvent::Completed, this, &ALLKCharacter::OnCrouchStopped);
 	Input->BindAction(ActiveBindings.Jump, ETriggerEvent::Started, this, &ALLKCharacter::OnJumpStarted);
 	Input->BindAction(ActiveBindings.Jump, ETriggerEvent::Completed, this, &ALLKCharacter::OnJumpStopped);
+	// Started only. A lantern you have to hold down to keep lit would make
+	// row 5's trade a matter of finger stamina instead of a decision.
+	Input->BindAction(ActiveBindings.LanternToggle, ETriggerEvent::Started, this, &ALLKCharacter::OnLanternToggled);
 }
 
 void ALLKCharacter::OnMoveInput(const FInputActionValue& Value)
@@ -373,4 +436,15 @@ void ALLKCharacter::OnJumpStarted()
 void ALLKCharacter::OnJumpStopped()
 {
 	StopJumping();
+}
+
+void ALLKCharacter::OnLanternToggled()
+{
+	if (Lantern != nullptr)
+	{
+		// Asks. The server decides and replicates, and the placeholder light
+		// turns on because it heard the broadcast - not because this key was
+		// pressed on this machine.
+		Lantern->ToggleLantern();
+	}
 }

@@ -27,11 +27,12 @@
 
 class UCameraComponent;
 class ULLKLanternComponent;
+class ULLKLanternLightComponent;
 class UInputAction;
 class UInputMappingContext;
 
 /**
- * The four actions the keeper needs, and the context that maps keys to them.
+ * The actions the keeper needs, and the context that maps keys to them.
  *
  * One struct rather than five loose pointers so that "do we have input?" is a
  * single question with a single answer. A half-bound keeper - move but no
@@ -61,10 +62,14 @@ struct FLLKInputBindings
 	UPROPERTY()
 	TObjectPtr<UInputAction> Jump = nullptr;
 
+	UPROPERTY()
+	TObjectPtr<UInputAction> LanternToggle = nullptr;
+
 	bool IsComplete() const
 	{
 		return Context != nullptr && Move != nullptr && Look != nullptr
-			&& Sprint != nullptr && CrouchToggle != nullptr && Jump != nullptr;
+			&& Sprint != nullptr && CrouchToggle != nullptr && Jump != nullptr
+			&& LanternToggle != nullptr;
 	}
 };
 
@@ -89,6 +94,7 @@ public:
 	ALLKCharacter();
 
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	// ---------------------------------------------------------------- intent
@@ -188,11 +194,24 @@ protected:
 	TObjectPtr<UCameraComponent> FirstPersonCamera;
 
 	/**
-	 * The keeper's lantern state. M1.2 owns on/off; the light itself is M1.3
-	 * and Chris's, so nothing here creates or references a ULightComponent.
+	 * The keeper's lantern state. M1.2 owns on/off and owns no light.
 	 */
 	UPROPERTY(VisibleAnywhere, Category = "LLK|Lantern")
 	TObjectPtr<ULLKLanternComponent> Lantern;
+
+	/**
+	 * M1.3's placeholder light, which only listens.
+	 *
+	 * The real lantern - mesh, materials, the sound of it striking - is M1.3
+	 * proper and Chris's (`Content/` is his, row 41). This is a code-built
+	 * spot light so that the keeper's light can be seen and the subscription
+	 * shape can be proven before any of that exists, which is exactly what
+	 * M1.3's proof line asks for. It is attached to the camera, not the
+	 * capsule: a first-person keeper's light comes from where they are
+	 * looking, and row 44 makes the camera the head.
+	 */
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Lantern")
+	TObjectPtr<ULLKLanternLightComponent> LanternLight;
 
 	/**
 	 * Real assets, if they exist. Unset by default - `Content/` is Chris's,
@@ -217,6 +236,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Input")
 	TSoftObjectPtr<UInputAction> JumpActionAsset;
 
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Input")
+	TSoftObjectPtr<UInputAction> LanternActionAsset;
+
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void PawnClientRestart() override;
 
@@ -234,6 +256,7 @@ protected:
 	void OnCrouchStopped();
 	void OnJumpStarted();
 	void OnJumpStopped();
+	void OnLanternToggled();
 
 	UPROPERTY()
 	FLLKInputBindings ActiveBindings;

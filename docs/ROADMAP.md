@@ -218,6 +218,62 @@ bAutoOffAtEmpty` defaulted to `false` while `lantern.json` says `true`: on the
 fallback path the default *is* the value, so a default that disagrees with the
 data is a silent disagreement.
 
+**M1.3 placeholder + M1.4 status, 2026-10-29 - the light attaches and the
+meter reacts.** M1.3 proper is Chris's row and is not done; what landed is the
+placeholder its own proof line asks for ("the C++ class is complete and works
+with a placeholder before this exists").
+`ULLKLanternLightComponent` is a code-built spot light attached to the camera,
+with no asset of any kind behind it. It only listens: it subscribes to
+`OnLanternStateChanged` and sets its own visibility, and the lantern component
+still knows nothing about it. Deleting the file would not change a single rule
+about light in this game, which is the test of whether the seam is real.
+
+**M1.4 is done.** `ULLKStormChargeSubsystem` owns both meters - the thresholds'
+and the Warden's dampened one, kept separate all the way through rather than
+derived from each other at the end, per row 54. Both curves are implemented and
+read from the asset, so row 12's "switching back must never need a code change"
+holds. Lanterns are **recounted every tick** rather than tracked by a counter
+incremented on the delegate: a keeper downed while lit has their actor torn
+down, and a decrement that never arrives would leave the storm permanently
+accelerated for the rest of the night. With at most four lanterns, recounting
+cannot be wrong and costs nothing.
+
+Accrual is authority-only. Replicating the value out for a HUD needs a
+GameState and is a later row; until then `GetCharge()` on a client is honestly
+zero rather than plausibly wrong. Row 6 is enforced rather than documented:
+there is no subtracting accessor, a zero or negative delta changes nothing, and
+`AddSpike` refuses a negative amount with a warning instead of applying it.
+
+**M1.8 is done and was proved red.** `LLK.Storm.LanternCurve` and
+`LLK.Storm.Accrual` assert the locked 2.5x one-lantern anchor, row 12's
+property that each further lantern costs less than the last but never nothing,
+the self-limit at 4.75x, the Warden's dampening at both ends of its dial, and
+"only ever rises" against forty steps and a negative spike. Row 12's assertion
+is written as a *property*, not as 3.40 / 3.94 / 4.26, so a retune cannot make
+it pass while the design intent is broken. Verified by breaking
+`LanternMultiplier` to the linear form: the 2.5x anchor still passed and only
+the diminishing property failed, which is exactly the drift it exists to catch.
+
+**One data gap found, and it is Chris's call.** There is no light radius
+anywhere in `data/`. But `data/enemies.json` authors `aggroRadiusDark: 12` and
+`aggroRadiusLit: 38`, so the game already has a number for how far away a lit
+keeper is *noticed* and none at all for how far that keeper can *see*. Those
+two decide between them whether light lets you spot danger first or only tells
+danger where you are - which is the whole of row 5's trade. The placeholder
+sits at 30 studs, inside 38 on purpose so that being lit means being seen from
+beyond your own light, but that is a design decision sitting in C++ where it
+does not belong. It wants authoring in `data/lantern.json` beside the movement
+speeds.
+
+**And one assumption, flagged rather than buried.** `AddSpike` applies the
+extraction call's 180 and the anchor revive's 120 to the Warden's meter
+undampened. The data does not say whether it should. The reading that matches
+Chris's words - "a deliberate loud spike: flare, siren, enemies converging,
+regardless of current Storm Charge" - is that dampening exists to stop a
+*lantern* from summoning the Warden, and a siren is not a lantern. If he wants
+the Warden deaf to sirens it is one line, and it wants a `spikeReachesWarden`
+key rather than a decision in code.
+
 **The lighting warning.** `DONTFUCKUPTHELIGHTS.md` exists at the repo root
 because lighting globals were broken
 repeatedly by people who did not know they were load-bearing. Unreal makes this

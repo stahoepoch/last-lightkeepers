@@ -74,18 +74,19 @@ bool FLLKInputFallbackTest::RunTest(const FString& Parameters)
 
 	const FLLKInputBindings Bindings = ALLKCharacter::BuildTransientBindings(GetTransientPackage());
 
-	// 1. All five or none. A half-bound keeper reads as a physics bug.
+	// 1. All six or none. A half-bound keeper reads as a physics bug.
 	TestTrue(TEXT("the transient bindings are complete"), Bindings.IsComplete());
 	if (!Bindings.IsComplete())
 	{
 		return false;
 	}
 
-	// 2. Four distinct actions. Reusing one action for two jobs would make
+	// 2. Six distinct actions. Reusing one action for two jobs would make
 	//    sprint and crouch fire each other.
 	TSet<const UInputAction*> Distinct{
-		Bindings.Move.Get(), Bindings.Look.Get(), Bindings.Sprint.Get(), Bindings.CrouchToggle.Get(), Bindings.Jump.Get()};
-	TestEqual(TEXT("the five actions are distinct objects"), Distinct.Num(), 5);
+		Bindings.Move.Get(), Bindings.Look.Get(), Bindings.Sprint.Get(), Bindings.CrouchToggle.Get(),
+		Bindings.Jump.Get(), Bindings.LanternToggle.Get()};
+	TestEqual(TEXT("the six actions are distinct objects"), Distinct.Num(), 6);
 
 	// 3. Value types. An Axis2D read off a Boolean action is silently zero.
 	TestEqual(TEXT("Move is Axis2D"), Bindings.Move->ValueType, EInputActionValueType::Axis2D);
@@ -93,12 +94,14 @@ bool FLLKInputFallbackTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Sprint is Boolean"), Bindings.Sprint->ValueType, EInputActionValueType::Boolean);
 	TestEqual(TEXT("Crouch is Boolean"), Bindings.CrouchToggle->ValueType, EInputActionValueType::Boolean);
 	TestEqual(TEXT("Jump is Boolean"), Bindings.Jump->ValueType, EInputActionValueType::Boolean);
+	TestEqual(TEXT("Lantern is Boolean"), Bindings.LanternToggle->ValueType, EInputActionValueType::Boolean);
 
-	// 4. Eight mappings: four movement, one look, sprint, crouch, jump.
-	TestEqual(TEXT("the context has eight key mappings"), Bindings.Context->GetMappings().Num(), 8);
+	// 4. Nine mappings: four movement, one look, sprint, crouch, jump, lantern.
+	TestEqual(TEXT("the context has nine key mappings"), Bindings.Context->GetMappings().Num(), 9);
 
 	// 5. Every key the player will press is actually present.
-	for (const FKey& Key : {EKeys::W, EKeys::A, EKeys::S, EKeys::D, EKeys::Mouse2D, EKeys::LeftShift, EKeys::LeftControl, EKeys::SpaceBar})
+	for (const FKey& Key : {EKeys::W, EKeys::A, EKeys::S, EKeys::D, EKeys::Mouse2D, EKeys::LeftShift,
+			EKeys::LeftControl, EKeys::SpaceBar, EKeys::F})
 	{
 		TestNotNull(*FString::Printf(TEXT("%s is mapped"), *Key.ToString()), FindMapping(Bindings.Context, Key));
 	}
