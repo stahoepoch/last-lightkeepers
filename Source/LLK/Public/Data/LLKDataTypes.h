@@ -70,6 +70,26 @@ enum class ELLKEnemyFamily : uint8
  * "exactly two, in order" guarantee the importer enforces, so they land here
  * instead - the shape is in the type rather than in a comment.
  */
+/**
+ * Where a runtime value came from.
+ *
+ * Every class that reads generated data needs to answer this, because
+ * `docs/DATA-PIPELINE.md` promises gameplay reads `data/` rather than a
+ * constant that happens to match it today - and a fallback nobody can detect
+ * is how that promise quietly stops being true. One enum rather than one per
+ * class, so the question has one shape everywhere.
+ */
+UENUM(BlueprintType)
+enum class ELLKDataSource : uint8
+{
+	/** Nothing resolved yet. */
+	Unresolved,
+	/** Read from a generated DataAsset built out of `data/*.json`. */
+	Asset,
+	/** The asset was unset or failed to load; declared fallbacks are in use. */
+	Fallback
+};
+
 USTRUCT(BlueprintType)
 struct FLLKSecondsBand
 {

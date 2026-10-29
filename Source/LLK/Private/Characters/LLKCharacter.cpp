@@ -10,6 +10,7 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "LLK.h"
+#include "Lantern/LLKLanternComponent.h"
 #include "LLKUnits.h"
 #include "Net/UnrealNetwork.h"
 
@@ -23,6 +24,8 @@ ALLKCharacter::ALLKCharacter()
 	FirstPersonCamera->SetupAttachment(GetCapsuleComponent());
 	FirstPersonCamera->SetRelativeLocation(FVector(0.f, 0.f, 64.f));
 	FirstPersonCamera->bUsePawnControlRotation = true;
+
+	Lantern = CreateDefaultSubobject<ULLKLanternComponent>(TEXT("Lantern"));
 
 	// The pawn turns with the controller; the (absent) mesh does not steer it.
 	bUseControllerRotationYaw = true;
@@ -59,7 +62,7 @@ void ALLKCharacter::ResolveSpeeds()
 	float WalkStuds = FallbackWalkStuds;
 	float SprintStuds = FallbackSprintStuds;
 	float CrouchStuds = FallbackCrouchStuds;
-	SpeedSource = ELLKSpeedSource::Fallback;
+	SpeedSource = ELLKDataSource::Fallback;
 
 	// Synchronous load is correct here and not laziness: these are three
 	// floats the pawn cannot move without, and a frame of walking at the
@@ -69,14 +72,14 @@ void ALLKCharacter::ResolveSpeeds()
 		WalkStuds = Data->Movement.WalkSpeed;
 		SprintStuds = Data->Movement.SprintSpeed;
 		CrouchStuds = Data->Movement.CrouchSpeed;
-		SpeedSource = ELLKSpeedSource::LanternData;
+		SpeedSource = ELLKDataSource::Asset;
 	}
 
 	WalkSpeedCms = LLKUnits::SpeedFromStuds(WalkStuds);
 	SprintSpeedCms = LLKUnits::SpeedFromStuds(SprintStuds);
 	CrouchSpeedCms = LLKUnits::SpeedFromStuds(CrouchStuds);
 
-	if (SpeedSource == ELLKSpeedSource::Fallback)
+	if (SpeedSource == ELLKDataSource::Fallback)
 	{
 		// Loud on purpose. `docs/DATA-PIPELINE.md` exists so gameplay reads
 		// the data rather than a constant that happens to match it today, and

@@ -194,6 +194,30 @@ boundary with one documented constant. Whether `data/` should be re-authored
 in centimetres instead is Chris's, and wants settling before M2 spreads the
 same tax across six enemies' ranges.
 
+**M1.2 status, 2026-10-29 - built and asserted, no light involved.**
+`ULLKLanternComponent` owns whether the lantern is on and nothing else. It has
+no `ULightComponent`, no mesh and no reference to either, because the light
+actor is M1.3 and Chris's - which is exactly what let M1.2 be finished,
+replicated and tested before any art exists. It broadcasts
+`OnLanternStateChanged` instead, which is how M1.3's light, M1.4's storm
+charge and eventually enemy targeting all learn the state without this class
+knowing any of them.
+
+Server-authoritative with no exception: the client asks, the server decides,
+the state replicates, and `OnRep` reports `Replicated` rather than letting a
+client claim it decided. Idempotent, because the storm multiplier is a *count*
+of lit lanterns and a no-op that still broadcast would move the meter for
+nothing. `LLK.Lantern.StateRules` asserts all of that plus the downed rule,
+and runs with no world.
+
+**Two things tidied while in there.** `ELLKSpeedSource` and the lantern's own
+source enum were one concept with two names, so both became `ELLKDataSource`
+in `LLKDataTypes.h` - the duplication this project keeps catching, found in
+my own code an hour after writing it. And `FLLKLanternChargeState::
+bAutoOffAtEmpty` defaulted to `false` while `lantern.json` says `true`: on the
+fallback path the default *is* the value, so a default that disagrees with the
+data is a silent disagreement.
+
 **The lighting warning.** `DONTFUCKUPTHELIGHTS.md` exists at the repo root
 because lighting globals were broken
 repeatedly by people who did not know they were load-bearing. Unreal makes this

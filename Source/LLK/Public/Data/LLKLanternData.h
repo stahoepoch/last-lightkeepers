@@ -22,8 +22,11 @@ struct FLLKLanternChargeState
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Charge")
 	float SecondsOfLightPerFullCharge = 0.f;
 
+	/** True in `lantern.json`. The C++ default must agree with the data: on the
+	 *  fallback path the default IS the value, so a default that disagrees is a
+	 *  silent disagreement. Armed but never fired while the charge above is 0. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Charge")
-	bool bAutoOffAtEmpty = false;
+	bool bAutoOffAtEmpty = true;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Charge")
 	bool bRechargeAtRelay = false;

@@ -21,10 +21,12 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
+#include "Data/LLKDataTypes.h"
 #include "Data/LLKLanternData.h"
 #include "LLKCharacter.generated.h"
 
 class UCameraComponent;
+class ULLKLanternComponent;
 class UInputAction;
 class UInputMappingContext;
 
@@ -63,7 +65,7 @@ struct FLLKInputBindings
 	}
 };
 
-/** Where the keeper's input bindings came from. Mirrors ELLKSpeedSource. */
+/** Where the keeper's input bindings came from. Mirrors ELLKDataSource. */
 UENUM(BlueprintType)
 enum class ELLKInputSource : uint8
 {
@@ -73,21 +75,6 @@ enum class ELLKInputSource : uint8
 	MappingContextAsset,
 	/** Built in code because the assets do not exist yet. A stopgap, by design. */
 	TransientFallback
-};
-
-/**
- * Where a keeper's movement numbers came from, so "it works" can never
- * silently mean "the asset was missing and you are walking on defaults".
- */
-UENUM(BlueprintType)
-enum class ELLKSpeedSource : uint8
-{
-	/** Nothing resolved yet. */
-	Unresolved,
-	/** Read from a ULLKLanternData generated out of `data/lantern.json`. */
-	LanternData,
-	/** The asset was not set or failed to load; the declared fallbacks are in use. */
-	Fallback
 };
 
 UCLASS()
@@ -126,7 +113,7 @@ public:
 
 	/** Which path the speeds came from. Read this in tests rather than trusting a log line. */
 	UFUNCTION(BlueprintPure, Category = "LLK|Movement")
-	ELLKSpeedSource GetSpeedSource() const { return SpeedSource; }
+	ELLKDataSource GetSpeedSource() const { return SpeedSource; }
 
 	/** Walk speed in cm/s, after the stud conversion. */
 	UFUNCTION(BlueprintPure, Category = "LLK|Movement")
@@ -138,6 +125,9 @@ public:
 	/** Which path the input bindings came from. Assets win; the fallback announces itself. */
 	UFUNCTION(BlueprintPure, Category = "LLK|Input")
 	ELLKInputSource GetInputSource() const { return InputSource; }
+
+	UFUNCTION(BlueprintPure, Category = "LLK|Lantern")
+	ULLKLanternComponent* GetLantern() const { return Lantern; }
 
 	/**
 	 * Builds the stopgap bindings in code: WASD, mouse look, shift, ctrl.
@@ -195,6 +185,13 @@ protected:
 	TObjectPtr<UCameraComponent> FirstPersonCamera;
 
 	/**
+	 * The keeper's lantern state. M1.2 owns on/off; the light itself is M1.3
+	 * and Chris's, so nothing here creates or references a ULightComponent.
+	 */
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Lantern")
+	TObjectPtr<ULLKLanternComponent> Lantern;
+
+	/**
 	 * Real assets, if they exist. Unset by default - `Content/` is Chris's,
 	 * and M1.6 fills these in. All five must resolve or none are used: a
 	 * partial asset set falls back wholesale rather than mixing two sources.
@@ -240,7 +237,7 @@ protected:
 	bool bSprinting = false;
 
 	UPROPERTY(VisibleInstanceOnly, Category = "LLK|Movement")
-	ELLKSpeedSource SpeedSource = ELLKSpeedSource::Unresolved;
+	ELLKDataSource SpeedSource = ELLKDataSource::Unresolved;
 
 	float WalkSpeedCms = 0.f;
 	float SprintSpeedCms = 0.f;
