@@ -191,6 +191,112 @@ float ULLKStormChargeSubsystem::WardenMultiplierFrom(float LanternMult, float Li
 	return 1.f + LightSensitivity * (LanternMult - 1.f);
 }
 
+float ULLKStormChargeSubsystem::GetCurrentMultiplier() const
+{
+	return Rules != nullptr ? LanternMultiplier(Rules->Lantern, GetLitLanternCount()) : 1.f;
+}
+
+float ULLKStormChargeSubsystem::GetCurrentRate() const
+{
+	return Rules != nullptr ? Rules->BaselineRatePerSecond * GetCurrentMultiplier() : 0.f;
+}
+
+float ULLKStormChargeSubsystem::GetCurrentWardenMultiplier() const
+{
+	if (Rules == nullptr)
+	{
+		return 1.f;
+	}
+	return WardenMultiplierFrom(GetCurrentMultiplier(), Rules->Warden.LightSensitivity);
+}
+
+bool ULLKStormChargeSubsystem::GetNextEscalation(FName& OutId, float& OutTargetCharge, float& OutCurrentCharge) const
+{
+	if (Rules == nullptr)
+	{
+		return false;
+	}
+
+	// Lowest uncrossed threshold first. Not "the next in array order": the
+	// data is authored ascending, but a readout that trusted the ordering
+	// would start lying the first time somebody inserted a stage.
+	const FLLKStormThreshold* Best = nullptr;
+	for (const FLLKStormThreshold& Threshold : Rules->Thresholds)
+	{
+		if (CrossedThresholds.Contains(Threshold.Id))
+		{
+			continue;
+		}
+		if (Best == nullptr || Threshold.Value < Best->Value)
+		{
+			Best = &Threshold;
+		}
+	}
+
+	if (Best != nullptr)
+	{
+		OutId = Best->Id;
+		OutTargetCharge = Best->Value;
+		OutCurrentCharge = Charge;
+		return true;
+	}
+
+	// Everything crossed, so the Warden is what is left to arrive - and it
+	// reads from its OWN meter, row 54. Reporting the thresholds' charge here
+	// would make the countdown wrong by the whole of the dampening.
+	if (!bWardenConverged)
+	{
+		OutId = TEXT("WardenConverges");
+		OutTargetCharge = Rules->Warden.ChargeValue;
+		OutCurrentCharge = WardenCharge;
+		return true;
+	}
+
+	// Nothing left to arrive. The one state a readout must not render as a
+	// countdown to zero.
+	return false;
+}
+
+float ULLKStormChargeSubsystem::SecondsUntilCharge(float FromCharge, float TargetCharge, int32 LitCount) const
+{
+	if (Rules == nullptr)
+	{
+		return TNumericLimits<float>::Max();
+	}
+
+	const float Rate = Rules->BaselineRatePerSecond * LanternMultiplier(Rules->Lantern, LitCount);
+	if (Rate <= 0.f)
+	{
+		// Never a division, and never a plausible zero. A baseline tuned to 0
+		// means the night does not advance, and "0 seconds away" would say the
+		// precise opposite of that.
+		return TNumericLimits<float>::Max();
+	}
+
+	// Negative when already passed, deliberately: the caller decides whether
+	// that reads as "crossed" or as nothing, and clamping here would hide the
+	// difference between "due now" and "long gone".
+	return (TargetCharge - FromCharge) / Rate;
+}
+
+float ULLKStormChargeSubsystem::SecondsUntilWarden(int32 LitCount) const
+{
+	if (Rules == nullptr)
+	{
+		return TNumericLimits<float>::Max();
+	}
+
+	const float Multiplier = LanternMultiplier(Rules->Lantern, LitCount);
+	const float Rate = Rules->BaselineRatePerSecond
+		* WardenMultiplierFrom(Multiplier, Rules->Warden.LightSensitivity);
+	if (Rate <= 0.f)
+	{
+		return TNumericLimits<float>::Max();
+	}
+
+	return (Rules->Warden.ChargeValue - WardenCharge) / Rate;
+}
+
 void ULLKStormChargeSubsystem::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);

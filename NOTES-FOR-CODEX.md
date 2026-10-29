@@ -1348,3 +1348,51 @@ came from.
 - `Tools/run_automation.ps1 -TestFilter LLK`: seven tests, all `Result={Success}`.
 - `npm test`: `Data contract passed`, 7/7, 159/159, 297/297, 89/89, 6/6 — zero FAIL lines.
 - Both new guards proved red, then restored and re-verified.
+
+---
+
+## 2026-10-29 (later still) — M1.7, the Storm Charge debug readout
+
+**No config change needed.** The harness GameMode sets `HUDClass` itself, so
+Play picks it up. Turn it off in the console with `LLK.ShowStormHUD 0`.
+
+### What it shows, and why in that order
+
+    PatrolsHunt in 2:24
+      0:58 if you light one lantern
+    lanterns lit  0       multiplier  x1.00       rate  1.00/s
+    charge  336 / 480       elapsed  5:36
+    warden  268       x1.00       arrives  7:12
+    source  DA_StormCharge
+
+The projection leads because **time is what makes the lantern a decision**. A
+meter climbing from 336 to 480 is two numbers with no stakes. The
+counterfactual on line two is the actual teaching: cause and consequence on
+screen together.
+
+### Three things that will bite you if you extend it
+
+1. **The Warden is projected off its OWN meter** (`SecondsUntilWarden`), not
+   from the thresholds' charge. Row 54's dampening means the two rates differ
+   by a factor; mixing them reported 280s where the truth was 483s when I
+   broke it deliberately. `LLK.Storm.Projection` catches that.
+2. **A zero rate returns `TNumericLimits<float>::Max()`, never 0.** The HUD
+   renders that as a dash. "0:00" would say a threshold is due immediately
+   when in fact the night has stopped advancing.
+3. **`GetNextEscalation` returns false when nothing is left.** Do not render
+   that as a countdown; the HUD prints that the night has nothing left to send.
+
+### New public surface on ULLKStormChargeSubsystem
+
+`GetCurrentMultiplier`, `GetCurrentRate`, `GetCurrentWardenMultiplier`,
+`GetNextEscalation`, `SecondsUntilCharge`, `SecondsUntilWarden`, `IsAccruing`,
+`HasCrossed`. All const and side-effect free. `IsAccruing()` is the one to
+check before showing any meter value — on a client it is false and the numbers
+are an honest zero.
+
+### Verified
+
+- `LastLightkeepersEditor` Win64 Development: `Result: Succeeded`.
+- `Tools/run_automation.ps1 -TestFilter LLK`: eight tests, all `Result={Success}`.
+- `npm test`: data contract passed, 7/7, 160/160, 297/297, 89/89, 6/6 — zero FAIL lines.
+- The Warden-projection guard proved red, then restored and re-verified.

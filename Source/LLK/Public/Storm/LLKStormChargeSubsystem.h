@@ -90,6 +90,57 @@ public:
 	UFUNCTION(BlueprintPure, Category = "LLK|Storm")
 	float GetElapsedSeconds() const { return ElapsedSeconds; }
 
+	/** The multiplier the meter is rising at right now, from the live lantern count. */
+	UFUNCTION(BlueprintPure, Category = "LLK|Storm")
+	float GetCurrentMultiplier() const;
+
+	/** Charge per second right now - baseline times the multiplier above. */
+	UFUNCTION(BlueprintPure, Category = "LLK|Storm")
+	float GetCurrentRate() const;
+
+	/** The Warden's dampened multiplier right now. Row 54: a different cost for the same light. */
+	UFUNCTION(BlueprintPure, Category = "LLK|Storm")
+	float GetCurrentWardenMultiplier() const;
+
+	/**
+	 * The lowest threshold not yet crossed, or the Warden once they all are.
+	 *
+	 * Returns false only when there is nothing left to arrive - every
+	 * threshold crossed and the Warden already here - which is the one state
+	 * a readout must not render as a countdown to nothing.
+	 */
+	bool GetNextEscalation(FName& OutId, float& OutTargetCharge, float& OutCurrentCharge) const;
+
+	/**
+	 * Seconds until `TargetCharge`, at the rate `LitCount` lanterns produce.
+	 *
+	 * **This is the number that makes the lantern a decision rather than a
+	 * light.** A meter climbing from 336 to 480 teaches nothing; "patrols hunt
+	 * in 2:24, and 0:58 if you keep that lantern lit" is the whole of row 5 in
+	 * one line. Pure and static-ish so the projection can be asserted without
+	 * a world - it is arithmetic the player will trust, so it should be
+	 * checked rather than eyeballed.
+	 *
+	 * Returns a negative number when the target is already passed, and
+	 * `TNumericLimits<float>::Max()` when the rate is zero - never a division
+	 * by it, and never a plausible-looking zero.
+	 */
+	float SecondsUntilCharge(float FromCharge, float TargetCharge, int32 LitCount) const;
+
+	/** Same projection for the Warden's own dampened meter. */
+	float SecondsUntilWarden(int32 LitCount) const;
+
+	/**
+	 * True where this subsystem is actually accruing - server or standalone.
+	 *
+	 * Public so a readout can say "not replicated yet" rather than render the
+	 * honest zero a client holds as though it were a real meter. A debug HUD
+	 * that shows 0 on a client is a debug HUD that lies, which is worse than
+	 * no HUD.
+	 */
+	UFUNCTION(BlueprintPure, Category = "LLK|Storm")
+	bool IsAccruing() const { return HasStormAuthority(); }
+
 	/**
 	 * A one-off jump: the extraction call's 180, the anchor revive's 120.
 	 *
@@ -174,6 +225,12 @@ protected:
 
 	/** True on a listen server, a dedicated server or standalone. False on a client. */
 	bool HasStormAuthority() const;
+
+	/** Thresholds already announced, exposed to a readout so it can mark them. */
+public:
+	bool HasCrossed(FName ThresholdId) const { return CrossedThresholds.Contains(ThresholdId); }
+
+protected:
 
 	/** Non-const because UHT does not reflect a const object pointer; read it through GetRules(). */
 	UPROPERTY()

@@ -304,6 +304,48 @@ regardless of current Storm Charge" - is that dampening exists to stop a
 the Warden deaf to sirens it is one line, and it wants a `spikeReachesWarden`
 key rather than a decision in code.
 
+**M1.7 status, 2026-10-29 - done, and it shows time rather than charge.**
+Chris's framing was that the HUD "turns the lantern from 'a cool light' into
+the game's actual risk decision", and that decided the design: the primary
+number is **projected seconds to the next escalation**, not the meter.
+`336 / 480` is two numbers with no stakes. "PatrolsHunt in 2:24" is a decision,
+and watching it drop to 0:58 the instant the lantern comes on teaches the whole
+of row 5 in one frame without a word of tutorial text - the same principle row
+43 applies to the store, applied to a number instead of a room.
+
+So the readout leads with the projection, then prints **the counterfactual on
+the line below it**: "0:58 if you light one lantern", or "4:30 if you put every
+lantern out". Cause and consequence together, because a player shown only the
+consequence learns to fear the meter, while a player shown both learns what
+they did. The lit count, multiplier and rate sit beneath that; the raw charge
+values come last, because they are the trivia.
+
+`ALLKDebugHUD` draws with `DrawText` - no UMG, no widget Blueprint, nothing in
+`Content/`. It is set as `HUDClass` by the harness GameMode so Play needs no
+setup, and it is gated behind `LLK.ShowStormHUD 0` rather than a key, because a
+key would mean a seventh input action and M1.6's asset set is already
+all-or-nothing on six.
+
+**It refuses to show a number it does not have.** The subsystem accrues on
+authority only, so a client holds an honest zero; the HUD says "not replicated
+to clients yet" rather than rendering that zero as a meter. A debug readout that
+lies about the one number the storm, the enemies and the loot rules all read is
+worse than no readout. It also prints which data it read, because "it was on
+declared fallbacks the whole time" has already cost this project an evening.
+
+**`LLK.Storm.Projection` asserts the arithmetic, because the player will trust
+it.** Three failure modes, none of which would crash: the counterfactual
+pointing the wrong way, which would teach in the player's own numbers that
+light BUYS time; a zero `baselineRatePerSecond` rendering as "0:00" rather than
+"never", saying the opposite of what is true; and the Warden being projected off
+the thresholds' rate instead of its own dampened meter. The test also pins the
+engine's projection to `oneLanternSeconds: 108`, already published in
+`storm-charge.json`, so the two layers agree on a number a designer can read.
+
+Proved red by projecting the Warden off the wrong meter: it reported 280s where
+the truth is 483s, so the HUD would have told a lit crew the Warden was arriving
+three and a half minutes sooner than it does. Eight LLK tests now pass headless.
+
 **The lighting warning.** `DONTFUCKUPTHELIGHTS.md` exists at the repo root
 because lighting globals were broken
 repeatedly by people who did not know they were load-bearing. Unreal makes this

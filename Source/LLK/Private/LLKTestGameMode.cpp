@@ -12,6 +12,7 @@
 #include "EngineUtils.h"
 #include "GameFramework/PlayerStart.h"
 #include "LLK.h"
+#include "UI/LLKDebugHUD.h"
 #include "UObject/ConstructorHelpers.h"
 
 namespace
@@ -61,6 +62,12 @@ namespace
 ALLKTestGameMode::ALLKTestGameMode()
 {
 	DefaultPawnClass = ALLKCharacter::StaticClass();
+
+	// M1.7. Set here rather than left to the project's default HUD class,
+	// because the whole point of the harness is that pressing Play needs no
+	// setup - and a storm meter nobody can see is why the lantern read as a
+	// cool light rather than a decision. Turn it off with `LLK.ShowStormHUD 0`.
+	HUDClass = ALLKDebugHUD::StaticClass();
 }
 
 bool ALLKTestGameMode::WorldAlreadyHas(TSubclassOf<AActor> ActorClass) const
