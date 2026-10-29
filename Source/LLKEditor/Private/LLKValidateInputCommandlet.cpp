@@ -24,15 +24,42 @@ namespace LLKInputValidation
 		return false;
 	}
 
-	bool HasMappableBinding(const UInputMappingContext* Context, const UInputAction* Action, const FKey& Key)
+	enum class EBindingStatus : uint8
+	{
+		Missing,
+		NotPlayerMappable,
+		Valid,
+	};
+
+	EBindingStatus GetBindingStatus(const UInputMappingContext* Context, const UInputAction* Action, const FKey& Key)
 	{
 		for (const FEnhancedActionKeyMapping& Mapping : Context->GetMappings())
 		{
-			if (Mapping.Action == Action && Mapping.Key == Key && Mapping.IsPlayerMappable())
+			if (Mapping.Action == Action && Mapping.Key == Key)
 			{
-				return true;
+				return Mapping.IsPlayerMappable() ? EBindingStatus::Valid : EBindingStatus::NotPlayerMappable;
 			}
 		}
+		return EBindingStatus::Missing;
+	}
+
+	bool ValidateBinding(const UInputMappingContext* Context, const UInputAction* Action, const FActionSpec& Spec,
+		const FKey& Key, const TCHAR* Device)
+	{
+		switch (GetBindingStatus(Context, Action, Key))
+		{
+		case EBindingStatus::Valid:
+			return true;
+		case EBindingStatus::NotPlayerMappable:
+			Fail(FString::Printf(
+				TEXT("%s has a %s binding for %s, but it is not player-mappable. Enable Player Mappable Key Settings on that mapping."),
+				Spec.Label, Device, *Key.ToString()));
+			return false;
+		case EBindingStatus::Missing:
+			Fail(FString::Printf(TEXT("%s is missing a %s binding for %s."), Spec.Label, Device, *Key.ToString()));
+			return false;
+		}
+
 		return false;
 	}
 
@@ -99,16 +126,14 @@ int32 ULLKValidateInputCommandlet::Main(const FString& Params)
 
 		for (const FKey& Key : Spec.KeyboardKeys)
 		{
-			if (!HasMappableBinding(Context, Action, Key))
+			if (!ValidateBinding(Context, Action, Spec, Key, TEXT("keyboard")))
 			{
-				Fail(FString::Printf(TEXT("%s is missing a player-mappable keyboard binding for %s."), Spec.Label, *Key.ToString()));
 				bValid = false;
 			}
 		}
 
-		if (!HasMappableBinding(Context, Action, Spec.GamepadKey))
+		if (!ValidateBinding(Context, Action, Spec, Spec.GamepadKey, TEXT("gamepad")))
 		{
-			Fail(FString::Printf(TEXT("%s is missing a player-mappable gamepad binding for %s."), Spec.Label, *Spec.GamepadKey.ToString()));
 			bValid = false;
 		}
 	}
