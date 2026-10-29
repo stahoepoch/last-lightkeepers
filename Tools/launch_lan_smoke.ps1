@@ -38,6 +38,22 @@ New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $log = Join-Path $logDir "$Mode-$stamp.log"
 
+function Get-PrivateLanAddresses {
+    # Do not guess which adapter is "the" network. VPNs, Docker and virtual
+    # switches are common on a development PC, so show every plausible private
+    # address and let the other machine use the one reachable on its network.
+    $private = '^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)'
+    return @(
+        Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+            Where-Object {
+                $_.IPAddress -match $private -and
+                $_.InterfaceAlias -notmatch 'Loopback'
+            } |
+            Sort-Object InterfaceMetric, InterfaceAlias |
+            Select-Object -ExpandProperty IPAddress -Unique
+    )
+}
+
 # The harness GameMode builds its floor on any map, so the engine's Entry map is
 # sufficient for this networking proof. A real M1.5 store map replaces only
 # this map argument later; the host/client topology and the evidence stay same.
@@ -56,6 +72,18 @@ $arguments = @(
 Write-Host "LLK LAN smoke test: $Mode"
 Write-Host "Log: $log"
 Write-Host "Command: `"$editor`" $($arguments -join ' ')"
+
+if ($Mode -eq 'Host') {
+    $addresses = Get-PrivateLanAddresses
+    Write-Host "`nGive the second computer one of these client commands:"
+    if ($addresses.Count -eq 0) {
+        Write-Warning 'No private LAN IPv4 address was found. Connect this PC to your local network, then run ipconfig if you need to identify it manually.'
+    } else {
+        $addresses | ForEach-Object {
+            Write-Host "  .\Tools\launch_lan_smoke.ps1 -Mode Client -HostAddress $_"
+        }
+    }
+}
 
 if ($DryRun) {
     Write-Host 'Dry run only: no game window launched.'
