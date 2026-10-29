@@ -4,6 +4,7 @@
 #include "InputAction.h"
 #include "InputCoreTypes.h"
 #include "InputMappingContext.h"
+#include "InputModifiers.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogLLKInputValidation, Log, All);
 
@@ -31,16 +32,27 @@ namespace LLKInputValidation
 		Valid,
 	};
 
-	EBindingStatus GetBindingStatus(const UInputMappingContext* Context, const UInputAction* Action, const FKey& Key)
+	const FEnhancedActionKeyMapping* FindBinding(const UInputMappingContext* Context, const UInputAction* Action, const FKey& Key)
 	{
 		for (const FEnhancedActionKeyMapping& Mapping : Context->GetMappings())
 		{
 			if (Mapping.Action == Action && Mapping.Key == Key)
 			{
-				return Mapping.IsPlayerMappable() ? EBindingStatus::Valid : EBindingStatus::NotPlayerMappable;
+				return &Mapping;
 			}
 		}
-		return EBindingStatus::Missing;
+		return nullptr;
+	}
+
+	EBindingStatus GetBindingStatus(const UInputMappingContext* Context, const UInputAction* Action, const FKey& Key)
+	{
+		const FEnhancedActionKeyMapping* Mapping = FindBinding(Context, Action, Key);
+		if (Mapping == nullptr)
+		{
+			return EBindingStatus::Missing;
+		}
+
+		return Mapping->IsPlayerMappable() ? EBindingStatus::Valid : EBindingStatus::NotPlayerMappable;
 	}
 
 	bool ValidateBinding(const UInputMappingContext* Context, const UInputAction* Action, const FActionSpec& Spec,
@@ -61,6 +73,85 @@ namespace LLKInputValidation
 		}
 
 		return false;
+	}
+
+	bool HasNegate(const FEnhancedActionKeyMapping& Mapping, bool bX, bool bY)
+	{
+		for (const UInputModifier* Modifier : Mapping.Modifiers)
+		{
+			if (const UInputModifierNegate* Negate = Cast<UInputModifierNegate>(Modifier);
+				Negate != nullptr && Negate->bX == bX && Negate->bY == bY && !Negate->bZ)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool HasSwizzle(const FEnhancedActionKeyMapping& Mapping)
+	{
+		for (const UInputModifier* Modifier : Mapping.Modifiers)
+		{
+			if (const UInputModifierSwizzleAxis* Swizzle = Cast<UInputModifierSwizzleAxis>(Modifier);
+				Swizzle != nullptr && Swizzle->Order == EInputAxisSwizzle::YXZ)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool HasSwizzleThenNegateY(const FEnhancedActionKeyMapping& Mapping)
+	{
+		int32 SwizzleIndex = INDEX_NONE;
+		int32 NegateYIndex = INDEX_NONE;
+		for (int32 Index = 0; Index < Mapping.Modifiers.Num(); ++Index)
+		{
+			const UInputModifier* Modifier = Mapping.Modifiers[Index];
+			if (const UInputModifierSwizzleAxis* Swizzle = Cast<UInputModifierSwizzleAxis>(Modifier);
+				Swizzle != nullptr && Swizzle->Order == EInputAxisSwizzle::YXZ)
+			{
+				SwizzleIndex = Index;
+			}
+			if (const UInputModifierNegate* Negate = Cast<UInputModifierNegate>(Modifier);
+				Negate != nullptr && !Negate->bX && Negate->bY && !Negate->bZ)
+			{
+				NegateYIndex = Index;
+			}
+		}
+
+		return SwizzleIndex != INDEX_NONE && NegateYIndex != INDEX_NONE && SwizzleIndex < NegateYIndex;
+	}
+
+	void ValidateMovementModifiers(const UInputMappingContext* Context, bool& bValid)
+	{
+		const UInputAction* Move = LoadObject<UInputAction>(nullptr, TEXT("/Game/Input/IA_LLK_Move.IA_LLK_Move"));
+		const UInputAction* Look = LoadObject<UInputAction>(nullptr, TEXT("/Game/Input/IA_LLK_Look.IA_LLK_Look"));
+		if (Move == nullptr || Look == nullptr)
+		{
+			return;
+		}
+
+		if (const FEnhancedActionKeyMapping* Back = FindBinding(Context, Move, EKeys::S); Back != nullptr && !HasNegate(*Back, true, false))
+		{
+			Fail(TEXT("Move S needs a Negate modifier with only X enabled."));
+			bValid = false;
+		}
+		if (const FEnhancedActionKeyMapping* Right = FindBinding(Context, Move, EKeys::D); Right != nullptr && !HasSwizzle(*Right))
+		{
+			Fail(TEXT("Move D needs a Swizzle Input Axis Values modifier using YXZ."));
+			bValid = false;
+		}
+		if (const FEnhancedActionKeyMapping* Left = FindBinding(Context, Move, EKeys::A); Left != nullptr && !HasSwizzleThenNegateY(*Left))
+		{
+			Fail(TEXT("Move A needs Swizzle YXZ followed by Negate with only Y enabled."));
+			bValid = false;
+		}
+		if (const FEnhancedActionKeyMapping* Mouse = FindBinding(Context, Look, EKeys::Mouse2D); Mouse != nullptr && !HasNegate(*Mouse, false, true))
+		{
+			Fail(TEXT("Look Mouse XY needs a Negate modifier with only Y enabled."));
+			bValid = false;
+		}
 	}
 
 	const TArray<FActionSpec>& Specs()
@@ -137,6 +228,8 @@ int32 ULLKValidateInputCommandlet::Main(const FString& Params)
 			bValid = false;
 		}
 	}
+
+	ValidateMovementModifiers(Context, bValid);
 
 	if (!bValid)
 	{
