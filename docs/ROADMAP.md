@@ -447,21 +447,60 @@ inside M2" predates Chris settling it on 2026-10-28. Run length lives in
 | M2.4 | **Enemy definitions and the perception rules.** `DT_Enemies` is generated from `enemies.json`; six families with `aggroRadiusDark`/`aggroRadiusLit`, `sightRange`, `sightConeDegrees`, `scanRange`, `wakeRange`, `wakeRequiresActiveLantern` | Claude | Every family's thresholds load and are queryable, and "would this enemy notice this keeper right now" is one function reading the light field - not six copies of a distance check |
 | M2.9 | **Automation tests for all of the above** | Claude | The lit/dark aggro asymmetry, the solo-only rule, and knockdown's four flags are asserted in-engine |
 
-### The half that waits on M1.5
+### The half that waits on M1.5 — and it is ONE enemy, not six
+
+**Re-sliced 2026-10-29 by Chris, after the retention research.** The table
+here used to list the Sweeper, the Warden and all six families' telegraphs as
+parallel rows, which is breadth before proof. His replacement is a vertical
+slice, and the reasoning is the part to keep: *"That will tell us whether the
+game has teeth before we build a dozen enemy types."*
+
+Row 64 is what it has to demonstrate. One enemy, carrying all four lines of
+the escalation contract at once.
 
 | Row | What | Owner | Done when |
 | --- | --- | --- | --- |
-| M2.5 | **Navigation and placement**: navmesh on the greybox floor, authored patrol routes, spawn points | Chris + Codex | A Sweeper can walk a route without a C++ change, and the routes are authored rather than generated |
-| M2.6 | **The Sweeper** — the first real enemy. `sweeperContact`: `hitsToKnockDown: 3`, `hitDecaySeconds: 6`, `contactRange: 5`, `contactCooldownSeconds: 1.5` | Claude, on M2.5 | One Sweeper is survivable and four are lethal, without the player ever seeing a health bar. It converges on the brightest position |
-| M2.7 | **The Warden.** Arrives off its own dampened meter (row 54), converges on the brightest position, **unkillable and drops nothing** (row 7) | Claude, on M2.5 | It arrives inside `warden.arrivalBandSeconds` for a normally lit crew, and killing it is not a thing the player can attempt |
-| M2.8 | **Every family's second channel**, row 16. All six author `audioTelegraphSeconds`; none has its physical tell designed | Chris (the tell) + Claude (the hook) | No enemy telegraphs on sound alone. `docs/SOUND.md` lists the candidate channels: moving shadows, flickering fixtures, disturbed merchandise, footprints, silhouette changes |
+| M2.5 | **Navigation and placement**: navmesh on the greybox floor, authored patrol routes, spawn points | Chris + Codex | One machine can walk a route without a C++ change, and the routes are authored rather than generated |
+| M2.6 | **ONE enemy, two night states, and a relief beat.** A readable Routine behaviour; one clear Emergency behaviour unlocked by a Storm threshold; a short withdrawal after pressing the crew; and a decision the crew must actually make | Claude, on M2.5 | **Judged on behaviour, not on report** — see below. The threshold crossing is legible: a player can name what changed. The withdrawal happens before the crew is exhausted, per Valve's Peak Fade. And the emergency leaves an escape that costs something |
+| M2.7 | **Its second channel**, row 16. One enemy's physical tell, not six | Chris (the tell) + Claude (the hook) | The threshold crossing and the approach are both readable with the sound off. One enemy done properly is the template the other five copy |
 
-**M2.8 is the one to not leave until last.** Row 16 is an accessibility
+**How M2.6 gets judged, which is a finding rather than a preference.** Grizzard
+et al. found that physiological arousal habituates *before players notice it
+has*, and that the dampening generalises to novel content. So a crew will
+report a run as tense well after it has stopped being so, and self-report is
+exactly the wrong instrument. Measure what they did: **did they leave loot
+behind, did they argue about the rescue, did anybody say "we should go" out
+loud.** Those are observable. "It felt scary" is not.
+
+**What is NOT in M2, deliberately** (row 64): the preset editor, weekly
+modifiers, the difficulty ladder, and visible long-term world change —
+restored rooms, rescued keepers, opened districts. Every one is a good later
+idea and every one would distract from finding out whether light, risk,
+containment and extraction are fun at all. Row 63's traversal work sits behind
+the same gate. The deferral is the decision, not an oversight.
+
+**And the three remaining families stay unbuilt on purpose.** Stockers,
+Glimmers, Window Walkers, the Ficus and the Warden all have their data
+authored in `enemies.json` and none of them should be started until M2.6 has
+answered its question. If one enemy with two states does not produce a real
+decision, five more will not fix it — they will just cost five times as much
+to change.
+
+**M2.7 is the one to not leave until last.** Row 16 is an accessibility
 requirement and it is LOCKED, and `docs/SOUND.md` already says it plainly: *"a
 telegraph with two channels is unbuildable as an afterthought."* The same
 mistake was found in `THE-STORE.md`'s curriculum on 2026-10-29 - a lesson
 taught by removing the audio channel - and repairing it after the fact was
-cheap only because it was prose. Six enemies built sound-first would not be.
+cheap only because it was prose. Six enemies built sound-first would not be,
+which is the other argument for doing one properly first: the template is
+cheap to copy and expensive to retrofit.
+
+**One more reason the vertical slice is right, from the research.** Four
+players on voice chat convert horror into comedy - it is the best-attested
+failure mode in the co-op record, with Lethal Company's proximity chat named
+as the proximate cause. Whether a non-lethal threat survives four people
+talking over each other is the single largest unknown in this design, and it
+is answerable with one enemy. It is not answerable with a design document.
 
 ---
 
