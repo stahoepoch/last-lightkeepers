@@ -23,15 +23,32 @@
 // two are the cause. A player who sees only the consequence learns to fear
 // the meter. A player who sees both learns what they did.
 //
-// **It refuses to show a number it does not have.** The subsystem accrues on
-// authority only, so a client holds an honest zero. Rendering that as a meter
-// would be a readout that lies, which is worse than no readout - so on a
-// client it says so instead.
+// **It reads the replicated snapshot, and only that - on the server too.**
+// The subsystem accrues on authority alone, so a client's own copy holds an
+// honest zero; `ALLKGameState` is where the server publishes what clients may
+// know. The HUD could read the subsystem directly where it happens to be
+// authoritative, and deliberately does not: two code paths would mean the
+// server sees a readout no client ever sees, and the first thing M1.9's
+// two-machine test needs is for both screens to be showing the same thing for
+// the same reason. One path also means a snapshot bug is visible on the
+// machine running the editor rather than only on the other one.
+//
+// **The projection is computed locally on both sides, not sent.** The rules
+// are static data - a client loads `DA_StormCharge` like the server does - so
+// only the meters travel, and both machines run the same arithmetic on the
+// same asset. `LLK.Storm.Snapshot` asserts that those two agree.
+//
+// **It refuses to show a number it does not have.** Before the server's first
+// publish the snapshot is default-constructed, which is indistinguishable
+// field-by-field from a genuine start of night; `bPublished` is what tells
+// them apart, and until it is set the HUD says so rather than drawing a meter
+// made of nothing.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/HUD.h"
+#include "Storm/LLKStormSnapshot.h"
 #include "LLKDebugHUD.generated.h"
 
 class ULLKStormChargeSubsystem;
@@ -53,7 +70,7 @@ protected:
 	/** One line, left-aligned, advancing a cursor. Keeps DrawHUD readable. */
 	void DrawLine(const FString& Text, const FLinearColor& Colour, float& CursorY, float Scale = 1.f);
 
-	void DrawStormPanel(ULLKStormChargeSubsystem* Storm, float& CursorY);
+	void DrawStormPanel(const ULLKStormChargeSubsystem* Storm, const FLLKStormSnapshot& Snapshot, float& CursorY);
 
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Debug")
 	FVector2D PanelOrigin = FVector2D(24.f, 24.f);

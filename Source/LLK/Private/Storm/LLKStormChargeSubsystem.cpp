@@ -2,6 +2,7 @@
 
 #include "Engine/World.h"
 #include "LLK.h"
+#include "LLKGameState.h"
 #include "Lantern/LLKLanternComponent.h"
 
 namespace
@@ -281,11 +282,19 @@ float ULLKStormChargeSubsystem::SecondsUntilCharge(float FromCharge, float Targe
 
 float ULLKStormChargeSubsystem::SecondsUntilWarden(int32 LitCount) const
 {
+	return SecondsUntilWardenFrom(WardenCharge, LitCount);
+}
+
+float ULLKStormChargeSubsystem::SecondsUntilWardenFrom(float FromWardenCharge, int32 LitCount) const
+{
 	if (Rules == nullptr)
 	{
 		return TNumericLimits<float>::Max();
 	}
 
+	// One formula, two callers: the server from its live meter, a client from
+	// the replicated snapshot. Two copies of this arithmetic is how client and
+	// server start disagreeing about when the Warden arrives.
 	const float Multiplier = LanternMultiplier(Rules->Lantern, LitCount);
 	const float Rate = Rules->BaselineRatePerSecond
 		* WardenMultiplierFrom(Multiplier, Rules->Warden.LightSensitivity);
@@ -294,7 +303,81 @@ float ULLKStormChargeSubsystem::SecondsUntilWarden(int32 LitCount) const
 		return TNumericLimits<float>::Max();
 	}
 
-	return (Rules->Warden.ChargeValue - WardenCharge) / Rate;
+	return (Rules->Warden.ChargeValue - FromWardenCharge) / Rate;
+}
+
+FLLKStormSnapshot ULLKStormChargeSubsystem::BuildSnapshot() const
+{
+	FLLKStormSnapshot Snapshot;
+	Snapshot.bPublished = true;
+	Snapshot.Charge = Charge;
+	Snapshot.WardenCharge = WardenCharge;
+	Snapshot.ElapsedSeconds = ElapsedSeconds;
+	Snapshot.Multiplier = GetCurrentMultiplier();
+	Snapshot.WardenMultiplier = GetCurrentWardenMultiplier();
+	// A crew is at most four; uint8 is not a micro-optimisation so much as a
+	// statement that a count which needed more would be a bug.
+	Snapshot.LitLanternCount = static_cast<uint8>(FMath::Clamp(GetLitLanternCount(), 0, 255));
+	Snapshot.bWardenConverged = bWardenConverged;
+	Snapshot.RulesSource = RulesSource;
+
+	FName NextId;
+	float Target = 0.f;
+	float From = 0.f;
+	Snapshot.bHasNextEscalation = GetNextEscalation(NextId, Target, From);
+	if (Snapshot.bHasNextEscalation)
+	{
+		Snapshot.NextEscalationId = NextId;
+		Snapshot.NextTargetCharge = Target;
+		// Whichever meter GetNextEscalation measured against - the thresholds'
+		// or the Warden's. Carried rather than re-derived on the client.
+		Snapshot.NextFromCharge = From;
+	}
+
+	return Snapshot;
+}
+
+float ULLKStormChargeSubsystem::SecondsUntilSnapshotEscalation(
+	const FLLKStormSnapshot& Snapshot, int32 LitCount) const
+{
+	if (!Snapshot.bHasNextEscalation)
+	{
+		return TNumericLimits<float>::Max();
+	}
+
+	if (Snapshot.NextEscalationId == TEXT("WardenConverges"))
+	{
+		return SecondsUntilWardenFrom(Snapshot.NextFromCharge, LitCount);
+	}
+
+	return SecondsUntilCharge(Snapshot.NextFromCharge, Snapshot.NextTargetCharge, LitCount);
+}
+
+void ULLKStormChargeSubsystem::PublishSnapshot()
+{
+	UWorld* World = GetWorld();
+	if (World == nullptr)
+	{
+		return;
+	}
+
+	ALLKGameState* GameState = World->GetGameState<ALLKGameState>();
+	if (GameState == nullptr)
+	{
+		if (!bWarnedAboutMissingGameState)
+		{
+			bWarnedAboutMissingGameState = true;
+			// Once, loudly. A GameMode that forgets this class produces a
+			// client HUD showing nothing, which looks exactly like a storm
+			// that never advances - and that is a long evening.
+			UE_LOG(LogLLK, Warning,
+				TEXT("ULLKStormChargeSubsystem: no ALLKGameState in this world, so the storm will not ")
+				TEXT("replicate to clients. Set GameStateClass to ALLKGameState or a subclass."));
+		}
+		return;
+	}
+
+	GameState->PublishStormSnapshot(BuildSnapshot());
 }
 
 void ULLKStormChargeSubsystem::Tick(float DeltaTime)
@@ -307,6 +390,17 @@ void ULLKStormChargeSubsystem::Tick(float DeltaTime)
 	}
 
 	Advance(DeltaTime, GetLitLanternCount());
+
+	// Throttled. The meter moves at most about four units a second and the
+	// readout renders whole seconds, so sixty packets a second would change
+	// the displayed number six times. A client's projection is computed from
+	// static rules between snapshots, so it stays smooth either way.
+	SecondsSinceSnapshot += DeltaTime;
+	if (SecondsSinceSnapshot >= SnapshotIntervalSeconds)
+	{
+		SecondsSinceSnapshot = 0.f;
+		PublishSnapshot();
+	}
 }
 
 void ULLKStormChargeSubsystem::Advance(float DeltaSeconds, int32 LitCount)
@@ -394,4 +488,14 @@ void ULLKStormChargeSubsystem::AddSpike(float Amount, FName Reason)
 	// spike that crosses a threshold is the game telling the player what their
 	// decision just cost, and a frame late is a frame detached from the cause.
 	AnnounceCrossings();
+
+	// Published immediately too, bypassing the throttle. A spike is a discrete
+	// thing the crew did - calling extraction, spending the anchor revive -
+	// and up to a tenth of a second of the HUD showing the old number is a
+	// tenth of a second where the siren appears to have cost nothing.
+	if (HasStormAuthority())
+	{
+		SecondsSinceSnapshot = 0.f;
+		PublishSnapshot();
+	}
 }

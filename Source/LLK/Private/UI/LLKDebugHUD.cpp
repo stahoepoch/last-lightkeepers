@@ -4,6 +4,7 @@
 #include "Engine/Engine.h"
 #include "Engine/Font.h"
 #include "Engine/World.h"
+#include "LLKGameState.h"
 #include "Storm/LLKStormChargeSubsystem.h"
 
 namespace
@@ -98,59 +99,72 @@ void ALLKDebugHUD::DrawHUD()
 
 	float CursorY = PanelOrigin.Y;
 
-	ULLKStormChargeSubsystem* Storm = World->GetSubsystem<ULLKStormChargeSubsystem>();
+	// The subsystem, for the ARITHMETIC only - it holds the rules, which are
+	// static data present on every machine. None of its meters are read here.
+	const ULLKStormChargeSubsystem* Storm = World->GetSubsystem<ULLKStormChargeSubsystem>();
 	if (Storm == nullptr)
 	{
-		// Says which thing is missing. "No HUD" and "no subsystem" look
-		// identical on screen otherwise, and they have different fixes.
+		// Each missing piece names itself. On screen they all look like "no
+		// HUD", and they have three different fixes.
 		DrawLine(TEXT("STORM  no ULLKStormChargeSubsystem in this world"), ColourUrgent, CursorY);
 		return;
 	}
 
-	DrawStormPanel(Storm, CursorY);
-}
-
-void ALLKDebugHUD::DrawStormPanel(ULLKStormChargeSubsystem* Storm, float& CursorY)
-{
-	// The client case, stated rather than papered over. The meter accrues on
-	// authority only, so a client's zero is honest - and rendering it as a
-	// meter would make this readout lie about the one number everything reads.
-	if (!Storm->IsAccruing())
+	const ALLKGameState* GameState = World->GetGameState<ALLKGameState>();
+	if (GameState == nullptr)
 	{
-		DrawLine(TEXT("STORM  not replicated to clients yet - this is the server's number"),
-			ColourQuiet, CursorY);
+		DrawLine(TEXT("STORM  no ALLKGameState - set GameStateClass to ALLKGameState"),
+			ColourUrgent, CursorY);
 		return;
 	}
 
-	const int32 Lit = Storm->GetLitLanternCount();
-	const float Multiplier = Storm->GetCurrentMultiplier();
+	DrawStormPanel(Storm, GameState->GetStormSnapshot(), CursorY);
+}
+
+void ALLKDebugHUD::DrawStormPanel(
+	const ULLKStormChargeSubsystem* Storm, const FLLKStormSnapshot& Snapshot, float& CursorY)
+{
+	// Nothing has arrived yet. A default snapshot is field-for-field identical
+	// to a genuine all-zero start of night, and those mean opposite things, so
+	// this is the flag and not a zero check.
+	if (!Snapshot.bPublished)
+	{
+		DrawLine(TEXT("STORM  waiting for the server's first snapshot"), ColourQuiet, CursorY);
+		return;
+	}
+
+	// Everything below reads the SNAPSHOT, on the server as well as on a
+	// client. The server could read its own meters directly and deliberately
+	// does not: one path means both screens show the same thing for the same
+	// reason, which is the first thing M1.9's two-machine test needs.
+	const int32 Lit = Snapshot.LitLanternCount;
+	const float Multiplier = Snapshot.Multiplier;
 
 	// ---- the consequence, first and largest ---------------------------
 	//
 	// Time, not charge. This is the line the whole readout exists for: it is
 	// what changes the moment the lantern comes on, and it is what makes the
 	// lantern a decision instead of a light.
-	FName NextId;
-	float Target = 0.f;
-	float Current = 0.f;
-	if (Storm->GetNextEscalation(NextId, Target, Current))
+	if (Snapshot.bHasNextEscalation)
 	{
-		const bool bWardenNext = NextId == TEXT("WardenConverges");
-		const float Seconds = bWardenNext
-			? Storm->SecondsUntilWarden(Lit)
-			: Storm->SecondsUntilCharge(Current, Target, Lit);
+		const bool bWardenNext = Snapshot.NextEscalationId == TEXT("WardenConverges");
+
+		// Projected here rather than replicated. Both machines run this on
+		// the same ULLKStormChargeData, so the countdown agrees without the
+		// server sending one - and it keeps ticking smoothly between the
+		// 10Hz snapshots instead of stepping.
+		const float Seconds = Storm->SecondsUntilSnapshotEscalation(Snapshot, Lit);
 
 		DrawLine(
-			FString::Printf(TEXT("%s in %s"), *NextId.ToString(), *FormatSeconds(Seconds)),
+			FString::Printf(TEXT("%s in %s"),
+				*Snapshot.NextEscalationId.ToString(), *FormatSeconds(Seconds)),
 			bWardenNext ? ColourUrgent : ColourHeading, CursorY, 1.6f);
 
 		// The counterfactual, which is the actual teaching. One line that
 		// says what the other choice costs - "and 0:58 lit" beside "2:24
 		// dark" is row 5 without a word of tutorial text.
 		const int32 Counterfactual = Lit > 0 ? 0 : 1;
-		const float OtherSeconds = bWardenNext
-			? Storm->SecondsUntilWarden(Counterfactual)
-			: Storm->SecondsUntilCharge(Current, Target, Counterfactual);
+		const float OtherSeconds = Storm->SecondsUntilSnapshotEscalation(Snapshot, Counterfactual);
 
 		DrawLine(
 			FString::Printf(TEXT("  %s if you %s"),
@@ -171,15 +185,22 @@ void ALLKDebugHUD::DrawStormPanel(ULLKStormChargeSubsystem* Storm, float& Cursor
 	// both, they learn what they did.
 	DrawLine(
 		FString::Printf(TEXT("lanterns lit  %d       multiplier  x%.2f       rate  %.2f/s"),
-			Lit, Multiplier, Storm->GetCurrentRate()),
+			Lit, Multiplier,
+			// Rate from the snapshot's multiplier, not from a live recount:
+			// a client has no lanterns registered, so GetCurrentRate() there
+			// would print the baseline while the multiplier beside it said
+			// x2.50 - two numbers from two machines on one line.
+			Storm->GetRules() != nullptr
+				? Storm->GetRules()->BaselineRatePerSecond * Multiplier : 0.f),
 		Lit > 0 ? ColourCause : ColourQuiet, CursorY);
 
 	// ---- the two meters, last, because they are the trivia -------------
 	DrawLine(
 		FString::Printf(TEXT("charge  %.0f%s       elapsed  %s"),
-			Storm->GetCharge(),
-			Target > 0.f ? *FString::Printf(TEXT(" / %.0f"), Target) : TEXT(""),
-			*FormatSeconds(Storm->GetElapsedSeconds())),
+			Snapshot.Charge,
+			Snapshot.bHasNextEscalation
+				? *FString::Printf(TEXT(" / %.0f"), Snapshot.NextTargetCharge) : TEXT(""),
+			*FormatSeconds(Snapshot.ElapsedSeconds)),
 		ColourQuiet, CursorY);
 
 	// Row 54: the Warden's own dampened meter, shown separately because it is
@@ -187,18 +208,23 @@ void ALLKDebugHUD::DrawStormPanel(ULLKStormChargeSubsystem* Storm, float& Cursor
 	// clearest statement of the dampening anybody will get.
 	DrawLine(
 		FString::Printf(TEXT("warden  %.0f       x%.2f       arrives  %s%s"),
-			Storm->GetWardenCharge(),
-			Storm->GetCurrentWardenMultiplier(),
-			*FormatSeconds(Storm->SecondsUntilWarden(Lit)),
-			Storm->HasWardenConverged() ? TEXT("  (here)") : TEXT("")),
-		Storm->HasWardenConverged() ? ColourUrgent : ColourQuiet, CursorY);
+			Snapshot.WardenCharge,
+			Snapshot.WardenMultiplier,
+			*FormatSeconds(Storm->SecondsUntilWardenFrom(Snapshot.WardenCharge, Lit)),
+			Snapshot.bWardenConverged ? TEXT("  (here)") : TEXT("")),
+		Snapshot.bWardenConverged ? ColourUrgent : ColourQuiet, CursorY);
 
 	// Which data it read. The fallback path matches the asset today, so this
 	// is the only way to tell them apart from inside the game - and "it was
 	// on fallbacks the whole time" has already cost this project an evening.
+	// The SERVER's source, carried on the snapshot. A client printing its own
+	// would be reporting which data it loaded, not which data the night is
+	// actually running on - and those can differ, which is exactly the
+	// mismatch worth seeing on a two-machine test.
 	DrawLine(
-		FString::Printf(TEXT("source  %s"),
-			Storm->GetRulesSource() == ELLKDataSource::Asset
-				? TEXT("DA_StormCharge") : TEXT("DECLARED FALLBACKS")),
-		Storm->GetRulesSource() == ELLKDataSource::Asset ? ColourQuiet : ColourUrgent, CursorY);
+		FString::Printf(TEXT("source  %s%s"),
+			Snapshot.RulesSource == ELLKDataSource::Asset
+				? TEXT("DA_StormCharge") : TEXT("DECLARED FALLBACKS"),
+			Storm->IsAccruing() ? TEXT("") : TEXT("  (server's, replicated)")),
+		Snapshot.RulesSource == ELLKDataSource::Asset ? ColourQuiet : ColourUrgent, CursorY);
 }

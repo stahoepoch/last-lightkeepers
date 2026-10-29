@@ -1396,3 +1396,65 @@ are an honest zero.
 - `Tools/run_automation.ps1 -TestFilter LLK`: eight tests, all `Result={Success}`.
 - `npm test`: data contract passed, 7/7, 160/160, 297/297, 89/89, 6/6 — zero FAIL lines.
 - The Warden-projection guard proved red, then restored and re-verified.
+
+---
+
+## 2026-10-29 — your review's snapshot, built
+
+You were right, and the reason you gave is what decided the shape: M1.9 is a
+two-machine test, and a client screen showing nothing cannot verify the
+lantern/storm relationship from the side that matters.
+
+**No config change needed.** `ALLKTestGameMode` sets `GameStateClass` itself.
+Any later GameMode must use `ALLKGameState` or a subclass; if one forgets, the
+subsystem logs it once and the HUD says so rather than drawing a meter made of
+nothing — a silent failure there looks exactly like a storm that never advances.
+
+### Three decisions inside it, in case you would have done them differently
+
+1. **One `USTRUCT`, not five replicated properties.** Replicated separately,
+   charge and multiplier arrive in different packets, so a client can hold a
+   new charge beside an old multiplier and project from two different moments.
+   One struct cannot tear.
+2. **State travels, rules do not.** `DA_StormCharge` is already on both sides,
+   so only the meters go on the wire and each machine computes its own
+   projection with `SecondsUntilSnapshotEscalation`. Cheaper, and it ticks
+   smoothly between the 10Hz snapshots instead of stepping.
+3. **The HUD reads the snapshot on the server too**, not its own meters. Two
+   paths would mean the server sees a readout no client ever sees, and a
+   snapshot bug would surface only on the other machine.
+
+### The field that will catch you
+
+`NextFromCharge` is the meter the next escalation is measured against — the
+thresholds' charge while a threshold is next, the **Warden's** once both are
+crossed. Do not assume it is `Charge`. I broke it that way deliberately and the
+client projected **-100 seconds against a true 26**, so its HUD read "now" for
+a Warden still half a minute out. `LLK.Storm.Snapshot` catches it.
+
+`bPublished` is the other one. A default snapshot is field-for-field identical
+to a genuine all-zero start of night; that flag is the only thing separating
+"nothing has arrived" from "the night just began".
+
+### Your accrual point is now asserted, not just commented
+
+The test registers three real lantern components, lights them, marks one as
+garbage and asserts the count drops to one. The no-ghost-light property you
+called out had been a comment until now.
+
+### A correction, since it was mine
+
+My first version of that test asserted a lit count of 3 after
+`AdvanceForTest(1.f, 3)` — which passes the count as a parameter and registers
+nothing, so it asserted 3 against a true 0. The code was right; the test was
+wrong. Registering real components exercises the recount itself.
+
+### Verified
+
+- `LastLightkeepersEditor` Win64 Development: `Result: Succeeded`.
+- `Tools/run_automation.ps1 -TestFilter LLK`: nine tests, all `Result={Success}`.
+- `npm test`: data contract passed, 7/7, 160/160, 297/297, 89/89, 6/6 — zero FAIL lines.
+- The `NextFromCharge` guard proved red, then restored and re-verified.
+- **Not verified:** nobody has run two machines yet. The agreement is asserted
+  in-process against two subsystems sharing one rules asset, which is the right
+  test but is not the same as real replication over a socket. That is M1.9.

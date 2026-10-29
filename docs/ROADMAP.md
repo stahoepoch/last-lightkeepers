@@ -346,6 +346,60 @@ Proved red by projecting the Warden off the wrong meter: it reported 280s where
 the truth is 483s, so the HUD would have told a lit crew the Warden was arriving
 three and a half minutes sooner than it does. Eight LLK tests now pass headless.
 
+**M1.7's replication seam, 2026-10-29, on Codex's review.** He was right and
+his reason is the one that decided the shape: the HUD could not read the
+subsystem on a client, because the subsystem accrues on authority alone and a
+client's copy holds an honest zero - so M1.9's two-machine test would have been
+run against a client screen showing nothing, which cannot verify the
+lantern/storm relationship from the side that matters.
+
+`ALLKGameState` now carries an `FLLKStormSnapshot` and the subsystem publishes
+into it at 10Hz, plus immediately on a spike. Three choices in that are worth
+recording:
+
+**One struct, not five replicated properties.** Replicated separately, charge
+and multiplier arrive in different packets, so a client could hold a new charge
+beside an old multiplier and compute a projection from two different moments. A
+player watching "2:24" flicker to "0:58" and back learns only not to trust the
+number. One struct cannot tear.
+
+**State travels; rules do not.** `DA_StormCharge` is static data already present
+on both sides, so only the meters go on the wire and each machine computes its
+own projection. That is cheaper, it stays smooth between snapshots instead of
+stepping at 10Hz, and it means the countdown is the same code reading the same
+asset on both machines.
+
+**The HUD reads the snapshot on the server too.** It could read its own meters
+where it is authoritative and deliberately does not: two paths would mean the
+server sees a readout no client ever sees, and a snapshot bug would only show up
+on the other machine. One path also made `bPublished` necessary - a
+default-constructed snapshot is field-for-field identical to a genuine all-zero
+start of night, and those mean opposite things.
+
+**`LLK.Storm.Snapshot` asserts agreement, which is the property M1.9 rests on.**
+Two subsystems share one rules asset; one accrues and the other does not, which
+is exactly a server and a client. The test checks they reach the same second,
+and render the same text, at every crew size from zero to four - including the
+counterfactual line, since a client teaching a lesson the server does not
+enforce is worse than a client teaching nothing.
+
+It also pins the thing Codex praised in the accrual: lanterns are recounted
+rather than tracked, so a lantern destroyed while lit leaves no light behind.
+The test registers three real components, lights them, marks one as garbage and
+asserts the count drops - the "ghost light" property had been a comment until
+now.
+
+Proved red by making the snapshot always measure against the thresholds' meter
+instead of switching to the Warden's: the client projected **-100 seconds where
+the truth was 26**, so its HUD would have read "now" for a Warden still half a
+minute out. Nine LLK tests pass headless.
+
+**One correction worth recording, because it was mine.** The first version of
+that test asserted a lit count after `AdvanceForTest(1.f, 3)`, which passes the
+count as a parameter and registers nothing - so it asserted 3 against a true 0.
+The code was right and the test was wrong. Registering real components instead
+tests the recount itself, which is the better assertion anyway.
+
 **The lighting warning.** `DONTFUCKUPTHELIGHTS.md` exists at the repo root
 because lighting globals were broken
 repeatedly by people who did not know they were load-bearing. Unreal makes this

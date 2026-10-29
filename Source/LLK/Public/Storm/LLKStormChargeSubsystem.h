@@ -36,6 +36,7 @@
 
 #include "CoreMinimal.h"
 #include "Data/LLKStormChargeData.h"
+#include "Storm/LLKStormSnapshot.h"
 #include "Subsystems/WorldSubsystem.h"
 #include "LLKStormChargeSubsystem.generated.h"
 
@@ -127,8 +128,38 @@ public:
 	 */
 	float SecondsUntilCharge(float FromCharge, float TargetCharge, int32 LitCount) const;
 
-	/** Same projection for the Warden's own dampened meter. */
+	/** Same projection for the Warden's own dampened meter, from its live value. */
 	float SecondsUntilWarden(int32 LitCount) const;
+
+	/**
+	 * The Warden projection from an arbitrary meter value.
+	 *
+	 * Exists because a client's own `WardenCharge` is zero by design; it
+	 * projects from the replicated snapshot's value instead. Both sides run
+	 * THIS function on the SAME `ULLKStormChargeData`, which is what makes
+	 * client and server agree on the countdown without the server having to
+	 * send one - and what makes that agreement testable.
+	 */
+	float SecondsUntilWardenFrom(float FromWardenCharge, int32 LitCount) const;
+
+	/**
+	 * Everything a client is allowed to know, as one struct.
+	 *
+	 * Const and side-effect free so a test can compare it against the
+	 * subsystem's own accessors field by field - a snapshot that silently
+	 * disagrees with the meter it was built from would make every client
+	 * wrong in a way no server-side check could see.
+	 */
+	FLLKStormSnapshot BuildSnapshot() const;
+
+	/**
+	 * Seconds to the next escalation described by a snapshot.
+	 *
+	 * The one projection entry point the HUD uses, server and client alike.
+	 * It reads `NextFromCharge` rather than assuming `Charge`, because when
+	 * the Warden is next the measurement is against its own dampened meter.
+	 */
+	float SecondsUntilSnapshotEscalation(const FLLKStormSnapshot& Snapshot, int32 LitCount) const;
 
 	/**
 	 * True where this subsystem is actually accruing - server or standalone.
@@ -223,6 +254,9 @@ protected:
 	 */
 	void AnnounceCrossings();
 
+	/** Pushes a fresh snapshot into the GameState. Server only, throttled. */
+	void PublishSnapshot();
+
 	/** True on a listen server, a dedicated server or standalone. False on a client. */
 	bool HasStormAuthority() const;
 
@@ -246,6 +280,23 @@ protected:
 	float WardenCharge = 0.f;
 	float ElapsedSeconds = 0.f;
 	bool bWardenConverged = false;
+
+	/**
+	 * Seconds between published snapshots.
+	 *
+	 * 10Hz, because the meter moves between one and roughly four units per
+	 * second and the readout renders whole seconds - replicating every frame
+	 * would put sixty packets a second on the wire to change a number six
+	 * times. The projection a client computes between snapshots is from
+	 * static rules, so it stays smooth regardless.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Storm", meta = (ClampMin = "0.01"))
+	float SnapshotIntervalSeconds = 0.1f;
+
+	float SecondsSinceSnapshot = 0.f;
+
+	/** Logged once rather than every tick when no ALLKGameState is in use. */
+	bool bWarnedAboutMissingGameState = false;
 
 	ELLKDataSource RulesSource = ELLKDataSource::Unresolved;
 };

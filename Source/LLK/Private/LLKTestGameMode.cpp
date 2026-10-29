@@ -12,6 +12,7 @@
 #include "EngineUtils.h"
 #include "GameFramework/PlayerStart.h"
 #include "LLK.h"
+#include "LLKGameState.h"
 #include "UI/LLKDebugHUD.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -68,6 +69,12 @@ ALLKTestGameMode::ALLKTestGameMode()
 	// setup - and a storm meter nobody can see is why the lantern read as a
 	// cool light rather than a decision. Turn it off with `LLK.ShowStormHUD 0`.
 	HUDClass = ALLKDebugHUD::StaticClass();
+
+	// Without this the storm never reaches a client and the HUD draws
+	// nothing there - which looks exactly like a night that does not
+	// escalate. M1.9 is a two-machine test, so the harness has to be the
+	// shape that test needs rather than the shape standalone play tolerates.
+	GameStateClass = ALLKGameState::StaticClass();
 }
 
 bool ALLKTestGameMode::WorldAlreadyHas(TSubclassOf<AActor> ActorClass) const
