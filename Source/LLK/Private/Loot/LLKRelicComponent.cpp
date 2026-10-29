@@ -133,6 +133,43 @@ void ULLKRelicComponent::TickComponent(
 	{
 		EvaluateLegibility(Brightness);
 	}
+
+	// Every machine, authority or not. This is the affordance channel, and it
+	// belongs where the prompt is.
+	RefreshInteractable();
+}
+
+void ULLKRelicComponent::RefreshInteractable()
+{
+	const bool bNow = CanBeTaken();
+	if (bNow == bInteractableNow)
+	{
+		// Changed nothing, so said nothing. The throttled tick samples ten
+		// times a second and a prompt wired to an unconditional broadcast
+		// would rebuild itself ten times a second with it.
+		return;
+	}
+
+	bInteractableNow = bNow;
+	OnInteractableChanged.Broadcast(bNow, GetInteractBlock());
+}
+
+ELLKRelicInteractBlock ULLKRelicComponent::GetInteractBlock() const
+{
+	if (!bLegible)
+	{
+		return ELLKRelicInteractBlock::Unidentified;
+	}
+
+	if (!bRequiresLightToTake || Visibility == ELLKLootVisibility::Always)
+	{
+		return ELLKRelicInteractBlock::None;
+	}
+
+	// Read, but dark. The one a prompt should say out loud: a player reaching
+	// for a relic they already identified and being told "needs light" is row
+	// 5 explaining itself in the exact moment the rule applies to them.
+	return bCurrentlyLit ? ELLKRelicInteractBlock::None : ELLKRelicInteractBlock::NeedsLight;
 }
 
 void ULLKRelicComponent::EvaluateLegibility(float BrightnessAtRelic)
@@ -200,6 +237,11 @@ void ULLKRelicComponent::OnRep_Legible()
 {
 	// The client did not decide this and does not claim it did.
 	OnLegibilityChanged.Broadcast(bLegible, ELLKRelicChangeReason::Replicated);
+
+	// And the affordance may have changed with it, without waiting for the
+	// next sample. A relic that became legible on the server while this client
+	// was standing in its light is takeable the instant the state arrives.
+	RefreshInteractable();
 }
 
 #undef LOCTEXT_NAMESPACE

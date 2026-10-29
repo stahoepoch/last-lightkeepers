@@ -27,7 +27,19 @@ public:
 		LastReason = Reason;
 	}
 
+	UFUNCTION()
+	void OnInteractable(bool bIsInteractable, ELLKRelicInteractBlock Block)
+	{
+		++InteractCount;
+		LastInteractable = bIsInteractable;
+		LastBlock = Block;
+	}
+
 	int32 Count = 0;
 	bool LastLegible = false;
 	ELLKRelicChangeReason LastReason = ELLKRelicChangeReason::Replicated;
+
+	int32 InteractCount = 0;
+	bool LastInteractable = false;
+	ELLKRelicInteractBlock LastBlock = ELLKRelicInteractBlock::None;
 };

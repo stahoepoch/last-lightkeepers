@@ -5,7 +5,16 @@
 //   - Dark: the relic is physically visible, but its identity/value is
 //     unreadable.
 //   - Lantern on: it becomes legible and interactable.
-//   - Two channels: the visual state change [his message was truncated here].
+//   - Two channels: the visual state change plus a non-audio physical tell.
+//
+// He corrected that third bullet himself, and the correction is what this
+// file's last section tests: what he wants is not a second visual effect. It
+// is that the player can confirm the change through **the world object** and
+// **the interaction state**, with no audio cue needed. The object half is
+// `Content/` and hangs on the legibility hook. The interaction half is code,
+// and it is only a channel if it CHANGES at a moment somebody can perceive -
+// so it is tracked state with its own broadcast, not a bool a HUD polls in
+// silence.
 //
 // **The first bullet is the one that needs a test most, because the wrong
 // implementation passes every informal check.** `ELLKLootVisibility`'s own
@@ -93,6 +102,66 @@ bool FLLKRelicTest::RunTest(const FString& Parameters)
 	Relic->EvaluateForTest(5000.f);
 	TestEqual(TEXT("more light does not re-announce it"), Listener->Count, 1);
 	TestTrue(TEXT("and it stays legible"), Relic->IsLegible());
+
+	// ---- CHANNEL TWO: the interaction state, which must change ---------
+	//
+	// Driven through SampleLightForTest, which runs the same path the tick
+	// does, so this tests the affordance as it actually behaves rather than a
+	// reimplementation of it.
+	ULLKRelicComponent* Shelf = NewObject<ULLKRelicComponent>(GetTransientPackage());
+	ULLKRelicTestListener* Prompt = NewObject<ULLKRelicTestListener>(GetTransientPackage());
+	Shelf->OnInteractableChanged.AddDynamic(Prompt, &ULLKRelicTestListener::OnInteractable);
+	Shelf->SetThresholdForTest(125.f);
+	Shelf->SetRelicIdentity(TEXT("Brooch"), FText::FromString(TEXT("Enamel brooch")), 300);
+
+	// Dark and unread: not interactable, and the prompt can say which of the
+	// two reasons it is.
+	Shelf->SampleLightForTest(0.f);
+	TestFalse(TEXT("an unread relic in the dark is not interactable"), Shelf->CanBeTaken());
+	TestEqual(TEXT("and the prompt knows it is unidentified, not merely dark"),
+		Shelf->GetInteractBlock(), ELLKRelicInteractBlock::Unidentified);
+	TestEqual(TEXT("nothing has changed, so nothing announced it"), Prompt->InteractCount, 0);
+
+	// Light arrives. Legibility AND the affordance both turn on, and the
+	// affordance announces itself - that is the channel.
+	Shelf->SampleLightForTest(400.f);
+	TestTrue(TEXT("lit, it is legible"), Shelf->IsLegible());
+	TestTrue(TEXT("and interactable"), Shelf->CanBeTaken());
+	TestEqual(TEXT("with nothing blocking it"),
+		Shelf->GetInteractBlock(), ELLKRelicInteractBlock::None);
+	TestEqual(TEXT("and the affordance channel fired once"), Prompt->InteractCount, 1);
+	TestTrue(TEXT("saying it became interactable"), Prompt->LastInteractable);
+
+	// Still lit: no change, so no further announcement. A prompt wired to an
+	// unconditional broadcast would rebuild itself ten times a second.
+	Shelf->SampleLightForTest(400.f);
+	TestEqual(TEXT("staying lit does not re-announce"), Prompt->InteractCount, 1);
+
+	// **The keeper walks away with the lantern.** Identity is knowledge and
+	// stays; the affordance goes out, and it says why. This is the moment the
+	// interface teaches row 5 without a tooltip.
+	Shelf->SampleLightForTest(0.f);
+	TestTrue(TEXT("it is still legible - identity is knowledge, not a light switch"),
+		Shelf->IsLegible());
+	TestFalse(TEXT("but it can no longer be taken"), Shelf->CanBeTaken());
+	TestEqual(TEXT("and the affordance channel announced the loss"), Prompt->InteractCount, 2);
+	TestFalse(TEXT("saying it is no longer interactable"), Prompt->LastInteractable);
+	TestEqual(TEXT("because it needs light - the reason a prompt should say out loud"),
+		Prompt->LastBlock, ELLKRelicInteractBlock::NeedsLight);
+	TestEqual(TEXT("and the block reads the same when asked directly"),
+		Shelf->GetInteractBlock(), ELLKRelicInteractBlock::NeedsLight);
+
+	// Confirmable without audio, which is the whole of his correction: two
+	// distinct machine-readable states, neither of them a sound, and the
+	// difference between them is legible to a prompt.
+	TestNotEqual(TEXT("unidentified and needs-light are distinguishable states"),
+		ELLKRelicInteractBlock::Unidentified, ELLKRelicInteractBlock::NeedsLight);
+
+	// Light again: back on, and announced again.
+	Shelf->SampleLightForTest(400.f);
+	TestTrue(TEXT("light restores the affordance"), Shelf->CanBeTaken());
+	TestEqual(TEXT("and announced it"), Prompt->InteractCount, 3);
+	TestEqual(TEXT("legibility itself only ever fired once"), Prompt->Count, 0);
 
 	// ---- the design call, asserted so reversing it is one flag ---------
 	//

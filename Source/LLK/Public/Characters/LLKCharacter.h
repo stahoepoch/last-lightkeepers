@@ -217,30 +217,50 @@ protected:
 	TObjectPtr<ULLKLanternLightComponent> LanternLight;
 
 	/**
-	 * Real assets, if they exist. Unset by default - `Content/` is Chris's,
-	 * and M1.6 fills these in. All five must resolve or none are used: a
-	 * partial asset set falls back wholesale rather than mixing two sources.
+	 * The real Input Action assets, pointed at the paths M1.6 authors.
+	 *
+	 * **Pointed rather than left unset, on Codex's handoff for `98ff8b2`.**
+	 * The paths below are exactly what his editor validator enforces, and a
+	 * soft pointer that resolves to nothing simply fails - so until Chris
+	 * creates them in `/Game/Input` these all resolve null, the set is
+	 * incomplete, and the transient code bindings carry on exactly as before.
+	 * The moment the assets exist the real rebindable and gamepad route
+	 * activates with no code change, which is the point of doing this now
+	 * rather than on the day.
+	 *
+	 * **All SIX must resolve or none are used.** A partial set falls back
+	 * wholesale rather than mixing two sources, because a keeper with
+	 * authored movement and a code-bound lantern is a keeper whose rebinding
+	 * screen lies about one key. The count moved from five to six when the
+	 * lantern was added; `IsComplete()` is what enforces it.
 	 */
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Input")
-	TSoftObjectPtr<UInputMappingContext> MappingContextAsset;
+	TSoftObjectPtr<UInputMappingContext> MappingContextAsset =
+		TSoftObjectPtr<UInputMappingContext>(FSoftObjectPath(TEXT("/Game/Input/IMC_LLK.IMC_LLK")));
 
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Input")
-	TSoftObjectPtr<UInputAction> MoveActionAsset;
+	TSoftObjectPtr<UInputAction> MoveActionAsset =
+		TSoftObjectPtr<UInputAction>(FSoftObjectPath(TEXT("/Game/Input/IA_LLK_Move.IA_LLK_Move")));
 
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Input")
-	TSoftObjectPtr<UInputAction> LookActionAsset;
+	TSoftObjectPtr<UInputAction> LookActionAsset =
+		TSoftObjectPtr<UInputAction>(FSoftObjectPath(TEXT("/Game/Input/IA_LLK_Look.IA_LLK_Look")));
 
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Input")
-	TSoftObjectPtr<UInputAction> SprintActionAsset;
+	TSoftObjectPtr<UInputAction> SprintActionAsset =
+		TSoftObjectPtr<UInputAction>(FSoftObjectPath(TEXT("/Game/Input/IA_LLK_Sprint.IA_LLK_Sprint")));
 
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Input")
-	TSoftObjectPtr<UInputAction> CrouchActionAsset;
+	TSoftObjectPtr<UInputAction> CrouchActionAsset =
+		TSoftObjectPtr<UInputAction>(FSoftObjectPath(TEXT("/Game/Input/IA_LLK_Crouch.IA_LLK_Crouch")));
 
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Input")
-	TSoftObjectPtr<UInputAction> JumpActionAsset;
+	TSoftObjectPtr<UInputAction> JumpActionAsset =
+		TSoftObjectPtr<UInputAction>(FSoftObjectPath(TEXT("/Game/Input/IA_LLK_Jump.IA_LLK_Jump")));
 
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Input")
-	TSoftObjectPtr<UInputAction> LanternActionAsset;
+	TSoftObjectPtr<UInputAction> LanternActionAsset =
+		TSoftObjectPtr<UInputAction>(FSoftObjectPath(TEXT("/Game/Input/IA_LLK_Lantern.IA_LLK_Lantern")));
 
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void PawnClientRestart() override;

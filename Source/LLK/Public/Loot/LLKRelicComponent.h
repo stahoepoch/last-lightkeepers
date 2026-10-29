@@ -30,11 +30,30 @@
 // `LLKLightField::BrightnessAt`, so that is the bar. No new data key, nothing
 // invented, and it moves correctly on its own if Chris retunes the lantern.
 //
-// **Two channels, and the second one is a hook rather than a sound.** Row 16's
-// pairing needs a channel that is not the visual, and the sound of a relic
-// becoming legible is `Content/` and Chris's (row 41). So the state change
-// broadcasts, with the reason, and whatever he hangs on it is his. The visual
-// half is complete here.
+// **Two channels, neither of which is audio.** Chris, 2026-10-29, correcting
+// his own first phrasing - what he wants is not a second visual effect:
+//
+//   - Dark: the relic's physical silhouette is there. Something occupies that
+//     shelf.
+//   - Lit: its details become readable AND its interaction affordance becomes
+//     live.
+//   - "The player should be able to confirm that change through the world
+//     object and the interaction state, without needing an audio cue."
+//
+// So the two channels are the **object** and the **affordance**, and the
+// affordance half is code. That is why interactability is not merely a query
+// here: it is tracked state with its own broadcast, because a channel the
+// player is meant to notice changing has to actually change at a moment, and
+// a bool polled silently by a HUD is not an event anybody can perceive.
+//
+// `ELLKRelicInteractBlock` is the part that teaches. A prompt that can say
+// *needs light* rather than going blank is the rule being stated by the
+// interface in the player's own situation - which is what row 43 asks for and
+// what a tutorial-free game has instead of a tooltip.
+//
+// The object half is `Content/` and Chris's (row 41): the paper label, the
+// engraved tag, the photograph detail, whatever the relic turns out to be. It
+// hangs on `OnLegibilityChanged`, and nothing here guesses at it.
 
 #pragma once
 
@@ -57,8 +76,30 @@ enum class ELLKRelicChangeReason : uint8
 	IdentifiedByOther
 };
 
+/** Why a relic cannot be taken right now. The prompt's own vocabulary. */
+UENUM(BlueprintType)
+enum class ELLKRelicInteractBlock : uint8
+{
+	/** Nothing in the way: it can be taken. */
+	None,
+	/** Never read, so there is nothing to decide about. Light it first. */
+	Unidentified,
+	/**
+	 * Read, but dark right now.
+	 *
+	 * **The one a prompt should say out loud.** "Needs light" in the moment a
+	 * player reaches for a relic they already identified is row 5 explaining
+	 * itself without a tooltip, which is the whole of row 43.
+	 */
+	NeedsLight
+};
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 	FLLKRelicLegibilityChanged, bool, bIsLegible, ELLKRelicChangeReason, Reason);
+
+/** The affordance channel: fires whenever the relic becomes takeable or stops being. */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
+	FLLKRelicInteractableChanged, bool, bIsInteractable, ELLKRelicInteractBlock, Block);
 
 UCLASS(ClassGroup = (LLK), meta = (BlueprintSpawnableComponent))
 class LLK_API ULLKRelicComponent : public UActorComponent
@@ -130,6 +171,22 @@ public:
 	FLLKRelicLegibilityChanged OnLegibilityChanged;
 
 	/**
+	 * The second channel. Fires when the relic becomes takeable or stops being.
+	 *
+	 * Local to each machine on purpose: the affordance depends on the light
+	 * reaching this relic *here and now*, and a prompt that waited for a round
+	 * trip would appear a moment after the player had already decided.
+	 * Legibility is the server's; whether you can lift it this instant is a
+	 * question every machine can answer identically from replicated state.
+	 */
+	UPROPERTY(BlueprintAssignable, Category = "LLK|Loot")
+	FLLKRelicInteractableChanged OnInteractableChanged;
+
+	/** What is in the way, for a prompt to say. `NeedsLight` is the one that teaches. */
+	UFUNCTION(BlueprintPure, Category = "LLK|Loot")
+	ELLKRelicInteractBlock GetInteractBlock() const;
+
+	/**
 	 * How this relic is gated. `LanternOnly` for relics, from `loot.json`.
 	 *
 	 * `Always` is a legitimate setting and means baseline loot: visible and
@@ -143,6 +200,20 @@ public:
 	/** The authority-side decision, reachable by tests only. */
 	void EvaluateForTest(float BrightnessAtRelic) { EvaluateLegibility(BrightnessAtRelic); }
 
+	/**
+	 * Drives one light sample through the whole per-tick path, with no world.
+	 *
+	 * Sets the live-lit flag and refreshes the affordance exactly as
+	 * TickComponent does, which is what lets the affordance channel be tested
+	 * against the real code rather than a copy of it.
+	 */
+	void SampleLightForTest(float BrightnessAtRelic)
+	{
+		bCurrentlyLit = BrightnessAtRelic >= IdentifyThreshold;
+		EvaluateLegibility(BrightnessAtRelic);
+		RefreshInteractable();
+	}
+
 	/** Injects resolved rules so a test does not depend on `Content/Data` existing. */
 	void SetThresholdForTest(float InThreshold) { IdentifyThreshold = InThreshold; }
 #endif
@@ -152,6 +223,9 @@ protected:
 	void EvaluateLegibility(float BrightnessAtRelic);
 
 	void ResolveRules();
+
+	/** Recomputes the affordance and broadcasts only when it actually changed. */
+	void RefreshInteractable();
 
 	UFUNCTION()
 	void OnRep_Legible();
@@ -183,8 +257,15 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_Legible)
 	bool bLegible = false;
 
-	/** Live, server-side, and NOT replicated: clients read light locally for taking. */
+	/** Live and NOT replicated: every machine reads the light field locally. */
 	bool bCurrentlyLit = false;
+
+	/**
+	 * Last broadcast affordance, so the delegate fires on change rather than
+	 * on every sample. A prompt driven by an event that fires ten times a
+	 * second is a prompt that flickers.
+	 */
+	bool bInteractableNow = false;
 
 	UPROPERTY(VisibleInstanceOnly, Category = "LLK|Loot")
 	float IdentifyThreshold = 0.f;
