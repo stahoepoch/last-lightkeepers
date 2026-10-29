@@ -8,6 +8,11 @@ param(
     # only by Client; this deliberately does not involve Steam or an App ID.
     [string]$HostAddress = '',
 
+    # Opens a second standalone game on this same PC and connects it to a host
+    # already launched by this script. This is a fast replication smoke test,
+    # not a substitute for M1.9's eventual two-machine proof.
+    [switch]$LocalLoopback,
+
     [string]$EngineRoot = 'C:\Program Files\Epic Games\UE_5.8',
     [switch]$DryRun
 )
@@ -23,8 +28,29 @@ if (-not (Test-Path -LiteralPath $project)) {
 if (-not (Test-Path -LiteralPath $editor)) {
     throw "Pinned Unreal Editor was not found: $editor"
 }
-if (Get-Process UnrealEditor -ErrorAction SilentlyContinue) {
+if ($LocalLoopback -and $Mode -ne 'Client') {
+    throw '-LocalLoopback is only valid with -Mode Client.'
+}
+if ($LocalLoopback) {
+    if (-not [string]::IsNullOrWhiteSpace($HostAddress) -and $HostAddress -ne '127.0.0.1') {
+        throw '-LocalLoopback always connects to 127.0.0.1; do not also provide another -HostAddress.'
+    }
+    $HostAddress = '127.0.0.1'
+}
+
+$unrealProcesses = @(Get-CimInstance Win32_Process -Filter "Name = 'UnrealEditor.exe'" -ErrorAction SilentlyContinue)
+if ($unrealProcesses.Count -gt 0 -and -not $LocalLoopback) {
     throw 'Unreal Editor is already open. Close it before a standalone LAN run so Live Coding cannot leave either machine on stale modules.'
+}
+
+if ($LocalLoopback) {
+    $standaloneHost = @($unrealProcesses | Where-Object {
+        $_.CommandLine -match [regex]::Escape((Split-Path $project -Leaf)) -and
+        $_.CommandLine -match '(?i)(?:^|\s)-game(?:\s|$)'
+    })
+    if ($standaloneHost.Count -eq 0) {
+        throw 'No standalone LLK host was found. First run .\Tools\launch_lan_smoke.ps1 -Mode Host, then run this client command in a second PowerShell window.'
+    }
 }
 if ($Mode -eq 'Client' -and [string]::IsNullOrWhiteSpace($HostAddress)) {
     throw 'Client mode needs -HostAddress, for example: -HostAddress 192.168.1.42'
@@ -83,6 +109,10 @@ if ($Mode -eq 'Host') {
             Write-Host "  .\Tools\launch_lan_smoke.ps1 -Mode Client -HostAddress $_"
         }
     }
+}
+
+if ($LocalLoopback) {
+    Write-Host "`nLoopback mode: connecting a second game window to the host on this PC. This proves a listen-server/client path, but still does not replace the later two-machine LAN test."
 }
 
 if ($DryRun) {
