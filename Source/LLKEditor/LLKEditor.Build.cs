@@ -12,7 +12,10 @@ public class LLKEditor : ModuleRules
             "CoreUObject",
             "Engine",
             "LLK",
-            "UnrealEd"
+            "UnrealEd",
+            "Json",
+            "JsonUtilities",
+            "AssetRegistry"
         });
     }
 }
