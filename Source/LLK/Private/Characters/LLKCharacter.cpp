@@ -232,7 +232,9 @@ FLLKInputBindings ALLKCharacter::BuildTransientBindings(UObject* Outer)
 
 	FEnhancedActionKeyMapping& Left = Bindings.Context->MapKey(Bindings.Move, EKeys::A);
 	Left.Modifiers.Add(Swizzle());
-	Left.Modifiers.Add(Negate(true, false));
+	// Swizzle runs first, moving the key value from X onto Y. Negating X
+	// after that made A numerically identical to D.
+	Left.Modifiers.Add(Negate(false, true));
 
 	// Mouse2D is (dX, dY). Pitch is negated so that pushing the mouse forward
 	// looks up, which is the convention every other game has already taught

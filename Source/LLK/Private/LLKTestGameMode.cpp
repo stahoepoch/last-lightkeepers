@@ -94,6 +94,20 @@ void ALLKTestGameMode::BuildHarnessWorld()
 		return;
 	}
 
+	FVector HarnessOrigin = FVector::ZeroVector;
+	bool bHasExistingGround = false;
+	for (TActorIterator<APlayerStart> It(World); It; ++It)
+	{
+		HarnessOrigin = It->GetActorLocation();
+
+		FHitResult GroundHit;
+		const FVector TraceStart = HarnessOrigin + FVector(0.f, 0.f, 10000.f);
+		const FVector TraceEnd = HarnessOrigin - FVector(0.f, 0.f, 10000.f);
+		bHasExistingGround = World->LineTraceSingleByChannel(
+			GroundHit, TraceStart, TraceEnd, ECC_WorldStatic);
+		break;
+	}
+
 	UStaticMesh* Cube = LoadEngineCube();
 	if (Cube == nullptr)
 	{
@@ -102,12 +116,19 @@ void ALLKTestGameMode::BuildHarnessWorld()
 	}
 
 	// --- the floor -----------------------------------------------------
-	// The engine cube is 100cm, so scale is extent/50. Top surface sits at
-	// Z=0 and the PlayerStart goes above it.
+	// A starter map already has terrain. Adding a cube at the same elevation
+	// makes the two surfaces fight for every pixel, which reads as a broken
+	// texture. Build a floor only for genuinely blank maps.
+	//
+	// The engine cube is 100cm, so scale is extent/50. Its top surface sits at
+	// the harness origin and the generated PlayerStart goes above it.
 	const float Thickness = 50.f;
-	SpawnBlock(World, Cube,
-		FVector(0.f, 0.f, -Thickness * 0.5f),
-		FVector(FloorHalfExtent * 2.f / 100.f, FloorHalfExtent * 2.f / 100.f, Thickness / 100.f));
+	if (!bHasExistingGround)
+	{
+		SpawnBlock(World, Cube,
+			HarnessOrigin - FVector(0.f, 0.f, Thickness * 0.5f),
+			FVector(FloorHalfExtent * 2.f / 100.f, FloorHalfExtent * 2.f / 100.f, Thickness / 100.f));
+	}
 
 	// --- something to measure movement against --------------------------
 	// Ringed rather than scattered, so a keeper walking in any direction
@@ -117,7 +138,7 @@ void ALLKTestGameMode::BuildHarnessWorld()
 	{
 		const float Angle = 2.f * PI * static_cast<float>(i) / FMath::Max(1, ReferencePillars);
 		SpawnBlock(World, Cube,
-			FVector(FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius, 150.f),
+			HarnessOrigin + FVector(FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius, 150.f),
 			FVector(1.f, 1.f, 3.f));
 	}
 
@@ -159,7 +180,7 @@ void ALLKTestGameMode::BuildHarnessWorld()
 	{
 		FActorSpawnParameters Params;
 		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		World->SpawnActor<APlayerStart>(FVector(0.f, 0.f, 120.f), FRotator::ZeroRotator, Params);
+		World->SpawnActor<APlayerStart>(HarnessOrigin + FVector(0.f, 0.f, 120.f), FRotator::ZeroRotator, Params);
 	}
 
 	UE_LOG(LogLLK, Log,

@@ -54,6 +54,18 @@ namespace
 		}
 		return false;
 	}
+
+	const UInputModifierNegate* FindNegate(const FEnhancedActionKeyMapping& Mapping)
+	{
+		for (const UInputModifier* Modifier : Mapping.Modifiers)
+		{
+			if (const UInputModifierNegate* Negate = Cast<UInputModifierNegate>(Modifier))
+			{
+				return Negate;
+			}
+		}
+		return nullptr;
+	}
 }
 
 bool FLLKInputFallbackTest::RunTest(const FString& Parameters)
@@ -108,6 +120,13 @@ bool FLLKInputFallbackTest::RunTest(const FString& Parameters)
 
 	TestTrue(TEXT("A swizzles onto the right axis"), HasModifier(*Left, UInputModifierSwizzleAxis::StaticClass()));
 	TestTrue(TEXT("A is negated"), HasModifier(*Left, UInputModifierNegate::StaticClass()));
+	const UInputModifierNegate* LeftNegate = FindNegate(*Left);
+	TestNotNull(TEXT("A has a concrete negate modifier"), LeftNegate);
+	if (LeftNegate != nullptr)
+	{
+		TestFalse(TEXT("A does not negate the pre-swizzle X axis"), LeftNegate->bX);
+		TestTrue(TEXT("A negates the swizzled Y axis"), LeftNegate->bY);
+	}
 
 	// 7. Mouse pitch is inverted so that pushing forward looks up.
 	const FEnhancedActionKeyMapping* Look = FindMapping(Bindings.Context, EKeys::Mouse2D);
