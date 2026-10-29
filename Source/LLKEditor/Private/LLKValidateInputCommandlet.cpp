@@ -52,6 +52,11 @@ namespace LLKInputValidation
 				{ EKeys::SpaceBar }, EKeys::Gamepad_FaceButton_Bottom },
 			{ TEXT("Lantern"), TEXT("/Game/Input/IA_LLK_Lantern.IA_LLK_Lantern"), EInputActionValueType::Boolean,
 				{ EKeys::F }, EKeys::Gamepad_DPad_Right },
+			// E is the established keyboard verb for using the object in front of
+			// the keeper. Keep Jump on Bottom (A / Cross) and put Interact on Left
+			// (X / Square), so the two actions remain distinct on a controller.
+			{ TEXT("Interact"), TEXT("/Game/Input/IA_LLK_Interact.IA_LLK_Interact"), EInputActionValueType::Boolean,
+				{ EKeys::E }, EKeys::Gamepad_FaceButton_Left },
 		};
 		return Required;
 	}
@@ -113,6 +118,6 @@ int32 ULLKValidateInputCommandlet::Main(const FString& Params)
 		return 1;
 	}
 
-	UE_LOG(LogLLKInputValidation, Display, TEXT("LLK input asset contract passed: six actions, keyboard and gamepad bindings, all mappable."));
+	UE_LOG(LogLLKInputValidation, Display, TEXT("LLK input asset contract passed: seven actions, keyboard and gamepad bindings, all mappable."));
 	return 0;
 }
