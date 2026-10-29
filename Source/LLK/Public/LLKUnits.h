@@ -1,6 +1,12 @@
 // The one place the project converts between the units `data/*.json` is
 // written in and the units Unreal works in.
 //
+// **`DECISIONS.md` row 61, LOCKED: this file is the single conversion
+// authority for every spatial value in the project** - movement speeds,
+// enemy ranges, interaction distances and light radii. There is no raw
+// conversion anywhere else, and the JSON is never re-authored in
+// centimetres. `tests/units.test.mjs` enforces both halves on every push.
+//
 // **Every spatial number in `data/` is in Roblox studs**, because that is
 // where this project started and `docs/PLATFORM.md` row 33 keeps the data
 // layer portable rather than re-authoring it per engine. Unreal works in
@@ -46,7 +52,16 @@ namespace LLKUnits
 		return Studs * StudsToCm;
 	}
 
-	/** A distance in studs to Unreal centimetres. Ranges, radii, reach. */
+	/**
+	 * A distance in studs to Unreal centimetres.
+	 *
+	 * This is the one row 61 will be tested by, because M2 is full of them:
+	 * `aggroRadiusDark`, `sightRange`, `wakeRange`, `scanRange`,
+	 * `maxReviveDistance`, `contactRange`, and every light radius in
+	 * `DONTFUCKUPTHELIGHTS.md`. All studs. A forgotten conversion turns a
+	 * 34-stud sight range into 34 cm, and the enemy reads as blind rather
+	 * than as misconfigured - which is a bug nobody would look for here.
+	 */
 	inline constexpr float DistanceFromStuds(float Studs)
 	{
 		return Studs * StudsToCm;
