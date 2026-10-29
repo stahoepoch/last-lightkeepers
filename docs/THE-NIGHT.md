@@ -180,7 +180,23 @@ A Sweeper sweeps. You are debris on its floor. A Stocker stocks, and you are
 stock in the wrong place. A Glimmer was maintenance — it finds a fault and
 reports it, which is the scan and the tag, already built. The Window Walker
 stood in a display window being looked at, and now walks toward whatever is
-lit. The Ficus was landscaping, and it has grown.
+lit. The Ficus is landscaping - the planter's own tending rig, and it has
+grown over the thing it has been feeding for years.
+
+**That last one was the exception until row 60 closed it**, and the fix came
+from Chris laughing at it: *"a robot that got overgrown."* Every other entry
+here is a machine doing its job, and this one had quietly become a plant. But
+indoor landscaping is a job, so something does it - irrigation, grow-lights,
+and the mechanism that turns planters toward the light. It did not overgrow by
+failing. It overgrew by succeeding, with nobody left to prune it.
+
+So it tracks the only sun left in the building, which is a keeper's lantern,
+and it brings the garden to the light. *"It just wants to hug you and hold on.
+A plant needs light to live."* It does not hurt anyone. It holds them in the
+brightest spot in the room, with a lit lantern they cannot put down - and then
+everything else in `ZONES.md` arrives, because that is what light does here.
+The joke and the dread are the same sentence, which is the most this roster
+has ever got out of one idea.
 
 **Nothing in that list is malice. All of it is correct behaviour.** It is also
 not a new idea — it is Chris's own locked rule, *enemies come from the job the

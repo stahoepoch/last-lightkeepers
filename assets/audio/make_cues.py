@@ -226,20 +226,24 @@ def window_walker():
 
 
 def ficus():
-    """The only thing in the building that is alive.
+    """A machine inside a plant it has been feeding for years.
 
     Mechanism: dense foliage rustle that SWELLS and never resolves into
-    separate events, plus a fibrous stem creak that drifts in pitch. The
-    identity is ORGANIC MASS - no impact, no metal, no servo, nothing
-    mechanical anywhere in it.
+    separate events, with a tending mechanism BURIED underneath it - audible
+    only because you are close. The identity is ORGANIC MASS WITH SOMETHING
+    IN IT.
 
-    That is the point rather than a flourish. `DECISIONS.md` row 47 makes
-    every other enemy a machine finishing the last job it was given, and their
-    cues are built from machine parts: a servo groan, a rigid joint, a horn.
-    The Ficus was landscaping and it has grown (`docs/THE-NIGHT.md`). A player
-    who can hear one thing in the store that is not a machine has learned a
-    fact about the world by ear - which is how row 47 says it must be learned,
-    by watching the building work, never from a tooltip.
+    **Revised 2026-10-28 by row 60, and the first version was wrong.** It was
+    built on "the one thing in the store that is not a machine", which was a
+    hole rather than a feature: indoor landscaping is a job, so something does
+    it. The Ficus is the planter's own tending rig, overgrown by succeeding
+    at that job with nobody left to prune it. So the cue keeps a mechanism -
+    it is just muffled by everything that grew over it.
+
+    That is a better sound than the first one. A servo you can hear clearly is
+    a Stocker; a servo you can *almost* hear, through leaves, is something
+    that has been left running far too long. It also keeps row 47 intact, now
+    with no exception in the roster: all six are machines doing their jobs.
 
     Three things separate it from the Sweeper, its only noise-based neighbour:
     the grains are roughly five times denser, so they fuse into texture rather
@@ -265,13 +269,22 @@ def ficus():
     # The attack is fast but not a transient - a crack is the Window Walker.
     out = env(out, 0.02, 0.62, hold=0.18)
 
-    # Stem taking weight. Pitched, but inharmonic and drifting rather than the
-    # clean glide of a servo or a hinge, so it never reads as a mechanism.
+    # Stem and planter taking weight. Pitched and inharmonic, drifting rather
+    # than gliding, so it reads as strain rather than as a clean mechanism.
     creak = mix(
         env(sweep(132, 108, 0.75, curve=0.8), 0.12, 0.6),
         [0.42 * g for g in env(sweep(194, 171, 0.75, curve=1.3), 0.18, 0.55)],
     )
     out = at(out, 0.32, [0.33 * g for g in creak])
+
+    # The rig itself, under all of it. Row 60: there is a machine in here. It
+    # is lowpassed hard and kept quiet on purpose - the player should not be
+    # sure they heard it until the second time. A clear servo is a Stocker.
+    tick = silence(0.0)
+    for k in range(5):
+        step = env(lowpass(noise(0.03), 420), 0.002, 0.028)
+        tick = at(tick, 0.30 + k * 0.105, [0.16 * g for g in step])
+    out = mix(out, lowpass(tick, 900))
 
     # Soil and pot settling: low, soft, with no impact anywhere in it.
     out = mix(out, env(lowpass(noise(seconds), 150), 0.25, 0.55, 0.2))
