@@ -22,6 +22,7 @@
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
 #include "Data/LLKDataTypes.h"
+#include "Characters/LLKVitalsComponent.h"
 #include "Data/LLKLanternData.h"
 #include "LLKCharacter.generated.h"
 
@@ -29,6 +30,7 @@ class UCameraComponent;
 class ULLKLanternComponent;
 class ULLKLanternLightComponent;
 class ULLKInteractorComponent;
+class ULLKVitalsComponent;
 class UInputAction;
 class UInputMappingContext;
 
@@ -164,6 +166,31 @@ public:
 	UFUNCTION(BlueprintPure, Category = "LLK|Interact")
 	ULLKInteractorComponent* GetInteractor() const { return Interactor; }
 
+	/** Standing or on the floor. M2.1. */
+	UFUNCTION(BlueprintPure, Category = "LLK|Vitals")
+	ULLKVitalsComponent* GetVitals() const { return Vitals; }
+
+	UFUNCTION(BlueprintPure, Category = "LLK|Vitals")
+	bool IsDowned() const;
+
+	/**
+	 * Console commands, so knockdown can be tested before M2.2 exists.
+	 *
+	 * `LLKDown` and `LLKUp` from the console. There is no way back up until
+	 * M2.2 lands the revive, and a state you can enter and not leave is
+	 * untestable by hand - which for a feature whose whole proof is "a human
+	 * looked at it" would mean shipping it unlooked-at.
+	 *
+	 * Server-routed like everything else: the exec runs on the client that
+	 * typed it and asks, so these cannot be used to stand up in a co-op game
+	 * where the server disagrees.
+	 */
+	UFUNCTION(Exec)
+	void LLKDown();
+
+	UFUNCTION(Exec)
+	void LLKUp();
+
 	/**
 	 * Builds the stopgap bindings in code: WASD, mouse look, shift, ctrl.
 	 *
@@ -259,6 +286,13 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void ServerSetSprinting(bool bWantsToSprint);
 
+	UFUNCTION(Server, Reliable)
+	void ServerSetDownedForDebug(bool bDown);
+
+	/** Re-applies speed and un-sprints when the keeper goes down or gets up. */
+	UFUNCTION()
+	void OnDownedChanged(bool bIsDowned, ELLKDownedReason Reason);
+
 	UFUNCTION()
 	void OnRep_Sprinting();
 
@@ -301,6 +335,14 @@ protected:
 	 */
 	UPROPERTY(VisibleAnywhere, Category = "LLK|Interact")
 	TObjectPtr<ULLKInteractorComponent> Interactor;
+
+	/**
+	 * Standing or contained. Row 47's machines put people on the floor rather
+	 * than killing them, so this is the keeper's whole condition - there is no
+	 * health here and no death.
+	 */
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Vitals")
+	TObjectPtr<ULLKVitalsComponent> Vitals;
 
 	/**
 	 * The real Input Action assets, pointed at the paths M1.6 authors.

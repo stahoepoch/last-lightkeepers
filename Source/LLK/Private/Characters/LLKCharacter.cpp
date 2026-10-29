@@ -12,6 +12,7 @@
 #include "LLK.h"
 #include "Lantern/LLKLanternComponent.h"
 #include "Lantern/LLKLanternLightComponent.h"
+#include "Characters/LLKVitalsComponent.h"
 #include "Loot/LLKInteractorComponent.h"
 #include "LLKUnits.h"
 #include "Storm/LLKStormChargeSubsystem.h"
@@ -40,6 +41,7 @@ ALLKCharacter::ALLKCharacter()
 	LanternLight->SetRelativeLocation(FVector(20.f, 14.f, -18.f));
 
 	Interactor = CreateDefaultSubobject<ULLKInteractorComponent>(TEXT("Interactor"));
+	Vitals = CreateDefaultSubobject<ULLKVitalsComponent>(TEXT("Vitals"));
 
 	// The pawn turns with the controller; the (absent) mesh does not steer it.
 	bUseControllerRotationYaw = true;
@@ -93,6 +95,14 @@ void ALLKCharacter::BeginPlay()
 		// with the movement about which file it came from.
 		LanternLight->SetLanternData(LanternData);
 		LanternLight->WatchLantern(Lantern);
+	}
+
+	if (Vitals != nullptr)
+	{
+		// Speed and sprint have to react to the state, and the character owns
+		// both. The component decides whether the keeper is down; what that
+		// does to movement is movement's business.
+		Vitals->OnDownedChanged.AddDynamic(this, &ALLKCharacter::OnDownedChanged);
 	}
 
 	// The character does this wiring, not the lantern component. Its header is
@@ -222,17 +232,88 @@ float ALLKCharacter::GetJumpAirtimeSeconds() const
 	return (2.f * Velocity) / Gravity;
 }
 
+bool ALLKCharacter::IsDowned() const
+{
+	return Vitals != nullptr && Vitals->IsDowned();
+}
+
 void ALLKCharacter::ApplyMovementSpeed()
 {
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
 	{
+		if (IsDowned())
+		{
+			// `downedWalkSpeed: 0` converted through LLKUnits like every other
+			// speed. At zero this is a keeper who cannot crawl, which is the
+			// authored value and the thing that pins a carried crate to a
+			// body (row 59).
+			Movement->MaxWalkSpeed = LLKUnits::SpeedFromStuds(Vitals->GetDownedWalkStuds());
+			return;
+		}
+
 		Movement->MaxWalkSpeed = bSprinting ? SprintSpeedCms : WalkSpeedCms;
+	}
+}
+
+void ALLKCharacter::OnDownedChanged(bool bIsDowned, ELLKDownedReason Reason)
+{
+	if (bIsDowned && bSprinting)
+	{
+		// Sprint is a replicated intent and it does not survive the floor.
+		// Left set, a keeper revived later would stand up already sprinting
+		// without having asked to.
+		bSprinting = false;
+	}
+
+	if (bIsDowned && bIsCrouched)
+	{
+		// ACharacter's own crouch, released so the capsule is not left short
+		// under a keeper who is no longer choosing anything.
+		UnCrouch();
+	}
+
+	ApplyMovementSpeed();
+}
+
+void ALLKCharacter::LLKDown()
+{
+	ServerSetDownedForDebug(true);
+}
+
+void ALLKCharacter::LLKUp()
+{
+	ServerSetDownedForDebug(false);
+}
+
+void ALLKCharacter::ServerSetDownedForDebug_Implementation(bool bDown)
+{
+	if (Vitals == nullptr)
+	{
+		return;
+	}
+
+	if (bDown)
+	{
+		Vitals->GoDown(ELLKDownedReason::Debug);
+	}
+	else
+	{
+		Vitals->StandUp(ELLKDownedReason::Debug);
 	}
 }
 
 void ALLKCharacter::MoveInput(const FVector2D& Axis)
 {
 	if (Controller == nullptr)
+	{
+		return;
+	}
+
+	// Gated here rather than relying on a zero speed alone. MaxWalkSpeed of
+	// zero stops the keeper travelling, but AddMovementInput still turns the
+	// capsule and still reads as the game accepting input it is going to
+	// ignore - which feels like a bug rather than like being pinned.
+	if (IsDowned())
 	{
 		return;
 	}
@@ -257,6 +338,11 @@ void ALLKCharacter::LookInput(const FVector2D& Axis)
 
 void ALLKCharacter::SetSprinting(bool bWantsToSprint)
 {
+	if (bWantsToSprint && IsDowned())
+	{
+		return;
+	}
+
 	// The client asks. It does not decide, and it does not set its own speed
 	// first and tell the server afterwards - that is the shape that makes a
 	// speed hack a one-line change.
@@ -285,6 +371,11 @@ void ALLKCharacter::OnRep_Sprinting()
 
 void ALLKCharacter::SetCrouching(bool bWantsToCrouch)
 {
+	if (IsDowned())
+	{
+		return;
+	}
+
 	// ACharacter's crouch is already server-authoritative and replicated via
 	// bIsCrouched. Building a second crouch beside it would mean two sources
 	// of truth for one piece of state, which is the bug this project keeps
@@ -501,6 +592,11 @@ void ALLKCharacter::OnCrouchStopped()
 
 void ALLKCharacter::OnJumpStarted()
 {
+	if (IsDowned())
+	{
+		return;
+	}
+
 	// ACharacter's own jump: already server-authoritative through the movement
 	// component, and nothing here needs to second-guess it.
 	Jump();
@@ -513,6 +609,14 @@ void ALLKCharacter::OnJumpStopped()
 
 void ALLKCharacter::OnInteract()
 {
+	// A keeper on the floor cannot take things off shelves. Not merely
+	// disallowed by reach - they are being contained, and reaching for a
+	// brooch while held is not a thing the fiction permits.
+	if (IsDowned())
+	{
+		return;
+	}
+
 	if (Interactor != nullptr)
 	{
 		// Asks. The server decides whether the thing may be lifted, including
