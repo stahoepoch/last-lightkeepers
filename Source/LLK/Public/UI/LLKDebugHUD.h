@@ -126,6 +126,35 @@ protected:
 	 */
 	void DrawWorldPrompt();
 
+	/**
+	 * A downed crewmate, and the rescue in progress. M2.2.
+	 *
+	 * **Built because I repeated a mistake Chris had already caught.** The
+	 * relic went in with its state in a corner readout and nothing on the
+	 * object, and he said so: *"there isn't anything on screen to guide me."*
+	 * Three hours later I landed the revive the same way - a working hold
+	 * with no bracket, no prompt and no progress, so a rescue was invisible
+	 * to the person performing it.
+	 *
+	 * A body outranks loot, so this draws instead of the relic prompt rather
+	 * than beside it. Four people on voice chat need to see WHO is down and
+	 * HOW FAR a rescue has got without asking.
+	 */
+	void DrawCasualtyPrompt(const class ULLKVitalsComponent* Casualty);
+
+	/**
+	 * What a keeper on the floor is told, centre-screen.
+	 *
+	 * Their own state, not somebody else's: whether they have an anchor
+	 * revive left, or whether they are waiting on the crew. Row 9 makes the
+	 * second case the common one, and a keeper who does not know they are
+	 * waiting reads an indefinite wait as a hang.
+	 */
+	void DrawDownedPanel(const class ULLKVitalsComponent* Own);
+
+	/** A filled bar, for a hold. Returns the height it used. */
+	float DrawProgressBar(const FVector2D& At, float Width, float Fraction, const FLinearColor& Colour) const;
+
 	/** Half-width of the bracket around a focused object, in 1080p pixels. */
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Debug", meta = (ClampMin = "4"))
 	float BracketHalfSize = 26.f;

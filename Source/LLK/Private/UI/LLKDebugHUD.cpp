@@ -5,6 +5,7 @@
 #include "Engine/Font.h"
 #include "Engine/World.h"
 #include "Characters/LLKCharacter.h"
+#include "Characters/LLKVitalsComponent.h"
 #include "EngineUtils.h"
 #include "GameFramework/Pawn.h"
 #include "Loot/LLKInteractorComponent.h"
@@ -178,6 +179,167 @@ void ALLKDebugHUD::DrawHUD()
 	DrawWorldPrompt();
 }
 
+float ALLKDebugHUD::DrawProgressBar(
+	const FVector2D& At, float Width, float Fraction, const FLinearColor& Colour) const
+{
+	if (Canvas == nullptr)
+	{
+		return 0.f;
+	}
+
+	const float Scale = GetUIScale();
+	const float Height = 7.f * Scale;
+	const float Clamped = FMath::Clamp(Fraction, 0.f, 1.f);
+
+	// Track first, then fill. The empty track is what makes a part-filled bar
+	// legible as "part way" rather than as a short line.
+	FCanvasTileItem Track(At, FVector2D(Width, Height), FLinearColor(0.f, 0.f, 0.f, 0.55f));
+	Track.BlendMode = SE_BLEND_AlphaBlend;
+	Canvas->DrawItem(Track);
+
+	if (Clamped > 0.f)
+	{
+		FCanvasTileItem Fill(At, FVector2D(Width * Clamped, Height), Colour);
+		Fill.BlendMode = SE_BLEND_AlphaBlend;
+		Canvas->DrawItem(Fill);
+	}
+
+	return Height;
+}
+
+void ALLKDebugHUD::DrawCasualtyPrompt(const ULLKVitalsComponent* Casualty)
+{
+	const AActor* Body = Casualty != nullptr ? Casualty->GetOwner() : nullptr;
+	if (Body == nullptr || Canvas == nullptr)
+	{
+		return;
+	}
+
+	const FVector Screen = Canvas->Project(Body->GetActorLocation());
+	if (Screen.Z <= 0.f)
+	{
+		return;
+	}
+
+	const float Scale = GetUIScale();
+	const float Half = BracketHalfSize * Scale * 1.6f;
+	const FVector2D Centre(Screen.X, Screen.Y);
+
+	// Red, and wider than a relic's bracket. A person is not a pickup, and
+	// the thing a crew must find fastest should not look like a brooch.
+	const bool bHolding = Casualty->IsBeingRevived();
+	const FLinearColor Colour = bHolding ? ColourCause : ColourUrgent;
+
+	const float Arm = Half * 0.45f;
+	const float Thickness = FMath::Max(2.f, 3.f * Scale);
+	const TArray<FVector2D> Corners = {
+		FVector2D(-Half, -Half), FVector2D(Half, -Half),
+		FVector2D(-Half, Half), FVector2D(Half, Half)};
+	for (const FVector2D& Corner : Corners)
+	{
+		const FVector2D CornerAt = Centre + Corner;
+		const float SignX = Corner.X < 0.f ? 1.f : -1.f;
+		const float SignY = Corner.Y < 0.f ? 1.f : -1.f;
+		Canvas->K2_DrawLine(CornerAt, CornerAt + FVector2D(Arm * SignX, 0.f), Thickness, Colour);
+		Canvas->K2_DrawLine(CornerAt, CornerAt + FVector2D(0.f, Arm * SignY), Thickness, Colour);
+	}
+
+	UFont* Font = GEngine != nullptr ? GEngine->GetMediumFont() : nullptr;
+	if (Font == nullptr)
+	{
+		return;
+	}
+
+	// "hold E" rather than "[E]", because a tap does nothing here and a
+	// prompt that does not say so teaches the wrong gesture.
+	const FString Label = bHolding
+		? FString::Printf(TEXT("reviving...  %.0f%%"), Casualty->GetReviveProgress() * 100.f)
+		: FString(TEXT("hold [E]  -  revive"));
+
+	float TextWidth = 0.f;
+	float TextHeight = 0.f;
+	const float LabelScale = 1.2f * Scale;
+	Canvas->TextSize(Font, Label, TextWidth, TextHeight, LabelScale, LabelScale);
+
+	const float LabelY = Centre.Y + Half + 6.f * Scale;
+	FCanvasTextItem Item(FVector2D(Centre.X - TextWidth * 0.5f, LabelY),
+		FText::FromString(Label), Font, Colour);
+	Item.Scale = FVector2D(LabelScale, LabelScale);
+	Item.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.9f));
+	Canvas->DrawItem(Item);
+
+	// The bar only while a hold is live. Drawn under the label and the same
+	// width as the bracket, so progress reads as belonging to that body and
+	// not to the screen.
+	if (bHolding)
+	{
+		DrawProgressBar(
+			FVector2D(Centre.X - Half, LabelY + TextHeight * LabelScale + 4.f * Scale),
+			Half * 2.f, Casualty->GetReviveProgress(), ColourCause);
+	}
+}
+
+void ALLKDebugHUD::DrawDownedPanel(const ULLKVitalsComponent* Own)
+{
+	if (Own == nullptr || Canvas == nullptr)
+	{
+		return;
+	}
+
+	UFont* Font = GEngine != nullptr ? GEngine->GetMediumFont() : nullptr;
+	if (Font == nullptr)
+	{
+		return;
+	}
+
+	const float Scale = GetUIScale();
+	const float CentreX = Canvas->SizeX * 0.5f;
+	float Y = Canvas->SizeY * 0.62f;
+
+	const auto Centred = [&](const FString& Text, const FLinearColor& Colour, float TextScale)
+	{
+		float W = 0.f;
+		float H = 0.f;
+		const float S = TextScale * Scale;
+		Canvas->TextSize(Font, Text, W, H, S, S);
+		FCanvasTextItem Item(FVector2D(CentreX - W * 0.5f, Y), FText::FromString(Text), Font, Colour);
+		Item.Scale = FVector2D(S, S);
+		Item.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.9f));
+		Canvas->DrawItem(Item);
+		Y += H * S + 6.f * Scale;
+	};
+
+	Centred(TEXT("CONTAINED"), ColourUrgent, 1.8f);
+
+	// Being rescued: say so and show how far, so a downed player knows to
+	// stay put rather than wondering whether anything is happening.
+	if (Own->IsBeingRevived())
+	{
+		Centred(FString::Printf(TEXT("someone is getting you up  -  %.0f%%"),
+			Own->GetReviveProgress() * 100.f), ColourCause, 1.1f);
+		DrawProgressBar(FVector2D(CentreX - 150.f * Scale, Y), 300.f * Scale,
+			Own->GetReviveProgress(), ColourCause);
+		return;
+	}
+
+	// **The indefinite wait, stated.** `bleedOutSeconds` is 0, so a downed
+	// keeper waits forever - which is correct and reads as a hang if nobody
+	// says so. Telling them they are safe but stuck is the difference between
+	// a rule and a bug.
+	if (Own->IsAnchorReviveAvailable())
+	{
+		Centred(FString::Printf(TEXT("hold [E]  -  anchor revive  (%d left)"),
+			Own->GetAnchorChargesLeft()), ColourCause, 1.2f);
+		Centred(TEXT("it will cost the night"), ColourQuiet, 1.0f);
+	}
+	else
+	{
+		Centred(TEXT("wait for the crew"), ColourQuiet, 1.2f);
+		Centred(TEXT("you keep what you are carrying, and there is no timer"),
+			ColourQuiet, 1.0f);
+	}
+}
+
 void ALLKDebugHUD::DrawWorldPrompt()
 {
 	if (Canvas == nullptr)
@@ -198,6 +360,23 @@ void ALLKDebugHUD::DrawWorldPrompt()
 	const ULLKInteractorComponent* Interactor = Character->GetInteractor();
 	if (Interactor == nullptr)
 	{
+		return;
+	}
+
+	// **This keeper's own condition first.** A player on the floor needs to
+	// know what they can do about it before they need to know about a shelf.
+	const ULLKVitalsComponent* Own = Character->GetVitals();
+	if (Own != nullptr && Own->IsDowned())
+	{
+		DrawDownedPanel(Own);
+		return;
+	}
+
+	// A body outranks loot. The interactor already resolves it that way, so
+	// the prompt and the key agree without a second rule here.
+	if (const ULLKVitalsComponent* Casualty = Interactor->GetFocusedCasualty())
+	{
+		DrawCasualtyPrompt(Casualty);
 		return;
 	}
 
