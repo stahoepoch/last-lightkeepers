@@ -1,6 +1,12 @@
 #include "Characters/LLKCharacter.h"
 
 #include "Camera/CameraComponent.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
+#include "GameFramework/PlayerController.h"
+#include "InputAction.h"
+#include "InputMappingContext.h"
+#include "InputModifiers.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "LLK.h"
@@ -169,4 +175,180 @@ void ALLKCharacter::SetCrouching(bool bWantsToCrouch)
 	{
 		UnCrouch();
 	}
+}
+
+// ------------------------------------------------------------------- input
+//
+// Assets win whenever they exist. The code path below is a stopgap so the
+// keeper can be walked tonight without anybody writing into `Content/`, and
+// it is built to be deleted: when M1.6's Input Actions land, they resolve,
+// `InputSource` reports `MappingContextAsset`, and none of this runs.
+
+FLLKInputBindings ALLKCharacter::BuildTransientBindings(UObject* Outer)
+{
+	FLLKInputBindings Bindings;
+
+	const auto MakeAction = [Outer](const TCHAR* Name, EInputActionValueType Type)
+	{
+		UInputAction* Action = NewObject<UInputAction>(Outer, Name);
+		Action->ValueType = Type;
+		return Action;
+	};
+
+	Bindings.Move = MakeAction(TEXT("IA_LLK_Move_Transient"), EInputActionValueType::Axis2D);
+	Bindings.Look = MakeAction(TEXT("IA_LLK_Look_Transient"), EInputActionValueType::Axis2D);
+	Bindings.Sprint = MakeAction(TEXT("IA_LLK_Sprint_Transient"), EInputActionValueType::Boolean);
+	Bindings.CrouchToggle = MakeAction(TEXT("IA_LLK_Crouch_Transient"), EInputActionValueType::Boolean);
+
+	Bindings.Context = NewObject<UInputMappingContext>(Outer, TEXT("IMC_LLK_Transient"));
+
+	// A key press gives 1.0 on X. Forward is X, right is Y - the same axes
+	// ALLKCharacter::MoveInput expects - so S negates X, and A/D swizzle into
+	// Y with A negated.
+	const auto Negate = [Outer](bool bX, bool bY)
+	{
+		UInputModifierNegate* Modifier = NewObject<UInputModifierNegate>(Outer);
+		Modifier->bX = bX;
+		Modifier->bY = bY;
+		Modifier->bZ = false;
+		return Modifier;
+	};
+	const auto Swizzle = [Outer]()
+	{
+		UInputModifierSwizzleAxis* Modifier = NewObject<UInputModifierSwizzleAxis>(Outer);
+		Modifier->Order = EInputAxisSwizzle::YXZ;
+		return Modifier;
+	};
+
+	Bindings.Context->MapKey(Bindings.Move, EKeys::W);
+	Bindings.Context->MapKey(Bindings.Move, EKeys::S).Modifiers.Add(Negate(true, false));
+
+	FEnhancedActionKeyMapping& Right = Bindings.Context->MapKey(Bindings.Move, EKeys::D);
+	Right.Modifiers.Add(Swizzle());
+
+	FEnhancedActionKeyMapping& Left = Bindings.Context->MapKey(Bindings.Move, EKeys::A);
+	Left.Modifiers.Add(Swizzle());
+	Left.Modifiers.Add(Negate(true, false));
+
+	// Mouse2D is (dX, dY). Pitch is negated so that pushing the mouse forward
+	// looks up, which is the convention every other game has already taught
+	// the player.
+	FEnhancedActionKeyMapping& Look = Bindings.Context->MapKey(Bindings.Look, EKeys::Mouse2D);
+	Look.Modifiers.Add(Negate(false, true));
+
+	Bindings.Context->MapKey(Bindings.Sprint, EKeys::LeftShift);
+	Bindings.Context->MapKey(Bindings.CrouchToggle, EKeys::LeftControl);
+
+	return Bindings;
+}
+
+void ALLKCharacter::ResolveInputBindings()
+{
+	FLLKInputBindings FromAssets;
+	FromAssets.Context = MappingContextAsset.LoadSynchronous();
+	FromAssets.Move = MoveActionAsset.LoadSynchronous();
+	FromAssets.Look = LookActionAsset.LoadSynchronous();
+	FromAssets.Sprint = SprintActionAsset.LoadSynchronous();
+	FromAssets.CrouchToggle = CrouchActionAsset.LoadSynchronous();
+
+	if (FromAssets.IsComplete())
+	{
+		ActiveBindings = FromAssets;
+		InputSource = ELLKInputSource::MappingContextAsset;
+		UE_LOG(LogLLK, Log, TEXT("ALLKCharacter: input from Input Action assets."));
+		return;
+	}
+
+	ActiveBindings = BuildTransientBindings(this);
+	InputSource = ELLKInputSource::TransientFallback;
+	UE_LOG(LogLLK, Warning,
+		TEXT("ALLKCharacter: no complete Input Action asset set - running on the TRANSIENT in-code ")
+		TEXT("fallback (WASD, mouse, shift, ctrl). Nothing is rebindable until M1.6's assets exist."));
+}
+
+void ALLKCharacter::ApplyMappingContext()
+{
+	if (!ActiveBindings.IsComplete())
+	{
+		return;
+	}
+
+	const APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	if (PlayerController == nullptr)
+	{
+		return;
+	}
+
+	if (UEnhancedInputLocalPlayerSubsystem* Subsystem =
+			ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+	{
+		Subsystem->AddMappingContext(ActiveBindings.Context, 0);
+	}
+}
+
+void ALLKCharacter::PawnClientRestart()
+{
+	Super::PawnClientRestart();
+
+	if (InputSource == ELLKInputSource::Unresolved)
+	{
+		ResolveInputBindings();
+	}
+	ApplyMappingContext();
+}
+
+void ALLKCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	if (InputSource == ELLKInputSource::Unresolved)
+	{
+		ResolveInputBindings();
+	}
+
+	UEnhancedInputComponent* Input = Cast<UEnhancedInputComponent>(PlayerInputComponent);
+	if (Input == nullptr || !ActiveBindings.IsComplete())
+	{
+		// Loud rather than a dead keeper nobody can explain.
+		UE_LOG(LogLLK, Error,
+			TEXT("ALLKCharacter: no UEnhancedInputComponent or incomplete bindings - the keeper will not move."));
+		return;
+	}
+
+	Input->BindAction(ActiveBindings.Move, ETriggerEvent::Triggered, this, &ALLKCharacter::OnMoveInput);
+	Input->BindAction(ActiveBindings.Look, ETriggerEvent::Triggered, this, &ALLKCharacter::OnLookInput);
+	Input->BindAction(ActiveBindings.Sprint, ETriggerEvent::Started, this, &ALLKCharacter::OnSprintStarted);
+	Input->BindAction(ActiveBindings.Sprint, ETriggerEvent::Completed, this, &ALLKCharacter::OnSprintStopped);
+	Input->BindAction(ActiveBindings.CrouchToggle, ETriggerEvent::Started, this, &ALLKCharacter::OnCrouchStarted);
+	Input->BindAction(ActiveBindings.CrouchToggle, ETriggerEvent::Completed, this, &ALLKCharacter::OnCrouchStopped);
+}
+
+void ALLKCharacter::OnMoveInput(const FInputActionValue& Value)
+{
+	MoveInput(Value.Get<FVector2D>());
+}
+
+void ALLKCharacter::OnLookInput(const FInputActionValue& Value)
+{
+	LookInput(Value.Get<FVector2D>());
+}
+
+void ALLKCharacter::OnSprintStarted()
+{
+	SetSprinting(true);
+}
+
+void ALLKCharacter::OnSprintStopped()
+{
+	SetSprinting(false);
+}
+
+void ALLKCharacter::OnCrouchStarted()
+{
+	SetCrouching(true);
+}
+
+void ALLKCharacter::OnCrouchStopped()
+{
+	SetCrouching(false);
 }

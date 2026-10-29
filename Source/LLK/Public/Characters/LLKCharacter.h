@@ -20,10 +20,60 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "InputActionValue.h"
 #include "Data/LLKLanternData.h"
 #include "LLKCharacter.generated.h"
 
 class UCameraComponent;
+class UInputAction;
+class UInputMappingContext;
+
+/**
+ * The four actions the keeper needs, and the context that maps keys to them.
+ *
+ * One struct rather than five loose pointers so that "do we have input?" is a
+ * single question with a single answer. A half-bound keeper - move but no
+ * look, say - is worse than an unbound one, because it looks like a physics
+ * bug rather than a missing asset.
+ */
+USTRUCT()
+struct FLLKInputBindings
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	TObjectPtr<UInputMappingContext> Context = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<UInputAction> Move = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<UInputAction> Look = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<UInputAction> Sprint = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<UInputAction> CrouchToggle = nullptr;
+
+	bool IsComplete() const
+	{
+		return Context != nullptr && Move != nullptr && Look != nullptr
+			&& Sprint != nullptr && CrouchToggle != nullptr;
+	}
+};
+
+/** Where the keeper's input bindings came from. Mirrors ELLKSpeedSource. */
+UENUM(BlueprintType)
+enum class ELLKInputSource : uint8
+{
+	/** Nothing resolved yet. */
+	Unresolved,
+	/** Real Input Action assets from `Content/`. These always win. */
+	MappingContextAsset,
+	/** Built in code because the assets do not exist yet. A stopgap, by design. */
+	TransientFallback
+};
 
 /**
  * Where a keeper's movement numbers came from, so "it works" can never
@@ -85,6 +135,24 @@ public:
 	UFUNCTION(BlueprintPure, Category = "LLK|Movement")
 	float GetSprintSpeed() const { return SprintSpeedCms; }
 
+	/** Which path the input bindings came from. Assets win; the fallback announces itself. */
+	UFUNCTION(BlueprintPure, Category = "LLK|Input")
+	ELLKInputSource GetInputSource() const { return InputSource; }
+
+	/**
+	 * Builds the stopgap bindings in code: WASD, mouse look, shift, ctrl.
+	 *
+	 * **This exists so the keeper can be walked before anyone authors a
+	 * `.uasset`**, because `Content/` is Chris's alone (row 41) and M1.6's
+	 * real Input Actions are not made yet. `UInputAction` and
+	 * `UInputMappingContext` are plain `UDataAsset` subclasses, so nothing
+	 * about Enhanced Input requires them to come off disk.
+	 *
+	 * Static and outer-parameterised so a test can build the table and
+	 * inspect it without a world, a pawn or a running game.
+	 */
+	static FLLKInputBindings BuildTransientBindings(UObject* Outer);
+
 protected:
 	/**
 	 * The generated asset built from `data/lantern.json` by M0.5's writer.
@@ -125,6 +193,48 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "LLK|Camera")
 	TObjectPtr<UCameraComponent> FirstPersonCamera;
+
+	/**
+	 * Real assets, if they exist. Unset by default - `Content/` is Chris's,
+	 * and M1.6 fills these in. All five must resolve or none are used: a
+	 * partial asset set falls back wholesale rather than mixing two sources.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Input")
+	TSoftObjectPtr<UInputMappingContext> MappingContextAsset;
+
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Input")
+	TSoftObjectPtr<UInputAction> MoveActionAsset;
+
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Input")
+	TSoftObjectPtr<UInputAction> LookActionAsset;
+
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Input")
+	TSoftObjectPtr<UInputAction> SprintActionAsset;
+
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Input")
+	TSoftObjectPtr<UInputAction> CrouchActionAsset;
+
+	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+	virtual void PawnClientRestart() override;
+
+	/** Picks the asset path if it is complete, the code path otherwise. */
+	void ResolveInputBindings();
+
+	/** Pushes the resolved context into the local player's input subsystem. */
+	void ApplyMappingContext();
+
+	void OnMoveInput(const FInputActionValue& Value);
+	void OnLookInput(const FInputActionValue& Value);
+	void OnSprintStarted();
+	void OnSprintStopped();
+	void OnCrouchStarted();
+	void OnCrouchStopped();
+
+	UPROPERTY()
+	FLLKInputBindings ActiveBindings;
+
+	UPROPERTY(VisibleInstanceOnly, Category = "LLK|Input")
+	ELLKInputSource InputSource = ELLKInputSource::Unresolved;
 
 	UPROPERTY(ReplicatedUsing = OnRep_Sprinting)
 	bool bSprinting = false;

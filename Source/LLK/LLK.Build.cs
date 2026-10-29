@@ -11,7 +11,11 @@ public class LLK : ModuleRules
             "Core",
             "CoreUObject",
             "Engine",
-            "EnhancedInput"
+            "EnhancedInput",
+            // EKeys lives here. The monolithic Game target links without it
+            // and the modular Editor target does not, so leaving it out gives
+            // a clean build that fails the moment the editor is rebuilt.
+            "InputCore"
         });
     }
 }
