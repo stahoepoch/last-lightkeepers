@@ -84,17 +84,30 @@ Write-CommandOutput 'build.txt' {
         #
         # Whether a source file is newer than the binary is the actual
         # question, and it does not care when anybody committed.
-        $sources = Get-ChildItem -LiteralPath (Join-Path $root 'Source') -Recurse -File -Include '*.h', '*.cpp', '*.cs' -ErrorAction SilentlyContinue
+        # Headers, sources, and the build config - .Build.cs and .Target.cs all
+        # live under Source/, so the *.cs include covers "a dependency changed"
+        # as well as "code changed". Both require a rebuild and neither shows
+        # up as a changed .cpp.
+        $sources = @(Get-ChildItem -LiteralPath (Join-Path $root 'Source') -Recurse -File -Include '*.h', '*.cpp', '*.cs' -ErrorAction SilentlyContinue)
+
+        # Plus the .uproject, on Codex's framing of this check as "the latest
+        # runtime or build-config change". Enabling or disabling a plugin
+        # changes what is compiled and linked while touching nothing under
+        # Source/ - and this project has already done exactly that once,
+        # disabling the Fab plugin during M0.7. A rebuild is needed and no
+        # source file would say so.
+        $sources += @(Get-ChildItem -LiteralPath $root -File -Filter '*.uproject' -ErrorAction SilentlyContinue)
+
         $newest = $sources | Sort-Object LastWriteTime -Descending | Select-Object -First 1
         if ($newest) {
-            "Newest source file:         $($newest.LastWriteTime.ToString('o'))  ($($newest.Name))"
+            "Newest build input:         $($newest.LastWriteTime.ToString('o'))  ($($newest.Name))"
             if ($newest.LastWriteTime -gt $built) {
                 "STALE BUILD: $($newest.Name) is newer than the binary."
-                "The editor is running code that is not the code on disk. Rebuild before"
-                "trusting anything else in this bundle."
+                "The editor was built before that change, so it is not running what is on"
+                "disk. Rebuild before trusting anything else in this bundle."
             }
             else {
-                "Build is current: no source file is newer than the binary."
+                "Build is current: no build input is newer than the binary."
             }
         }
 
