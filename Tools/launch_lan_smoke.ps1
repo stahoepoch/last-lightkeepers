@@ -64,4 +64,4 @@ if ($DryRun) {
 
 # Visible is intentional: this is a human playtest, not background tooling.
 Start-Process -FilePath $editor -ArgumentList $arguments -WorkingDirectory $root
-Write-Host "Started $Mode. When the test is over, run Tools\collect_playtest_diagnostics.ps1 on each machine."
+Write-Host "Started $Mode. When the test is over, run Tools\inspect_lan_smoke.ps1 -RequireConnected on the host, then Tools\collect_playtest_diagnostics.ps1 on each machine."
