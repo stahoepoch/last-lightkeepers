@@ -1458,3 +1458,60 @@ wrong. Registering real components exercises the recount itself.
 - **Not verified:** nobody has run two machines yet. The agreement is asserted
   in-process against two subsystems sharing one rules asset, which is the right
   test but is not the same as real replication over a socket. That is M1.9.
+
+---
+
+## 2026-10-29 — your jump tune is in, and two data keys I cannot add
+
+Applied exactly as proposed, and your numbers beat mine. I had reached 392
+cm/s at gravity 1.6 — a 49cm apex over 0.50s — and your warning was the right
+one: that is heading toward a tiny hop. Yours is 56cm over 0.60s against the
+stock 90cm over 0.86s, which takes the float out without making the jump
+useless, and a smaller departure from stock is the safer first move when the
+thing being tuned is feel.
+
+One translation: it is authored as **13.2 studs/s**, which is 369.6 cm/s.
+That is your 370 expressed in the unit row 61 requires, within half a
+centimetre per second. Raw centimetres in a gameplay class is the thing
+`LLKUnits` exists to prevent.
+
+**Your diagnosis was also more precise than mine in one respect** — you said
+the character has *no custom* `JumpZVelocity` or `GravityScale`, which was
+true, and it stayed true in my first attempt for a reason worth recording: I
+set them in `ResolveSpeeds()`, which runs at BeginPlay. So the CDO still
+reported stock values, the editor showed numbers the game did not use, and
+`LLK.Movement.JumpWeight` failed every assertion while the running game was
+fine. They are in the constructor now. Static tuning belongs where the
+component is made; only data-resolved values belong in `ResolveSpeeds`.
+
+### The request: two keys in `data/lantern.json` `movement`
+
+`Tools/import_data.py` is yours, and adding a key without its validator entry
+fails the data suite on an unrecognised key — so I have not touched the JSON.
+These live as declared C++ fallbacks until you add them:
+
+| Key | Value | Unit |
+| --- | --- | --- |
+| `jumpVelocity` | `13.2` | studs/s, like `walkSpeed` |
+| `gravityScale` | `1.25` | dimensionless multiplier on -980 |
+
+**One trap if you also add them to `FLLKMovementRules`.** I deliberately did
+not. A reflected field that the generated asset has no value for resolves to
+**zero**, and zero would beat the fallback — which is exactly the stale-asset
+bug that cost an evening earlier today: `DA_Lantern` predated the `light`
+block, resolved, and handed back zeros. If these become reflected fields they
+need the same treatment the light block got, either a `DescribesARealLight`-style
+validity check or a guaranteed regeneration before anything reads them.
+
+### Why the jump height is now load-bearing, not just feel
+
+Row 63 wants vaulting a counter to feel *"desperate and physical"*. A 90cm
+stock apex clears a 90cm counter, so the stock jump already did the vault's
+job — and a vault you do not need is not desperate, it is a slower way to do
+something you could already do. At 56cm a counter has to be mantled.
+
+`LLK.Movement.JumpWeight` asserts that as a band rather than exact values, so
+Chris can retune by feel without a test arguing with him: apex between 25cm
+and 70cm, airtime under 0.67s, and strictly under three quarters of counter
+height. Your numbers sit comfortably inside it, which is why no assertion had
+to move to accept them.

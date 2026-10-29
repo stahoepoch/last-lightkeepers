@@ -135,6 +135,24 @@ public:
 	UFUNCTION(BlueprintPure, Category = "LLK|Movement")
 	float GetSprintSpeed() const { return SprintSpeedCms; }
 
+	/** Launch speed in cm/s, after the stud conversion. */
+	UFUNCTION(BlueprintPure, Category = "LLK|Movement")
+	float GetJumpVelocity() const;
+
+	/**
+	 * Apex height in cm, from the jump speed and gravity actually applied.
+	 *
+	 * Published because it is the number with design meaning: row 63 needs a
+	 * counter to be un-jumpable, and `LLK.Movement.JumpWeight` asserts that
+	 * against this rather than against the two inputs separately.
+	 */
+	UFUNCTION(BlueprintPure, Category = "LLK|Movement")
+	float GetJumpApexCm() const;
+
+	/** Seconds from launch to landing on flat ground. The float, measured. */
+	UFUNCTION(BlueprintPure, Category = "LLK|Movement")
+	float GetJumpAirtimeSeconds() const;
+
 	/** Which path the input bindings came from. Assets win; the fallback announces itself. */
 	UFUNCTION(BlueprintPure, Category = "LLK|Input")
 	ELLKInputSource GetInputSource() const { return InputSource; }
@@ -188,6 +206,55 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Data", meta = (ClampMin = "0"))
 	float FallbackCrouchStuds = 9.f;
+
+	/**
+	 * Jump launch speed in STUDS/s, and the gravity it falls under.
+	 *
+	 * **Chris, 2026-10-29, playing the harness: "the jump feels like gravity
+	 * is a little light, i float a little much."** He is right, and two
+	 * things were compounding. Unreal's defaults are `JumpZVelocity` 420 with
+	 * `GravityScale` 1 against -980 gravity, which is a 90cm apex and 0.86
+	 * seconds of airtime. And our keeper walks at 448cm/s rather than
+	 * Unreal's default 600, so less ground passes per second of air and the
+	 * hang feels proportionally longer than the same jump would in a stock
+	 * project. The defaults are tuned for a shooter; this is not one.
+	 *
+	 * **The arithmetic, so these can be argued with rather than guessed at.**
+	 * Apex is `v^2 / (2 * 980 * G)` and airtime is `2v / (980 * G)`. At 13.2
+	 * studs/s (369.6cm/s) and G 1.25 that is a **56cm apex over 0.60s**,
+	 * against the stock 90cm over 0.86s.
+	 *
+	 * **These are Codex's numbers, not mine, and his were better.** He
+	 * proposed `JumpZVelocity` 370 with `GravityScale` 1.25; I had reached
+	 * 392 at 1.6, which is a 49cm apex over 0.50s. Both clear the row 63 bar
+	 * below, but his warning was the right one - *"without turning jumps into
+	 * tiny hops"* - and mine was heading that way. A smaller departure from
+	 * stock is also the safer first move when the thing being tuned is feel,
+	 * and the difference between 0.50s and 0.60s is for Chris to judge by
+	 * playing rather than for either of us to argue about. 13.2 studs is 369.6
+	 * cm/s: his 370, expressed in the unit row 61 requires, and within half a
+	 * centimetre per second of it.
+	 *
+	 * **And it protects row 63, which matters more than the feel.** A 90cm
+	 * apex clears a 90cm counter, so the stock jump already did the vault's
+	 * job - and a vault you do not need is not "desperate and physical", it
+	 * is a slower way to do something you could already do. At 49cm a counter
+	 * has to be mantled. The traversal work now has a reason to exist, and
+	 * that was true before anybody noticed the floating.
+	 *
+	 * **These are not in `data/` yet and should be.** `Tools/` is Codex's
+	 * lane, and a new key in `lantern.json` needs his importer validator to
+	 * know about it or the data suite fails on an unrecognised key. Requested
+	 * in `NOTES-FOR-CODEX.md`; declared here until then, and deliberately not
+	 * added to `FLLKMovementRules` - a reflected field the generated asset
+	 * has no value for would resolve to zero and beat this fallback, which is
+	 * exactly the stale-asset bug that cost an evening earlier today.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Movement", meta = (ClampMin = "0"))
+	float JumpStuds = 13.2f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Movement", meta = (ClampMin = "0.1"))
+	float GravityScale = 1.25f;
 
 	UFUNCTION(Server, Reliable)
 	void ServerSetSprinting(bool bWantsToSprint);

@@ -48,6 +48,16 @@ ALLKCharacter::ALLKCharacter()
 
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
 	{
+		// **Set in the CONSTRUCTOR, not at BeginPlay, and that was a real bug.**
+		// These first went into ResolveSpeeds, which runs at BeginPlay - so the
+		// class default object still reported Unreal's stock 420 at gravity 1,
+		// the editor showed values the game did not use, and
+		// LLK.Movement.JumpWeight failed every assertion while the running game
+		// was correct. Static tuning belongs where the component is made; only
+		// data-resolved values belong in ResolveSpeeds.
+		Movement->JumpZVelocity = LLKUnits::SpeedFromStuds(JumpStuds);
+		Movement->GravityScale = GravityScale;
+
 		Movement->bOrientRotationToMovement = false;
 		Movement->NavAgentProps.bCanCrouch = true;
 		// Crouching must not silently un-crouch under a low ceiling into a
@@ -162,8 +172,54 @@ void ALLKCharacter::ResolveSpeeds()
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
 	{
 		Movement->MaxWalkSpeedCrouched = CrouchSpeedCms;
+
+		// Re-applied here so an instance override still lands, and logged so
+		// the numbers Chris is reacting to are in the file he sends me.
+		Movement->JumpZVelocity = LLKUnits::SpeedFromStuds(JumpStuds);
+		Movement->GravityScale = GravityScale;
+
+		UE_LOG(LogLLK, Log,
+			TEXT("ALLKCharacter: jump %.0f cm/s at gravity x%.2f - %.0fcm apex over %.2fs."),
+			Movement->JumpZVelocity, GravityScale, GetJumpApexCm(), GetJumpAirtimeSeconds());
 	}
 	ApplyMovementSpeed();
+}
+
+float ALLKCharacter::GetJumpVelocity() const
+{
+	return LLKUnits::SpeedFromStuds(JumpStuds);
+}
+
+float ALLKCharacter::GetJumpApexCm() const
+{
+	// Read from the movement component where possible rather than recomputed,
+	// so this reports what the keeper actually does and not what the
+	// properties say they should. The two differ the moment anything else
+	// touches gravity.
+	const UCharacterMovementComponent* Movement = GetCharacterMovement();
+	const float Gravity = Movement != nullptr
+		? FMath::Abs(Movement->GetGravityZ()) : 980.f * GravityScale;
+	const float Velocity = Movement != nullptr ? Movement->JumpZVelocity : GetJumpVelocity();
+
+	if (Gravity <= 0.f)
+	{
+		return 0.f;
+	}
+	return (Velocity * Velocity) / (2.f * Gravity);
+}
+
+float ALLKCharacter::GetJumpAirtimeSeconds() const
+{
+	const UCharacterMovementComponent* Movement = GetCharacterMovement();
+	const float Gravity = Movement != nullptr
+		? FMath::Abs(Movement->GetGravityZ()) : 980.f * GravityScale;
+	const float Velocity = Movement != nullptr ? Movement->JumpZVelocity : GetJumpVelocity();
+
+	if (Gravity <= 0.f)
+	{
+		return 0.f;
+	}
+	return (2.f * Velocity) / Gravity;
 }
 
 void ALLKCharacter::ApplyMovementSpeed()
