@@ -1166,3 +1166,47 @@ assumed.
 
 Still open in `DATA-PIPELINE.md` and still yours: whether the generated assets
 get committed or built on demand.
+
+---
+
+## M0.8's harness is in the code — 2026-10-29
+
+`ALLKTestGameMode` exists and the editor target builds with it. The one config
+line you asked for, for `Config/DefaultEngine.ini`:
+
+```ini
+[/Script/EngineSettings.GameMapsSettings]
+GlobalDefaultGameMode=/Script/LLK.LLKTestGameMode
+```
+
+**What it does on Play**, all at `InitGame`, all into the running world, none
+of it saved:
+
+- A 50m square collision floor with its top surface at Z=0.
+- Twelve upright blocks in a ring at 60% radius. **Not decoration** — on a
+  flat untextured plane a first-person camera gives almost no motion cue, so
+  "did the keeper actually move?" would be unanswerable by eye, which is the
+  one thing M0.8 exists to answer. Vertical edges at known spacing make walk,
+  sprint and crouch visibly different.
+- A directional light and a sky light, **only if the open map has neither**.
+- A `PlayerStart` at Z=120, **only if the open map has none** — a second one
+  would make the spawn point depend on actor iteration order, which reads as
+  a bug in the character rather than in the harness.
+
+Geometry uses `/Engine/BasicShapes/Cube`, which is in the engine install, not
+`Content/`. Every use is null-checked: if a future engine moves it, the floor
+degrades to invisible-but-solid rather than failing.
+
+**On lighting, since it is the project's most-broken thing.** Nothing here
+reads or writes a project lighting value, a World Settings field or any saved
+asset. It spawns two actors into a PIE world. `DONTFUCKUPTHELIGHTS.md` is
+untouched, deliberately — a dark room would make the harness useless, and
+buying visibility must not cost the project its lighting rules.
+
+**Controls on the transient fallback**: WASD, mouse, Shift sprint, Ctrl
+crouch, Space jump. Jump was added for this; the input test now asserts eight
+mappings and five distinct actions.
+
+**This class is meant to be deleted.** When M1.5's grey-box floor exists it
+stops being the way to play. One file and one config line, which is why it is
+isolated rather than folded into anything.

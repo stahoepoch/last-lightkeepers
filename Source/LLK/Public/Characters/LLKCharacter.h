@@ -58,10 +58,13 @@ struct FLLKInputBindings
 	UPROPERTY()
 	TObjectPtr<UInputAction> CrouchToggle = nullptr;
 
+	UPROPERTY()
+	TObjectPtr<UInputAction> Jump = nullptr;
+
 	bool IsComplete() const
 	{
 		return Context != nullptr && Move != nullptr && Look != nullptr
-			&& Sprint != nullptr && CrouchToggle != nullptr;
+			&& Sprint != nullptr && CrouchToggle != nullptr && Jump != nullptr;
 	}
 };
 
@@ -211,6 +214,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Input")
 	TSoftObjectPtr<UInputAction> CrouchActionAsset;
 
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Input")
+	TSoftObjectPtr<UInputAction> JumpActionAsset;
+
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void PawnClientRestart() override;
 
@@ -226,6 +232,8 @@ protected:
 	void OnSprintStopped();
 	void OnCrouchStarted();
 	void OnCrouchStopped();
+	void OnJumpStarted();
+	void OnJumpStopped();
 
 	UPROPERTY()
 	FLLKInputBindings ActiveBindings;

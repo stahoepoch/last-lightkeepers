@@ -202,6 +202,7 @@ FLLKInputBindings ALLKCharacter::BuildTransientBindings(UObject* Outer)
 	Bindings.Look = MakeAction(TEXT("IA_LLK_Look_Transient"), EInputActionValueType::Axis2D);
 	Bindings.Sprint = MakeAction(TEXT("IA_LLK_Sprint_Transient"), EInputActionValueType::Boolean);
 	Bindings.CrouchToggle = MakeAction(TEXT("IA_LLK_Crouch_Transient"), EInputActionValueType::Boolean);
+	Bindings.Jump = MakeAction(TEXT("IA_LLK_Jump_Transient"), EInputActionValueType::Boolean);
 
 	Bindings.Context = NewObject<UInputMappingContext>(Outer, TEXT("IMC_LLK_Transient"));
 
@@ -241,6 +242,7 @@ FLLKInputBindings ALLKCharacter::BuildTransientBindings(UObject* Outer)
 
 	Bindings.Context->MapKey(Bindings.Sprint, EKeys::LeftShift);
 	Bindings.Context->MapKey(Bindings.CrouchToggle, EKeys::LeftControl);
+	Bindings.Context->MapKey(Bindings.Jump, EKeys::SpaceBar);
 
 	return Bindings;
 }
@@ -253,6 +255,7 @@ void ALLKCharacter::ResolveInputBindings()
 	FromAssets.Look = LookActionAsset.LoadSynchronous();
 	FromAssets.Sprint = SprintActionAsset.LoadSynchronous();
 	FromAssets.CrouchToggle = CrouchActionAsset.LoadSynchronous();
+	FromAssets.Jump = JumpActionAsset.LoadSynchronous();
 
 	if (FromAssets.IsComplete())
 	{
@@ -324,6 +327,8 @@ void ALLKCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	Input->BindAction(ActiveBindings.Sprint, ETriggerEvent::Completed, this, &ALLKCharacter::OnSprintStopped);
 	Input->BindAction(ActiveBindings.CrouchToggle, ETriggerEvent::Started, this, &ALLKCharacter::OnCrouchStarted);
 	Input->BindAction(ActiveBindings.CrouchToggle, ETriggerEvent::Completed, this, &ALLKCharacter::OnCrouchStopped);
+	Input->BindAction(ActiveBindings.Jump, ETriggerEvent::Started, this, &ALLKCharacter::OnJumpStarted);
+	Input->BindAction(ActiveBindings.Jump, ETriggerEvent::Completed, this, &ALLKCharacter::OnJumpStopped);
 }
 
 void ALLKCharacter::OnMoveInput(const FInputActionValue& Value)
@@ -354,4 +359,16 @@ void ALLKCharacter::OnCrouchStarted()
 void ALLKCharacter::OnCrouchStopped()
 {
 	SetCrouching(false);
+}
+
+void ALLKCharacter::OnJumpStarted()
+{
+	// ACharacter's own jump: already server-authoritative through the movement
+	// component, and nothing here needs to second-guess it.
+	Jump();
+}
+
+void ALLKCharacter::OnJumpStopped()
+{
+	StopJumping();
 }

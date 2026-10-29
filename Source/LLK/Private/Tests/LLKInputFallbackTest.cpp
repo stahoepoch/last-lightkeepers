@@ -72,20 +72,21 @@ bool FLLKInputFallbackTest::RunTest(const FString& Parameters)
 	// 2. Four distinct actions. Reusing one action for two jobs would make
 	//    sprint and crouch fire each other.
 	TSet<const UInputAction*> Distinct{
-		Bindings.Move.Get(), Bindings.Look.Get(), Bindings.Sprint.Get(), Bindings.CrouchToggle.Get()};
-	TestEqual(TEXT("the four actions are distinct objects"), Distinct.Num(), 4);
+		Bindings.Move.Get(), Bindings.Look.Get(), Bindings.Sprint.Get(), Bindings.CrouchToggle.Get(), Bindings.Jump.Get()};
+	TestEqual(TEXT("the five actions are distinct objects"), Distinct.Num(), 5);
 
 	// 3. Value types. An Axis2D read off a Boolean action is silently zero.
 	TestEqual(TEXT("Move is Axis2D"), Bindings.Move->ValueType, EInputActionValueType::Axis2D);
 	TestEqual(TEXT("Look is Axis2D"), Bindings.Look->ValueType, EInputActionValueType::Axis2D);
 	TestEqual(TEXT("Sprint is Boolean"), Bindings.Sprint->ValueType, EInputActionValueType::Boolean);
 	TestEqual(TEXT("Crouch is Boolean"), Bindings.CrouchToggle->ValueType, EInputActionValueType::Boolean);
+	TestEqual(TEXT("Jump is Boolean"), Bindings.Jump->ValueType, EInputActionValueType::Boolean);
 
-	// 4. Seven mappings: four for movement, one look, one sprint, one crouch.
-	TestEqual(TEXT("the context has seven key mappings"), Bindings.Context->GetMappings().Num(), 7);
+	// 4. Eight mappings: four movement, one look, sprint, crouch, jump.
+	TestEqual(TEXT("the context has eight key mappings"), Bindings.Context->GetMappings().Num(), 8);
 
 	// 5. Every key the player will press is actually present.
-	for (const FKey& Key : {EKeys::W, EKeys::A, EKeys::S, EKeys::D, EKeys::Mouse2D, EKeys::LeftShift, EKeys::LeftControl})
+	for (const FKey& Key : {EKeys::W, EKeys::A, EKeys::S, EKeys::D, EKeys::Mouse2D, EKeys::LeftShift, EKeys::LeftControl, EKeys::SpaceBar})
 	{
 		TestNotNull(*FString::Printf(TEXT("%s is mapped"), *Key.ToString()), FindMapping(Bindings.Context, Key));
 	}
