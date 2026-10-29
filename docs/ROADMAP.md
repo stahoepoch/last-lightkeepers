@@ -409,32 +409,74 @@ is a light; the world's darkness is a creative decision, not a constant.
 
 ---
 
-## M2 and M3, in outline
+## M2 — the night pushes back
 
-Sliced properly when M1 lands, because estimating them now would be fiction.
-The content is already written and should not be re-derived:
+Sliced 2026-10-29, when M1's code side landed. The outline that stood here is
+below in the rows it became; the content was already written and is not
+re-derived.
 
-- **M2** — thresholds and the Warden. `data/storm-charge.json` holds the
-  numbers; row 7 says the Warden is unkillable and drops nothing; row 5 says
-  light reveals value and attracts danger with no "light repels" exception.
-  **Enemies converge on the brightest position, never the nearest player** —
-  `data/enemies.json` and `storm-charge.json` both state it, and the archived
-  `EnemyService.luau` broke it by retargeting to nearest. **Do not inherit that
-  bug.** It is not a fidelity detail: brightest-position is what puts cause and
-  consequence in the same pair of hands, so in four-player co-op it is the
-  difference between the building teaching the lantern rule and nobody learning
-  it (`docs/THE-STORE.md`, the co-op teaching trap).
-  Knockdown not death (row 11, and `docs/BANKING.md` on bounded loss). The
-  Anchor Revive is solo-only (row 9).
+**The thing that makes this sliceable is a dependency split nobody expected to
+be this clean.** Most of M2 is rules, state and data - knockdown, revive,
+threshold consequences, perception thresholds - and none of that needs a floor
+plan. What needs geometry is navigation: patrol routes, spawn placement, and
+line of sight. So M2 is in two halves, and the first half can start before
+M1.5's greybox exists.
+
+**And the hardest prerequisite is already done.** The outline's loudest warning
+was *do not inherit the nearest-player bug* - enemies converge on the
+**brightest position**, because that is what puts cause and consequence in the
+same pair of hands, and in four-player co-op it is the difference between the
+building teaching the lantern rule and nobody learning it. That landed on
+2026-10-29 as `LLKLightField` plus
+`ULLKStormChargeSubsystem::GetBrightestLitPosition`, before any enemy existed,
+so there is nothing for the first enemy to inherit the bug *from*. It is
+asserted by `LLK.Light.BrightestPosition`.
+
+**O1 is closed**, by the way - the note here saying it "has to be settled
+inside M2" predates Chris settling it on 2026-10-28. Run length lives in
+`storm-charge.json` `run` with three separately-named values, and
+`tests/balance.test.mjs` reads them. M2 can be judged.
+
+### The half that needs no geometry
+
+| Row | What | Owner | Done when |
+| --- | --- | --- | --- |
+| M2.1 | **Knockdown and the downed state.** `lantern.json` `knockdown`: `downedWalkSpeed: 0`, `bleedOutSeconds: 0`, `lanternForcedOffWhenDowned: true`, `dropsCarriedCrate: false` | Claude | A downed keeper cannot move, keeps what they carry, and their lantern goes out with the reason `ForcedOffWhenDowned`. **That seam already exists and has no caller**: `ULLKLanternComponent::ForceOff` was built in M1.2 and nothing has ever invoked it |
+| M2.2 | **Revive, both kinds.** Teammate hold (`teammateHoldSeconds: 4`, `maxReviveDistance: 12`, server-validated, cancelled by moving out of range) and the Anchor Revive (`chargesPerRun: 1`, `reviveSeconds: 8`, `stormChargeSpike: 120`, **solo only**, row 9) | Claude | A teammate can be lifted and the hold cancels honestly. A solo keeper gets exactly one self-revive and the meter jumps 120 for it. A crew of two never gets one |
+| M2.3 | **Threshold consequences.** `OnThresholdCrossed` and `OnWardenConverged` broadcast today and **nothing listens** | Claude | Crossing `PatrolsAlert` and `PatrolsHunt` changes something observable, and the debug HUD says which stage the night is in |
+| M2.4 | **Enemy definitions and the perception rules.** `DT_Enemies` is generated from `enemies.json`; six families with `aggroRadiusDark`/`aggroRadiusLit`, `sightRange`, `sightConeDegrees`, `scanRange`, `wakeRange`, `wakeRequiresActiveLantern` | Claude | Every family's thresholds load and are queryable, and "would this enemy notice this keeper right now" is one function reading the light field - not six copies of a distance check |
+| M2.9 | **Automation tests for all of the above** | Claude | The lit/dark aggro asymmetry, the solo-only rule, and knockdown's four flags are asserted in-engine |
+
+### The half that waits on M1.5
+
+| Row | What | Owner | Done when |
+| --- | --- | --- | --- |
+| M2.5 | **Navigation and placement**: navmesh on the greybox floor, authored patrol routes, spawn points | Chris + Codex | A Sweeper can walk a route without a C++ change, and the routes are authored rather than generated |
+| M2.6 | **The Sweeper** — the first real enemy. `sweeperContact`: `hitsToKnockDown: 3`, `hitDecaySeconds: 6`, `contactRange: 5`, `contactCooldownSeconds: 1.5` | Claude, on M2.5 | One Sweeper is survivable and four are lethal, without the player ever seeing a health bar. It converges on the brightest position |
+| M2.7 | **The Warden.** Arrives off its own dampened meter (row 54), converges on the brightest position, **unkillable and drops nothing** (row 7) | Claude, on M2.5 | It arrives inside `warden.arrivalBandSeconds` for a normally lit crew, and killing it is not a thing the player can attempt |
+| M2.8 | **Every family's second channel**, row 16. All six author `audioTelegraphSeconds`; none has its physical tell designed | Chris (the tell) + Claude (the hook) | No enemy telegraphs on sound alone. `docs/SOUND.md` lists the candidate channels: moving shadows, flickering fixtures, disturbed merchandise, footprints, silhouette changes |
+
+**M2.8 is the one to not leave until last.** Row 16 is an accessibility
+requirement and it is LOCKED, and `docs/SOUND.md` already says it plainly: *"a
+telegraph with two channels is unbuildable as an afterthought."* The same
+mistake was found in `THE-STORE.md`'s curriculum on 2026-10-29 - a lesson
+taught by removing the audio channel - and repairing it after the fact was
+cheap only because it was prose. Six enemies built sound-first would not be.
+
+---
+
+## M3, in outline
+
+Sliced when M2 lands, for the same reason. The content is written:
+
 - **M3** — loot, burden, extraction. `data/loot.json` holds tiers, pickup
   seconds and the burden penalty; row 8 says only extraction secures loot and a
   wipe or an expired timer loses the whole haul; O3 says the extraction call
   itself is the climax and the cost. `docs/FIRST-SIXTY-SECONDS.md` is the
   opening-minute spec and should be read before the HUD is built.
-
-**O1 has to be settled inside M2**, by Chris: the baseline storm charge rate is
-"the single most consequential untuned value in the project" and the run-length
-numbers disagree across four sources. M2 cannot be judged without it.
+  **Partly begun already:** relics identify, refuse and can be taken
+  (`ULLKRelicComponent`, `ULLKInteractorComponent`, row 53 and row 62), and
+  `AddSpike` is waiting for the extraction call that pays 180 into the meter.
 
 ---
 
