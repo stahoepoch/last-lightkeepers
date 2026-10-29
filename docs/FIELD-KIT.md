@@ -50,6 +50,56 @@ the fiftieth incidental noise.
 | **Kitchen, Cooking** | Boiling, kettle, frying, shredding | The Community Kitchen has no audio at all today. This is the entire room, solved |
 | **Foley** | Bottle, crunch, drop, glass, **keys** | General room dressing. Keys are worth having for a store |
 
+### What the files actually are, read from their headers
+
+Every `.wav` in every pack audited is **44.1 kHz, 16-bit, stereo**. No
+exceptions across the eleven packs worth taking - 340 files, all two-channel.
+Durations fall into three groups:
+
+| Group | Length | Packs |
+| --- | --- | --- |
+| One-shots | 0.5-4s (median ~1s) | Doors, Household Foley, Clothing, Foley, Ui Clicks, Glitches, Granular |
+| Sirens | **11.52s, every file** | Alarms & Sirens |
+| Beds | 16s / 32s, every file | Horror Ambience / Ambience & SFX |
+
+**The stereo question, checked rather than recalled.** The common wisdom is
+that Unreal will not spatialize a stereo sound. On 5.8 that is **false** -
+`AudioMixerSource.cpp:246-275` returns 3D for anything up to two channels
+(*"3d panner can't handle more than stereo currently"*), so these files do
+position in the world. Worth stating plainly, because believing the myth would
+mean batch-converting 340 files for nothing.
+
+**What is true is subtler and still matters here.** `SoundAttenuation.h:264`
+defines `StereoSpread` as *"the world-space distance between left and right
+stereo channels when stereo assets are 3D spatialized"* - so a stereo source
+is placed as **two points separated in space**, not one. Direction is smeared
+by design.
+
+That is a quality problem rather than a blocker, but it lands on the one audio
+requirement this project calls non-negotiable. `docs/SOUND.md` makes
+telegraph-before-sight an accessibility obligation, and enemies converge on
+the brightest position, so a player must be able to say *where* a Sweeper is,
+not merely that one exists. A smeared source is a worse answer to the question
+the design asks most often.
+
+**So, per use:**
+
+- **In-world** (doors, foley, machine texture, the siren at its exit):
+  convert to mono, or set `StereoSpread` to 0 on the attenuation so the pair
+  collapses to a point. Decide once and write it into the attenuation asset
+  rather than per-sound.
+- **UI and ambience beds**: leave them stereo. Interface audio is 2D by
+  nature, and a room tone *wants* width. Stereo is the right form there, not a
+  compromise.
+
+**One mismatch to settle before the siren is wired.** Every siren file is
+11.52s and `storm-charge.json` sets `extractionCall.sirenSeconds` to 8. The
+asset outlasts the window. That is a design question, not a defect - either
+the siren is trimmed to the call, or 8s is a fade window over a looping bed
+and the data means something slightly different from what it says. Worth
+deciding before M3 wires it, since `assets/audio/make_cues.py` already renders
+`extraction-siren-v1.wav` as the master and this pack is a layer under it.
+
 ### Take these with care — raw material, not finished cues
 
 - **Glitches** and **Granular** — these are `Motion_*` designer sounds, meant
