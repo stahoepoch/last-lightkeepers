@@ -274,14 +274,19 @@ applies to every category, not just sound.
 
 ---
 
-## One known gap, not fixed here
+## The gap this page named is now closed
 
-`docs/ASSETS.md` is still written for Roblox — its table maps masters to
-`rbxassetid://` uploads, and the manifest's enforcement rule greps `src/` for
-asset ids. The *policy* survived the engine change intact (everything we ship,
-we own; masters live outside the engine; placeholders are declared). The
-*mechanics* did not: Unreal has no asset ids, `Content/` goes to LFS, and the
-equivalent check is a scan for referenced content paths. Rewriting it is a
-small job and nobody has done it. Flagged rather than silently left, because a
-policy doc that describes the wrong engine is how a rule quietly stops being
-followed.
+`docs/ASSETS.md` was still written for Roblox - its table mapped masters to
+`rbxassetid://` uploads and its enforcement rule grepped `src/` for asset ids.
+The *policy* survived the engine change intact; the *mechanics* did not.
+Rewritten 2026-10-28 for Unreal: content paths and LFS instead of upload ids,
+row 41's no-agent-opens-a-uasset rule, the licence questions generalised from
+audio to every category, and the mono/stereo decision recorded where the
+audio rule lives.
+
+**One thing it now says plainly rather than implying:** the manifest
+enforcement check does not exist. On Roblox it was a grep for
+`rbxassetid://`. The Unreal equivalent - scanning referenced content paths
+against `assets/MANIFEST.md` - belongs in the fast CI gate beside the data
+checks, and nobody has written it. A policy page that implies a check runs is
+worse than one that admits it does not.
