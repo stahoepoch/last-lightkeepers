@@ -611,3 +611,39 @@ target, and 6-10 is retired everywhere. O1 is closed. `targetBandSeconds`
 carries the band so that `tests/balance.test.mjs` can read it instead of
 keeping its own copy — the duplication that let four sources disagree three
 ways is now structurally impossible for this number.
+
+## `lantern.json.light` — the one nested object, and why it is shaped like that
+
+Added 2026-10-29 when the lantern's light settings moved out of C++. Four of
+its five keys are ordinary scalars. `warmColor` is the only nested object in
+any gameplay file, so it is the one place the validator's `fields()` helper —
+which checks scalars — does not apply. It is allowed through `exact()` as an
+optional key and then checked on its own terms: exactly `r`, `g`, `b`, each a
+number in 0–1.
+
+**Alpha is absent on purpose, and `exact()` is what keeps it absent.** A light
+has no opacity, so an authored alpha would be a field that silently does
+nothing — and a field that does nothing is a field somebody will later tune and
+then wonder about for an evening.
+
+**It is not an `FLinearColor` on the C++ side either.** `FJsonObjectConverter`
+reads an `FLinearColor` from a *string* via `FColor::FromHex`, which applies an
+sRGB-to-linear conversion nobody asked for, and from an object with no alpha
+key it leaves alpha at 0 — a colour that looks broken in the editor. So the
+reflected type is `FLLKLightColor`, three declared floats with a
+`ToLinearColor()` that always returns alpha 1. The lesson generalises: when the
+engine has a "helpful" special case for a type, authoring your own struct is
+cheaper than remembering the special case.
+
+**`castsShadows` goes through the same bool seam as every other flag.** The
+JSON is written for humans; `BOOL_PROPERTY_KEYS` translates it to
+`bCastsShadows` for the Unreal payload. Nothing special was needed, which is
+the point of having the seam — and `Tools/test_import_data.py` derives the
+required set from the headers, so adding the reflected `bool bCastsShadows`
+made the gate demand the translation without anybody updating the gate.
+
+**What deliberately did NOT move into data.** The inner cone angle. It softens
+the falloff and changes nothing about reach, so it would be the cosmetic half of
+a key whose other half is gameplay — and the authored `coneAngleDegrees` is
+worth more for meaning exactly one thing. Mesh placement and flicker are
+`Content/` and Chris's (row 41).

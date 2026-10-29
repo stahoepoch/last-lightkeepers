@@ -36,6 +36,25 @@
     "_hitsNote": "hitsToKnockDown with decay is what makes one Sweeper survivable and four lethal, without giving players a health bar to optimise."
   },
 
+  "light": {
+    "_comment": "ADDED 2026-10-29, Chris's call: 'the actual reach must be portable, tunable, and shared by light visibility/enemy logic later'. These five keys were a C++ placeholder on ULLKLanternLightComponent until now, which put the most consequential number in the game - how far a keeper can see - in a file the balance tests cannot read. Mesh placement and cosmetic flicker stay in Content; the inner cone angle stays in code because it is edge softness, not reach.",
+
+    "radiusStuds": 30,
+    "_radiusNote": "THE NUMBER THIS BLOCK EXISTS FOR. Read against data/enemies.json: aggroRadiusDark is 12 and aggroRadiusLit is 38, so at 30 a lit keeper is noticed from 8 studs BEYOND the edge of their own light. That asymmetry is row 5's trade made physical - light reveals value and attracts danger, and the danger arrives from the dark you just announced yourself to. Raising this above 38 inverts it: you would see patrols before they aggro, and light would become pure advantage. 30 was the placeholder's value and is kept as the initial data value rather than retuned in the same change that moved it.",
+
+    "coneAngleDegrees": 72,
+    "_coneNote": "The OUTER cone - the edge of what is lit, which is the half enemy and visibility logic will read. Wide because the keeper holds a lantern, not a torch: narrow enough to aim is a flashlight game, and row 43 makes the store teach by being legible. The inner cone is deliberately NOT here - it only softens the falloff and changes nothing about reach.",
+
+    "intensity": 6,
+    "_intensityNote": "Unreal candelas, and the one key here that is honestly engine-flavoured - it has no portable meaning the way studs and degrees do. It lives here anyway because a radius without a brightness describes a reach nobody can see to the edge of. Expect Chris to move this against the grey box's own lighting, not against a number.",
+
+    "warmColor": { "r": 1.0, "g": 0.82, "b": 0.56 },
+    "_colorNote": "Linear RGB, 0-1, alpha deliberately absent - a light has no opacity and an authored alpha would be a field that silently does nothing. Warm because every other light in this game is the storm, and the keeper's lantern should read as the one human thing in the building.",
+
+    "castsShadows": true,
+    "_shadowNote": "On, and load-bearing rather than cosmetic. Row 5 is about what you reveal, and revealed geometry with no shadow reads as flat - you cannot tell a shelf from a painted wall, which is exactly the judgement looting asks for. If this is ever turned off for performance, the store stops being readable before it stops being pretty."
+  },
+
   "movement": {
     "walkSpeed": 16,
     "sprintSpeed": 23,

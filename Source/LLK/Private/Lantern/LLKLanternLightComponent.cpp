@@ -16,28 +16,77 @@ ULLKLanternLightComponent::ULLKLanternLightComponent()
 	// lighting build that the player then walks away from.
 	SetMobility(EComponentMobility::Movable);
 
-	// A held lantern casts shadows or it is a flashlight-shaped fog. Row 5's
-	// trade is about what you reveal, and revealed geometry with no shadow
-	// reads as flat. Placeholder quality, not a final look.
-	SetCastShadows(true);
-
-	// Wide enough to light a room you are standing in rather than a dot on a
-	// wall. The keeper holds a lantern, not a torch.
-	SetInnerConeAngle(34.f);
-	SetOuterConeAngle(72.f);
-
-	// Warm, because every other light in this game is the storm. Placeholder.
-	SetLightColor(FLinearColor(1.f, 0.82f, 0.56f));
-	SetIntensity(6.f);
+	// The declared fallbacks, mirroring `data/lantern.json`'s `light` block.
+	// Set here rather than as member initialisers so there is exactly one
+	// place to compare against the JSON when either moves.
+	FallbackRules.RadiusStuds = 30.f;
+	FallbackRules.ConeAngleDegrees = 72.f;
+	FallbackRules.Intensity = 6.f;
+	FallbackRules.WarmColor.R = 1.f;
+	FallbackRules.WarmColor.G = 0.82f;
+	FallbackRules.WarmColor.B = 0.56f;
+	FallbackRules.bCastsShadows = true;
 }
 
 void ULLKLanternLightComponent::BeginPlay()
 {
 	Super::BeginPlay();
+	ResolveAndApplyLight();
+}
+
+void ULLKLanternLightComponent::SetLanternData(const TSoftObjectPtr<ULLKLanternData>& InData)
+{
+	LanternData = InData;
+	ResolveAndApplyLight();
+}
+
+void ULLKLanternLightComponent::ResolveAndApplyLight()
+{
+	ResolvedRules = FallbackRules;
+	LightSource = ELLKDataSource::Fallback;
+
+	// Synchronous, and for the same reason the character's speeds are: these
+	// are the numbers the light cannot exist without, and a frame rendered at
+	// the wrong reach is a frame of gameplay built on a default.
+	if (const ULLKLanternData* Data = LanternData.LoadSynchronous())
+	{
+		ResolvedRules = Data->Light;
+		LightSource = ELLKDataSource::Asset;
+	}
 
 	// The one conversion, through the one authority (row 61). A raw radius in
-	// centimetres here would be the second place spatial values are authored.
-	SetAttenuationRadius(LLKUnits::DistanceFromStuds(PlaceholderRadiusStuds));
+	// centimetres here would make this the second place spatial values are
+	// authored, which is precisely what LLKUnits.h exists to prevent.
+	SetAttenuationRadius(LLKUnits::DistanceFromStuds(ResolvedRules.RadiusStuds));
+
+	// Outer is the authored angle - the edge of what is lit, and the half
+	// other systems read. Inner is a fraction of it and stays in code,
+	// because it softens the falloff and changes nothing about reach.
+	SetOuterConeAngle(ResolvedRules.ConeAngleDegrees);
+	SetInnerConeAngle(ResolvedRules.ConeAngleDegrees * InnerConeFraction);
+
+	SetIntensity(ResolvedRules.Intensity);
+	SetLightColor(ResolvedRules.WarmColor.ToLinearColor());
+	SetCastShadows(ResolvedRules.bCastsShadows);
+
+	if (LightSource == ELLKDataSource::Fallback)
+	{
+		UE_LOG(LogLLK, Warning,
+			TEXT("ULLKLanternLightComponent: no ULLKLanternData resolved - running on DECLARED FALLBACK light ")
+			TEXT("(radius %.0f studs / %.0f cm, cone %.0f deg, intensity %.1f, shadows %s). ")
+			TEXT("Run Tools/import_data.py and set LanternData."),
+			ResolvedRules.RadiusStuds, LLKUnits::DistanceFromStuds(ResolvedRules.RadiusStuds),
+			ResolvedRules.ConeAngleDegrees, ResolvedRules.Intensity,
+			ResolvedRules.bCastsShadows ? TEXT("on") : TEXT("off"));
+	}
+	else
+	{
+		UE_LOG(LogLLK, Log,
+			TEXT("ULLKLanternLightComponent: light from ULLKLanternData - radius %.0f studs / %.0f cm, ")
+			TEXT("cone %.0f deg, intensity %.1f."),
+			ResolvedRules.RadiusStuds, LLKUnits::DistanceFromStuds(ResolvedRules.RadiusStuds),
+			ResolvedRules.ConeAngleDegrees, ResolvedRules.Intensity);
+	}
 }
 
 void ULLKLanternLightComponent::WatchLantern(ULLKLanternComponent* InLantern)

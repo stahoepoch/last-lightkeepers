@@ -54,6 +54,7 @@ BOOL_PROPERTY_KEYS = {
     "soloOnly", "attractedToDroppedLoot", "wakeRequiresActiveLantern",
     "tagRevealsPositionToAllRobots", "tagGivesWardenPermanentWaypoint",
     "scanRequiresActiveLantern", "killable", "dropsLoot", "blocksCombatWhileCarried",
+    "castsShadows",
 }
 
 def unreal_payload(value: Any) -> Any:
@@ -143,11 +144,39 @@ def validate_lantern(data: Any) -> None:
         "knockdown": {"downedWalkSpeed": (int, float), "lanternForcedOffWhenDowned": bool, "dropsCarriedCrate": bool, "bleedOutSeconds": (int, float)},
         "revive": {"teammateHoldSeconds": (int, float), "maxReviveDistance": (int, float)},
         "sweeperContact": {"knockdownOnContact": bool, "contactRange": (int, float), "contactCooldownSeconds": (int, float), "hitsToKnockDown": (int, float), "hitDecaySeconds": (int, float)},
+        "light": {"radiusStuds": (int, float), "coneAngleDegrees": (int, float), "intensity": (int, float), "castsShadows": bool},
         "movement": {"walkSpeed": (int, float), "sprintSpeed": (int, float), "crouchSpeed": (int, float)},
     }
     exact(root, set(specs), "lantern.json")
     for name, spec in specs.items():
-        block = obj(root[name], f"lantern.json.{name}"); exact(block, set(spec), f"lantern.json.{name}"); fields(block, spec, f"lantern.json.{name}")
+        block = obj(root[name], f"lantern.json.{name}")
+        # warmColor is the only nested object in this file, so it is allowed
+        # through `exact` here and checked on its own terms below rather than
+        # by `fields`, which validates scalars.
+        optional = {"warmColor"} if name == "light" else None
+        exact(block, set(spec), f"lantern.json.{name}", optional)
+        fields(block, spec, f"lantern.json.{name}")
+
+    light = obj(root["light"], "lantern.json.light")
+    if "warmColor" not in light: error("lantern.json.light", "missing required key(s): warmColor")
+    colour = obj(light["warmColor"], "lantern.json.light.warmColor")
+    # Alpha is deliberately absent: a light has no opacity, and an authored
+    # alpha would be a field that silently does nothing. `exact` is what keeps
+    # somebody from adding one back.
+    colour_spec = {"r": (int, float), "g": (int, float), "b": (int, float)}
+    exact(colour, set(colour_spec), "lantern.json.light.warmColor")
+    fields(colour, colour_spec, "lantern.json.light.warmColor")
+    for channel in colour_spec:
+        if not 0 <= colour[channel] <= 1:
+            error(f"lantern.json.light.warmColor.{channel}",
+                  f"expected linear 0-1, got {colour[channel]}")
+
+    # Degenerate values that would read as a broken light rather than as bad
+    # tuning, which is the failure this validator exists to make loud.
+    if light["radiusStuds"] <= 0: error("lantern.json.light.radiusStuds", "a lantern with no reach is not a lantern")
+    if not 0 < light["coneAngleDegrees"] <= 180:
+        error("lantern.json.light.coneAngleDegrees", f"expected 0-180 degrees, got {light['coneAngleDegrees']}")
+    if light["intensity"] <= 0: error("lantern.json.light.intensity", "a lantern nobody can see is not a lantern")
 
 def validate_loot(data: Any) -> set[str]:
     root = obj(data, "loot.json"); exact(root, {"rules", "tiers", "burden", "banking", "extraction"}, "loot.json")

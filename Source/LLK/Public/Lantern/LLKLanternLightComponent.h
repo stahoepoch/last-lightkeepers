@@ -4,8 +4,8 @@
 // materials, the sound of it striking, whatever it looks like when it swings -
 // is `Content/` and his alone (row 41). What M1.3's proof line asks for is
 // that "the C++ class is complete and works with a placeholder before this
-// exists", and this is that placeholder: a spot light built in code, with no
-// asset of any kind behind it.
+// exists", and this is that placeholder: a spot light with no asset of any
+// kind behind it.
 //
 // **It is a listener, not an owner.** `ULLKLanternComponent` decides whether
 // the lantern is on and knows nothing about this class, deliberately - its
@@ -14,25 +14,32 @@
 // to `OnLanternStateChanged` and does as it is told. Deleting this file would
 // not change a single rule about light in the game.
 //
-// **It replaces itself.** When Chris's real lantern lands, the thing to keep
-// is the subscription shape; the spot light goes. That is why the radius and
-// intensity are declared properties rather than constants buried in the cpp.
+// **Its numbers are data, not constants.** Chris, 2026-10-29: "the actual
+// reach must be portable, tunable, and shared by light visibility/enemy logic
+// later." Radius, cone angle, intensity, colour and the shadow toggle come
+// from `data/lantern.json` through `FLLKLanternLightRules`. They used to be
+// constants in the cpp, which put the most consequential number in the game -
+// how far a keeper can see - somewhere `tests/` could not read it, and
+// somewhere the enemy logic that must eventually agree with it could not
+// either.
 //
-// **On the radius, which is a real data gap and not a tuning choice.** There
-// is no light radius anywhere in `data/`. But `data/enemies.json` authors
-// `aggroRadiusDark: 12` and `aggroRadiusLit: 38`, so the game already has a
-// number for how far away a lit keeper is noticed - and no number at all for
-// how far that keeper can see. Those two decide between them whether light
-// lets you spot danger first or only tells danger where you are, which is
-// the whole of row 5's trade. The placeholder below sits INSIDE 38 studs on
-// purpose, so being lit means being seen from beyond your own light, but that
-// is a design call sitting in C++ where it does not belong. It wants
-// authoring in `data/lantern.json` next to the movement speeds.
+// **The radius is the one to read against `enemies.json`.** `aggroRadiusDark`
+// is 12 and `aggroRadiusLit` is 38; the radius is 30. A lit keeper is noticed
+// from eight studs beyond the edge of their own light, which is row 5's trade
+// made physical: light reveals value and attracts danger, and the danger
+// arrives out of the dark you just announced yourself to. Those two numbers
+// now live in the same layer and can be asserted against each other.
+//
+// **What stays out of the data, deliberately.** The inner cone angle softens
+// the falloff and changes nothing about reach. Mesh placement and cosmetic
+// flicker are Chris's. Neither is portable and neither is worth a key.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Components/SpotLightComponent.h"
+#include "Data/LLKDataTypes.h"
+#include "Data/LLKLanternData.h"
 #include "Lantern/LLKLanternComponent.h"
 #include "LLKLanternLightComponent.generated.h"
 
@@ -56,9 +63,49 @@ public:
 	 */
 	void WatchLantern(ULLKLanternComponent* InLantern);
 
-	/** Placeholder reach, in STUDS. See the header note: this belongs in `data/`. */
-	UPROPERTY(EditDefaultsOnly, Category = "LLK|Lantern", meta = (ClampMin = "0"))
-	float PlaceholderRadiusStuds = 30.f;
+	/** Where the light's numbers came from. Read this rather than trusting a log line. */
+	UFUNCTION(BlueprintPure, Category = "LLK|Lantern")
+	ELLKDataSource GetLightSource() const { return LightSource; }
+
+	/** The reach in STUDS, after resolution. What enemy and visibility logic must agree with. */
+	UFUNCTION(BlueprintPure, Category = "LLK|Lantern")
+	float GetRadiusStuds() const { return ResolvedRules.RadiusStuds; }
+
+	/** The rules in use, so a test asserts against the same values the light applies. */
+	const FLLKLanternLightRules& GetResolvedRules() const { return ResolvedRules; }
+
+	/**
+	 * Points this light at a data asset and re-resolves immediately.
+	 *
+	 * The component keeps its own `LanternData` so it can stand alone on an
+	 * actor that is not a keeper - a dropped lantern on the floor, later. But
+	 * an owner that has its own copy must push it down rather than let the two
+	 * be set independently: one asset set here and a different one set on the
+	 * character is the duplication this project keeps catching in its own
+	 * paper trail, and it would show up as a light that disagrees with the
+	 * speeds about which data it read.
+	 */
+	void SetLanternData(const TSoftObjectPtr<ULLKLanternData>& InData);
+
+	/**
+	 * Picks the asset's light rules or the declared fallbacks, then applies them.
+	 *
+	 * Public and callable at any time so that a live retune - Chris changing
+	 * the radius and re-running the importer - can be pushed without a
+	 * restart. Idempotent.
+	 */
+	void ResolveAndApplyLight();
+
+	/**
+	 * The inner cone as a fraction of the authored outer one.
+	 *
+	 * In code and not in `data/` on purpose: it softens the falloff and
+	 * changes nothing about reach, so it is the cosmetic half of a key whose
+	 * other half is gameplay. Keeping it here is what lets the authored cone
+	 * angle mean exactly one thing.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Lantern", meta = (ClampMin = "0", ClampMax = "1"))
+	float InnerConeFraction = 0.47f;
 
 protected:
 	UFUNCTION()
@@ -66,6 +113,31 @@ protected:
 
 	/** Visibility only. Never touches the lantern's state - the arrow points one way. */
 	void ApplyVisibleState(bool bIsOn);
+
+	/**
+	 * The generated asset from `data/lantern.json`. Unset by default: a clean
+	 * clone has no `Content/Data/` until the importer runs, and a light that
+	 * refuses to exist until then would make every clean checkout un-runnable.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Data")
+	TSoftObjectPtr<ULLKLanternData> LanternData;
+
+	/**
+	 * The declared fallbacks, matching `data/lantern.json` at the time of
+	 * writing. A duplicate, and a real cost, so it is declared rather than
+	 * hidden: `GetLightSource()` reports when it is in use and the log says so.
+	 * A copy nobody can detect is the problem; a copy that announces itself is
+	 * a fallback.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Data")
+	FLLKLanternLightRules FallbackRules;
+
+	/** What was actually applied, from whichever source won. */
+	UPROPERTY(VisibleInstanceOnly, Category = "LLK|Lantern")
+	FLLKLanternLightRules ResolvedRules;
+
+	UPROPERTY(VisibleInstanceOnly, Category = "LLK|Lantern")
+	ELLKDataSource LightSource = ELLKDataSource::Unresolved;
 
 	UPROPERTY()
 	TWeakObjectPtr<ULLKLanternComponent> WatchedLantern;

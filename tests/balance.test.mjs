@@ -632,6 +632,81 @@ console.log("\nRung one, the departure generator");
     `wakes: "${built[0].wakes}"`,
   );
 }
+// ---- the lantern's reach, against the range it is noticed from -----------
+//
+// Added 2026-10-29, when Chris moved the light's settings out of C++ and into
+// data/lantern.json: "the actual reach must be portable, tunable, and shared
+// by light visibility/enemy logic later."
+//
+// This is the check that moving them was FOR. While the radius was a constant
+// in ULLKLanternLightComponent and the aggro ranges were in enemies.json,
+// nothing could compare them - and they are the two halves of one decision.
+// Row 5 makes light reveal value and attract danger, and whether that trade is
+// real depends entirely on which of these two numbers is larger.
+{
+  const light = lantern.light ?? {};
+  const sweeper = enemies.Sweepers ?? {};
+
+  check(
+    "the lantern has a light block at all",
+    typeof light.radiusStuds === "number",
+    "data/lantern.json.light is where the reach lives since 2026-10-29",
+  );
+
+  check(
+    "a lit keeper is noticed from beyond the edge of their own light",
+    light.radiusStuds < sweeper.aggroRadiusLit,
+    `radius ${light.radiusStuds} studs vs aggroRadiusLit ${sweeper.aggroRadiusLit}: at or ` +
+      `above it, a keeper sees patrols before the patrols react and light stops costing ` +
+      `anything. Row 5 needs the danger to arrive out of the dark you lit yourself into.`,
+  );
+
+  check(
+    "but turning the lantern on still widens the ring around you",
+    sweeper.aggroRadiusLit > sweeper.aggroRadiusDark,
+    `lit ${sweeper.aggroRadiusLit} must exceed dark ${sweeper.aggroRadiusDark}`,
+  );
+
+  check(
+    "and light still reaches further than a dark keeper is noticed from",
+    light.radiusStuds > sweeper.aggroRadiusDark,
+    `radius ${light.radiusStuds} vs aggroRadiusDark ${sweeper.aggroRadiusDark}: below it, ` +
+      `lighting the lantern would never show you anything you had not already been detected ` +
+      `by, so it would be pure cost and no player would use it`,
+  );
+
+  check(
+    "the cone is wide enough to be a lantern rather than a torch",
+    light.coneAngleDegrees >= 45 && light.coneAngleDegrees <= 150,
+    `${light.coneAngleDegrees} degrees: narrow enough to aim makes this a flashlight game, ` +
+      `and row 43 needs the store legible enough to teach`,
+  );
+
+  check(
+    "the colour is linear 0-1 on three channels with no alpha",
+    ["r", "g", "b"].every(
+      (c) =>
+        typeof light.warmColor?.[c] === "number" &&
+        light.warmColor[c] >= 0 &&
+        light.warmColor[c] <= 1,
+    ) && Object.keys(light.warmColor ?? {}).length === 3,
+    "a light has no opacity, so an authored alpha would be a field that does nothing",
+  );
+
+  check(
+    "the lantern reads warm against the storm",
+    light.warmColor.r > light.warmColor.g && light.warmColor.g > light.warmColor.b,
+    `r ${light.warmColor.r} > g ${light.warmColor.g} > b ${light.warmColor.b}: the keeper's ` +
+      `lantern is the one human light in the building`,
+  );
+
+  check(
+    "the lantern casts shadows",
+    light.castsShadows === true,
+    "revealed geometry with no shadow reads as flat, and looting is a judgement about shape",
+  );
+}
+
 
 console.log(`\n${checks - failures}/${checks} passed`);
 if (failures > 0) {

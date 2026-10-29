@@ -1277,3 +1277,74 @@ lanterns is the whole range.
   linear form left the 2.5x anchor passing and failed only row 12's
   diminishing property, which is the drift it exists to catch.
 - `npm test`: 89/89 and 6/6, unchanged.
+
+---
+
+## 2026-10-29 (later) — the lantern's light settings are data now
+
+Chris's call: "the actual reach must be portable, tunable, and shared by light
+visibility/enemy logic later." The five light values that were C++ constants an
+hour earlier are now `data/lantern.json.light`. **No config change needed.**
+
+### The new block
+
+```json
+"light": {
+  "radiusStuds": 30,
+  "coneAngleDegrees": 72,
+  "intensity": 6,
+  "warmColor": { "r": 1.0, "g": 0.82, "b": 0.56 },
+  "castsShadows": true
+}
+```
+
+Reflected as `FLLKLanternLightRules` on `ULLKLanternData::Light`, plus
+`FLLKLightColor` for the colour. `ULLKLanternLightComponent` reads it through
+`ResolveAndApplyLight()` with declared fallbacks and `GetLightSource()`
+reporting which path won — the same shape as the character's speeds.
+
+### Three things to know before you touch any of it
+
+1. **`radiusStuds` is in studs and must stay in studs.** It goes through
+   `LLKUnits::DistanceFromStuds` at the boundary, per row 61. Read raw, 30 is
+   30cm — a lantern lighting the keeper's own boots, which reads as a broken
+   light rather than as wrong units. `LLK.Lantern.LightRules` asserts the
+   840cm, and that assertion was proved red by removing the call.
+2. **`coneAngleDegrees` is the OUTER cone.** The inner one is
+   `InnerConeFraction` on the component and stays in code: it softens the
+   falloff and changes nothing about reach. Do not move it into the data —
+   the authored key is worth more for meaning exactly one thing.
+3. **`warmColor` is `FLLKLightColor`, not `FLinearColor`, deliberately.**
+   `FJsonObjectConverter` reads an `FLinearColor` from a hex string through
+   `FColor::FromHex` (silent sRGB conversion), and from an object with no
+   alpha key leaves alpha at 0. Three declared floats avoid both. There is no
+   alpha key and `exact()` in the importer is what keeps anyone adding one.
+
+### The assertion the move was for
+
+`tests/balance.test.mjs` now compares the lantern's reach against the range it
+is noticed from — `radiusStuds: 30` vs `data/enemies.json` `Sweepers.aggroRadiusLit: 38`.
+A lit keeper is noticed from eight studs beyond the edge of their own light,
+which is row 5's trade made physical. It fails if the radius reaches 38 (light
+becomes pure advantage) or drops below `aggroRadiusDark: 12` (light would never
+show you anything that had not already detected you). Proved red at 40.
+
+**When you build enemy detection, read `radiusStuds` from the data rather than
+picking a number.** That is the whole reason it is portable now, and the balance
+test is already asserting the relationship you will be implementing.
+
+### One duplication closed while in there
+
+`ALLKCharacter` now pushes its own `LanternData` into the light with
+`SetLanternData()`. The component keeps its own soft pointer so it can live on
+an actor that is not a keeper — a dropped lantern, later — but a keeper's light
+must read the same asset its speeds did. Two soft pointers a designer can set
+independently is a light that disagrees with the movement about which file it
+came from.
+
+### Verified
+
+- `LastLightkeepersEditor` Win64 Development: `Result: Succeeded`.
+- `Tools/run_automation.ps1 -TestFilter LLK`: seven tests, all `Result={Success}`.
+- `npm test`: `Data contract passed`, 7/7, 159/159, 297/297, 89/89, 6/6 — zero FAIL lines.
+- Both new guards proved red, then restored and re-verified.

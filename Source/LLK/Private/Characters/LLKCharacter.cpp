@@ -73,6 +73,12 @@ void ALLKCharacter::BeginPlay()
 	// replicated a state in by now, which WatchLantern matches.
 	if (LanternLight != nullptr && Lantern != nullptr)
 	{
+		// One asset, pushed down rather than set twice. The light keeps its own
+		// LanternData so it can live on an actor that is not a keeper, but a
+		// keeper's light must read the same data its speeds did - two soft
+		// pointers a designer can set independently is a light that disagrees
+		// with the movement about which file it came from.
+		LanternLight->SetLanternData(LanternData);
 		LanternLight->WatchLantern(Lantern);
 	}
 

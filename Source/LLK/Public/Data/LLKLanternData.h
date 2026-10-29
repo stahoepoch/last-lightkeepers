@@ -93,6 +93,82 @@ struct FLLKSweeperContactRules
 	float HitDecaySeconds = 0.f;
 };
 
+/**
+ * `light.warmColor` - linear RGB, no alpha.
+ *
+ * Its own struct rather than `FLinearColor` on purpose. The JSON converter
+ * reads an `FLinearColor` from a hex string through `FColor::FromHex`, which
+ * silently applies an sRGB-to-linear conversion, and from an object with no
+ * alpha key it would leave alpha at 0 - a colour that looks broken in the
+ * editor and means nothing to a light. Three declared floats have neither
+ * problem, and `data/lantern.json` says plainly that alpha is absent because
+ * a light has no opacity.
+ */
+USTRUCT(BlueprintType)
+struct FLLKLightColor
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Color", meta = (ClampMin = "0", ClampMax = "1"))
+	float R = 1.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Color", meta = (ClampMin = "0", ClampMax = "1"))
+	float G = 1.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Color", meta = (ClampMin = "0", ClampMax = "1"))
+	float B = 1.f;
+
+	/** Alpha is always 1: a light has no opacity, so there is nothing to author. */
+	FLinearColor ToLinearColor() const { return FLinearColor(R, G, B, 1.f); }
+};
+
+/**
+ * `light` - the lantern's reach, and the one block here that gameplay other
+ * than the lantern will read.
+ *
+ * Chris, 2026-10-29: "the actual reach must be portable, tunable, and shared
+ * by light visibility/enemy logic later". These were C++ constants on
+ * `ULLKLanternLightComponent` until that call, which put the most
+ * consequential number in the game - how far a keeper can see - somewhere the
+ * balance tests could not read it.
+ *
+ * `RadiusStuds` is the one to read against `data/enemies.json`. With
+ * `aggroRadiusLit: 38` and a radius of 30, a lit keeper is noticed from
+ * further away than they can see, which is row 5's trade made physical.
+ *
+ * What is NOT here is as deliberate as what is: the inner cone angle softens
+ * the falloff and changes nothing about reach, and mesh placement and
+ * cosmetic flicker are `Content/` and Chris's (row 41).
+ */
+USTRUCT(BlueprintType)
+struct FLLKLanternLightRules
+{
+	GENERATED_BODY()
+
+	/** In STUDS, like every other spatial value in `data/`. Row 61 converts at the boundary. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Light", meta = (ClampMin = "0"))
+	float RadiusStuds = 0.f;
+
+	/** The OUTER cone: the edge of what is lit, and the half other systems read. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Light", meta = (ClampMin = "0", ClampMax = "180"))
+	float ConeAngleDegrees = 0.f;
+
+	/** Unreal candelas. The one key here with no portable meaning - see the JSON note. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Light", meta = (ClampMin = "0"))
+	float Intensity = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Light")
+	FLLKLightColor WarmColor;
+
+	/**
+	 * True in `lantern.json`, and the C++ default must agree: on the fallback
+	 * path the default IS the value. Row 5 is about what light reveals, and
+	 * revealed geometry with no shadow reads as flat.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Light")
+	bool bCastsShadows = true;
+};
+
 USTRUCT(BlueprintType)
 struct FLLKMovementRules
 {
@@ -125,6 +201,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Lantern")
 	FLLKSweeperContactRules SweeperContact;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Lantern")
+	FLLKLanternLightRules Light;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Lantern")
 	FLLKMovementRules Movement;

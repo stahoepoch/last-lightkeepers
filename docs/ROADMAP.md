@@ -254,16 +254,46 @@ it pass while the design intent is broken. Verified by breaking
 `LanternMultiplier` to the linear form: the 2.5x anchor still passed and only
 the diminishing property failed, which is exactly the drift it exists to catch.
 
-**One data gap found, and it is Chris's call.** There is no light radius
-anywhere in `data/`. But `data/enemies.json` authors `aggroRadiusDark: 12` and
-`aggroRadiusLit: 38`, so the game already has a number for how far away a lit
-keeper is *noticed* and none at all for how far that keeper can *see*. Those
-two decide between them whether light lets you spot danger first or only tells
-danger where you are - which is the whole of row 5's trade. The placeholder
-sits at 30 studs, inside 38 on purpose so that being lit means being seen from
-beyond your own light, but that is a design decision sitting in C++ where it
-does not belong. It wants authoring in `data/lantern.json` beside the movement
-speeds.
+**The data gap it found is closed, same day.** The light's settings were C++
+constants, which put the most consequential number in the game - how far a
+keeper can see - somewhere `tests/` could not read it. Chris, 2026-10-29: "the
+actual reach must be portable, tunable, and shared by light visibility/enemy
+logic later." `data/lantern.json` now has a `light` block with `radiusStuds`,
+`coneAngleDegrees`, `intensity`, `warmColor` and `castsShadows`, reflected as
+`FLLKLanternLightRules`, validated by the importer, and read by
+`ULLKLanternLightComponent` with declared fallbacks that announce themselves.
+
+What stayed out is as deliberate as what went in: the **inner** cone angle
+softens the falloff and changes nothing about reach, and mesh placement and
+cosmetic flicker are `Content/` and Chris's (row 41). The authored cone is the
+outer one, so it means exactly one thing.
+
+**And the assertion that move was for.** `tests/balance.test.mjs` can now
+compare the lantern's reach against the range it is noticed from - two halves
+of one decision that previously lived in different languages.
+`radiusStuds: 30` against `aggroRadiusLit: 38` means a lit keeper is noticed
+from eight studs *beyond* the edge of their own light, which is row 5's trade
+made physical: the danger arrives out of the dark you just announced yourself
+into. The test fails if the radius ever reaches 38, because at that point
+light becomes pure advantage; it also fails if it drops below
+`aggroRadiusDark: 12`, because then light would never show you anything that
+had not already detected you, and no player would use it. 30 was the
+placeholder's value and was kept rather than retuned in the same change that
+moved it.
+
+`LLK.Lantern.LightRules` asserts the half Node cannot: that the engine applies
+those numbers, that the radius goes through `LLKUnits` (read raw, 30 studs is
+30cm - a lantern lighting the keeper's own boots, which reads as a broken light
+rather than as wrong units), that the authored angle lands on the outer cone,
+that an asset beats the fallback, and that resolving the numbers never turns
+the light on. Both new guards were proved red: the radius at 40 failed the
+balance check, and dropping the `LLKUnits` call failed the engine one.
+
+The colour is its own small struct rather than `FLinearColor`, which the JSON
+converter reads from a hex string through `FColor::FromHex` - silently applying
+an sRGB conversion - and from an object with no alpha key would leave alpha at
+0. Three declared floats have neither problem, and the data says plainly that
+alpha is absent because a light has no opacity.
 
 **And one assumption, flagged rather than buried.** `AddSpike` applies the
 extraction call's 180 and the anchor revive's 120 to the Warden's meter
