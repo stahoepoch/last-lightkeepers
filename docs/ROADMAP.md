@@ -168,6 +168,32 @@ The first milestone with the game in it. One room, one mechanic, two players.
 | M1.8 | Automation tests for the storm charge rules | Claude | The curve, the multiplier and "only ever rises" (row 6) are asserted in-engine, not just in `tests/` |
 | M1.9 | Two-player test over Steam or LAN | Chris + Codex | Two machines, one host, lantern state agrees. This is where networking mistakes surface, so it happens in M1 and not M4 |
 
+**M1.1 status, 2026-10-28 - the class is built; it cannot be driven yet.**
+`ALLKCharacter` exists in `Source/LLK/Public/Characters/`, compiles against
+the pinned 5.8.4, and all seven of its reflected names are in the linked
+binary. First person with no third-person branch (row 44). Sprint is a
+replicated server decision; crouch routes to `ACharacter`'s own replicated
+crouch rather than a second mechanism beside it. It needs no `Content/`: a
+capsule, a camera and declared fallback speeds, so a clean clone runs it.
+
+**Two things it does not do, stated rather than implied.** It has no input
+bindings - those are M1.6, Codex's row - so nothing presses a key yet, and
+M1.1's acceptance (*"two clients move independently on a listen server"*)
+cannot be met until M1.6 lands. **That is an ordering problem in this table,
+not in the work:** M1.1 is listed first and depends on a task listed sixth.
+The seam is deliberate - the character exposes `MoveInput`, `LookInput`,
+`SetSprinting`, `SetCrouching`, and nothing in it is bound to a key - so the
+binding scheme can be built and rebuilt without touching movement.
+
+**And the units question it had to answer first - O9.** Every spatial number
+in `data/` is in Roblox studs; `walkSpeed: 16` is literally Roblox's default
+humanoid walk speed. Read straight into `MaxWalkSpeed` that is 16 cm/s, a
+tenth of walking pace, which would read as a broken character controller
+rather than wrong units. `Source/LLK/Public/LLKUnits.h` converts at the
+boundary with one documented constant. Whether `data/` should be re-authored
+in centimetres instead is Chris's, and wants settling before M2 spreads the
+same tax across six enemies' ranges.
+
 **The lighting warning.** `DONTFUCKUPTHELIGHTS.md` exists at the repo root
 because lighting globals were broken
 repeatedly by people who did not know they were load-bearing. Unreal makes this

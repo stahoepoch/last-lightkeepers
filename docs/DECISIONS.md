@@ -388,3 +388,40 @@ first slice has no second hub to disagree with. It needs answering before any
 save-data shape is written, because this decides whether crate credit is a
 per-player record or a per-run one - and that is the kind of thing that gets
 decided by accident by whoever writes the save code first.
+
+### O9. Does `data/` stay in Roblox studs, or get re-authored in centimetres?
+
+**Raised by M1.1, 2026-10-28, and it had to be answered to write a line of
+movement code.** Every spatial number in `data/*.json` is in **Roblox studs** -
+speeds, ranges, radii, reach - because that is the engine the data was
+authored in. Unreal works in centimetres. Nothing in the repo said so.
+
+**The giveaway that settles what the numbers are:** `lantern.json` has
+`walkSpeed: 16`, and 16 studs/s is Roblox's *default* humanoid walk speed.
+That file is carrying an engine default from the engine it came from.
+
+**What M1.1 did, because it could not wait:** converted at the boundary. One
+documented constant in `Source/LLK/Public/LLKUnits.h` - `StudsToCm = 28` -
+applied where the DataAsset is read and nowhere else. The results are
+believable, which is the cheap check that the factor is right rather than
+merely plausible: walk 448 cm/s, sprint 644, crouch 252, against Unreal's own
+default walk of 600.
+
+**Why not just re-author the JSON in centimetres**, which would be tidier:
+
+- 98 balance assertions read those values. Re-authoring invalidates them.
+- `docs/PLATFORM.md` row 33 makes the data layer the thing that survives an
+  engine change, and it has now survived one. Converting it to the units of
+  the current engine trades a portable layer for a convenient one.
+- The conversion is one constant in one file. The migration is every number
+  in eight files plus every test that reads them.
+
+**What it costs to leave it:** `data/` is permanently in units nobody on the
+Unreal side thinks in, so every new range and radius has to remember the
+conversion. That is a real tax and it will be paid by whoever writes the
+enemy ranges in M2 - `aggroRadiusDark`, `sightRange`, `wakeRange`, `scanRange`
+are all studs too.
+
+**Chris's call**, since every value in those files is. The recommendation is
+to keep the conversion and leave `data/` portable, but the question is worth
+settling before M2 spreads the tax across six enemies rather than one pawn.
