@@ -22,6 +22,7 @@
 //      number in the asset stayed right.
 
 #include "Data/LLKLanternData.h"
+#include "Engine/Scene.h"
 #include "Lantern/LLKLanternLightComponent.h"
 #include "LLKUnits.h"
 #include "Misc/AutomationTest.h"
@@ -46,11 +47,19 @@ bool FLLKLanternLightTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("and has resolved nothing yet"),
 		Light->GetLightSource(), ELLKDataSource::Unresolved);
 
-	// 2. With no asset it falls back, loudly and declaredly. This is the
-	//    state a clean clone is in before `Tools/import_data.py` has run.
-	// The fallback announces itself with a Warning rather than an Error, by
-	// design: a clean clone before the importer has run is an expected state,
-	// not a broken one. Nothing to suppress here.
+	// 2. With no asset it falls back, loudly and declaredly - the state a
+	//    clean clone is in before `Tools/import_data.py` has run.
+	//
+	//    Cleared EXPLICITLY rather than relying on the default being unset.
+	//    Since 2026-10-29 the default points at the importer's output path,
+	//    so in an editor where that asset exists this test would otherwise
+	//    resolve it and assert the fallback values against the asset's - and
+	//    pass or fail depending on whether somebody had run the importer,
+	//    which is not a test.
+	//
+	//    The fallback announces itself with a Warning rather than an Error by
+	//    design: a clean clone is an expected state, not a broken one.
+	Light->SetLanternData(TSoftObjectPtr<ULLKLanternData>());
 	Light->ResolveAndApplyLight();
 	TestEqual(TEXT("with no asset it reports the fallback"),
 		Light->GetLightSource(), ELLKDataSource::Fallback);
@@ -63,7 +72,7 @@ bool FLLKLanternLightTest::RunTest(const FString& Parameters)
 	//    that quietly disagreed with `lantern.json`.
 	TestEqual(TEXT("the declared fallback radius matches lantern.json"), Fallback.RadiusStuds, 30.f);
 	TestEqual(TEXT("the declared fallback cone matches lantern.json"), Fallback.ConeAngleDegrees, 72.f);
-	TestEqual(TEXT("the declared fallback intensity matches lantern.json"), Fallback.Intensity, 6.f);
+	TestEqual(TEXT("the declared fallback intensity matches lantern.json"), Fallback.Intensity, 250.f);
 	TestTrue(TEXT("the declared fallback casts shadows, as lantern.json does"), Fallback.bCastsShadows);
 	TestEqual(TEXT("the declared fallback colour is warm, as lantern.json is"), Fallback.WarmColor.R, 1.f);
 	TestTrue(TEXT("and warm means r > g > b"),
@@ -82,7 +91,17 @@ bool FLLKLanternLightTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("and the inner cone is strictly inside it"),
 		Light->InnerConeAngle < Light->OuterConeAngle && Light->InnerConeAngle > 0.f);
 
-	TestEqual(TEXT("intensity reached the light"), Light->Intensity, 6.f);
+	TestEqual(TEXT("intensity reached the light"), Light->Intensity, 250.f);
+
+	// THE BUG OF 2026-10-29, now asserted. The unit is what makes the number
+	// mean anything: ULocalLightComponent defaults to Unitless with Intensity
+	// 5000, so an authored 6 was not a dim lantern but 6 on a scale whose
+	// normal value is five thousand - invisible, and indistinguishable from a
+	// toggle that never fired. Pinning the unit is the fix; asserting it is
+	// what stops a project setting from quietly undoing the fix.
+	TestEqual(TEXT("the intensity unit is pinned to candelas"),
+		Light->IntensityUnits, ELightUnits::Candelas);
+	TestTrue(TEXT("and the lantern is bright enough to see at all"), Light->Intensity > 50.f);
 	TestTrue(TEXT("shadows reached the light"), Light->CastShadows);
 	TestEqual(TEXT("the colour reached the light"), Light->LightColor.R, uint8(255));
 

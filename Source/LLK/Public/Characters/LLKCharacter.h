@@ -156,13 +156,16 @@ protected:
 	/**
 	 * The generated asset built from `data/lantern.json` by M0.5's writer.
 	 *
-	 * Soft and unset by default on purpose. `Content/Data/` is generated and
-	 * not committed, so a clean clone has no asset here until the importer
-	 * runs - and a character that refuses to exist in that state would make
-	 * every clean checkout un-runnable. Unset means fallbacks, loudly.
+	 * Defaults to the importer's output path. A soft pointer that resolves to
+	 * nothing simply fails, so a clean clone with no `Content/Data/` still
+	 * runs - it just announces the fallback. That is strictly better than
+	 * leaving this unset, which was the original shape: the assets existed on
+	 * disk and nothing pointed at them, so the game ran on declared fallbacks
+	 * that happened to match while reporting that it had read no data.
 	 */
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Data")
-	TSoftObjectPtr<ULLKLanternData> LanternData;
+	TSoftObjectPtr<ULLKLanternData> LanternData =
+		TSoftObjectPtr<ULLKLanternData>(FSoftObjectPath(TEXT("/Game/Data/DA_Lantern.DA_Lantern")));
 
 	// The fallbacks, in STUDS, matching `data/lantern.json` at the time of
 	// writing. They are duplicated values and that is a real cost, so they

@@ -1,5 +1,6 @@
 #include "Lantern/LLKLanternLightComponent.h"
 
+#include "Engine/Scene.h"
 #include "LLK.h"
 #include "LLKUnits.h"
 
@@ -16,12 +17,26 @@ ULLKLanternLightComponent::ULLKLanternLightComponent()
 	// lighting build that the player then walks away from.
 	SetMobility(EComponentMobility::Movable);
 
+	// **Pinned, because the unit is what makes the number mean anything.**
+	// ULocalLightComponent defaults to Unitless with Intensity 5000, so an
+	// authored 6 was not a dim lantern - it was 6 on a scale whose normal
+	// value is five thousand, which is invisible rather than subtle. Assigned
+	// directly rather than through SetIntensityUnits because that setter
+	// refuses changes outside dynamic-data-allowed contexts, and a constructor
+	// is one of them.
+	//
+	// It is pinned in code rather than authored in `data/` on purpose: the
+	// unit is Unreal's concept, not a portable one, and leaving it to the
+	// project default would mean `intensity` silently changing meaning if
+	// somebody flipped a project setting.
+	IntensityUnits = ELightUnits::Candelas;
+
 	// The declared fallbacks, mirroring `data/lantern.json`'s `light` block.
 	// Set here rather than as member initialisers so there is exactly one
 	// place to compare against the JSON when either moves.
 	FallbackRules.RadiusStuds = 30.f;
 	FallbackRules.ConeAngleDegrees = 72.f;
-	FallbackRules.Intensity = 6.f;
+	FallbackRules.Intensity = 250.f;
 	FallbackRules.WarmColor.R = 1.f;
 	FallbackRules.WarmColor.G = 0.82f;
 	FallbackRules.WarmColor.B = 0.56f;
@@ -36,6 +51,15 @@ void ULLKLanternLightComponent::BeginPlay()
 
 void ULLKLanternLightComponent::SetLanternData(const TSoftObjectPtr<ULLKLanternData>& InData)
 {
+	// Unchanged pointer, nothing to do. Without this the owner's push right
+	// after BeginPlay re-resolved the same asset and logged the same warning
+	// twice, which is how a duplicate line in Chris's log pointed at a
+	// redundant load nobody had noticed.
+	if (LanternData == InData && LightSource != ELLKDataSource::Unresolved)
+	{
+		return;
+	}
+
 	LanternData = InData;
 	ResolveAndApplyLight();
 }

@@ -701,6 +701,15 @@ console.log("\nRung one, the departure generator");
   );
 
   check(
+    "the lantern is bright enough to actually see",
+    light.intensity >= 50,
+    `${light.intensity} candelas. This check exists because 6 shipped once: the component ` +
+      `pins the unit to Candelas, but ULocalLightComponent's own default is Unitless with ` +
+      `Intensity 5000, so a small number here is indistinguishable from a lantern that never ` +
+      `turned on. Chris found it by eye, which is the expensive way.`,
+  );
+
+  check(
     "the lantern casts shadows",
     light.castsShadows === true,
     "revealed geometry with no shadow reads as flat, and looting is a judgement about shape",

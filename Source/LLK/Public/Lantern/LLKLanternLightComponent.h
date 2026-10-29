@@ -115,12 +115,16 @@ protected:
 	void ApplyVisibleState(bool bIsOn);
 
 	/**
-	 * The generated asset from `data/lantern.json`. Unset by default: a clean
-	 * clone has no `Content/Data/` until the importer runs, and a light that
-	 * refuses to exist until then would make every clean checkout un-runnable.
+	 * Defaults to the importer's output path. A soft pointer that resolves to
+	 * nothing simply fails, so a clean clone with no `Content/Data/` still
+	 * runs - it just announces the fallback. That is strictly better than
+	 * leaving this unset, which was the original shape: the assets existed on
+	 * disk and nothing pointed at them, so the game ran on declared fallbacks
+	 * that happened to match while reporting that it had read no data.
 	 */
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Data")
-	TSoftObjectPtr<ULLKLanternData> LanternData;
+	TSoftObjectPtr<ULLKLanternData> LanternData =
+		TSoftObjectPtr<ULLKLanternData>(FSoftObjectPath(TEXT("/Game/Data/DA_Lantern.DA_Lantern")));
 
 	/**
 	 * The declared fallbacks, matching `data/lantern.json` at the time of

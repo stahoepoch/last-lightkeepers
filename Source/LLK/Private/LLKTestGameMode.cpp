@@ -146,6 +146,16 @@ void ALLKTestGameMode::BuildHarnessWorld()
 	// See the header. Two spawned actors in a running world; no project
 	// lighting value is read or written, and DONTFUCKUPTHELIGHTS.md is
 	// untouched by design.
+	// **Dim on purpose, since 2026-10-29.** The first version lit this box
+	// like an afternoon, and Chris went looking for shadows to see the lantern
+	// in - which is the wrong way round for a game whose whole trade is
+	// whether to turn a light on. A harness bright enough to make the floor
+	// visible is also bright enough to make the lantern pointless, and the
+	// lantern is the thing being tested.
+	//
+	// So: enough to read the floor and the pillars as shapes, not enough to
+	// work by. Both values are properties rather than constants because "how
+	// dark is dark" is the single hardest thing to settle by argument.
 	if (!WorldAlreadyHas(ADirectionalLight::StaticClass()))
 	{
 		if (ADirectionalLight* Sun = World->SpawnActor<ADirectionalLight>(
@@ -154,7 +164,11 @@ void ALLKTestGameMode::BuildHarnessWorld()
 			Sun->SetMobility(EComponentMobility::Movable);
 			if (UDirectionalLightComponent* Component = Cast<UDirectionalLightComponent>(Sun->GetLightComponent()))
 			{
-				Component->SetIntensity(3.f);
+				Component->SetIntensity(HarnessSunIntensity);
+				// Cool and blue: the storm outside, so the keeper's warm
+				// lantern reads as the one human light in the shot. The same
+				// contrast M1.5's grey box will need and Chris owns there.
+				Component->SetLightColor(FLinearColor(0.55f, 0.66f, 1.f));
 			}
 		}
 	}
@@ -166,7 +180,7 @@ void ALLKTestGameMode::BuildHarnessWorld()
 			{
 				// ASkyLight has no SetMobility; the component carries it.
 				Component->SetMobility(EComponentMobility::Movable);
-				Component->SetIntensity(1.f);
+				Component->SetIntensity(HarnessSkyIntensity);
 				Component->SetLightColor(FLinearColor(0.4f, 0.45f, 0.55f));
 			}
 		}
@@ -184,7 +198,7 @@ void ALLKTestGameMode::BuildHarnessWorld()
 	}
 
 	UE_LOG(LogLLK, Log,
-		TEXT("LLKTestGameMode: harness world built - %.0fm floor, %d pillars. ")
-		TEXT("Temporary; delete with M1.5's grey box."),
-		FloorHalfExtent * 2.f / 100.f, ReferencePillars);
+		TEXT("LLKTestGameMode: harness world built - %.0fm floor, %d pillars, ")
+		TEXT("sun %.2f / sky %.2f. Temporary; delete with M1.5's grey box."),
+		FloorHalfExtent * 2.f / 100.f, ReferencePillars, HarnessSunIntensity, HarnessSkyIntensity);
 }

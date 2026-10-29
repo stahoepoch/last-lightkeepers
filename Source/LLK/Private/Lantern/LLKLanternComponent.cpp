@@ -98,6 +98,17 @@ void ULLKLanternComponent::ApplyState(bool bNewOn, ELLKLanternChangeReason Reaso
 
 	bLanternOn = bNewOn;
 	LastReason = Reason;
+
+	// **Logged because the absence of this cost an evening.** 2026-10-29:
+	// Chris reported the lantern not toggling. It was toggling; the light was
+	// simply too dim to see, and there was no way to tell those two apart
+	// from outside. A state change that nothing records is a state change
+	// nobody can debug, and this is the one piece of state the storm, the
+	// enemies and the loot rules all read.
+	UE_LOG(LogLLK, Log, TEXT("Lantern %s (%s)."),
+		bLanternOn ? TEXT("ON") : TEXT("OFF"),
+		*UEnum::GetValueAsString(Reason));
+
 	OnLanternStateChanged.Broadcast(bLanternOn, Reason);
 }
 

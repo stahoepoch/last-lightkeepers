@@ -45,8 +45,9 @@
     "coneAngleDegrees": 72,
     "_coneNote": "The OUTER cone - the edge of what is lit, which is the half enemy and visibility logic will read. Wide because the keeper holds a lantern, not a torch: narrow enough to aim is a flashlight game, and row 43 makes the store teach by being legible. The inner cone is deliberately NOT here - it only softens the falloff and changes nothing about reach.",
 
-    "intensity": 6,
-    "_intensityNote": "Unreal candelas, and the one key here that is honestly engine-flavoured - it has no portable meaning the way studs and degrees do. It lives here anyway because a radius without a brightness describes a reach nobody can see to the edge of. Expect Chris to move this against the grey box's own lighting, not against a number.",
+    "intensity": 250,
+    "_intensityNote": "Unreal candelas, and the one key here that is honestly engine-flavoured - it has no portable meaning the way studs and degrees do. It lives here anyway because a radius without a brightness describes a reach nobody can see to the edge of. The component pins the unit to Candelas in code so this number cannot silently change meaning with a project setting; tune it by eye, since no amount of arithmetic settles what a lantern should feel like.",
+    "_intensityWas6": "FIXED 2026-10-29, Chris's report: 'i don't see the lantern turning on or off, i tried in shadows to see'. The light WAS toggling - 6 was simply invisible. ULocalLightComponent defaults to Unitless with Intensity 5000, so an unpinned 6 was 6 on a scale whose normal value is five thousand, roughly 800x too dim, and the only reason it looked like a broken toggle is that nothing logged the toggle. Both halves of that are fixed: the unit is pinned and every state change now logs.",
 
     "warmColor": { "r": 1.0, "g": 0.82, "b": 0.56 },
     "_colorNote": "Linear RGB, 0-1, alpha deliberately absent - a light has no opacity and an authored alpha would be a field that silently does nothing. Warm because every other light in this game is the storm, and the keeper's lantern should read as the one human thing in the building.",

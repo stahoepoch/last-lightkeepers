@@ -57,6 +57,21 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Harness")
 	int32 ReferencePillars = 12;
 
+	/**
+	 * How bright the harness's own sky is. Low, deliberately.
+	 *
+	 * A box lit well enough to walk around in is a box where the lantern
+	 * changes nothing, and the lantern is what M0.8 is now for. Raise these
+	 * two to see the geometry; lower them to judge the light. Neither touches
+	 * a project lighting value - see the header note - they are arguments to
+	 * two actors spawned into a running world.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Harness", meta = (ClampMin = "0"))
+	float HarnessSunIntensity = 0.35f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Harness", meta = (ClampMin = "0"))
+	float HarnessSkyIntensity = 0.1f;
+
 	/** Spawns the floor, the pillars, a light and a start, skipping whatever the map already has. */
 	void BuildHarnessWorld();
 
