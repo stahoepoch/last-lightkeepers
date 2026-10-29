@@ -36,6 +36,7 @@
 
 #include "CoreMinimal.h"
 #include "Data/LLKStormChargeData.h"
+#include "Storm/LLKLightField.h"
 #include "Storm/LLKStormSnapshot.h"
 #include "Subsystems/WorldSubsystem.h"
 #include "LLKStormChargeSubsystem.generated.h"
@@ -76,6 +77,31 @@ public:
 	/** Lit lanterns right now, recounted rather than remembered. */
 	UFUNCTION(BlueprintPure, Category = "LLK|Storm")
 	int32 GetLitLanternCount() const;
+
+	/**
+	 * Every lit lantern as a light source, for the brightest-position rule.
+	 *
+	 * It lives on this class because this class already owns the registry of
+	 * which lanterns exist and which are lit, and a second registry is a
+	 * second thing to keep in step. If the light field ever grows past a
+	 * query - a cached field, a spatial structure - the registry should be
+	 * extracted and both should read it, rather than this class growing a
+	 * second job.
+	 */
+	TArray<FLLKLightSource> GetLitLightSources() const;
+
+	/**
+	 * Where the brightest lit keeper is, or false when the crew is dark.
+	 *
+	 * **This is the function enemy targeting must call, and the reason it
+	 * exists before any enemy does.** Row: enemies converge on the brightest
+	 * position, never the nearest player, because that is what makes the
+	 * keeper who lit the lantern the keeper who gets found - which is what
+	 * makes the store teach (`docs/THE-STORE.md`). The archived Roblox
+	 * EnemyService retargeted to nearest, and the UE5 build must not inherit
+	 * it. There is nothing to inherit from if this is the only answer here.
+	 */
+	bool GetBrightestLitPosition(FVector& OutPosition, float& OutBrightness) const;
 
 	// ---------------------------------------------------------- the meters
 	UFUNCTION(BlueprintPure, Category = "LLK|Storm")

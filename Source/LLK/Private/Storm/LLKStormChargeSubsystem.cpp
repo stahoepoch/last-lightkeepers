@@ -4,6 +4,7 @@
 #include "LLK.h"
 #include "LLKGameState.h"
 #include "Lantern/LLKLanternComponent.h"
+#include "Lantern/LLKLanternLightComponent.h"
 
 namespace
 {
@@ -190,6 +191,62 @@ float ULLKStormChargeSubsystem::LanternMultiplier(const FLLKLanternChargeRules& 
 float ULLKStormChargeSubsystem::WardenMultiplierFrom(float LanternMult, float LightSensitivity)
 {
 	return 1.f + LightSensitivity * (LanternMult - 1.f);
+}
+
+TArray<FLLKLightSource> ULLKStormChargeSubsystem::GetLitLightSources() const
+{
+	TArray<FLLKLightSource> Sources;
+
+	for (const TWeakObjectPtr<ULLKLanternComponent>& Weak : Lanterns)
+	{
+		const ULLKLanternComponent* Lantern = Weak.Get();
+		if (Lantern == nullptr || !Lantern->IsLanternOn())
+		{
+			// An unlit lantern contributes nothing, and a destroyed one
+			// resolves to null - the same no-ghost-light property the count
+			// relies on, for the same reason.
+			continue;
+		}
+
+		const AActor* Owner = Lantern->GetOwner();
+		if (Owner == nullptr)
+		{
+			continue;
+		}
+
+		// The LIGHT component, not the lantern component, because the light is
+		// where the brightness and the reach are - and where the light
+		// actually is in the world, which on a first-person keeper is the
+		// camera rather than the capsule's centre.
+		const ULLKLanternLightComponent* Light =
+			Owner->FindComponentByClass<ULLKLanternLightComponent>();
+		if (Light == nullptr)
+		{
+			// A lantern whose owner has no light component is lit as far as
+			// the storm is concerned - it still costs charge - but it has no
+			// position or reach to offer the field. Counted by
+			// GetLitLanternCount and absent here, deliberately: inventing an
+			// intensity for it would put a made-up number into enemy
+			// targeting.
+			continue;
+		}
+
+		FLLKLightSource Source;
+		Source.Position = Light->GetComponentLocation();
+		Source.Intensity = Light->GetResolvedRules().Intensity;
+		// Already in centimetres: the light converted it through LLKUnits
+		// when it resolved, and converting again here would be the second
+		// place spatial values are handled.
+		Source.RadiusCm = Light->AttenuationRadius;
+		Sources.Add(Source);
+	}
+
+	return Sources;
+}
+
+bool ULLKStormChargeSubsystem::GetBrightestLitPosition(FVector& OutPosition, float& OutBrightness) const
+{
+	return LLKLightField::FindBrightestPosition(GetLitLightSources(), OutPosition, OutBrightness);
 }
 
 float ULLKStormChargeSubsystem::GetCurrentMultiplier() const
