@@ -146,6 +146,7 @@ ear:
 | `stocker-telegraph-v1.wav` | Weight, and singularity | One low impact plus a descending servo groan |
 | `glimmer-scan-v1.wav` | Time running out | A tone rising across exactly 2.0s with ticks that *accelerate*, so the closing window is audible |
 | `window-walker-wake-v1.wav` | Stillness breaking | Silence first, then a dry crack and a rigid creak |
+| `ficus-wake-v1.wav` | The only living thing | Dense bright foliage grains that fuse into texture, plus an inharmonic stem creak. **No mechanical content at all** - every other cue is built from machine parts |
 | `warden-approach-v1.wav` | Dread, and distance | Two near-unison low fundamentals beating, with a long decaying tail |
 | `extraction-siren-v1.wav` | A public commitment | Alternating rising/falling alarm sweeps over a mechanical low pulse; positional at the called exit. |
 
@@ -163,8 +164,26 @@ rigs correctly still carry the placeholder.
 Each enemy needs a cue distinguishable from the others by ear alone — that is
 the handoff's accessibility requirement, not polish. Brief in `docs/ASSETS.md`.
 
-- [ ] Sweeper telegraph
-- [ ] Stocker telegraph
-- [ ] Glimmer scan tone (must make the 2-second window audible)
-- [ ] Window Walker wake
-- [ ] Warden approach
+**Corrected 2026-10-28: this list said all five were outstanding while the
+table two sections above listed them as made.** All seven cues are rendered
+and all six enemies now have one. The Ficus was last, designed the same day
+its "is this even an enemy?" query was closed.
+
+- [x] Sweeper telegraph
+- [x] Stocker telegraph
+- [x] Glimmer scan tone (must make the 2-second window audible)
+- [x] Window Walker wake
+- [x] Ficus wake
+- [x] Warden approach
+
+**Separation, measured rather than claimed.** The requirement is that a player
+can tell these apart by ear. Zero-crossing rate per second, a proxy for
+brightness, across the rendered cues: Warden 116, Stocker 165, siren 1218,
+Glimmer 1860, Window Walker 2661, Sweeper 6116, **Ficus 10763**. The Ficus
+sits furthest from everything and is 1.8x brighter than its nearest
+neighbour, the Sweeper - the pair most at risk, since both are noise-based.
+Crest factor separates them too (Sweeper 7.1, Ficus 5.7): the Sweeper is
+countable events, the Ficus is continuous texture.
+
+**All seven are mono**, which `docs/ASSETS.md` requires for positional audio.
+The bought packs are stereo; our own masters were already right.

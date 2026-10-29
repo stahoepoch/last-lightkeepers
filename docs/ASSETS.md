@@ -115,7 +115,8 @@ distinguishable:
 - **Glimmer** — a scan tone with an audible 2-second shape, so the window to
   go dark can be heard rather than guessed
 - **Window Walker** — stillness breaking
-- **Ficus** — approved and statted (row 13); no cue designed yet
+- **Ficus** — the one that is not a machine: dense foliage that fuses into
+  texture rather than countable events, with no mechanical content anywhere
 - **Warden** — unmistakable, and audible from much further than the rest
 
 **Positional audio wants mono.** Unreal does spatialize stereo, but places the

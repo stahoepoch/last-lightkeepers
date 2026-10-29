@@ -225,6 +225,59 @@ def window_walker():
     return out
 
 
+def ficus():
+    """The only thing in the building that is alive.
+
+    Mechanism: dense foliage rustle that SWELLS and never resolves into
+    separate events, plus a fibrous stem creak that drifts in pitch. The
+    identity is ORGANIC MASS - no impact, no metal, no servo, nothing
+    mechanical anywhere in it.
+
+    That is the point rather than a flourish. `DECISIONS.md` row 47 makes
+    every other enemy a machine finishing the last job it was given, and their
+    cues are built from machine parts: a servo groan, a rigid joint, a horn.
+    The Ficus was landscaping and it has grown (`docs/THE-NIGHT.md`). A player
+    who can hear one thing in the store that is not a machine has learned a
+    fact about the world by ear - which is how row 47 says it must be learned,
+    by watching the building work, never from a tooltip.
+
+    Three things separate it from the Sweeper, its only noise-based neighbour:
+    the grains are roughly five times denser, so they fuse into texture rather
+    than a countable crowd; they are bright instead of lowpassed; and the cue
+    is one swell instead of a steady rate.
+
+    Length is 1.2s because `data/enemies.json` says so. The shape is slow
+    because the Ficus moves at 6, the slowest in the roster - the cue must not
+    imply something that can rush you.
+    """
+    seconds = 1.2
+    out = silence(seconds)
+
+    # Foliage: many short bright grains, dense enough to merge. Leaves are
+    # papery and high; the Sweeper's grains are dull and low, deliberately.
+    t = 0.0
+    while t < seconds - 0.06:
+        grain = env(highpass(noise(0.012), 1100), 0.001, 0.011)
+        out = at(out, t, [g * random.uniform(0.5, 1.0) for g in grain])
+        t += random.uniform(0.003, 0.007)
+
+    # One swell over the whole thing: all of it moves at once, then settles.
+    # The attack is fast but not a transient - a crack is the Window Walker.
+    out = env(out, 0.02, 0.62, hold=0.18)
+
+    # Stem taking weight. Pitched, but inharmonic and drifting rather than the
+    # clean glide of a servo or a hinge, so it never reads as a mechanism.
+    creak = mix(
+        env(sweep(132, 108, 0.75, curve=0.8), 0.12, 0.6),
+        [0.42 * g for g in env(sweep(194, 171, 0.75, curve=1.3), 0.18, 0.55)],
+    )
+    out = at(out, 0.32, [0.33 * g for g in creak])
+
+    # Soil and pot settling: low, soft, with no impact anywhere in it.
+    out = mix(out, env(lowpass(noise(seconds), 150), 0.25, 0.55, 0.2))
+    return out
+
+
 def warden():
     """Unmistakable, and audible from much further than the rest.
 
@@ -270,6 +323,7 @@ CUES = {
     "stocker-telegraph-v1.wav": stocker,
     "glimmer-scan-v1.wav": glimmer,
     "window-walker-wake-v1.wav": window_walker,
+    "ficus-wake-v1.wav": ficus,
     "warden-approach-v1.wav": warden,
     "extraction-siren-v1.wav": extraction_siren,
 }
@@ -279,8 +333,9 @@ def main():
     print("Rendering enemy cues:")
     for name, fn in CUES.items():
         write(name, fn())
-    print("\nAll original. Upload to Roblox and record the ids in")
-    print("assets/MANIFEST.md before anything references them.")
+    print("\nAll original, and all mono - positional audio wants a point source,")
+    print("not a stereo pair (docs/ASSETS.md). Import into Content/ and record")
+    print("the rows in assets/MANIFEST.md before anything references them.")
 
 
 if __name__ == "__main__":
