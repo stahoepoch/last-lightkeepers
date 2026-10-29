@@ -158,6 +158,33 @@ public:
 	UFUNCTION(BlueprintPure, Category = "LLK|Loot")
 	int32 GetReadableValue() const { return bLegible ? Value : -1; }
 
+	/**
+	 * Server only. Removes the relic from the world and reports whether it went.
+	 *
+	 * Returns false when it was already taken, which is the double-take race:
+	 * two keepers pressing E on the same brooch in the same tick. The first
+	 * call wins and the second is told no, rather than both being told yes
+	 * and one relic becoming two.
+	 */
+	bool TakeByServer();
+
+	UFUNCTION(BlueprintPure, Category = "LLK|Loot")
+	bool IsTaken() const { return bTaken; }
+
+	/**
+	 * **The object acknowledging the light, which is Chris's "making it WHY".**
+	 *
+	 * Row 16 needs the change readable on the object and not only in a
+	 * readout, and an outline needs a post-process material, which is
+	 * `Content/` and his. What code can do is set the custom-depth stencil
+	 * the material will read: 1 for a relic that is visible but unreadable,
+	 * 2 once it is legible, 3 when it is takeable right now. So the moment he
+	 * authors one outline material, three states already drive it and nothing
+	 * here has to change.
+	 */
+	UFUNCTION(BlueprintPure, Category = "LLK|Loot")
+	int32 GetOutlineStencil() const;
+
 	/** Brightness needed to read this, derived from the lantern's own authored intensity. */
 	UFUNCTION(BlueprintPure, Category = "LLK|Loot")
 	float GetIdentifyThreshold() const { return IdentifyThreshold; }
@@ -230,6 +257,12 @@ protected:
 	UFUNCTION()
 	void OnRep_Legible();
 
+	UFUNCTION()
+	void OnRep_Taken();
+
+	/** Pushes the stencil state onto the owner's primitives, so an outline material can read it. */
+	void ApplyOutlineState();
+
 	/**
 	 * Seconds between light checks. Not every frame: a relic becoming readable
 	 * a tenth of a second late is imperceptible, and a floor full of relics
@@ -256,6 +289,10 @@ protected:
 
 	UPROPERTY(ReplicatedUsing = OnRep_Legible)
 	bool bLegible = false;
+
+	/** Replicated so a client stops drawing a prompt for something already gone. */
+	UPROPERTY(ReplicatedUsing = OnRep_Taken)
+	bool bTaken = false;
 
 	/** Live and NOT replicated: every machine reads the light field locally. */
 	bool bCurrentlyLit = false;

@@ -28,6 +28,7 @@
 class UCameraComponent;
 class ULLKLanternComponent;
 class ULLKLanternLightComponent;
+class ULLKInteractorComponent;
 class UInputAction;
 class UInputMappingContext;
 
@@ -65,11 +66,14 @@ struct FLLKInputBindings
 	UPROPERTY()
 	TObjectPtr<UInputAction> LanternToggle = nullptr;
 
+	UPROPERTY()
+	TObjectPtr<UInputAction> Interact = nullptr;
+
 	bool IsComplete() const
 	{
 		return Context != nullptr && Move != nullptr && Look != nullptr
 			&& Sprint != nullptr && CrouchToggle != nullptr && Jump != nullptr
-			&& LanternToggle != nullptr;
+			&& LanternToggle != nullptr && Interact != nullptr;
 	}
 };
 
@@ -137,6 +141,10 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "LLK|Lantern")
 	ULLKLanternComponent* GetLantern() const { return Lantern; }
+
+	/** What the keeper is looking at and whether they can take it. The HUD reads this. */
+	UFUNCTION(BlueprintPure, Category = "LLK|Interact")
+	ULLKInteractorComponent* GetInteractor() const { return Interactor; }
 
 	/**
 	 * Builds the stopgap bindings in code: WASD, mouse look, shift, ctrl.
@@ -217,6 +225,17 @@ protected:
 	TObjectPtr<ULLKLanternLightComponent> LanternLight;
 
 	/**
+	 * Resolves what the keeper is looking at, once, for everyone.
+	 *
+	 * On the character rather than in the HUD because the prompt and the take
+	 * key have to agree about which object they mean. Two searches disagree
+	 * the moment two relics are nearly equidistant, and then the game takes
+	 * something the player was not looking at.
+	 */
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Interact")
+	TObjectPtr<ULLKInteractorComponent> Interactor;
+
+	/**
 	 * The real Input Action assets, pointed at the paths M1.6 authors.
 	 *
 	 * **Pointed rather than left unset, on Codex's handoff for `98ff8b2`.**
@@ -262,6 +281,20 @@ protected:
 	TSoftObjectPtr<UInputAction> LanternActionAsset =
 		TSoftObjectPtr<UInputAction>(FSoftObjectPath(TEXT("/Game/Input/IA_LLK_Lantern.IA_LLK_Lantern")));
 
+	/**
+	 * **A SEVENTH action, which the authored contract does not know about yet.**
+	 *
+	 * Codex's validator in `98ff8b2` enforces six: Move, Look, Sprint, Crouch,
+	 * Jump, Lantern. Interact makes seven, and his validator and the assets in
+	 * `/Game/Input` both need the extra entry. Until they have it this path
+	 * resolves null, the set is incomplete, and the whole scheme falls back to
+	 * the transient bindings - which is the existing all-or-nothing rule
+	 * working as intended rather than a new problem.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Input")
+	TSoftObjectPtr<UInputAction> InteractActionAsset =
+		TSoftObjectPtr<UInputAction>(FSoftObjectPath(TEXT("/Game/Input/IA_LLK_Interact.IA_LLK_Interact")));
+
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void PawnClientRestart() override;
 
@@ -280,6 +313,7 @@ protected:
 	void OnJumpStarted();
 	void OnJumpStopped();
 	void OnLanternToggled();
+	void OnInteract();
 
 	UPROPERTY()
 	FLLKInputBindings ActiveBindings;

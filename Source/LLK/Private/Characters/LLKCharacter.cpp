@@ -12,6 +12,7 @@
 #include "LLK.h"
 #include "Lantern/LLKLanternComponent.h"
 #include "Lantern/LLKLanternLightComponent.h"
+#include "Loot/LLKInteractorComponent.h"
 #include "LLKUnits.h"
 #include "Storm/LLKStormChargeSubsystem.h"
 #include "Net/UnrealNetwork.h"
@@ -37,6 +38,8 @@ ALLKCharacter::ALLKCharacter()
 	LanternLight = CreateDefaultSubobject<ULLKLanternLightComponent>(TEXT("LanternLight"));
 	LanternLight->SetupAttachment(FirstPersonCamera);
 	LanternLight->SetRelativeLocation(FVector(20.f, 14.f, -18.f));
+
+	Interactor = CreateDefaultSubobject<ULLKInteractorComponent>(TEXT("Interactor"));
 
 	// The pawn turns with the controller; the (absent) mesh does not steer it.
 	bUseControllerRotationYaw = true;
@@ -264,6 +267,7 @@ FLLKInputBindings ALLKCharacter::BuildTransientBindings(UObject* Outer)
 	Bindings.CrouchToggle = MakeAction(TEXT("IA_LLK_Crouch_Transient"), EInputActionValueType::Boolean);
 	Bindings.Jump = MakeAction(TEXT("IA_LLK_Jump_Transient"), EInputActionValueType::Boolean);
 	Bindings.LanternToggle = MakeAction(TEXT("IA_LLK_Lantern_Transient"), EInputActionValueType::Boolean);
+	Bindings.Interact = MakeAction(TEXT("IA_LLK_Interact_Transient"), EInputActionValueType::Boolean);
 
 	Bindings.Context = NewObject<UInputMappingContext>(Outer, TEXT("IMC_LLK_Transient"));
 
@@ -310,6 +314,10 @@ FLLKInputBindings ALLKCharacter::BuildTransientBindings(UObject* Outer)
 	// there. The lantern is the one key in this scheme that is not a movement
 	// verb, and it is the one the whole game is named after.
 	Bindings.Context->MapKey(Bindings.LanternToggle, EKeys::F);
+	// E, because every game the player has already played put "use the thing
+	// in front of you" there. Chris's reference was Arc Raiders, which does
+	// the same.
+	Bindings.Context->MapKey(Bindings.Interact, EKeys::E);
 
 	return Bindings;
 }
@@ -324,6 +332,7 @@ void ALLKCharacter::ResolveInputBindings()
 	FromAssets.CrouchToggle = CrouchActionAsset.LoadSynchronous();
 	FromAssets.Jump = JumpActionAsset.LoadSynchronous();
 	FromAssets.LanternToggle = LanternActionAsset.LoadSynchronous();
+	FromAssets.Interact = InteractActionAsset.LoadSynchronous();
 
 	if (FromAssets.IsComplete())
 	{
@@ -337,7 +346,8 @@ void ALLKCharacter::ResolveInputBindings()
 	InputSource = ELLKInputSource::TransientFallback;
 	UE_LOG(LogLLK, Warning,
 		TEXT("ALLKCharacter: no complete Input Action asset set - running on the TRANSIENT in-code ")
-		TEXT("fallback (WASD, mouse, shift, ctrl, space, F). Nothing is rebindable until M1.6's assets exist."));
+		TEXT("fallback (WASD, mouse, shift, ctrl, space, F, E). Nothing is rebindable until M1.6's ")
+		TEXT("assets exist - and the authored set now needs a SEVENTH action, IA_LLK_Interact."));
 }
 
 void ALLKCharacter::ApplyMappingContext()
@@ -400,6 +410,7 @@ void ALLKCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	// Started only. A lantern you have to hold down to keep lit would make
 	// row 5's trade a matter of finger stamina instead of a decision.
 	Input->BindAction(ActiveBindings.LanternToggle, ETriggerEvent::Started, this, &ALLKCharacter::OnLanternToggled);
+	Input->BindAction(ActiveBindings.Interact, ETriggerEvent::Started, this, &ALLKCharacter::OnInteract);
 }
 
 void ALLKCharacter::OnMoveInput(const FInputActionValue& Value)
@@ -442,6 +453,17 @@ void ALLKCharacter::OnJumpStarted()
 void ALLKCharacter::OnJumpStopped()
 {
 	StopJumping();
+}
+
+void ALLKCharacter::OnInteract()
+{
+	if (Interactor != nullptr)
+	{
+		// Asks. The server decides whether the thing may be lifted, including
+		// row 62's live-light gate, and the prompt the player read was a
+		// courtesy rather than a promise.
+		Interactor->TryTakeFocused();
+	}
 }
 
 void ALLKCharacter::OnLanternToggled()

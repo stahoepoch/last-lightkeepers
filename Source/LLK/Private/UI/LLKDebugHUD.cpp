@@ -4,8 +4,10 @@
 #include "Engine/Engine.h"
 #include "Engine/Font.h"
 #include "Engine/World.h"
+#include "Characters/LLKCharacter.h"
 #include "EngineUtils.h"
 #include "GameFramework/Pawn.h"
+#include "Loot/LLKInteractorComponent.h"
 #include "LLKGameState.h"
 #include "LLKUnits.h"
 #include "Loot/LLKRelicComponent.h"
@@ -170,6 +172,118 @@ void ALLKDebugHUD::DrawHUD()
 
 	CursorY += LineHeight * GetUIScale() * 0.6f;
 	DrawRelicPanel(CursorY);
+
+	// Drawn last so it sits over everything, and outside the panel entirely:
+	// this one belongs to the object, not to the readout.
+	DrawWorldPrompt();
+}
+
+void ALLKDebugHUD::DrawWorldPrompt()
+{
+	if (Canvas == nullptr)
+	{
+		return;
+	}
+
+	const APawn* Keeper = GetOwningPawn();
+	const ALLKCharacter* Character = Cast<ALLKCharacter>(Keeper);
+	if (Character == nullptr)
+	{
+		return;
+	}
+
+	// **The same focus the take key uses.** Not a second search - the prompt
+	// describing one relic while E lifts another is the bug this reads from a
+	// single source to avoid.
+	const ULLKInteractorComponent* Interactor = Character->GetInteractor();
+	if (Interactor == nullptr)
+	{
+		return;
+	}
+
+	const ULLKRelicComponent* Relic = Interactor->GetFocused();
+	if (Relic == nullptr || Relic->IsTaken())
+	{
+		return;
+	}
+
+	const AActor* RelicActor = Relic->GetOwner();
+	if (RelicActor == nullptr)
+	{
+		return;
+	}
+
+	const FVector World = RelicActor->GetActorLocation();
+	const FVector Screen = Canvas->Project(World);
+	if (Screen.Z <= 0.f)
+	{
+		// Behind the camera. Project still returns a point, and drawing it
+		// would put a marker on screen for something at the keeper's back.
+		return;
+	}
+
+	const float Scale = GetUIScale();
+	const float Half = BracketHalfSize * Scale;
+	const FVector2D Centre(Screen.X, Screen.Y);
+
+	// Colour carries the state, so the marker answers "can I have it" before
+	// any text is read: warm when it is yours to take, red when the light is
+	// what is missing, grey when you have not read it yet.
+	FLinearColor Colour = ColourQuiet;
+	FString Label;
+	switch (Relic->GetInteractBlock())
+	{
+	case ELLKRelicInteractBlock::None:
+		Colour = ColourCause;
+		Label = FString::Printf(TEXT("[E]  Take  -  %s"), *Relic->GetDisplayName().ToString());
+		break;
+	case ELLKRelicInteractBlock::NeedsLight:
+		Colour = ColourUrgent;
+		Label = FString::Printf(TEXT("%s  -  needs light"), *Relic->GetDisplayName().ToString());
+		break;
+	case ELLKRelicInteractBlock::Unidentified:
+		Colour = ColourQuiet;
+		Label = FString::Printf(TEXT("%s"), *Relic->GetDisplayName().ToString());
+		break;
+	}
+
+	// Four corner brackets rather than a full box: a closed rectangle reads
+	// as UI chrome sitting in front of the world, and corners read as
+	// something the world is doing. Cheap stand-in for the outline material.
+	const float Arm = Half * 0.45f;
+	const float Thickness = FMath::Max(1.f, 2.f * Scale);
+	const TArray<FVector2D> Corners = {
+		FVector2D(-Half, -Half), FVector2D(Half, -Half),
+		FVector2D(-Half, Half), FVector2D(Half, Half)};
+
+	for (const FVector2D& Corner : Corners)
+	{
+		const FVector2D At = Centre + Corner;
+		const float SignX = Corner.X < 0.f ? 1.f : -1.f;
+		const float SignY = Corner.Y < 0.f ? 1.f : -1.f;
+		Canvas->K2_DrawLine(At, At + FVector2D(Arm * SignX, 0.f), Thickness, Colour);
+		Canvas->K2_DrawLine(At, At + FVector2D(0.f, Arm * SignY), Thickness, Colour);
+	}
+
+	// The label under the bracket, centred, with the same shadow the panel
+	// uses so it survives a lit pillar behind it.
+	UFont* Font = GEngine != nullptr ? GEngine->GetMediumFont() : nullptr;
+	if (Font == nullptr)
+	{
+		return;
+	}
+
+	float TextWidth = 0.f;
+	float TextHeight = 0.f;
+	const float LabelScale = 1.1f * Scale;
+	Canvas->TextSize(Font, Label, TextWidth, TextHeight, LabelScale, LabelScale);
+
+	FCanvasTextItem Item(
+		FVector2D(Centre.X - TextWidth * 0.5f, Centre.Y + Half + 6.f * Scale),
+		FText::FromString(Label), Font, Colour);
+	Item.Scale = FVector2D(LabelScale, LabelScale);
+	Item.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.9f));
+	Canvas->DrawItem(Item);
 }
 
 void ALLKDebugHUD::DrawRelicPanel(float& CursorY)

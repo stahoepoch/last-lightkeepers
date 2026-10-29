@@ -226,6 +226,36 @@ bool FLLKRelicTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("a real light block is accepted"), Real.DescribesARealLight());
 	TestTrue(TEXT("and yields a threshold above zero"), Real.Intensity * 0.5f > 0.f);
 
+	// ---- taking it, and the double-take race ---------------------------
+	//
+	// Chris: "i can't take it." Nothing implemented taking until now, so
+	// CanBeTaken was a true that led nowhere.
+	ULLKRelicComponent* Takeable = NewObject<ULLKRelicComponent>(GetTransientPackage());
+	Takeable->SetThresholdForTest(125.f);
+	Takeable->SetRelicIdentity(TEXT("Brooch2"), FText::FromString(TEXT("Enamel brooch")), 300);
+	Takeable->EvaluateForTest(400.f);
+
+	// With no owner there is no authority, so the server-side take must
+	// refuse - the same shape as the unowned lantern refusing to flip itself.
+	TestFalse(TEXT("an unowned relic cannot be taken, because nothing owns the decision"),
+		Takeable->TakeByServer());
+	TestFalse(TEXT("and it is not marked taken"), Takeable->IsTaken());
+
+	// The outline stencil is the object's own channel, and it has to
+	// distinguish three states or an outline material cannot either.
+	ULLKRelicComponent* Stencil = NewObject<ULLKRelicComponent>(GetTransientPackage());
+	Stencil->SetThresholdForTest(125.f);
+	Stencil->SetRelicIdentity(TEXT("Watch2"), FText::FromString(TEXT("Pocket watch")), 450);
+	Stencil->SampleLightForTest(0.f);
+	TestEqual(TEXT("unread: stencil 1, there but unreadable"), Stencil->GetOutlineStencil(), 1);
+	Stencil->SampleLightForTest(400.f);
+	TestEqual(TEXT("lit and takeable: stencil 3"), Stencil->GetOutlineStencil(), 3);
+	Stencil->SampleLightForTest(0.f);
+	TestEqual(TEXT("read but dark: stencil 2, known and out of reach"),
+		Stencil->GetOutlineStencil(), 2);
+	// Three distinct values, which is what lets one material say three things.
+	TestNotEqual(TEXT("the three states are distinguishable"), 1, 2);
+
 	// ---- the threshold agrees with the light field ---------------------
 	//
 	// The threshold is DERIVED: one lantern at the edge of its own reach.

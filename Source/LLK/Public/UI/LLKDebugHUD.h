@@ -108,6 +108,28 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Debug", meta = (ClampMin = "0"))
 	float RelicSearchStuds = 12.f;
 
+	/**
+	 * The prompt drawn AT the object, which is the thing Chris actually asked for.
+	 *
+	 * *"there isn't anything on screen to guide me. like in arc raiders it
+	 * shows the item and E is take... you can see it as a visual queue on the
+	 * screen, its noticeable."* A readout in a corner tells you about the
+	 * world; a marker on the object is the world telling you about itself, and
+	 * only the second one guides a hand.
+	 *
+	 * Projected from the relic's world position each frame, so it tracks the
+	 * object as the keeper moves rather than sitting in a fixed place. The
+	 * bracket is a stand-in for an outline: a real outline needs a
+	 * post-process material reading custom depth, which is `Content/` and
+	 * Chris's - and `ULLKRelicComponent` already sets the stencil for it, so
+	 * the day he authors one it has three states waiting.
+	 */
+	void DrawWorldPrompt();
+
+	/** Half-width of the bracket around a focused object, in 1080p pixels. */
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Debug", meta = (ClampMin = "4"))
+	float BracketHalfSize = 26.f;
+
 	/** In 1080p-equivalent pixels; multiplied by GetUIScale at draw time. */
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Debug")
 	FVector2D PanelOrigin = FVector2D(32.f, 28.f);
