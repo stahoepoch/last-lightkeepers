@@ -131,15 +131,15 @@ The floors were designed as an art direction, but they happen to run from
 conditions. Nothing below invents a floor. It assigns each one a lesson and
 says what the exam is.
 
-| Order | Floor | The one new idea | How the floor examines it |
-| --- | --- | --- | --- |
-| 1 | **Ground** | There are things here and you can carry them | Storm light through the windows means baseline loot is visible with the lantern off. The player loots before they learn light costs anything |
-| 2 | **Ground**, deeper in | **Light reveals value and attracts danger** | The first relic is **visible but unreadable** in the dark (row 53) and sits where the sightlines are longest. The player can see something is there, lights up to find out what, sees the thing they woke, and has room to go dark and live |
-| 3 | **Second** | Not everything that is wrong looks wrong | The most intact floor. It teaches no mechanic. It teaches distrust, and it is where the Window Walkers stand in the display windows, exactly where they worked |
-| 4 | **Third** | The building can take away what you learned to rely on | Swollen floors, staged rooms, collapsed sightlines. Sound stops arriving from a direction you can use |
-| 5 | **Basement** | Sometimes the choice is made for you | No ambient light at all. The keeper who learned to run dark finds the floor where running dark is not available — and the best Components are down here |
-| 6 | **Fourth** | Light is not always yours to control | Roof gone, lit by the storm. Your lantern adds little and you are visible anyway. The solar farm's whole inversion, three zones early, in one room |
-| 7 | **Basement**, again | Leaving is the loudest thing you do | Extraction is at the loading dock, so the last lesson is taught by the floor that taught lesson five |
+| Order | Floor | The one new idea | How the floor examines it | Its second channel (row 16) |
+| --- | --- | --- | --- | --- |
+| 1 | **Ground** | There are things here and you can carry them | Storm light through the windows means baseline loot is visible with the lantern off. The player loots before they learn light costs anything | Not a threat lesson, so row 16 does not bind it. The two channels are the loot's silhouette and its glint under storm light — both visual, which is acceptable only because nothing here can hurt you |
+| 2 | **Ground**, deeper in | **Light reveals value and attracts danger** | The first relic is **visible but unreadable** in the dark (row 53) and sits where the sightlines are longest. The player can see something is there, lights up to find out what, sees the thing they woke, and has room to go dark and live | **The one that must not be audio-first.** Glass and mirror throw the lantern back across the floor, so the player sees their own light arrive somewhere they are not — the reveal is visual and it is *theirs*. Sound is the second channel, not the first |
+| 3 | **Second** | Not everything that is wrong looks wrong | The most intact floor. It teaches no mechanic. It teaches distrust, and it is where the Window Walkers stand in the display windows, exactly where they worked | Silhouette change, which is the only tell that works here: a mannequin island the player walked past has one fewer figure on the way back. Pairs with cloth and dry-joint sound, but the count is readable in silence |
+| 4 | **Third** | The building can take away what you learned to rely on | Swollen floors, staged showrooms, doorway after doorway. **What it takes is your sightlines**: the one floor where the lantern lights a room instead of an aisle, so you learn what is in a showroom only by entering it | Short sightlines are the lesson and they are visual. The second channel is the floors themselves — soft, stained boards that sound underfoot and show standing water, so a room announces itself twice before you are in it |
+| 5 | **Basement** | Sometimes the choice is made for you | No ambient light at all. The keeper who learned to run dark finds the floor where running dark is not available — and the best Components are down here | The plant is the second channel and it is always on: boiler and switchgear hum give the floor a directional spine, so a player navigating by sound has one here even with the lantern lit and every sightline black |
+| 6 | **Fourth** | Light is not always yours to control | Roof gone, lit by the storm. Your lantern adds little and you are visible anyway. The solar farm's whole inversion, three zones early, in one room | The storm is already a three-channel telegraph (`SOUND.md`): the pre-flash, the light event and the thunder are one thing arriving three ways. This floor is the only lesson that needs no extra work for row 16 |
+| 7 | **Basement**, again | Leaving is the loudest thing you do | Extraction is at the loading dock, so the last lesson is taught by the floor that taught lesson five | `storm-charge.json` gives the call `sirenSeconds: 8` and `convergeAllPatrols`. The siren is the sound; the flare and the dock's own shutter motors are what a player who cannot hear it sees instead |
 
 ### The three rules that make it teach
 
@@ -165,16 +165,35 @@ answer is affordable, which is the entire reason it comes first.
 **It has to teach four people talking at once.** `DECISIONS.md` row 36 is 1–4
 private co-op, which defeats text, quiet moments and anything resembling a
 cutscene. Every lesson above is carried by arrangement, light and sound,
-because those are the only channels that survive a voice call. **Amended
-2026-10-28:** that sentence was half the problem it describes. Teaching
-through darkness, light and monster audio uses exactly the two single
-channels accessibility guidance warns against, and voice chat occupies one of
-them. Row 16's rewrite is the fix - every threat telegraphs on two
-distinguishable channels, one of which may be sound - so each lesson above
-needs a physical tell as well as a sound. `docs/SOUND.md`. The corollary,
-and it is uncomfortable: **the building must also teach the solo player**, who
-has no veteran in the lobby to explain it. A lesson that only lands because
-someone's friend already knew it has not been taught.
+because those are the only channels that survive a voice call.
+
+**No lesson may be taught on one channel — and this page was breaking that.**
+Row 16, rewritten 2026-10-28, requires every threat to telegraph on at least
+two distinguishable channels, one of which *may* be sound. Its own note says
+the rewrite "repairs the curriculum in `docs/THE-STORE.md`", and for a day it
+did not: an amendment sat here saying each lesson "needs a physical tell as
+well as a sound" without supplying any. **That is now the fifth column of the
+table above**, filled in per floor, closed 2026-10-29.
+
+**Lesson four was worse than unpaired, and that is the finding.** Its exam
+used to read *"sound stops arriving from a direction you can use."* That is a
+lesson taught **by taking the audio channel away** — so for a deaf or
+hard-of-hearing player it is not a hard floor, it is a floor with no lesson on
+it. Row 16 exists precisely to prevent that, and the curriculum was violating
+it in the one place it was trying hardest to be clever.
+
+The repair did not need a new idea, which is the reassuring part: the floor's
+own art direction already said *"showroom walls cut the floor into rooms, so
+sightlines are short and you are never sure what the next doorway holds."*
+**What the Third floor takes away is sightlines, not hearing.** That is
+visual, it pairs with the stained boards underfoot, and it is what the floor
+was always going to be. The audio framing was my mistake and nothing in the
+building has to move to fix it. **Chris's call to reverse if he disagrees** —
+it is a change to a lesson, not to a floor.
+
+The corollary, and it is uncomfortable: **the building must also teach the solo
+player**, who has no veteran in the lobby to explain it. A lesson that only
+lands because someone's friend already knew it has not been taught.
 
 ### The hole in rule two, found the same day
 
@@ -218,6 +237,41 @@ It also puts a clock on the whole thing. A tutorial that is also the first real
 level has to land inside Steam's two-hour refund window — see **O7**. The
 lessons above are deliberately front-loaded for that reason: ideas one and two,
 which are the game, are both on the ground floor.
+
+### What M1.5 has to clear, in a form somebody can check
+
+"It teaches" is not a bar anybody can hold a grey box against, and row 43
+raised M1.5 to exactly that. So here is the ground floor's bar as six
+questions with yes/no answers, because the floor only has to pass lessons one
+and two — the rest of the building is later milestones and should not be
+blocked on them.
+
+1. **Is there loot visible with the lantern off?** Storm light through the
+   sealed street entrances, on baseline loot only. If a player has to light up
+   to find anything at all, lesson one never happens and lesson two has
+   nothing to contrast against.
+2. **Is the first relic visible and unreadable from the dark?** Row 53. It has
+   to pose the question *what is that?* without a prompt. If it is invisible
+   until lit, curiosity never starts; if it is readable unlit, light costs
+   nothing.
+3. **Can a player who lights it see their own light arrive somewhere they are
+   not?** Glass counters and mirrored columns, placed so the reveal is visual
+   and belongs to the person holding the lantern. This is the second channel
+   for lesson two and the thing that makes the lesson *theirs*.
+4. **Is there a way to go dark and live?** A sightline long enough to see what
+   was woken, and cover reachable before it arrives. Without this the lesson
+   is "light kills you", which is not the rule.
+5. **Does the brightest-position rule hold?** Not a layout question, but the
+   floor cannot teach without it: enemies converge on the brightest position,
+   never the nearest player. The archived `EnemyService` retargets to nearest,
+   and inheriting that would break the one lesson the floor exists for.
+6. **Can someone who has never seen it walk it without being told where to
+   go?** The old bar, kept. A floor that teaches but cannot be navigated has
+   still failed.
+
+Five of the six are things a grey box can be judged on with no art, no audio
+and no enemies — which is the point: they can be checked the day the blockout
+exists rather than after a playtest. Number five is a code rule and is mine.
 
 ## Massively stocked without eight thousand unique models
 

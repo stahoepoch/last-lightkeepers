@@ -4,11 +4,12 @@
   "type": "module",
   "description": "Portable data checks for Last Lightkeepers. Engine-independent by design: Node and Python only, no dependencies, no install.",
   "scripts": {
-    "test": "python Tools/import_data.py && python Tools/test_import_data.py && python Tools/test_startup_config.py && node tests/units.test.mjs && node tests/balance.test.mjs && node tests/wiring.test.mjs && node tests/lighting.test.mjs && node tests/map-contract.test.mjs",
+    "test": "python Tools/import_data.py && python Tools/test_import_data.py && python Tools/test_startup_config.py && node tests/units.test.mjs && node tests/balance.test.mjs && node tests/wiring.test.mjs && node tests/lighting.test.mjs && node tests/curriculum.test.mjs && node tests/map-contract.test.mjs",
     "test:balance": "node tests/balance.test.mjs",
     "test:wiring": "node tests/wiring.test.mjs",
     "test:lighting": "node tests/lighting.test.mjs",
     "test:map-contract": "node tests/map-contract.test.mjs",
-    "test:units": "node tests/units.test.mjs"
+    "test:units": "node tests/units.test.mjs",
+    "test:curriculum": "node tests/curriculum.test.mjs"
   }
 }
