@@ -129,12 +129,16 @@ bool FLLKKnockdownEscalationTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("and the extraction call has one too"),
 		Rules->ExtractionCall.StormChargeSpike > 0.f);
 
-	// Both are reachable only through AddSpike, which logs its reason - so
-	// every acceleration in the game can be traced to a named cause the crew
-	// can argue about afterwards. That traceability is Chris's fifth pillar
-	// made checkable.
+	// Both are reachable only through AddSpike, which now takes a TYPED cause
+	// rather than free text. Codex's adversarial review found the hole: a
+	// reason string logged beautifully and enforced nothing, so a future
+	// Sweeper in its own file could have written AddSpike(60, "Knockdown")
+	// and passed both the compiler and the source guard. With an enum there
+	// is no entry for failure, so the mistake does not compile.
+	TestEqual(TEXT("there are exactly two authorised spike causes"),
+		int32(StaticEnum<ELLKStormSpike>()->NumEnums()) - 1, 2);
 	const float BeforeChosen = Storm->GetCharge();
-	Storm->AddSpike(Rules->AnchorRevive.StormChargeSpike, TEXT("AnchorRevive"));
+	Storm->AddSpike(ELLKStormSpike::AnchorRevive);
 	TestTrue(TEXT("a chosen spike does raise the meter"), Storm->GetCharge() > BeforeChosen);
 
 	return true;

@@ -176,15 +176,18 @@ bool FLLKStormChargeAccrualTest::RunTest(const FString& Parameters)
 	//    the one route by which something could subtract from the meter -
 	//    an extraction-call tuning someone later sets negative - and row 6
 	//    is enforced here rather than trusted.
-	Storm->AddSpike(-500.f, TEXT("TestNegativeSpike"));
+	Storm->AddSpikeAmountForTest(-500.f, ELLKStormSpike::ExtractionCall);
 	TestEqual(TEXT("a negative spike is refused"), Storm->GetCharge(), Highest);
 
 	// 7. A real spike rises, on both meters. The extraction call's 180 is
 	//    three minutes of darkness applied at once, deliberately large
 	//    against thresholds of 270 and 480: calling it should move you a
 	//    stage, so calling early and calling late are different decisions.
-	Storm->AddSpike(Rules->ExtractionCall.StormChargeSpike > 0.f
-		? Rules->ExtractionCall.StormChargeSpike : 180.f, TEXT("ExtractionCall"));
+	// The amount now comes from the data rather than the caller, so this also
+	// asserts the lookup instead of only the accrual.
+	TestTrue(TEXT("the extraction call has an authored price"),
+		Storm->GetSpikeAmount(ELLKStormSpike::ExtractionCall) > 0.f);
+	Storm->AddSpike(ELLKStormSpike::ExtractionCall);
 	TestTrue(TEXT("a real spike raises the meter"), Storm->GetCharge() > Highest);
 
 	// 8. Thresholds fire once each, in order, and the Warden is not one of

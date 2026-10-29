@@ -95,22 +95,70 @@ for (const entry of FORBIDDEN_CALLERS) {
   }
 }
 
-// ---- and the meter's own side: every spike is a named, chosen cause ------
+// ---- THE ALLOWLIST, which is what actually enforces the rule ------------
 //
-// AddSpike takes a Reason and logs it, so every acceleration in the game is
-// traceable to something the crew can argue about afterwards. That
-// traceability IS Chris's fifth pillar, so it is worth pinning.
+// **Codex found the hole in the first version of this guard.** It scanned only
+// `LLKVitalsComponent`, so a future Sweeper in its own file could have written
+// `Storm->AddSpike(60, TEXT("Knockdown"))` and passed. And `FName Reason`
+// accepted any text at all: a named reason is good logging and no
+// enforcement whatsoever.
+//
+// The fix was to make the mistake inexpressible rather than detectable:
+// `AddSpike` now takes a typed `ELLKStormSpike`, so there is no way to spell
+// "Knockdown". Which means the thing worth guarding is no longer a list of
+// files - it is the ENUM'S CONTENTS. Any failure-triggered escalation now
+// requires adding an entry here first, wherever the caller lives, and this
+// check is what makes that a deliberate act rather than a quiet one.
 {
   const stormPath = "Source/LLK/Public/Storm/LLKStormChargeSubsystem.h";
   const full = join(root, stormPath);
   const src = existsSync(full) ? readFileSync(full, "utf8") : "";
+  const clean = stripComments(src);
 
   check(
-    "AddSpike still requires a named reason",
-    /AddSpike\s*\(\s*float\s+Amount\s*,\s*FName\s+Reason\s*\)/.test(stripComments(src)),
-    "an unnamed spike is an unexplained acceleration, which is the thing the " +
-      "fairness rule forbids",
+    "AddSpike takes a typed cause, not free text",
+    /AddSpike\s*\(\s*ELLKStormSpike\s+Cause\s*\)/.test(clean),
+    "a free-text reason logs beautifully and enforces nothing - an enemy could " +
+      "name its spike anything and the type system would not care",
   );
+
+  check(
+    "and no longer accepts an FName reason anywhere",
+    !/AddSpike\s*\([^)]*FName/.test(clean),
+    "the old signature surviving as an overload would reopen the hole",
+  );
+
+  // The allowlist itself. Both entries are things a crew CHOSE and were
+  // priced for; anything else arriving here is the rule being broken.
+  const enumBlock = clean.match(/enum class ELLKStormSpike\s*:\s*uint8\s*\{([^}]*)\}/);
+  check("the spike allowlist exists as an enum", enumBlock !== null);
+
+  if (enumBlock) {
+    const entries = enumBlock[1]
+      .split(",")
+      .map((e) => e.trim())
+      .filter((e) => e.length > 0);
+
+    const ALLOWED = ["ExtractionCall", "AnchorRevive"];
+    check(
+      `the allowlist is exactly ${ALLOWED.join(" and ")}`,
+      entries.length === ALLOWED.length && ALLOWED.every((a) => entries.includes(a)),
+      `found: ${entries.join(", ") || "nothing"}. Every entry must be something the ` +
+        `crew chose and was priced for. Adding one is a design decision about row 64 ` +
+        `line three - escalation comes from choices, never from failing - so update ` +
+        `this guard deliberately or not at all`,
+    );
+
+    // Named explicitly, because these are the words somebody reaches for when
+    // they want the night to react to a knockdown.
+    for (const forbidden of ["Knockdown", "Downed", "Contained", "Death", "Wipe", "Failure"]) {
+      check(
+        `the allowlist has no entry for ${forbidden}`,
+        !entries.some((e) => e.toLowerCase().includes(forbidden.toLowerCase())),
+        "escalation triggered by failure is punishment the player cannot diagnose",
+      );
+    }
+  }
 
   check(
     "and the header still records why failure may not feed the meter",

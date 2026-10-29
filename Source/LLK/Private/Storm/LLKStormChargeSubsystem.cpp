@@ -508,7 +508,32 @@ void ULLKStormChargeSubsystem::AnnounceCrossings()
 	}
 }
 
-void ULLKStormChargeSubsystem::AddSpike(float Amount, FName Reason)
+float ULLKStormChargeSubsystem::GetSpikeAmount(ELLKStormSpike Cause) const
+{
+	if (Rules == nullptr)
+	{
+		return 0.f;
+	}
+
+	switch (Cause)
+	{
+	case ELLKStormSpike::ExtractionCall:
+		return Rules->ExtractionCall.StormChargeSpike;
+	case ELLKStormSpike::AnchorRevive:
+		return Rules->AnchorRevive.StormChargeSpike;
+	}
+
+	// Unreachable while the enum has two entries, and returning nothing rather
+	// than guessing if a third is ever added without a price in the data.
+	return 0.f;
+}
+
+void ULLKStormChargeSubsystem::AddSpike(ELLKStormSpike Cause)
+{
+	ApplySpike(GetSpikeAmount(Cause), Cause);
+}
+
+void ULLKStormChargeSubsystem::ApplySpike(float Amount, ELLKStormSpike Cause)
 {
 	// Row 6, enforced rather than documented. A negative spike is dropped, not
 	// applied, so no expression anywhere in the codebase lowers this meter -
@@ -520,7 +545,7 @@ void ULLKStormChargeSubsystem::AddSpike(float Amount, FName Reason)
 			UE_LOG(LogLLK, Warning,
 				TEXT("ULLKStormChargeSubsystem: refused a negative spike of %.0f from %s. ")
 				TEXT("Row 6: the meter only ever rises."),
-				Amount, *Reason.ToString());
+				Amount, *UEnum::GetValueAsString(Cause));
 		}
 		return;
 	}
@@ -539,7 +564,7 @@ void ULLKStormChargeSubsystem::AddSpike(float Amount, FName Reason)
 	WardenCharge += Amount;
 
 	UE_LOG(LogLLK, Log, TEXT("Storm Charge spike: +%.0f from %s (now %.0f / Warden %.0f)."),
-		Amount, *Reason.ToString(), Charge, WardenCharge);
+		Amount, *UEnum::GetValueAsString(Cause), Charge, WardenCharge);
 
 	// Announced at the moment of the call rather than on the next tick: a
 	// spike that crosses a threshold is the game telling the player what their

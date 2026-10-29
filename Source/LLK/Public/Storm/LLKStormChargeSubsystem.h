@@ -43,6 +43,37 @@
 
 class ULLKLanternComponent;
 
+/**
+ * The only things in this game permitted to spike the meter.
+ *
+ * **An allowlist, not a label, and the difference is Codex's finding.**
+ * `AddSpike` used to take an `FName Reason`, which logged beautifully and
+ * enforced nothing: an enemy could have written
+ * `AddSpike(60, TEXT("Knockdown"))` and both the compiler and the
+ * architectural source guard would have allowed it, because the guard only
+ * scanned the knockdown component's own file. A future Sweeper in a new file
+ * was a free pass.
+ *
+ * With a typed cause, failure-triggered escalation is **not expressible**.
+ * There is no enum entry for it, so the mistake is a compile error rather
+ * than something a grep has to remember to look for. Row 64 line three -
+ * escalation comes from choices the crew can identify, never from failing -
+ * is now enforced by the type system.
+ *
+ * **Adding an entry here is a design decision and `tests/escalation.test.mjs`
+ * treats it as one:** the guard asserts this list's exact contents, so a new
+ * cause fails the data suite until somebody updates the guard deliberately.
+ * Both entries below are things a crew CHOSE to do and were priced for.
+ */
+UENUM(BlueprintType)
+enum class ELLKStormSpike : uint8
+{
+	/** `extractionCall.stormChargeSpike` - the loud call. The crew's decision. */
+	ExtractionCall,
+	/** `anchorRevive.stormChargeSpike` - a solo keeper spending their one way back up. */
+	AnchorRevive
+};
+
 /** Fires once, on authority, the first time a threshold's value is passed. */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 	FLLKStormThresholdCrossed, FName, ThresholdId, float, Charge);
@@ -199,12 +230,23 @@ public:
 	bool IsAccruing() const { return HasStormAuthority(); }
 
 	/**
-	 * A one-off jump: the extraction call's 180, the anchor revive's 120.
+	 * A one-off jump, from one of the two causes permitted to cause one.
 	 *
-	 * Row 6 in one place - a negative amount is dropped, not applied, so there
-	 * is no expression anywhere in the codebase that can lower this meter.
+	 * **The amount is looked up from the data rather than passed in**, which
+	 * removes the second degree of freedom: caller code cannot choose a cause
+	 * *or* a number. `extractionCall.stormChargeSpike` is 180 and
+	 * `anchorRevive.stormChargeSpike` is 120, and both live in
+	 * `storm-charge.json` where Chris can retune them.
+	 *
+	 * Row 6 still holds in one place - a non-positive amount is dropped
+	 * rather than applied, so no expression anywhere can lower this meter,
+	 * including a spike somebody later tunes negative.
 	 */
-	void AddSpike(float Amount, FName Reason);
+	void AddSpike(ELLKStormSpike Cause);
+
+	/** The authored amount for a cause, or 0 when the rules have not resolved. */
+	UFUNCTION(BlueprintPure, Category = "LLK|Storm")
+	float GetSpikeAmount(ELLKStormSpike Cause) const;
 
 	UPROPERTY(BlueprintAssignable, Category = "LLK|Storm")
 	FLLKStormThresholdCrossed OnThresholdCrossed;
@@ -244,6 +286,16 @@ public:
 
 #if WITH_DEV_AUTOMATION_TESTS
 	/**
+	 * An arbitrary amount, for tests only.
+	 *
+	 * Exists so row 6's refusal of a negative spike stays testable now that
+	 * the public API takes a cause rather than a number. A shipped build has
+	 * no route to it, which is the point: the only amounts reachable in a game
+	 * are the two the data authorises.
+	 */
+	void AddSpikeAmountForTest(float Amount, ELLKStormSpike Cause) { ApplySpike(Amount, Cause); }
+
+	/**
 	 * Drives the accrual with no world and no lanterns.
 	 *
 	 * `Advance` is what Tick calls, and it deliberately touches neither
@@ -278,6 +330,9 @@ protected:
 	 * call rather than on the next tick, without either path owning a second
 	 * copy of the crossing rules.
 	 */
+	/** The one place a spike is actually applied. Both entry points land here. */
+	void ApplySpike(float Amount, ELLKStormSpike Cause);
+
 	void AnnounceCrossings();
 
 	/** Pushes a fresh snapshot into the GameState. Server only, throttled. */
