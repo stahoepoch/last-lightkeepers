@@ -107,6 +107,12 @@ enum class ELLKNoticeSense : uint8
 	 * it converges on the brightest position rather than noticing anybody.
 	 * Returned instead of `None` so a caller cannot read "the Warden does not
 	 * see you" as "the Warden is not coming".
+	 *
+	 * **Only for the Warden**, which is named rather than inferred from
+	 * having no senses. A malformed row - a Sweeper that lost one of its two
+	 * radii - also has no sense, and reporting that as `StormAuthority` would
+	 * make broken data behave like the one enemy that cannot be escaped.
+	 * Broken data degrades to `None`.
 	 */
 	StormAuthority
 };

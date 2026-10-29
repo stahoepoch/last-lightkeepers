@@ -20,14 +20,31 @@ namespace LLKPerception
 		 * Squared distance, so no square root runs per enemy per keeper per
 		 * tick to answer a question that does not need the actual distance.
 		 */
+		/**
+		 * A reach, or zero when the value could not have been authored.
+		 *
+		 * **This exists because the guard used to live in one place only.**
+		 * `WithinStuds` refused a non-positive radius, so `SenseReaching`
+		 * correctly noticed nobody with a negative one - but
+		 * `NoticeRangeStuds` returned the raw number, and handed callers
+		 * -38 studs to size a sightline against. `LLK.Enemies.
+		 * PerceptionFailures` caught it on its first run.
+		 *
+		 * One helper, used by both, so the two answers cannot disagree about
+		 * what counts as a usable radius again. Zero and negative are the
+		 * same thing here: a value no designer wrote, from a row that did not
+		 * import, and `tests/enemies.test.mjs` forbids both in the authored
+		 * file so this is a guard rather than a behaviour.
+		 */
+		float ReachOrZero(float RadiusStuds)
+		{
+			return RadiusStuds > 0.f ? RadiusStuds : 0.f;
+		}
+
 		bool WithinStuds(const FVector& From, const FVector& To, float RadiusStuds)
 		{
-			if (RadiusStuds <= 0.f)
+			if (ReachOrZero(RadiusStuds) <= 0.f)
 			{
-				// A radius nobody authored, or one authored as zero. Either
-				// way it reaches nothing - and a test asserts that no family
-				// in the data authors a zero for a sense it has, so this is a
-				// guard rather than a behaviour.
 				return false;
 			}
 
@@ -141,23 +158,37 @@ namespace LLKPerception
 
 		// ---- the Warden: not perception --------------------------------
 		//
-		// Recognised by having no reaching sense at all rather than by
-		// `Family == Warden`, so the rule is about the contract the data
-		// describes rather than about one enum value somebody could add a
-		// radius to. Row 7 and row 54: it converges on the brightest
-		// position when its own meter fills, and giving it a radius here
-		// would be the first step toward making it a boss.
+		// Row 7 and row 54: it converges on the brightest position when its
+		// own meter fills, and giving it a radius here would be the first
+		// step toward making it a boss.
+		//
+		// **Both conditions, and the second one is a correction.** The first
+		// version of this returned `StormAuthority` for any family with no
+		// reaching sense, on the reasoning that the rule should describe the
+		// data's contract rather than name an enum value. That was wrong in a
+		// way only a malformed row reveals: a Sweeper that lost one of its
+		// two radii also has no reaching sense, and it would have reported
+		// `StormAuthority` - which reads as "this thing converges on the
+		// brightest keeper regardless of distance", the most dangerous answer
+		// available. Broken data must degrade to noticing NOTHING, never to
+		// behaving like the one enemy that cannot be escaped.
+		//
+		// So the Warden is named. It is the one family whose senselessness is
+		// authored rather than accidental, and `tests/enemies.test.mjs`
+		// asserts that it stays that way.
 		const bool bHasAnySense =
 			(Enemy.AggroRadiusDark.IsSet() && Enemy.AggroRadiusLit.IsSet())
 			|| (Enemy.SightRange.IsSet() && Enemy.SightConeDegrees.IsSet())
 			|| Enemy.ScanRange.IsSet()
 			|| Enemy.WakeRange.IsSet();
 
-		if (!bHasAnySense)
+		if (!bHasAnySense && Enemy.Family == ELLKEnemyFamily::Warden)
 		{
 			return ELLKNoticeSense::StormAuthority;
 		}
 
+		// Everything else with nothing to notice with notices nothing. A
+		// family whose senses failed to import is a family that does not act.
 		return ELLKNoticeSense::None;
 	}
 
@@ -165,23 +196,26 @@ namespace LLKPerception
 	{
 		const bool bLit = Brightness > LitThreshold;
 
+		// Every return goes through ReachOrZero, so a radius this function
+		// reports is always one SenseReaching would actually act on.
 		if (Enemy.AggroRadiusDark.IsSet() && Enemy.AggroRadiusLit.IsSet())
 		{
-			return bLit ? Enemy.AggroRadiusLit.GetValue() : Enemy.AggroRadiusDark.GetValue();
+			return ReachOrZero(
+				bLit ? Enemy.AggroRadiusLit.GetValue() : Enemy.AggroRadiusDark.GetValue());
 		}
 		if (Enemy.SightRange.IsSet() && Enemy.SightConeDegrees.IsSet())
 		{
-			return Enemy.SightRange.GetValue();
+			return ReachOrZero(Enemy.SightRange.GetValue());
 		}
 		if (Enemy.ScanRange.IsSet())
 		{
 			return Enemy.bScanRequiresActiveLantern.Get(true) && !bLit
-				? 0.f : Enemy.ScanRange.GetValue();
+				? 0.f : ReachOrZero(Enemy.ScanRange.GetValue());
 		}
 		if (Enemy.WakeRange.IsSet())
 		{
 			return Enemy.bWakeRequiresActiveLantern.Get(true) && !bLit
-				? 0.f : Enemy.WakeRange.GetValue();
+				? 0.f : ReachOrZero(Enemy.WakeRange.GetValue());
 		}
 
 		// The Warden, or a family whose senses are not authored. Zero rather

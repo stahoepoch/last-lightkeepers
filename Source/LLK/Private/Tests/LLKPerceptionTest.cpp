@@ -135,9 +135,14 @@ bool FLLKPerceptionTest::RunTest(const FString& Parameters)
 	// would have been an invisible pass.
 	FLLKEnemyDef HalfSweeper = Sweeper;
 	HalfSweeper.AggroRadiusLit.Reset();
-	TestEqual(TEXT("FAILURE MODE 4: a Sweeper missing one radius has no proximity sense"),
+	// **This assertion used to expect StormAuthority, and that was the bug.**
+	// A half-imported Sweeper has no reaching sense, and the first version of
+	// SenseReaching read "no sense" as "must be the Warden" - so broken data
+	// would have behaved like the one enemy that cannot be escaped. Malformed
+	// means inert.
+	TestEqual(TEXT("FAILURE MODE 4: a Sweeper missing one radius notices NOTHING"),
 		LLKPerception::SenseReaching(HalfSweeper, At, KeeperAt(5.f, Lit), Threshold),
-		ELLKNoticeSense::StormAuthority);
+		ELLKNoticeSense::None);
 
 	// ---- 6. Stockers: looking, and only where they face -----------------
 	FLLKEnemyDef Stocker;
