@@ -35,10 +35,19 @@ function Save-FailureEvidence {
 function Clear-GeneratedAndroidFileServerToken {
     $engineConfig = Join-Path (Split-Path $projectPath) "Config\DefaultEngine.ini"
     if (-not (Test-Path -LiteralPath $engineConfig)) { return }
-    $contents = Get-Content -LiteralPath $engineConfig -Raw
+
+    # This file is deliberately source-controlled.  Removing an editor-made
+    # Android File Server token must not also rewrite its line endings, remove
+    # its final newline, or flip its UTF-8 BOM; any of those makes an
+    # automation run look like a project-config change.
+    $rawBytes = [System.IO.File]::ReadAllBytes($engineConfig)
+    $hasUtf8Bom = $rawBytes.Length -ge 3 -and
+        $rawBytes[0] -eq 0xEF -and $rawBytes[1] -eq 0xBB -and $rawBytes[2] -eq 0xBF
+    $contents = [System.IO.File]::ReadAllText($engineConfig)
     $clean = $contents -replace '(?m)^SecurityToken=.*\r?\n?', ''
     if ($clean -ne $contents) {
-        Set-Content -LiteralPath $engineConfig -Value $clean.TrimEnd() -Encoding utf8
+        $encoding = New-Object System.Text.UTF8Encoding($hasUtf8Bom)
+        [System.IO.File]::WriteAllText($engineConfig, $clean, $encoding)
         Write-Host "Removed a generated Android File Server token from tracked project config."
     }
 }
