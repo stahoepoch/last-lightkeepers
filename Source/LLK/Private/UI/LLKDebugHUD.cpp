@@ -342,7 +342,11 @@ void ALLKDebugHUD::DrawDownedPanel(const ULLKVitalsComponent* Own)
 
 void ALLKDebugHUD::DrawWorldPrompt()
 {
-	if (Canvas == nullptr)
+	// Named RunWorld because a `FVector World` position already lives further
+	// down this function - the collision is the kind of thing that compiles
+	// into something subtly wrong in a language with more coercion.
+	const UWorld* RunWorld = GetWorld();
+	if (Canvas == nullptr || RunWorld == nullptr)
 	{
 		return;
 	}
@@ -360,6 +364,42 @@ void ALLKDebugHUD::DrawWorldPrompt()
 	const ULLKInteractorComponent* Interactor = Character->GetInteractor();
 	if (Interactor == nullptr)
 	{
+		return;
+	}
+
+	// **The run being over outranks everything.** Chris's words, and they are
+	// the whole consequence in two lines: the night keeps what you carried.
+	// Drawn before the downed panel, because a contained crew is no longer
+	// waiting for anybody and telling them to is worse than telling them
+	// nothing.
+	const ALLKGameState* RunGameState = RunWorld->GetGameState<ALLKGameState>();
+	if (RunGameState != nullptr && RunGameState->HasCrewWiped())
+	{
+		UFont* Font = GEngine != nullptr ? GEngine->GetMediumFont() : nullptr;
+		if (Font == nullptr)
+		{
+			return;
+		}
+
+		const float Scale = GetUIScale();
+		const float CentreX = Canvas->SizeX * 0.5f;
+		float Y = Canvas->SizeY * 0.42f;
+
+		const auto Centred = [&](const FString& Text, const FLinearColor& Colour, float TextScale)
+		{
+			float W = 0.f;
+			float H = 0.f;
+			const float S = TextScale * Scale;
+			Canvas->TextSize(Font, Text, W, H, S, S);
+			FCanvasTextItem Item(FVector2D(CentreX - W * 0.5f, Y), FText::FromString(Text), Font, Colour);
+			Item.Scale = FVector2D(S, S);
+			Item.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.95f));
+			Canvas->DrawItem(Item);
+			Y += H * S + 10.f * Scale;
+		};
+
+		Centred(TEXT("CREW CONTAINED"), ColourUrgent, 2.4f);
+		Centred(TEXT("The night keeps what you carried."), ColourQuiet, 1.3f);
 		return;
 	}
 

@@ -152,6 +152,17 @@ public:
 	UFUNCTION(BlueprintPure, Category = "LLK|Vitals")
 	int32 GetAnchorChargesLeft() const { return AnchorChargesLeft; }
 
+	/**
+	 * True while the eight seconds of a self-rescue are running.
+	 *
+	 * Read by `ULLKRunStateSubsystem`, and the reason it exists: once the
+	 * charge is spent `IsAnchorReviveAvailable` goes false, so a keeper
+	 * halfway through using it would count as unable to act and the run would
+	 * end in the middle of the thing that saves it.
+	 */
+	UFUNCTION(BlueprintPure, Category = "LLK|Vitals")
+	bool IsSelfReviving() const { return AnchorSecondsHeld > 0.f; }
+
 	/** True only when this is genuinely a solo run. Row 9: never for a crew. */
 	UFUNCTION(BlueprintPure, Category = "LLK|Vitals")
 	bool IsAnchorReviveAvailable() const;

@@ -56,7 +56,23 @@ public:
 	 */
 	void PublishStormSnapshot(const FLLKStormSnapshot& InSnapshot);
 
+	/**
+	 * Server only. Called once by `ULLKRunStateSubsystem`. M2.2b.
+	 *
+	 * Replicated rather than recomputed per client, because the wipe must be
+	 * ONE event: a client deciding for itself that the crew is finished could
+	 * disagree with the server about whether the run is over, which is the
+	 * worst possible thing to be wrong about.
+	 */
+	void PublishCrewWiped();
+
+	UFUNCTION(BlueprintPure, Category = "LLK|Run")
+	bool HasCrewWiped() const { return bCrewWiped; }
+
 protected:
 	UPROPERTY(Replicated, VisibleInstanceOnly, Category = "LLK|Storm")
 	FLLKStormSnapshot StormSnapshot;
+
+	UPROPERTY(Replicated, VisibleInstanceOnly, Category = "LLK|Run")
+	bool bCrewWiped = false;
 };

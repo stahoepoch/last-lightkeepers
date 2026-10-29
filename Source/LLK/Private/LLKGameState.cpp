@@ -18,6 +18,7 @@ void ALLKGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 	// danger, which is an argument a crew has to be able to have out loud -
 	// and they cannot argue about a meter only one of them can see.
 	DOREPLIFETIME(ALLKGameState, StormSnapshot);
+	DOREPLIFETIME(ALLKGameState, bCrewWiped);
 }
 
 void ALLKGameState::PublishStormSnapshot(const FLLKStormSnapshot& InSnapshot)
@@ -32,4 +33,14 @@ void ALLKGameState::PublishStormSnapshot(const FLLKStormSnapshot& InSnapshot)
 	}
 
 	StormSnapshot = InSnapshot;
+}
+
+void ALLKGameState::PublishCrewWiped()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	bCrewWiped = true;
 }

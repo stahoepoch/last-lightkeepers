@@ -14,6 +14,7 @@
 #include "Lantern/LLKLanternLightComponent.h"
 #include "Characters/LLKVitalsComponent.h"
 #include "Loot/LLKInteractorComponent.h"
+#include "Run/LLKRunStateSubsystem.h"
 #include "LLKUnits.h"
 #include "Storm/LLKStormChargeSubsystem.h"
 #include "Net/UnrealNetwork.h"
@@ -103,6 +104,16 @@ void ALLKCharacter::BeginPlay()
 		// both. The component decides whether the keeper is down; what that
 		// does to movement is movement's business.
 		Vitals->OnDownedChanged.AddDynamic(this, &ALLKCharacter::OnDownedChanged);
+
+		// The character does the registering, as with the lantern and the
+		// storm: the vitals component stays ignorant of who is watching it.
+		if (UWorld* World = GetWorld())
+		{
+			if (ULLKRunStateSubsystem* RunState = World->GetSubsystem<ULLKRunStateSubsystem>())
+			{
+				RunState->RegisterKeeper(Vitals);
+			}
+		}
 	}
 
 	// The character does this wiring, not the lantern component. Its header is
@@ -133,6 +144,20 @@ void ALLKCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 			if (ULLKStormChargeSubsystem* Storm = World->GetSubsystem<ULLKStormChargeSubsystem>())
 			{
 				Storm->UnregisterLantern(Lantern);
+			}
+		}
+	}
+
+	if (Vitals != nullptr)
+	{
+		if (const UWorld* World = GetWorld())
+		{
+			if (ULLKRunStateSubsystem* RunState = World->GetSubsystem<ULLKRunStateSubsystem>())
+			{
+				// A keeper who leaves is not a keeper who cannot act. Without
+				// this, one player quitting a four-player run would leave a
+				// stale entry that never stands up and never wipes.
+				RunState->UnregisterKeeper(Vitals);
 			}
 		}
 	}

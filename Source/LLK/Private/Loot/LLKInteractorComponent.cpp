@@ -285,6 +285,17 @@ void ULLKInteractorComponent::ServerAnchorRevive_Implementation()
 	}
 }
 
+void ULLKInteractorComponent::ClearCarriedOnWipe()
+{
+	const AActor* Owner = GetOwner();
+	if (Owner == nullptr || !Owner->HasAuthority())
+	{
+		return;
+	}
+
+	CarriedCount = 0;
+}
+
 void ULLKInteractorComponent::TryTakeFocused()
 {
 	if (Focused == nullptr)

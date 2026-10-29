@@ -84,6 +84,15 @@ public:
 	UFUNCTION(BlueprintPure, Category = "LLK|Interact")
 	int32 GetCarriedCount() const { return CarriedCount; }
 
+	/**
+	 * Row 8, on a crew wipe: the night keeps what you carried.
+	 *
+	 * Server only, and named for the one caller it has rather than left as a
+	 * general setter - a carried count that anything could zero is a carried
+	 * count that something eventually will.
+	 */
+	void ClearCarriedOnWipe();
+
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** Reach in STUDS. Converted at the boundary, row 61. */

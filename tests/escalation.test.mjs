@@ -66,6 +66,17 @@ const FORBIDDEN_CALLERS = [
     path: "Source/LLK/Public/Characters/LLKVitalsComponent.h",
     why: "its header, so a dependency cannot be declared here and used elsewhere",
   },
+  {
+    path: "Source/LLK/Private/Run/LLKRunStateSubsystem.cpp",
+    why: "the crew-wipe path. A wipe is the purest failure in the game, so it is " +
+      "the last thing that may charge the meter - the anchor revive costs charge " +
+      "because continuing is a decision; a wipe is what happens when no decision " +
+      "is left",
+  },
+  {
+    path: "Source/LLK/Public/Run/LLKRunStateSubsystem.h",
+    why: "its header, for the same reason",
+  },
 ];
 
 // What "reaching the meter" looks like in this codebase.
