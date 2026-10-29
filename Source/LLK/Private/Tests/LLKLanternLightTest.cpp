@@ -127,6 +127,63 @@ bool FLLKLanternLightTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the asset's intensity reached the light"), Light->Intensity, 2.f);
 	TestFalse(TEXT("the asset can turn shadows off"), Light->CastShadows);
 
+	// 6b. **THE STALE-ASSET GUARD, found in playtest on 2026-10-29.**
+	//
+	//     DA_Lantern had been generated a day before the `light` block
+	//     existed. The asset RESOLVED and handed back zeros, so this component
+	//     reported "light from ULLKLanternData" and shone nothing - every
+	//     declared-fallback guard in this project protects against a MISSING
+	//     asset, and a stale one looks like data.
+	//
+	//     An asset that resolves must therefore be validated, not trusted.
+	// The guard logs at Error severity, correctly - a stale asset is a real
+	// defect, not a notice. Automation counts an Error as a failure, so it is
+	// declared expected here rather than demoted to a Warning to make the
+	// test quiet.
+	AddExpectedError(TEXT("resolved but its `light` block is empty"),
+		EAutomationExpectedErrorFlags::Contains, 0);
+
+	ULLKLanternData* Stale = NewObject<ULLKLanternData>(GetTransientPackage());
+	// Exactly what a pre-`light` asset deserialises to: the struct's own
+	// zero defaults, with the movement block intact.
+	Stale->Movement.WalkSpeed = 16.f;
+	TestFalse(TEXT("a zeroed light block does not describe a real light"),
+		Stale->Light.DescribesARealLight());
+
+	Light->SetLanternData(Stale);
+	TestEqual(TEXT("a stale asset is REFUSED and the fallback used instead"),
+		Light->GetLightSource(), ELLKDataSource::Fallback);
+	TestEqual(TEXT("so the radius is the declared 30 studs, not the asset's zero"),
+		Light->GetRadiusStuds(), 30.f);
+	TestTrue(TEXT("and the lantern still shines"), Light->Intensity > 50.f);
+	TestTrue(TEXT("with a real attenuation radius rather than none"),
+		Light->AttenuationRadius > 1.f);
+
+	// A partially-filled block is still not a light. Radius without intensity
+	// is an invisible lantern; intensity without radius lights nothing.
+	Stale->Light.RadiusStuds = 30.f;
+	TestFalse(TEXT("radius alone is not a light"), Stale->Light.DescribesARealLight());
+	Stale->Light.Intensity = 250.f;
+	TestFalse(TEXT("radius and intensity without a cone is not a light"),
+		Stale->Light.DescribesARealLight());
+	Stale->Light.ConeAngleDegrees = 72.f;
+	TestTrue(TEXT("all three present is a light"), Stale->Light.DescribesARealLight());
+
+	// And now it is accepted, which proves the guard gates on the data rather
+	// than refusing assets in general.
+	//
+	// Re-resolved directly rather than through SetLanternData, because that
+	// early-returns on an unchanged pointer - the double-resolve fix from
+	// earlier today. Mutating an asset in place does not re-resolve, which is
+	// fine for real assets and a trap for a test. The test found it.
+	Light->ResolveAndApplyLight();
+	TestEqual(TEXT("a complete asset is accepted"),
+		Light->GetLightSource(), ELLKDataSource::Asset);
+
+	// Put the deliberately-unlike-fallback asset back for the idempotence
+	// check below.
+	Light->SetLanternData(Data);
+
 	// 7. Resolution is idempotent. It is public so a live retune can be
 	//    pushed without a restart, which only holds if calling it twice is
 	//    the same as calling it once.

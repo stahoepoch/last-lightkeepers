@@ -44,13 +44,27 @@ void ULLKRelicComponent::ResolveRules()
 		RulesSource = ELLKDataSource::Asset;
 	}
 
-	if (const ULLKLanternData* Lantern = LanternData.LoadSynchronous())
+	// **The silent half of the same stale-asset bug.** A zero intensity here
+	// makes the threshold zero, which makes every relic readable in pitch
+	// darkness - row 53 deleted with no symptom whatsoever, because a relic
+	// that is always readable looks exactly like a relic that works. Validated
+	// for that reason and not for tidiness.
+	const ULLKLanternData* Lantern = LanternData.LoadSynchronous();
+	if (Lantern != nullptr && Lantern->Light.DescribesARealLight())
 	{
 		LanternIntensity = Lantern->Light.Intensity;
 	}
 	else
 	{
 		RulesSource = ELLKDataSource::Fallback;
+		if (Lantern != nullptr)
+		{
+			UE_LOG(LogLLK, Error,
+				TEXT("ULLKRelicComponent: %s resolved but its `light` block is empty, so the ")
+				TEXT("identify threshold would have been zero and EVERY RELIC would read in ")
+				TEXT("the dark. Regenerate the asset. Using the declared fallback intensity."),
+				*Lantern->GetName());
+		}
 	}
 
 	// **Derived, not chosen.** "Enough light to read by" is one lantern's worth
@@ -60,6 +74,18 @@ void ULLKRelicComponent::ResolveRules()
 	// reaches it, which needs no new data key and retunes itself if Chris
 	// changes the lantern.
 	IdentifyThreshold = LanternIntensity * 0.5f;
+
+	// Belt and braces, because the cost of being wrong here is row 53 with no
+	// symptom. If anything ever reaches this line with a non-positive
+	// threshold, a relic in a pitch-dark room satisfies `Brightness >=
+	// Threshold` and reads itself.
+	if (IdentifyThreshold <= 0.f)
+	{
+		IdentifyThreshold = FallbackLanternIntensity * 0.5f;
+		UE_LOG(LogLLK, Error,
+			TEXT("ULLKRelicComponent: identify threshold resolved to zero or less, which would ")
+			TEXT("make every relic readable in darkness. Forced to %.1f."), IdentifyThreshold);
+	}
 
 	// `relicsRequireLanternLight: false` would mean relics read like baseline
 	// loot. Honoured rather than ignored, because a flag the code quietly

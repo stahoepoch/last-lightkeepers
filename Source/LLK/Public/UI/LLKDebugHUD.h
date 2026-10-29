@@ -70,11 +70,39 @@ protected:
 	/** One line, left-aligned, advancing a cursor. Keeps DrawHUD readable. */
 	void DrawLine(const FString& Text, const FLinearColor& Colour, float& CursorY, float Scale = 1.f);
 
+	/**
+	 * Resolution-scaled text size.
+	 *
+	 * **Chris, 2026-10-29, from a playtest: "the UI and stuff shows up on the
+	 * top left corner, very hard to read."** The engine's medium font at scale
+	 * 1 is sized for a 1080p viewport, so on anything larger the readout
+	 * shrinks in proportion to the monitor - which is the opposite of what a
+	 * bigger monitor should do. Everything now scales off viewport height, so
+	 * the panel occupies the same fraction of the screen at any resolution.
+	 */
+	float GetUIScale() const;
+
+	/** A dark panel behind the text, because nothing is legible over both a dark floor and a lit pillar. */
+	void DrawBacking(float Height) const;
+
 	void DrawStormPanel(const ULLKStormChargeSubsystem* Storm, const FLLKStormSnapshot& Snapshot, float& CursorY);
 
+	/** In 1080p-equivalent pixels; multiplied by GetUIScale at draw time. */
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Debug")
-	FVector2D PanelOrigin = FVector2D(24.f, 24.f);
+	FVector2D PanelOrigin = FVector2D(32.f, 28.f);
 
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Debug")
-	float LineHeight = 20.f;
+	float LineHeight = 26.f;
+
+	/**
+	 * Base text scale, on top of the resolution scale.
+	 *
+	 * 1.35 rather than 1 because the engine's medium font is small for a
+	 * readout somebody is meant to glance at while being chased.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Debug")
+	float TextScale = 1.35f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Debug")
+	FLinearColor BackingColour = FLinearColor(0.02f, 0.025f, 0.035f, 0.72f);
 };

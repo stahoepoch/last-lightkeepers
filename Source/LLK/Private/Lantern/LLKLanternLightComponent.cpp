@@ -74,8 +74,25 @@ void ULLKLanternLightComponent::ResolveAndApplyLight()
 	// the wrong reach is a frame of gameplay built on a default.
 	if (const ULLKLanternData* Data = LanternData.LoadSynchronous())
 	{
-		ResolvedRules = Data->Light;
-		LightSource = ELLKDataSource::Asset;
+		// **Validated, not trusted.** An asset generated before the `light`
+		// block existed resolves fine and hands back zeros, which is how this
+		// shone nothing while logging "light from ULLKLanternData". Resolving
+		// is not the same as being current.
+		if (Data->Light.DescribesARealLight())
+		{
+			ResolvedRules = Data->Light;
+			LightSource = ELLKDataSource::Asset;
+		}
+		else
+		{
+			UE_LOG(LogLLK, Error,
+				TEXT("ULLKLanternLightComponent: %s resolved but its `light` block is empty ")
+				TEXT("(radius %.0f, cone %.0f, intensity %.0f). The asset predates the light ")
+				TEXT("block in data/lantern.json and needs regenerating - run the import ")
+				TEXT("commandlet. Using declared fallbacks so the lantern still works."),
+				*Data->GetName(), Data->Light.RadiusStuds, Data->Light.ConeAngleDegrees,
+				Data->Light.Intensity);
+		}
 	}
 
 	// The one conversion, through the one authority (row 61). A raw radius in

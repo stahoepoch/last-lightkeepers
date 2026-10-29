@@ -167,6 +167,34 @@ struct FLLKLanternLightRules
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Light")
 	bool bCastsShadows = true;
+
+	/**
+	 * Whether these values describe a real light.
+	 *
+	 * **This exists because of a bug found in playtest on 2026-10-29, and the
+	 * shape of it is worth more than the fix.** `DA_Lantern` had been
+	 * generated a day earlier, before this block existed. So the asset
+	 * RESOLVED and supplied zeros - and every "declared fallback that
+	 * announces itself" guard in this project protects against an asset that
+	 * is MISSING, not one that is stale. The component reported "light from
+	 * ULLKLanternData" and shone nothing.
+	 *
+	 * A resolved-but-degenerate asset is more dangerous than an absent one,
+	 * because the absent case is loud and this case looks like data. It had
+	 * two consequences from one cause: an invisible lantern, which Chris found
+	 * in thirty seconds, and a read threshold of zero that made every relic
+	 * legible in pitch darkness, which has no symptom at all and would have
+	 * quietly deleted row 53.
+	 *
+	 * So anything reading this block asks first. Zero radius and zero
+	 * intensity are not tunings anybody would author - unlike
+	 * `downedWalkSpeed: 0`, where zero IS the value - which is what makes
+	 * this test safe to apply here and wrong to apply there.
+	 */
+	bool DescribesARealLight() const
+	{
+		return RadiusStuds > 0.f && Intensity > 0.f && ConeAngleDegrees > 0.f;
+	}
 };
 
 USTRUCT(BlueprintType)

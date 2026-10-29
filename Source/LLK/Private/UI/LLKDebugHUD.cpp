@@ -37,6 +37,41 @@ ALLKDebugHUD::ALLKDebugHUD()
 	PrimaryActorTick.bCanEverTick = false;
 }
 
+float ALLKDebugHUD::GetUIScale() const
+{
+	if (Canvas == nullptr || Canvas->SizeY <= 0)
+	{
+		return 1.f;
+	}
+
+	// Against 1080p, and never smaller: on a 4K monitor this is 2x, which is
+	// what stops the readout shrinking as the screen gets bigger. Clamped at
+	// the bottom so a small window gets a cramped panel rather than an
+	// illegible one.
+	return FMath::Max(1.f, static_cast<float>(Canvas->SizeY) / 1080.f);
+}
+
+void ALLKDebugHUD::DrawBacking(float Height) const
+{
+	if (Canvas == nullptr)
+	{
+		return;
+	}
+
+	const float Scale = GetUIScale();
+	const float Pad = 14.f * Scale;
+
+	// Drawn first, so the text lands on top. Without it the readout is
+	// unreadable over a lit pillar and barely readable over a dark floor,
+	// which is most of this harness.
+	FCanvasTileItem Tile(
+		FVector2D(PanelOrigin.X * Scale - Pad, PanelOrigin.Y * Scale - Pad),
+		FVector2D(560.f * Scale + Pad * 2.f, Height + Pad * 2.f),
+		BackingColour);
+	Tile.BlendMode = SE_BLEND_AlphaBlend;
+	Canvas->DrawItem(Tile);
+}
+
 FString ALLKDebugHUD::FormatSeconds(float Seconds)
 {
 	// Nothing left to arrive, or a rate of zero. Rendering either as 0:00
@@ -72,14 +107,17 @@ void ALLKDebugHUD::DrawLine(const FString& Text, const FLinearColor& Colour, flo
 		return;
 	}
 
-	FCanvasTextItem Item(FVector2D(PanelOrigin.X, CursorY), FText::FromString(Text), Font, Colour);
-	Item.Scale = FVector2D(Scale, Scale);
-	// A readout over a dark floor and a lit pillar has no single legible
-	// colour; the shadow is what makes it readable over both.
-	Item.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
+	const float UIScale = GetUIScale();
+	const float Final = Scale * TextScale * UIScale;
+
+	FCanvasTextItem Item(FVector2D(PanelOrigin.X * UIScale, CursorY), FText::FromString(Text), Font, Colour);
+	Item.Scale = FVector2D(Final, Final);
+	// Kept even with the backing panel: the shadow is what holds the thinner
+	// glyphs together at a glance, which is the only way this gets read.
+	Item.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.9f));
 	Canvas->DrawItem(Item);
 
-	CursorY += LineHeight * Scale;
+	CursorY += LineHeight * Scale * UIScale;
 }
 
 void ALLKDebugHUD::DrawHUD()
@@ -97,7 +135,12 @@ void ALLKDebugHUD::DrawHUD()
 		return;
 	}
 
-	float CursorY = PanelOrigin.Y;
+	// Seven lines plus the spacer, at the current scale. Measured rather than
+	// drawn-then-resized, because the canvas is immediate-mode and the panel
+	// has to go down before the text does.
+	DrawBacking(LineHeight * GetUIScale() * 7.4f);
+
+	float CursorY = PanelOrigin.Y * GetUIScale();
 
 	// The subsystem, for the ARITHMETIC only - it holds the rules, which are
 	// static data present on every machine. None of its meters are read here.

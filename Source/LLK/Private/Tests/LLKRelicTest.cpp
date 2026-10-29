@@ -193,6 +193,39 @@ bool FLLKRelicTest::RunTest(const FString& Parameters)
 	Baseline->EvaluateForTest(TNumericLimits<float>::Max());
 	TestTrue(TEXT("and once read, Always loot can be taken in the dark"), Baseline->CanBeTaken());
 
+	// ---- THE SILENT HALF OF THE STALE-ASSET BUG ------------------------
+	//
+	// The relic derives its read threshold from the lantern's authored
+	// intensity. A stale asset gives intensity 0, so the threshold is 0, so
+	// `Brightness >= Threshold` is true in a pitch-dark room and EVERY RELIC
+	// READS ITSELF. Row 53 deleted with no symptom at all, because a relic
+	// that is always readable looks exactly like a relic that works.
+	//
+	// Chris found the invisible lantern in thirty seconds. Nobody would have
+	// found this, which is why it gets an assertion of its own.
+	ULLKRelicComponent* Guarded = NewObject<ULLKRelicComponent>(GetTransientPackage());
+	Guarded->SetThresholdForTest(0.f);
+	Guarded->SetRelicIdentity(TEXT("Locket"), FText::FromString(TEXT("Silver locket")), 600);
+	Guarded->EvaluateForTest(0.f);
+	TestTrue(TEXT("a zero threshold DOES make a relic read in the dark - the bug, demonstrated"),
+		Guarded->IsLegible());
+
+	// Which is why ResolveRules refuses a zero threshold outright. Asserted
+	// through DescribesARealLight, the one place the check lives, so the two
+	// components cannot disagree about what counts as a usable light.
+	FLLKLanternLightRules Zeroed;
+	TestFalse(TEXT("a zeroed light block is refused at the data layer"),
+		Zeroed.DescribesARealLight());
+	TestEqual(TEXT("and its intensity - the source of the zero threshold - is zero"),
+		Zeroed.Intensity, 0.f);
+
+	FLLKLanternLightRules Real;
+	Real.RadiusStuds = 30.f;
+	Real.ConeAngleDegrees = 72.f;
+	Real.Intensity = 250.f;
+	TestTrue(TEXT("a real light block is accepted"), Real.DescribesARealLight());
+	TestTrue(TEXT("and yields a threshold above zero"), Real.Intensity * 0.5f > 0.f);
+
 	// ---- the threshold agrees with the light field ---------------------
 	//
 	// The threshold is DERIVED: one lantern at the edge of its own reach.
