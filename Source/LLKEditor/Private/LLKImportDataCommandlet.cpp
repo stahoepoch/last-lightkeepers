@@ -344,16 +344,26 @@ namespace LLKDataImport
 		if (!StormAsset || !LanternAsset || !LootAsset || !WorkshopAsset) return Fail(TEXT("One or more generated rule assets could not be reloaded."));
 		const TArray<TSharedPtr<FJsonValue>>* Thresholds = nullptr;
 		const TArray<TSharedPtr<FJsonValue>>* Currency = nullptr;
-		TSharedPtr<FJsonObject> Movement, Extraction;
+		TSharedPtr<FJsonObject> Movement, Light, WarmColor, Extraction;
 		double Baseline = 0.0;
 		if (!Storm->TryGetNumberField(TEXT("baselineRatePerSecond"), Baseline) || !GetArray(Storm, TEXT("thresholds"), Thresholds)
-			|| !GetObject(Lantern, TEXT("movement"), Movement) || !GetObject(Loot, TEXT("extraction"), Extraction)
+			|| !GetObject(Lantern, TEXT("movement"), Movement) || !GetObject(Lantern, TEXT("light"), Light)
+			|| !GetObject(Light, TEXT("warmColor"), WarmColor) || !GetObject(Loot, TEXT("extraction"), Extraction)
 			|| !GetArray(Workshop, TEXT("currency"), Currency)) return false;
 		double WalkSpeed = 0.0;
+		double RadiusStuds = 0.0;
+		double Intensity = 0.0;
+		double WarmRed = 0.0;
 		if (!Movement->TryGetNumberField(TEXT("walkSpeed"), WalkSpeed)) return false;
+		if (!Light->TryGetNumberField(TEXT("radiusStuds"), RadiusStuds)
+			|| !Light->TryGetNumberField(TEXT("intensity"), Intensity)
+			|| !WarmColor->TryGetNumberField(TEXT("r"), WarmRed)) return false;
 		if (!FMath::IsNearlyEqual(StormAsset->BaselineRatePerSecond, static_cast<float>(Baseline))
 			|| StormAsset->Thresholds.Num() != Thresholds->Num()
 			|| !FMath::IsNearlyEqual(LanternAsset->Movement.WalkSpeed, static_cast<float>(WalkSpeed))
+			|| !FMath::IsNearlyEqual(LanternAsset->Light.RadiusStuds, static_cast<float>(RadiusStuds))
+			|| !FMath::IsNearlyEqual(LanternAsset->Light.Intensity, static_cast<float>(Intensity))
+			|| !FMath::IsNearlyEqual(LanternAsset->Light.WarmColor.R, static_cast<float>(WarmRed))
 			|| LootAsset->Extraction.Num() != Extraction->Values.Num()
 			|| WorkshopAsset->Currency.Num() != Currency->Num())
 		{
@@ -463,9 +473,10 @@ namespace LLKDataImport
 	bool ImportLantern(const TSharedPtr<FJsonObject>& Root)
 	{
 		ULLKLanternData* Asset = GetOrCreateAsset<ULLKLanternData>(TEXT("DA_Lantern"));
-		TSharedPtr<FJsonObject> Charge, Knockdown, Revive, Contact, Movement;
+		TSharedPtr<FJsonObject> Charge, Knockdown, Revive, Contact, Light, WarmColor, Movement;
 		if (!GetObject(Root, TEXT("charge"), Charge) || !GetObject(Root, TEXT("knockdown"), Knockdown)
 			|| !GetObject(Root, TEXT("revive"), Revive) || !GetObject(Root, TEXT("sweeperContact"), Contact)
+			|| !GetObject(Root, TEXT("light"), Light) || !GetObject(Light, TEXT("warmColor"), WarmColor)
 			|| !GetObject(Root, TEXT("movement"), Movement)) return false;
 		if (!GetNumber(Charge, TEXT("secondsOfLightPerFullCharge"), Asset->Charge.SecondsOfLightPerFullCharge)
 			|| !GetBool(Charge, TEXT("bAutoOffAtEmpty"), Asset->Charge.bAutoOffAtEmpty)
@@ -481,6 +492,13 @@ namespace LLKDataImport
 			|| !GetNumber(Contact, TEXT("contactCooldownSeconds"), Asset->SweeperContact.ContactCooldownSeconds)
 			|| !GetInt(Contact, TEXT("hitsToKnockDown"), Asset->SweeperContact.HitsToKnockDown)
 			|| !GetNumber(Contact, TEXT("hitDecaySeconds"), Asset->SweeperContact.HitDecaySeconds)
+			|| !GetNumber(Light, TEXT("radiusStuds"), Asset->Light.RadiusStuds)
+			|| !GetNumber(Light, TEXT("coneAngleDegrees"), Asset->Light.ConeAngleDegrees)
+			|| !GetNumber(Light, TEXT("intensity"), Asset->Light.Intensity)
+			|| !GetNumber(WarmColor, TEXT("r"), Asset->Light.WarmColor.R)
+			|| !GetNumber(WarmColor, TEXT("g"), Asset->Light.WarmColor.G)
+			|| !GetNumber(WarmColor, TEXT("b"), Asset->Light.WarmColor.B)
+			|| !GetBool(Light, TEXT("bCastsShadows"), Asset->Light.bCastsShadows)
 			|| !GetNumber(Movement, TEXT("walkSpeed"), Asset->Movement.WalkSpeed)
 			|| !GetNumber(Movement, TEXT("sprintSpeed"), Asset->Movement.SprintSpeed)
 			|| !GetNumber(Movement, TEXT("crouchSpeed"), Asset->Movement.CrouchSpeed)) return false;
