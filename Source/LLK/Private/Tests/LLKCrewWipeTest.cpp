@@ -25,6 +25,7 @@
 
 #include "Characters/LLKVitalsComponent.h"
 #include "Misc/AutomationTest.h"
+#include "LLKRunTestListener.h"
 #include "Run/LLKRunStateSubsystem.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -159,23 +160,30 @@ bool FLLKCrewWipeTest::RunTest(const FString& Parameters)
 		Solo->SetReviveRulesForTest(4.f, 12.f, /*AnchorCharges*/ 0, 8.f, true);
 		Solo->SetDownedForTest(true, ELLKDownedReason::Contained);
 
-		int32 WipeCount = 0;
-		// Lambdas cannot bind to a dynamic delegate, so the count is taken
-		// from the flag transition instead: evaluate repeatedly and assert
-		// the state never un-wipes and the log fires once.
+		// **The EVENT, counted - not the flag.** The first version of this
+		// section asserted that the flag stays true and then counted the
+		// flag, which Codex spotted: a flag that cannot un-set and an event
+		// that fires once are different properties, and the second is the one
+		// that matters. Row 8's haul resolution and the end screen both hang
+		// off the event, and each firing twice is a different bug.
+		//
+		// A dynamic delegate has no AddLambda, which is what pushed the first
+		// version toward the flag. The listener is a UFUNCTION instead.
+		ULLKRunTestListener* Listener = NewObject<ULLKRunTestListener>(GetTransientPackage());
+		RunState->OnCrewWiped.AddDynamic(Listener, &ULLKRunTestListener::OnWiped);
+
+		TestEqual(TEXT("nothing has fired before the crew is finished"), Listener->Count, 0);
+
 		RunState->EvaluateForTest();
-		const bool bFirst = RunState->HasCrewWiped();
-		if (bFirst)
-		{
-			++WipeCount;
-		}
+		TestTrue(TEXT("the wipe happened"), RunState->HasCrewWiped());
+		TestEqual(TEXT("and the event fired exactly once"), Listener->Count, 1);
+
 		for (int32 i = 0; i < 10; ++i)
 		{
 			RunState->EvaluateForTest();
 		}
-		TestTrue(TEXT("the wipe happened"), bFirst);
-		TestEqual(TEXT("and only once, however many times it is evaluated"), WipeCount, 1);
-		TestTrue(TEXT("and the state never un-wipes"), RunState->HasCrewWiped());
+		TestEqual(TEXT("and still exactly once after ten more evaluations"), Listener->Count, 1);
+		TestTrue(TEXT("with the state never un-wiping"), RunState->HasCrewWiped());
 	}
 
 	// ---- 6. a keeper who leaves is not a keeper who cannot act ---------
