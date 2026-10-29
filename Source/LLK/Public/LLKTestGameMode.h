@@ -29,6 +29,7 @@
 
 #include "CoreMinimal.h"
 #include "Data/LLKDataTypes.h"
+#include "Harness/LLKStoreFloorPlan.h"
 #include "GameFramework/GameModeBase.h"
 #include "LLKTestGameMode.generated.h"
 
@@ -50,61 +51,13 @@ protected:
 	float FloorHalfExtent = 2500.f;
 
 	/**
-	 * Upright blocks placed around the floor.
-	 *
-	 * Not decoration. On a flat untextured plane a first-person camera gives
-	 * almost no motion cue, so "did the keeper move?" becomes unanswerable by
-	 * eye - which would defeat the one thing M0.8 is for. Vertical edges at
-	 * known spacing make walk, sprint and crouch visibly different speeds.
-	 *
-	 * Kept at the floor's perimeter now that there are aisles in the middle;
-	 * they are the long-range reference, the aisles are the near one.
-	 */
-	UPROPERTY(EditDefaultsOnly, Category = "LLK|Harness")
-	int32 ReferencePillars = 12;
-
-	/**
-	 * Aisles of shelving, and the reason this stopped being a pillar ring.
-	 *
-	 * **Chris, 2026-10-29: "i just wanted to see more progress".** He was
-	 * right, and the diagnosis is that everything built that day - the storm
-	 * meter, the lantern's state, the relic's legibility, the affordance
-	 * channel - is invisible in a box with twelve pillars in it. None of it
-	 * can be looked at.
-	 *
-	 * So the harness grew aisles, shelves, a counter line and relics on the
-	 * shelves. Every one is an engine primitive spawned at runtime, so this
-	 * still writes nothing to `Content/` and still deletes itself when M1.5's
-	 * real grey box lands. **It is not M1.5 and must not be mistaken for
-	 * it:** M1.5 is an authored `.umap` that has to TEACH, and this is a
-	 * runtime scratch layout whose job is to let the mechanics be seen and
-	 * judged before anybody commits to a floor plan.
-	 *
-	 * What it buys is real, though: short sightlines between aisles, long
-	 * ones down them, and somewhere for a relic to sit at the height a
-	 * lantern actually reaches.
-	 */
-	UPROPERTY(EditDefaultsOnly, Category = "LLK|Harness")
-	int32 ShelfAisles = 4;
-
-	UPROPERTY(EditDefaultsOnly, Category = "LLK|Harness")
-	int32 ShelvesPerAisle = 5;
-
-	/** Spawns the aisles, the counter and the loot on them. Engine primitives only. */
-	void BuildStoreFloor(UWorld* World, UStaticMesh* Cube, const FVector& Origin);
-
-	/** One relic or one piece of baseline loot, on a shelf, with an identity. */
-	void SpawnLoot(UWorld* World, UStaticMesh* Cube, const FVector& Location,
-		ELLKLootVisibility InVisibility, FName Id, const FString& DisplayName, int32 Value);
-
-	/**
 	 * How bright the harness's own sky is. Low, deliberately.
 	 *
 	 * A box lit well enough to walk around in is a box where the lantern
-	 * changes nothing, and the lantern is what M0.8 is now for. Raise these
-	 * two to see the geometry; lower them to judge the light. Neither touches
-	 * a project lighting value - see the header note - they are arguments to
-	 * two actors spawned into a running world.
+	 * changes nothing, and the lantern is what this harness is for. Raise
+	 * these two to see the geometry; lower them to judge the light. Neither
+	 * touches a project lighting value - they are arguments to two actors
+	 * spawned into a running world.
 	 */
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Harness", meta = (ClampMin = "0"))
 	float HarnessSunIntensity = 0.35f;
@@ -112,7 +65,37 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Harness", meta = (ClampMin = "0"))
 	float HarnessSkyIntensity = 0.1f;
 
-	/** Spawns the floor, the pillars, a light and a start, skipping whatever the map already has. */
+	/**
+	 * The ground floor's dimensions, in studs.
+	 *
+	 * **Chris, 2026-10-29, authorising it:** *"build the ground-floor
+	 * department-store scaffold in code, not as a final Unreal map... It is
+	 * disposable greybox, not your final Galleria. You play it and say 'this
+	 * feels too square', 'this ramp feels wrong', 'I need more
+	 * department-store density'."*
+	 *
+	 * So the plan is one struct of named numbers, each commented with why it
+	 * is that number, because the whole point is that he changes them by eye.
+	 * `LLKStoreFloorPlan.h` holds the reasoning.
+	 *
+	 * The previous version of this was four aisles of shelving in a box - a
+	 * step up from twelve pillars and still not a shop. This one has a sealed
+	 * street front you spawn inside, cosmetics counters, the mirrored columns
+	 * that break the long sightline, jewellery cases holding the relics, a
+	 * dead escalator climbing to a mezzanine, and a back-of-house corridor
+	 * that jogs so it cannot be seen down in one look.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Harness")
+	FLLKStoreFloorPlan StoreFloorPlan;
+
+	/** Where M2.6's first enemy may start. Authored by the builder, read by the roadmap row. */
+	UFUNCTION(BlueprintPure, Category = "LLK|Harness")
+	const TArray<FVector>& GetEnemySpawnPoints() const { return EnemySpawnPoints; }
+
+	UPROPERTY()
+	TArray<FVector> EnemySpawnPoints;
+
+	/** Spawns the floor, the store, a light and a start, skipping whatever the map already has. */
 	void BuildHarnessWorld();
 
 	/** True when the open map already provides one, so the harness adds nothing. */

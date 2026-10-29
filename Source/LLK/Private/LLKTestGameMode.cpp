@@ -14,7 +14,7 @@
 #include "LLK.h"
 #include "LLKGameState.h"
 #include "LLKUnits.h"
-#include "Loot/LLKRelicComponent.h"
+#include "Harness/LLKStoreFloorBuilder.h"
 #include "UI/LLKDebugHUD.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -146,20 +146,19 @@ void ALLKTestGameMode::BuildHarnessWorld()
 			FVector(FloorHalfExtent * 2.f / 100.f, FloorHalfExtent * 2.f / 100.f, Thickness / 100.f));
 	}
 
-	// --- something to measure movement against --------------------------
-	// Ringed at the perimeter, so a keeper walking in any direction passes
-	// edges at a steady rate and speed differences are legible. The aisles
-	// below are the near-range reference; these are the long-range one.
-	const float Radius = FloorHalfExtent * 0.85f;
-	for (int32 i = 0; i < ReferencePillars; ++i)
-	{
-		const float Angle = 2.f * PI * static_cast<float>(i) / FMath::Max(1, ReferencePillars);
-		SpawnBlock(World, Cube,
-			HarnessOrigin + FVector(FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius, 150.f),
-			FVector(1.f, 1.f, 3.f));
-	}
+	// **The pillar ring is gone.** It existed because a flat untextured plane
+	// gives a first-person camera no motion cue, and M0.8's only question was
+	// "did the keeper move?". A shop answers that better: walls at a known
+	// distance, counters at hip height, columns to pass. A ring of pillars
+	// standing outside the store would now be clutter around the thing it was
+	// a stand-in for.
 
-	BuildStoreFloor(World, Cube, HarnessOrigin);
+	// The ground floor, from the plan. Everything it spawns is an engine
+	// primitive placed at runtime, so this still writes nothing to Content/
+	// and still deletes itself when the authored store arrives.
+	const LLKStoreFloor::FBuildResult Floor =
+		LLKStoreFloor::BuildGroundFloor(World, Cube, HarnessOrigin, StoreFloorPlan);
+	EnemySpawnPoints = Floor.EnemySpawnPoints;
 
 	// --- light, and nothing persistent ---------------------------------
 	// See the header. Two spawned actors in a running world; no project
@@ -213,138 +212,19 @@ void ALLKTestGameMode::BuildHarnessWorld()
 	{
 		FActorSpawnParameters Params;
 		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		World->SpawnActor<APlayerStart>(HarnessOrigin + FVector(0.f, 0.f, 120.f), FRotator::ZeroRotator, Params);
+		// Just inside the sealed street doors, facing into the shop, which is
+		// where the builder put it. Spawning at the origin would drop the
+		// keeper in the middle of the cosmetics counters.
+		World->SpawnActor<APlayerStart>(Floor.SpawnPoint, FRotator::ZeroRotator, Params);
 	}
 
 	UE_LOG(LogLLK, Log,
-		TEXT("LLKTestGameMode: harness world built - %.0fm floor, %d pillars, ")
-		TEXT("sun %.2f / sky %.2f. Temporary; delete with M1.5's grey box."),
-		FloorHalfExtent * 2.f / 100.f, ReferencePillars, HarnessSunIntensity, HarnessSkyIntensity);
+		TEXT("LLKTestGameMode: harness world built - %.0fm slab under a %.0f x %.0f stud store, ")
+		TEXT("%d enemy spawn point(s), sun %.2f / sky %.2f. Disposable; the authored store "
+			"replaces all of it."),
+		FloorHalfExtent * 2.f / 100.f,
+		StoreFloorPlan.DepthStuds, StoreFloorPlan.WidthStuds,
+		EnemySpawnPoints.Num(), HarnessSunIntensity, HarnessSkyIntensity);
 }
 
-void ALLKTestGameMode::SpawnLoot(UWorld* World, UStaticMesh* Cube, const FVector& Location,
-	ELLKLootVisibility InVisibility, FName Id, const FString& DisplayName, int32 Value)
-{
-	// Small, because a relic is a thing you pick up rather than furniture.
-	// 24cm cube: readable as an object on a shelf at a keeper's eye height.
-	AStaticMeshActor* Actor = SpawnBlock(World, Cube, Location, FVector(0.24f, 0.24f, 0.24f));
-	if (Actor == nullptr)
-	{
-		return;
-	}
 
-	// No collision on loot. A relic you bump into is a relic you knock off a
-	// shelf, and physics on a test prop is a distraction from the thing being
-	// tested.
-	if (UStaticMeshComponent* Mesh = Actor->GetStaticMeshComponent())
-	{
-		Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	}
-
-	// The relic component replicates its legibility, which is useless on an
-	// actor that does not replicate at all - and AStaticMeshActor does not by
-	// default. Set here so that if Chris does try two machines on this
-	// harness, a client sees what the server read rather than nothing, and
-	// the result is about the mechanic instead of about the prop.
-	Actor->SetReplicates(true);
-
-	ULLKRelicComponent* Relic = NewObject<ULLKRelicComponent>(Actor, ULLKRelicComponent::StaticClass());
-	if (Relic == nullptr)
-	{
-		return;
-	}
-
-	Relic->Visibility = InVisibility;
-	Relic->RegisterComponent();
-	Relic->SetRelicIdentity(Id, FText::FromString(DisplayName), Value);
-}
-
-void ALLKTestGameMode::BuildStoreFloor(UWorld* World, UStaticMesh* Cube, const FVector& Origin)
-{
-	// Everything here is in STUDS and converted once, row 61 - the same
-	// authority the keeper's speeds and the lantern's radius go through. A
-	// harness is exactly where raw centimetres creep in otherwise.
-	const float AisleSpacing = LLKUnits::DistanceFromStuds(14.f);
-	const float ShelfSpacing = LLKUnits::DistanceFromStuds(10.f);
-	const float ShelfHeight = LLKUnits::DistanceFromStuds(6.f);
-	const float ShelfLength = LLKUnits::DistanceFromStuds(8.f);
-	const float ShelfDepth = LLKUnits::DistanceFromStuds(2.5f);
-
-	// Aisle spacing against the lantern's 30-stud reach is the thing worth
-	// looking at: at 14 studs apart, a lit keeper in one aisle spills light
-	// into the next two, which is where "light reveals value and attracts
-	// danger" stops being a sentence and becomes a thing you can see
-	// happening to you.
-	const float FirstAisle = -(ShelfAisles - 1) * 0.5f * AisleSpacing;
-	const float FirstShelf = -(ShelvesPerAisle - 1) * 0.5f * ShelfSpacing;
-
-	int32 RelicIndex = 0;
-	static const TCHAR* RelicNames[] = {
-		TEXT("Engraved pocket watch"),
-		TEXT("Enamel brooch"),
-		TEXT("Silver locket"),
-		TEXT("Staff photograph, 1931"),
-		TEXT("Account ledger"),
-		TEXT("Auditorium programme"),
-	};
-	static const TCHAR* BaselineNames[] = {
-		TEXT("Bandage"),
-		TEXT("Spool of thread"),
-		TEXT("Tin of nails"),
-		TEXT("Coil of wiring"),
-	};
-
-	for (int32 Aisle = 0; Aisle < ShelfAisles; ++Aisle)
-	{
-		const float X = Origin.X + FirstAisle + Aisle * AisleSpacing;
-
-		for (int32 Shelf = 0; Shelf < ShelvesPerAisle; ++Shelf)
-		{
-			const float Y = Origin.Y + FirstShelf + Shelf * ShelfSpacing;
-
-			// The shelving unit. Long on Y, thin on X, so the aisles run
-			// north-south and the gaps between them are the sightlines.
-			SpawnBlock(World, Cube,
-				FVector(X, Y, Origin.Z + ShelfHeight * 0.5f),
-				FVector(ShelfDepth / 100.f, ShelfLength / 100.f, ShelfHeight / 100.f));
-
-			// Loot on top, alternating so there is always something readable
-			// in the dark to contrast the unreadable relics against - lesson
-			// one of the ground floor is what lesson two needs to exist.
-			const bool bRelicHere = ((Aisle + Shelf) % 3) == 0;
-			const FVector LootAt(X, Y, Origin.Z + ShelfHeight + 12.f);
-
-			if (bRelicHere && RelicIndex < UE_ARRAY_COUNT(RelicNames))
-			{
-				SpawnLoot(World, Cube, LootAt, ELLKLootVisibility::LanternOnly,
-					FName(*FString::Printf(TEXT("Relic_%d"), RelicIndex)),
-					RelicNames[RelicIndex], 300 + RelicIndex * 75);
-				++RelicIndex;
-			}
-			else if (((Aisle * ShelvesPerAisle + Shelf) % 4) == 1)
-			{
-				const int32 Which = (Aisle + Shelf) % UE_ARRAY_COUNT(BaselineNames);
-				SpawnLoot(World, Cube, LootAt, ELLKLootVisibility::Always,
-					FName(*FString::Printf(TEXT("Baseline_%d_%d"), Aisle, Shelf)),
-					BaselineNames[Which], 5);
-			}
-		}
-	}
-
-	// A counter line across one end. Not decoration either: it is a long
-	// unbroken edge, which is the clearest thing to judge sprint against, and
-	// it gives the floor an orientation so "which way did I come in" has an
-	// answer.
-	const float CounterY = Origin.Y + FirstShelf - ShelfSpacing * 1.6f;
-	SpawnBlock(World, Cube,
-		FVector(Origin.X, CounterY, Origin.Z + LLKUnits::DistanceFromStuds(1.6f)),
-		FVector(LLKUnits::DistanceFromStuds(1.5f) / 100.f,
-			LLKUnits::DistanceFromStuds(34.f) / 100.f,
-			LLKUnits::DistanceFromStuds(3.2f) / 100.f));
-
-	UE_LOG(LogLLK, Log,
-		TEXT("LLKTestGameMode: store floor - %d aisles x %d shelves, %d relics, aisle spacing %.0fcm ")
-		TEXT("against a %.0fcm lantern. Temporary; M1.5's grey box replaces all of it."),
-		ShelfAisles, ShelvesPerAisle, RelicIndex, AisleSpacing,
-		LLKUnits::DistanceFromStuds(30.f));
-}
