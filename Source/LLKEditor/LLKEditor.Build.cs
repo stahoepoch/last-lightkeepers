@@ -15,7 +15,9 @@ public class LLKEditor : ModuleRules
             "UnrealEd",
             "Json",
             "JsonUtilities",
-            "AssetRegistry"
+            "AssetRegistry",
+            "EnhancedInput",
+            "InputCore"
         });
     }
 }
