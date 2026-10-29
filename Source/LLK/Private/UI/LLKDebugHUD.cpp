@@ -4,7 +4,11 @@
 #include "Engine/Engine.h"
 #include "Engine/Font.h"
 #include "Engine/World.h"
+#include "EngineUtils.h"
+#include "GameFramework/Pawn.h"
 #include "LLKGameState.h"
+#include "LLKUnits.h"
+#include "Loot/LLKRelicComponent.h"
 #include "Storm/LLKStormChargeSubsystem.h"
 
 namespace
@@ -138,7 +142,8 @@ void ALLKDebugHUD::DrawHUD()
 	// Seven lines plus the spacer, at the current scale. Measured rather than
 	// drawn-then-resized, because the canvas is immediate-mode and the panel
 	// has to go down before the text does.
-	DrawBacking(LineHeight * GetUIScale() * 7.4f);
+	// Seven storm lines, a spacer, and two relic lines.
+	DrawBacking(LineHeight * GetUIScale() * 10.6f);
 
 	float CursorY = PanelOrigin.Y * GetUIScale();
 
@@ -162,6 +167,80 @@ void ALLKDebugHUD::DrawHUD()
 	}
 
 	DrawStormPanel(Storm, GameState->GetStormSnapshot(), CursorY);
+
+	CursorY += LineHeight * GetUIScale() * 0.6f;
+	DrawRelicPanel(CursorY);
+}
+
+void ALLKDebugHUD::DrawRelicPanel(float& CursorY)
+{
+	const APawn* Keeper = GetOwningPawn();
+	const UWorld* World = GetWorld();
+	if (Keeper == nullptr || World == nullptr)
+	{
+		return;
+	}
+
+	const float SearchRadius = LLKUnits::DistanceFromStuds(RelicSearchStuds);
+	const FVector From = Keeper->GetActorLocation();
+
+	// Nearest, by iterating the relics rather than by an overlap query: this
+	// is a debug readout in a harness with a few dozen actors, and a sphere
+	// trace would need a collision channel that the loot props deliberately
+	// do not have.
+	const ULLKRelicComponent* Nearest = nullptr;
+	float NearestDistanceSquared = SearchRadius * SearchRadius;
+
+	for (TActorIterator<AActor> It(World); It; ++It)
+	{
+		const ULLKRelicComponent* Relic = It->FindComponentByClass<ULLKRelicComponent>();
+		if (Relic == nullptr)
+		{
+			continue;
+		}
+
+		const float DistanceSquared = FVector::DistSquared(From, It->GetActorLocation());
+		if (DistanceSquared < NearestDistanceSquared)
+		{
+			NearestDistanceSquared = DistanceSquared;
+			Nearest = Relic;
+		}
+	}
+
+	if (Nearest == nullptr)
+	{
+		DrawLine(TEXT("no loot within reach"), ColourQuiet, CursorY);
+		return;
+	}
+
+	// The name, which is the visible half of row 53. In the dark this reads
+	// "Something on the shelf" and the point is that it reads SOMETHING.
+	DrawLine(
+		FString::Printf(TEXT("%s"), *Nearest->GetDisplayName().ToString()),
+		Nearest->IsLegible() ? ColourCause : ColourQuiet, CursorY, 1.25f);
+
+	// And the affordance, which is the second channel. "needs light" is the
+	// line that teaches: a keeper reaching for a relic they already read, and
+	// being told why they cannot have it yet.
+	FString Affordance;
+	FLinearColor AffordanceColour = ColourQuiet;
+	switch (Nearest->GetInteractBlock())
+	{
+	case ELLKRelicInteractBlock::None:
+		Affordance = FString::Printf(TEXT("  can take it%s"),
+			Nearest->GetReadableValue() >= 0
+				? *FString::Printf(TEXT("  -  worth %d"), Nearest->GetReadableValue()) : TEXT(""));
+		AffordanceColour = ColourCause;
+		break;
+	case ELLKRelicInteractBlock::NeedsLight:
+		Affordance = TEXT("  needs light");
+		AffordanceColour = ColourUrgent;
+		break;
+	case ELLKRelicInteractBlock::Unidentified:
+		Affordance = TEXT("  unreadable in the dark");
+		break;
+	}
+	DrawLine(Affordance, AffordanceColour, CursorY);
 }
 
 void ALLKDebugHUD::DrawStormPanel(

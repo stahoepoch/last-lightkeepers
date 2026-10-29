@@ -87,6 +87,27 @@ protected:
 
 	void DrawStormPanel(const ULLKStormChargeSubsystem* Storm, const FLLKStormSnapshot& Snapshot, float& CursorY);
 
+	/**
+	 * The nearest relic, and what the keeper can currently do about it.
+	 *
+	 * **This is here so row 53 can be LOOKED at.** The relic's whole
+	 * behaviour - visible but unreadable, legible once lit, affordance
+	 * closing when the light leaves - was asserted in tests and invisible in
+	 * play, which is a mechanic nobody can judge. Walking up to a shelf and
+	 * watching "Something on the shelf" become "Engraved pocket watch", then
+	 * watching the prompt turn into "needs light" when the lantern goes off,
+	 * is the entire lesson of the ground floor in one line of text.
+	 *
+	 * It is a debug readout and it is not the prompt. The real one is Chris's
+	 * and will be art on the object itself; this is the scaffold that proves
+	 * there is something there to make art out of.
+	 */
+	void DrawRelicPanel(float& CursorY);
+
+	/** How far the readout looks for a relic, in STUDS. Converted at the boundary, row 61. */
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Debug", meta = (ClampMin = "0"))
+	float RelicSearchStuds = 12.f;
+
 	/** In 1080p-equivalent pixels; multiplied by GetUIScale at draw time. */
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Debug")
 	FVector2D PanelOrigin = FVector2D(32.f, 28.f);

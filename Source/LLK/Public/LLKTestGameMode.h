@@ -28,8 +28,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Data/LLKDataTypes.h"
 #include "GameFramework/GameModeBase.h"
 #include "LLKTestGameMode.generated.h"
+
+class UStaticMesh;
 
 UCLASS()
 class LLK_API ALLKTestGameMode : public AGameModeBase
@@ -53,9 +56,46 @@ protected:
 	 * almost no motion cue, so "did the keeper move?" becomes unanswerable by
 	 * eye - which would defeat the one thing M0.8 is for. Vertical edges at
 	 * known spacing make walk, sprint and crouch visibly different speeds.
+	 *
+	 * Kept at the floor's perimeter now that there are aisles in the middle;
+	 * they are the long-range reference, the aisles are the near one.
 	 */
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Harness")
 	int32 ReferencePillars = 12;
+
+	/**
+	 * Aisles of shelving, and the reason this stopped being a pillar ring.
+	 *
+	 * **Chris, 2026-10-29: "i just wanted to see more progress".** He was
+	 * right, and the diagnosis is that everything built that day - the storm
+	 * meter, the lantern's state, the relic's legibility, the affordance
+	 * channel - is invisible in a box with twelve pillars in it. None of it
+	 * can be looked at.
+	 *
+	 * So the harness grew aisles, shelves, a counter line and relics on the
+	 * shelves. Every one is an engine primitive spawned at runtime, so this
+	 * still writes nothing to `Content/` and still deletes itself when M1.5's
+	 * real grey box lands. **It is not M1.5 and must not be mistaken for
+	 * it:** M1.5 is an authored `.umap` that has to TEACH, and this is a
+	 * runtime scratch layout whose job is to let the mechanics be seen and
+	 * judged before anybody commits to a floor plan.
+	 *
+	 * What it buys is real, though: short sightlines between aisles, long
+	 * ones down them, and somewhere for a relic to sit at the height a
+	 * lantern actually reaches.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Harness")
+	int32 ShelfAisles = 4;
+
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Harness")
+	int32 ShelvesPerAisle = 5;
+
+	/** Spawns the aisles, the counter and the loot on them. Engine primitives only. */
+	void BuildStoreFloor(UWorld* World, UStaticMesh* Cube, const FVector& Origin);
+
+	/** One relic or one piece of baseline loot, on a shelf, with an identity. */
+	void SpawnLoot(UWorld* World, UStaticMesh* Cube, const FVector& Location,
+		ELLKLootVisibility InVisibility, FName Id, const FString& DisplayName, int32 Value);
 
 	/**
 	 * How bright the harness's own sky is. Low, deliberately.
