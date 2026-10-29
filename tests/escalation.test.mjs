@@ -179,6 +179,55 @@ for (const entry of FORBIDDEN_CALLERS) {
   );
 }
 
+// ---- M2.3: the stage's words are the authored words ----------------------
+//
+// `storm-charge.json` carries an `effect` sentence per threshold, and the
+// debug readout prints it beside the stage so a player can name what changed
+// - which is what M2.6 is judged on. The fallback rules in
+// `LLKStormChargeSubsystem.cpp` carry the same sentences, because
+// `LLK.Storm.NightStage` caught them being empty there: a fallback threshold
+// with an id and a value but no consequence text is resolved-but-degenerate,
+// the same shape as the lantern that resolved to a zero radius.
+//
+// Fixing it duplicated two strings, so this guards the duplicate. The words a
+// designer tunes and the words a player reads have to be the same words, and
+// a drifted fallback would show the old consequence on exactly the run where
+// the asset failed to load - the run where somebody is already confused.
+{
+  const dataPath = "data/storm-charge.json";
+  const srcPath = "Source/LLK/Private/Storm/LLKStormChargeSubsystem.cpp";
+  const data = JSON.parse(readFileSync(join(root, dataPath), "utf8"));
+  const src = readFileSync(join(root, srcPath), "utf8");
+
+  const thresholds = Array.isArray(data.thresholds) ? data.thresholds : [];
+  check(
+    "the authored data still has thresholds to escalate through",
+    thresholds.length >= 2,
+    `${dataPath} thresholds is what the night is made of`,
+  );
+
+  for (const threshold of thresholds) {
+    check(
+      `${threshold.id} has an authored effect sentence`,
+      typeof threshold.effect === "string" && threshold.effect.trim().length > 0,
+      "the readout prints this sentence; an empty one reads as a threshold " +
+        "that changes nothing rather than as missing data",
+    );
+
+    if (typeof threshold.effect !== "string") continue;
+
+    // Verbatim, including the full stop. Comments are NOT stripped here on
+    // purpose: the fallback's copy lives in a string literal, and stripping
+    // would not touch it, while the duplicate-detection is the whole point.
+    check(
+      `and the fallback rules carry ${threshold.id}'s sentence verbatim`,
+      src.includes(threshold.effect),
+      `${srcPath} must hold the same words as ${dataPath}, or the fallback ` +
+        `path shows a consequence the data no longer describes`,
+    );
+  }
+}
+
 // ---- the behavioural half is covered elsewhere, and says so --------------
 {
   const testPath = "Source/LLK/Private/Tests/LLKKnockdownEscalationTest.cpp";

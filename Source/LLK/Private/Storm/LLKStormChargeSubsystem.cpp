@@ -46,14 +46,27 @@ ULLKStormChargeData* ULLKStormChargeSubsystem::MakeFallbackRules(UObject* Outer)
 	Fallback->Lantern.DiminishingDecay = FallbackDiminishingDecay;
 
 	// Row 54: the Warden is NOT one of the thresholds. Two entries, as in the data.
+	// **The effect sentences are part of the fallback, not decoration.**
+	// M2.3 prints the authored `effect` beside the stage, and `LLK.Storm.
+	// NightStage` caught these two being empty here: a fallback threshold
+	// with an id and a value but no consequence text is resolved-but-
+	// degenerate, which is the same shape of bug as the lantern that
+	// resolved to zero radius and cost an evening. A stage badge with a
+	// blank consequence line looks like a threshold that changes nothing,
+	// not like data that failed to load.
+	//
+	// Kept verbatim in step with `data/storm-charge.json`, like every other
+	// value in this function.
 	FLLKStormThreshold Alert;
 	Alert.Id = TEXT("PatrolsAlert");
 	Alert.Value = FallbackPatrolsAlertValue;
+	Alert.Effect = TEXT("Patrol routes tighten and Sweepers investigate noise further from their spawn.");
 	Fallback->Thresholds.Add(Alert);
 
 	FLLKStormThreshold Hunt;
 	Hunt.Id = TEXT("PatrolsHunt");
 	Hunt.Value = FallbackPatrolsHuntValue;
+	Hunt.Effect = TEXT("All patrols actively hunt. Glimmer scan frequency increases.");
 	Fallback->Thresholds.Add(Hunt);
 
 	Fallback->Warden.ChargeValue = FallbackWardenChargeValue;
@@ -506,6 +519,76 @@ void ULLKStormChargeSubsystem::AnnounceCrossings()
 			ElapsedSeconds, WardenCharge);
 		OnWardenConverged.Broadcast();
 	}
+}
+
+FLLKNightStage ULLKStormChargeSubsystem::GetNightStage() const
+{
+	return StageFrom(Rules, Charge, bWardenConverged);
+}
+
+FLLKNightStage ULLKStormChargeSubsystem::StageFrom(
+	const ULLKStormChargeData* InRules, float InCharge, bool bInWardenConverged)
+{
+	FLLKNightStage Stage;
+	Stage.bWardenConverged = bInWardenConverged;
+
+	if (InRules == nullptr)
+	{
+		// Calm, with a Count of zero. Deliberately not a guess at two
+		// thresholds: a readout can tell "no rules" from "calm night" by the
+		// count, and an enemy asking IsAtLeast gets the safe answer either
+		// way.
+		return Stage;
+	}
+
+	Stage.Count = static_cast<uint8>(FMath::Min(InRules->Thresholds.Num(), 255));
+
+	// Counted against the authored values rather than against the announced
+	// set, which is what makes this runnable on a client that has no
+	// CrossedThresholds of its own. The two cannot disagree: a threshold is
+	// announced exactly when the charge passes it, and row 6 means the charge
+	// never comes back down to un-pass it.
+	//
+	// Highest-valued threshold wins the Id rather than last-in-array, because
+	// nothing orders `Thresholds` and a data file sorted descending would
+	// otherwise name the wrong stage while counting the right number of them.
+	float HighestCrossedValue = -1.f;
+	for (const FLLKStormThreshold& Threshold : InRules->Thresholds)
+	{
+		if (InCharge < Threshold.Value)
+		{
+			continue;
+		}
+
+		++Stage.Index;
+		if (Threshold.Value > HighestCrossedValue)
+		{
+			HighestCrossedValue = Threshold.Value;
+			Stage.Id = Threshold.Id;
+		}
+	}
+
+	return Stage;
+}
+
+FString ULLKStormChargeSubsystem::GetThresholdEffect(FName ThresholdId) const
+{
+	if (Rules == nullptr || ThresholdId.IsNone())
+	{
+		return FString();
+	}
+
+	for (const FLLKStormThreshold& Threshold : Rules->Thresholds)
+	{
+		if (Threshold.Id == ThresholdId)
+		{
+			return Threshold.Effect;
+		}
+	}
+
+	// Unknown id. Empty rather than invented - a badge with made-up text
+	// would read as authored consequence.
+	return FString();
 }
 
 float ULLKStormChargeSubsystem::GetSpikeAmount(ELLKStormSpike Cause) const

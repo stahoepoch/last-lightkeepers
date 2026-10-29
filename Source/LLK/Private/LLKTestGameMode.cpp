@@ -13,6 +13,8 @@
 #include "GameFramework/PlayerStart.h"
 #include "LLK.h"
 #include "LLKGameState.h"
+#include "Storm/LLKStormChargeSubsystem.h"
+#include "Storm/LLKStormChargeSubsystem.h"
 #include "LLKUnits.h"
 #include "Harness/LLKStoreFloorBuilder.h"
 #include "UI/LLKDebugHUD.h"
@@ -182,6 +184,10 @@ void ALLKTestGameMode::BuildHarnessWorld()
 			Sun->SetMobility(EComponentMobility::Movable);
 			if (UDirectionalLightComponent* Component = Cast<UDirectionalLightComponent>(Sun->GetLightComponent()))
 			{
+				// Kept so M2.3 can dim it when the night escalates. Weak, and
+				// every use is null-checked, so a map that brought its own sun
+				// simply gets no storm response rather than a crash.
+				HarnessSun = Component;
 				Component->SetIntensity(HarnessSunIntensity);
 				// Cool and blue: the storm outside, so the keeper's warm
 				// lantern reads as the one human light in the shot. The same
@@ -196,6 +202,7 @@ void ALLKTestGameMode::BuildHarnessWorld()
 		{
 			if (USkyLightComponent* Component = Sky->GetLightComponent())
 			{
+				HarnessSky = Component;
 				// ASkyLight has no SetMobility; the component carries it.
 				Component->SetMobility(EComponentMobility::Movable);
 				Component->SetIntensity(HarnessSkyIntensity);
@@ -227,4 +234,87 @@ void ALLKTestGameMode::BuildHarnessWorld()
 		EnemySpawnPoints.Num(), HarnessSunIntensity, HarnessSkyIntensity);
 }
 
+void ALLKTestGameMode::BeginPlay()
+{
+	Super::BeginPlay();
 
+	// Bound here rather than in InitGame, where the harness world is built:
+	// the subsystem exists by then, but binding before the lights have been
+	// spawned means a crossing during startup would drive nothing.
+	UWorld* World = GetWorld();
+	ULLKStormChargeSubsystem* Storm =
+		World != nullptr ? World->GetSubsystem<ULLKStormChargeSubsystem>() : nullptr;
+	if (Storm == nullptr)
+	{
+		// No subsystem in this world. Not a warning - ShouldCreateSubsystem
+		// gates deliberately, and a GameMode exists on the server only.
+		return;
+	}
+
+	Storm->OnThresholdCrossed.AddDynamic(this, &ALLKTestGameMode::HandleThresholdCrossed);
+	Storm->OnWardenConverged.AddDynamic(this, &ALLKTestGameMode::HandleWardenConverged);
+
+	// Applied once at the start too, so a world that somehow begins mid-night
+	// does not look calm until the next crossing.
+	ApplyStormStage();
+}
+
+void ALLKTestGameMode::HandleThresholdCrossed(FName ThresholdId, float Charge)
+{
+	UE_LOG(LogLLK, Log,
+		TEXT("LLKTestGameMode: the storm answers %s at charge %.0f - the harness sky darkens."),
+		*ThresholdId.ToString(), Charge);
+	ApplyStormStage();
+}
+
+void ALLKTestGameMode::HandleWardenConverged()
+{
+	UE_LOG(LogLLK, Log, TEXT("LLKTestGameMode: the Warden converges - the harness sky turns."));
+	ApplyStormStage();
+}
+
+void ALLKTestGameMode::ApplyStormStage()
+{
+	const UWorld* World = GetWorld();
+	const ULLKStormChargeSubsystem* Storm =
+		World != nullptr ? World->GetSubsystem<ULLKStormChargeSubsystem>() : nullptr;
+	if (Storm == nullptr)
+	{
+		return;
+	}
+
+	// Reads the derived stage, never the charge. The point of M2.3 is that
+	// "how far into the night are we" has exactly one answer, and everything
+	// that reacts asks the same question of it rather than picking its own
+	// number out of the meter.
+	const FLLKNightStage Stage = Storm->GetNightStage();
+
+	// Multiplicative per stage, so the floor never reaches pure black: a
+	// harness nobody can see teaches nothing, and the lantern still has to be
+	// the thing that reveals the shop.
+	float Dim = FMath::Pow(1.f - StormDimPerStage, static_cast<float>(Stage.Index));
+
+	const float Through = Stage.Count > 0
+		? static_cast<float>(Stage.Index) / static_cast<float>(Stage.Count)
+		: 0.f;
+	FLinearColor SkyColour =
+		FMath::Lerp(FLinearColor(0.4f, 0.45f, 0.55f), StormSkyColour, Through);
+
+	if (Stage.bWardenConverged)
+	{
+		// Row 7: the closing act, not a third patrol state - so it reads as a
+		// different thing rather than one more step of the same dimming.
+		Dim = FMath::Min(Dim, 1.f - WardenDim);
+		SkyColour = WardenSkyColour;
+	}
+
+	if (UDirectionalLightComponent* Sun = HarnessSun.Get())
+	{
+		Sun->SetIntensity(HarnessSunIntensity * Dim);
+	}
+	if (USkyLightComponent* Sky = HarnessSky.Get())
+	{
+		Sky->SetIntensity(HarnessSkyIntensity * Dim);
+		Sky->SetLightColor(SkyColour);
+	}
+}

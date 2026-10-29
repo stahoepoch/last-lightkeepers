@@ -595,6 +595,47 @@ void ALLKDebugHUD::DrawStormPanel(
 	const int32 Lit = Snapshot.LitLanternCount;
 	const float Multiplier = Snapshot.Multiplier;
 
+	// ---- which stage the night is in, M2.3 ----------------------------
+	//
+	// **Computed here, not replicated.** The stage is a function of the
+	// charge and the shared rules, so a client derives its own from the
+	// snapshot it already has and cannot disagree with the server about it.
+	// Replicating a stage field would put a second copy of the same fact on
+	// the wire, and two copies of one fact is a badge that can contradict the
+	// countdown printed underneath it.
+	const FLLKNightStage Stage =
+		ULLKStormChargeSubsystem::StageFrom(Storm->GetRules(), Snapshot.Charge, Snapshot.bWardenConverged);
+
+	// The authored sentence, not a word of ours. `storm-charge.json` carries
+	// an `effect` per threshold and M2.6 is judged on whether a player can
+	// name what changed - so the words they read are the words Chris tunes.
+	const FString Effect = Storm->GetThresholdEffect(Stage.Id);
+
+	if (Stage.bWardenConverged)
+	{
+		DrawLine(TEXT("THE WARDEN IS HERE"), ColourUrgent, CursorY, 1.3f);
+	}
+	else if (Stage.IsCalm())
+	{
+		DrawLine(
+			FString::Printf(TEXT("NIGHT  calm  (0 of %d)"), Stage.Count),
+			ColourQuiet, CursorY, 1.3f);
+	}
+	else
+	{
+		DrawLine(
+			FString::Printf(TEXT("NIGHT  %s  (%d of %d)"),
+				*Stage.Id.ToString(), Stage.Index, Stage.Count),
+			ColourUrgent, CursorY, 1.3f);
+	}
+
+	if (!Effect.IsEmpty())
+	{
+		DrawLine(FString::Printf(TEXT("  %s"), *Effect), ColourCause, CursorY);
+	}
+
+	CursorY += LineHeight * 0.4f;
+
 	// ---- the consequence, first and largest ---------------------------
 	//
 	// Time, not charge. This is the line the whole readout exists for: it is

@@ -37,6 +37,7 @@
 #include "CoreMinimal.h"
 #include "Data/LLKStormChargeData.h"
 #include "Storm/LLKLightField.h"
+#include "Storm/LLKNightStage.h"
 #include "Storm/LLKStormSnapshot.h"
 #include "Subsystems/WorldSubsystem.h"
 #include "LLKStormChargeSubsystem.generated.h"
@@ -143,6 +144,50 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "LLK|Storm")
 	bool HasWardenConverged() const { return bWardenConverged; }
+
+	// ---------------------------------------------------------- the stage
+	/**
+	 * Which stage the night is in, derived from the meters. M2.3.
+	 *
+	 * **Row 64 line one in one call.** The charge governs what the building
+	 * is authorised to do, and this is that authority in the form an enemy
+	 * can ask about - `Stage.IsAtLeast(1)` rather than
+	 * `GetCharge() >= 270`, which is the version where the escalation point
+	 * lives in the enemy's file and six families disagree about when the
+	 * night got worse.
+	 */
+	UFUNCTION(BlueprintPure, Category = "LLK|Storm")
+	FLLKNightStage GetNightStage() const;
+
+	/**
+	 * The same derivation from arbitrary values, so a client can run it.
+	 *
+	 * Static and pure for the reason `SecondsUntilCharge` is: both machines
+	 * run THIS function on the SAME `ULLKStormChargeData`, so a client
+	 * computes the stage from its replicated charge and cannot disagree with
+	 * the server about it. Nothing about the stage goes on the wire.
+	 *
+	 * Null rules give a calm stage with `Count` 0, which a readout can tell
+	 * apart from a genuinely calm night by checking `GetRulesSource()`.
+	 */
+	static FLLKNightStage StageFrom(
+		const ULLKStormChargeData* InRules, float InCharge, bool bInWardenConverged);
+
+	/**
+	 * What the authored data says a threshold changes, for the readout.
+	 *
+	 * `storm-charge.json` already carries an `effect` sentence per threshold
+	 * - "Patrol routes tighten and Sweepers investigate noise further from
+	 * their spawn" - and M2.6 is judged on whether a player can name what
+	 * changed. Printing the authored sentence is the cheapest honest way to
+	 * make a crossing legible, and it means the words a player reads and the
+	 * words a designer tunes are the same words.
+	 *
+	 * Empty when the id is unknown, never a placeholder: a stage badge with
+	 * invented text is worse than one with none.
+	 */
+	UFUNCTION(BlueprintPure, Category = "LLK|Storm")
+	FString GetThresholdEffect(FName ThresholdId) const;
 
 	/** Seconds since the meter started moving. Not the same as the run's clock. */
 	UFUNCTION(BlueprintPure, Category = "LLK|Storm")

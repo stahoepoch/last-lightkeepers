@@ -33,6 +33,8 @@
 #include "GameFramework/GameModeBase.h"
 #include "LLKTestGameMode.generated.h"
 
+class UDirectionalLightComponent;
+class USkyLightComponent;
 class UStaticMesh;
 
 UCLASS()
@@ -44,8 +46,74 @@ public:
 	ALLKTestGameMode();
 
 	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
+	virtual void BeginPlay() override;
 
 protected:
+	// ------------------------------------------------- M2.3, the storm outside
+	/**
+	 * The storm's answer to a threshold crossing, in the harness's own sky.
+	 *
+	 * **This is M2.3's "something observable", and it is deliberately the
+	 * smallest honest one.** The roadmap row says crossing `PatrolsAlert` and
+	 * `PatrolsHunt` must change something a player can see, and the two
+	 * delegates that should cause it - `OnThresholdCrossed` and
+	 * `OnWardenConverged` - have broadcast since M1.4 with nothing listening.
+	 * This is the listener. It is not the consequence that matters: patrols
+	 * tightening is M2.6, and it needs enemies, routes and a navmesh that do
+	 * not exist yet. What it buys now is a crossing that is legible without
+	 * reading the HUD, which is what makes the meter judgeable by eye.
+	 *
+	 * **Two honest limitations, both of which are why this lives in the
+	 * harness rather than in a gameplay class.** It is server-side, so on a
+	 * listen server the host sees the sky change and a client does not -
+	 * acceptable in a harness, unacceptable in the shipped version, which
+	 * wants a replicated storm actor or a post-process driven from the
+	 * snapshot every machine already has. And it is disposable: these two
+	 * actors are spawned into a running world and leave nothing behind, per
+	 * the lighting note at the top of this file, so when the authored store
+	 * arrives this goes with the rest of the harness.
+	 *
+	 * The numbers are properties rather than constants because "how much
+	 * darker" is a thing to judge by eye, not by argument.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Harness|Storm", meta = (ClampMin = "0", ClampMax = "1"))
+	float StormDimPerStage = 0.3f;
+
+	/** Where the sky goes as the night worsens - colder and greener, never black. */
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Harness|Storm")
+	FLinearColor StormSkyColour = FLinearColor(0.3f, 0.42f, 0.4f);
+
+	/** The Warden's own arrival, which is not a third patrol state. */
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Harness|Storm", meta = (ClampMin = "0", ClampMax = "1"))
+	float WardenDim = 0.75f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Harness|Storm")
+	FLinearColor WardenSkyColour = FLinearColor(0.42f, 0.14f, 0.12f);
+
+	/**
+	 * Listens to the delegate M1.4 built and nobody called.
+	 *
+	 * A UFUNCTION because dynamic delegates have no `AddLambda` - the binding
+	 * needs a reflected member, which is the one piece of UHT ceremony this
+	 * costs.
+	 */
+	UFUNCTION()
+	void HandleThresholdCrossed(FName ThresholdId, float Charge);
+
+	UFUNCTION()
+	void HandleWardenConverged();
+
+	/** Re-reads the stage and drives the two lights from it. Idempotent. */
+	void ApplyStormStage();
+
+	/**
+	 * Weak, because the harness does not own these any more than the floor.
+	 *
+	 * A raw pointer here would keep two spawned actors' components alive past
+	 * a world teardown, and this class is created per world.
+	 */
+	TWeakObjectPtr<UDirectionalLightComponent> HarnessSun;
+	TWeakObjectPtr<USkyLightComponent> HarnessSky;
 	/** Half-extent of the floor in cm. 50m square: big enough to sprint across and notice. */
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Harness")
 	float FloorHalfExtent = 2500.f;
