@@ -87,6 +87,21 @@ enum class ELLKMapCheck : uint8
 	 */
 	SpawnOffNavmesh,
 
+	/**
+	 * An enemy spawn point does not project onto navigable space.
+	 * Requirement 5a.
+	 *
+	 * **This exists because the alternative was a true finding that sent you
+	 * to the wrong place.** Before it, an off-mesh enemy spawn produced a
+	 * partial path and was reported as `NoRouteFromSpawn` - which is not
+	 * false, since the route genuinely does not complete, but it describes a
+	 * blocked building when the actual problem is one actor 30cm into the
+	 * floor. Codex declined to change the route query alone to say
+	 * "misplaced actor", correctly: without this code there was nothing
+	 * truthful to report it as.
+	 */
+	EnemySpawnOffNavmesh,
+
 	/** Somebody asked for a route and the answer was no. */
 	NoRouteFromSpawn,
 
@@ -234,6 +249,20 @@ struct FLLKMapObservations
 	 * reason this is a separate question.
 	 */
 	TOptional<bool> SpawnOnNavmesh;
+
+	/**
+	 * How many enemy spawn points do not project onto navigable space.
+	 *
+	 * Unset means nobody asked. Zero means all of them are on the mesh. A
+	 * count rather than a bool so the finding can say how many, and
+	 * `FirstEnemySpawnOffNavmesh` carries one position - a log line with
+	 * twelve coordinates in it is a line nobody reads, which is the same
+	 * reason `SpawnPointsOutsideNavBounds` is shaped this way.
+	 */
+	TOptional<int32> EnemySpawnsOffNavmesh;
+
+	UPROPERTY(BlueprintReadOnly, Category = "LLK|Map")
+	FVector FirstEnemySpawnOffNavmesh = FVector::ZeroVector;
 
 	/**
 	 * Whether a walkable route reaches every enemy spawn from the keeper

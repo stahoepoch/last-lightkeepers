@@ -6,6 +6,7 @@
 #include "GameFramework/PlayerStart.h"
 #include "HAL/IConsoleManager.h"
 #include "Harness/LLKStoreFloorPlan.h"
+#include "Lantern/LLKLanternFeel.h"
 #include "LLKUnits.h"
 #include "NavMesh/NavMeshBoundsVolume.h"
 #include "NavigationData.h"
@@ -18,8 +19,10 @@ namespace LLKMapReadiness
 	const FName TestLaneOpenTag(TEXT("LLK.TestLane.Open"));
 	const FName TestLaneBlockedTag(TEXT("LLK.TestLane.Blocked"));
 
-	// 88cm capsule half-height plus the camera's 64cm. See the header.
-	const float EyeHeightCm = 152.f;
+	// Deferred rather than re-declared: LLKLanternFeel owns this number,
+	// because the gameplay light anchor is derived from it and that is the
+	// copy whose drift would be noticed last. See its header.
+	const float EyeHeightCm = LLKLanternFeel::KeeperEyeHeightCm;
 
 	namespace
 	{
@@ -180,6 +183,17 @@ namespace LLKMapReadiness
 				TEXT("the keeper spawn does not project onto navigable space - "
 					"usually a PlayerStart sunk into the floor, floating above it, or on a counter"));
 		}
+		else if (Obs.EnemySpawnsOffNavmesh.Get(0) > 0)
+		{
+			// Before the route, because every path TO an off-mesh point comes
+			// back partial. Reporting the route instead would be true and
+			// would describe a blocked building rather than a misplaced actor.
+			Add(ELLKMapCheck::EnemySpawnOffNavmesh,
+				FString::Printf(
+					TEXT("%d enemy spawn point(s) do not project onto navigable space, first at %s"),
+					Obs.EnemySpawnsOffNavmesh.GetValue(),
+					*Obs.FirstEnemySpawnOffNavmesh.ToCompactString()));
+		}
 		else if (!Obs.RouteFromSpawnReaches.IsSet())
 		{
 			Add(ELLKMapCheck::RouteUnverified,
@@ -319,7 +333,17 @@ namespace LLKMapReadiness
 			}
 		}
 
-		// HANDOFF(Codex): NavigationSystem complete. The typed queries below
+		// HANDOFF(Codex): NavigationSystem, one query left - the marker stays
+		// spelled this way because tests/map-readiness.test.mjs greps for it.
+		// Project each enemy spawn and set
+		// Obs.EnemySpawnsOffNavmesh (and FirstEnemySpawnOffNavmesh), with the
+		// same extent used for the keeper spawn. Set it to 0 when they are all
+		// on the mesh and leave it unset when it could not be asked. The code
+		// and the chain link for it exist as of this commit, so the finding is
+		// truthful the moment the count arrives. Path only to spawns that
+		// projected, or the route answer inherits the same partial path.
+		//
+		// NavigationSystem complete. The typed queries below
 		// replace the former class-name workaround and leave unanswered checks
 		// unset rather than calling them passes.
 		// NavigationSystem's query APIs take a mutable UWorld*. Observe does
@@ -423,6 +447,7 @@ namespace LLKMapReadiness
 		case ELLKMapCheck::NavDataMissing:             return TEXT("NavDataMissing");
 		case ELLKMapCheck::NavmeshNotBuilt:            return TEXT("NavmeshNotBuilt");
 		case ELLKMapCheck::SpawnOffNavmesh:            return TEXT("SpawnOffNavmesh");
+		case ELLKMapCheck::EnemySpawnOffNavmesh:       return TEXT("EnemySpawnOffNavmesh");
 		case ELLKMapCheck::NavBoundsDoesNotCoverSpawn: return TEXT("NavBoundsDoesNotCoverSpawn");
 		case ELLKMapCheck::NoRouteFromSpawn:           return TEXT("NoRouteFromSpawn");
 		case ELLKMapCheck::RouteUnverified:            return TEXT("RouteUnverified");

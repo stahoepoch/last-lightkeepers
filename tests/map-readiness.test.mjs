@@ -133,7 +133,19 @@ check(
 // Stated in the document, in the header, and used in the implementation. Three
 // places, because it is derived from two engine defaults and nobody will
 // re-derive it when a capsule changes.
-check("eye height is 152cm in the implementation", impl.includes("EyeHeightCm = 152.f"));
+// Eye height has one declaration, in LLKLanternFeel, because the gameplay
+// light anchor is derived from it. This guard caught the move when it happened
+// and now holds the single-authority property rather than the old location.
+const feel = read("Source", "LLK", "Private", "Lantern", "LLKLanternFeel.cpp");
+check(
+  "eye height is declared once, in LLKLanternFeel",
+  feel.includes("KeeperEyeHeightCm = 152.f"),
+);
+check(
+  "and map readiness defers to it rather than re-declaring 152",
+  impl.includes("LLKLanternFeel::KeeperEyeHeightCm") && !impl.includes("= 152.f"),
+  "two copies of a number derived from two engine defaults stop agreeing the day a capsule changes",
+);
 check("and 152 in the document", doc.includes("152"));
 check(
   "and the document says which two numbers it came from",

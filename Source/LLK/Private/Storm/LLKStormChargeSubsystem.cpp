@@ -245,7 +245,15 @@ TArray<FLLKLightSource> ULLKStormChargeSubsystem::GetLitLightSources() const
 		}
 
 		FLLKLightSource Source;
-		Source.Position = Light->GetComponentLocation();
+		// **The honest anchor, not the component's transform.** Chris found
+		// this before it shipped: the light component is both the visible cone
+		// and the position this function reports, so once the cone sways,
+		// GetComponentLocation() is a position the keeper never occupied -
+		// and this value decides storm accrual, relic legibility and what the
+		// Warden converges on. GetGameplayLightLocation derives from the
+		// owner's capsule and an authored eye height, with no cosmetic term in
+		// it. LLK.Lantern.Feel asserts that no sway can change it.
+		Source.Position = Light->GetGameplayLightLocation();
 		Source.Intensity = Light->GetResolvedRules().Intensity;
 		// Already in centimetres: the light converted it through LLKUnits
 		// when it resolved, and converting again here would be the second

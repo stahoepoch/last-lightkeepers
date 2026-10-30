@@ -1,12 +1,20 @@
 #include "Lantern/LLKLanternLightComponent.h"
 
+#include "Components/CapsuleComponent.h"
 #include "Engine/Scene.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "LLK.h"
 #include "LLKUnits.h"
 
 ULLKLanternLightComponent::ULLKLanternLightComponent()
 {
-	PrimaryComponentTick.bCanEverTick = false;
+	// Ticks for the cosmetic transform only. **Nothing gameplay reads is
+	// computed here**, which is what makes a tick acceptable at all in a class
+	// whose header calls itself a listener: a tick that could change what the
+	// storm sees would be a second writer of a replicated fact.
+	PrimaryComponentTick.bCanEverTick = true;
+	PrimaryComponentTick.TickGroup = TG_PostUpdateWork;
 
 	// Starts dark, matching ULLKLanternComponent's own default. Row 5 makes
 	// being seen a decision, and a light that is on until told otherwise would
@@ -43,9 +51,107 @@ ULLKLanternLightComponent::ULLKLanternLightComponent()
 	FallbackRules.bCastsShadows = true;
 }
 
+FVector ULLKLanternLightComponent::GetGameplayLightLocation() const
+{
+	const AActor* Owner = GetOwner();
+	if (Owner == nullptr)
+	{
+		// A component with no owner is not in a world, so there is no honest
+		// anchor to derive. Returning the component's own location is the only
+		// answer available and it is noted rather than hidden: if this is ever
+		// reached in a running game, the cosmetic position has become the
+		// gameplay position and that is the bug this method exists to prevent.
+		return GetComponentLocation();
+	}
+
+	return LLKLanternFeel::GameplayLightPosition(
+		Owner->GetActorLocation(), LLKLanternFeel::KeeperEyeHeightCm);
+}
+
+void ULLKLanternLightComponent::TickFeel(float DeltaSeconds)
+{
+	FLLKLanternFeelInput Input;
+	Input.DeltaSeconds = DeltaSeconds;
+
+	const AActor* Owner = GetOwner();
+	if (Owner == nullptr)
+	{
+		return;
+	}
+
+	// The look, read and never written. Guarantee 1: the cone trails the
+	// camera and the camera trails nothing, so this is an input only.
+	Input.Look = GetComponentRotation();
+
+	const FVector Velocity = Owner->GetVelocity();
+	Input.SpeedCm = FVector(Velocity.X, Velocity.Y, 0.f).Size();
+
+	if (const ACharacter* Character = Cast<ACharacter>(Owner))
+	{
+		if (const UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
+		{
+			Input.bSprinting = Input.SpeedCm > LLKUnits::SpeedFromStuds(18.f);
+
+			// A landing is an edge, not a state: airborne last frame and not
+			// this one. Read here rather than from ACharacter::Landed so this
+			// component needs no hook in a class it does not own.
+			const bool bFalling = Movement->IsFalling();
+			if (bWasFalling && !bFalling)
+			{
+				Input.LandingImpactSpeed = FMath::Abs(LastFallSpeed);
+			}
+			if (bFalling)
+			{
+				LastFallSpeed = Velocity.Z;
+			}
+			bWasFalling = bFalling;
+		}
+	}
+
+	// Guarantee 2, measured here and decided in LLKLanternFeel. A sphere
+	// trace from the honest anchor toward where the cone wants to be, so the
+	// clamp knows how much room there actually is. Negative means unmeasured,
+	// which collapses the offset to zero rather than guessing.
+	Input.FreeDistanceCm = -1.f;
+	if (const UWorld* World = GetWorld())
+	{
+		const FVector Anchor = GetGameplayLightLocation();
+		const FVector Desired = Anchor + GetComponentTransform().TransformVector(FeelState.OffsetCm);
+
+		FCollisionQueryParams Params(SCENE_QUERY_STAT(LLKLanternFeel), /*bTraceComplex=*/false);
+		Params.AddIgnoredActor(Owner);
+
+		FHitResult Hit;
+		const bool bHit = World->SweepSingleByChannel(
+			Hit, Anchor, Desired, FQuat::Identity, ECC_Visibility,
+			FCollisionShape::MakeSphere(4.f), Params);
+
+		Input.FreeDistanceCm = bHit
+			? Hit.Distance
+			: FMath::Max(0.f, FeelRules.MaxOffsetCm);
+	}
+
+	FeelState = LLKLanternFeel::AdvanceFeel(FeelState, Input, FeelRules);
+
+	// Applied to the component's own relative transform, which is cosmetic by
+	// construction: GetGameplayLightLocation does not read it.
+	SetRelativeLocation(BaseRelativeLocation + FeelState.OffsetCm);
+}
+
+void ULLKLanternLightComponent::TickComponent(
+	float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	TickFeel(DeltaTime);
+}
+
 void ULLKLanternLightComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Captured once, because the sway writes the relative location every frame
+	// and an offset added to its own result is a drift.
+	BaseRelativeLocation = GetRelativeLocation();
 	ResolveAndApplyLight();
 }
 

@@ -41,6 +41,7 @@
 #include "Data/LLKDataTypes.h"
 #include "Data/LLKLanternData.h"
 #include "Lantern/LLKLanternComponent.h"
+#include "Lantern/LLKLanternFeel.h"
 #include "LLKLanternLightComponent.generated.h"
 
 UCLASS(ClassGroup = (LLK), meta = (BlueprintSpawnableComponent))
@@ -53,6 +54,8 @@ public:
 
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void TickComponent(
+		float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	/**
 	 * Subscribes to a lantern and matches its state immediately.
@@ -95,6 +98,37 @@ public:
 	 * restart. Idempotent.
 	 */
 	void ResolveAndApplyLight();
+
+	/**
+	 * Where this light is as far as the game is concerned.
+	 *
+	 * **Not `GetComponentLocation()`, and that is the whole point of this
+	 * method existing.** Chris, 2026-10-29: *"a cosmetic sway cannot simply
+	 * move that component locally: it would make the player see one light
+	 * position while the server judges another."* This component is both the
+	 * visible cone and the thing `ULLKStormChargeSubsystem::GetLitLightSources`
+	 * reports to `LLKLightField` - which decides storm accrual, relic
+	 * legibility, and the position the Warden converges on (row 7, row 54).
+	 *
+	 * So gameplay reads this: the owner's own location plus the authored eye
+	 * height, with no cosmetic term anywhere in it. The component's transform
+	 * is free to sway, trail and kick, and none of it can reach the answer
+	 * above because none of it is an input to it.
+	 */
+	UFUNCTION(BlueprintPure, Category = "LLK|Lantern")
+	FVector GetGameplayLightLocation() const;
+
+	/** How far the cone currently is from the honest anchor, in cm. For tests. */
+	FVector GetCosmeticOffsetCm() const { return FeelState.OffsetCm; }
+
+	/**
+	 * How the cone is allowed to lag, sway and kick.
+	 *
+	 * Editor-tunable rather than data-driven: see `FLLKLanternFeelRules` for
+	 * why none of these numbers belongs in `data/lantern.json`.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "LLK|Feel")
+	FLLKLanternFeelRules FeelRules;
 
 	/**
 	 * The inner cone as a fraction of the authored outer one.
@@ -145,4 +179,33 @@ protected:
 
 	UPROPERTY()
 	TWeakObjectPtr<ULLKLanternComponent> WatchedLantern;
+
+	/** The cosmetic filter's memory. Never read by gameplay. */
+	UPROPERTY(VisibleInstanceOnly, Category = "LLK|Feel")
+	FLLKLanternFeelState FeelState;
+
+	/**
+	 * The component's authored relative transform, captured once.
+	 *
+	 * The sway writes `SetRelativeLocation(Base + Offset)` every frame, so
+	 * the base has to be remembered or the offset accumulates into a drift -
+	 * which is the cosmetic version of exactly the bug this file is avoiding.
+	 */
+	FVector BaseRelativeLocation = FVector::ZeroVector;
+
+	/** True once the previous frame saw the owner airborne. */
+	bool bWasFalling = false;
+
+	/**
+	 * The owner's Z velocity on the last airborne frame.
+	 *
+	 * Sampled while falling rather than read on landing, because by the time
+	 * the movement component reports grounded the impact speed has already
+	 * been zeroed - which would make every landing kick exactly nothing and
+	 * look like the feature was never wired up.
+	 */
+	float LastFallSpeed = 0.f;
+
+	/** Advances the cosmetic filter and applies it. Never touches gameplay. */
+	void TickFeel(float DeltaSeconds);
 };

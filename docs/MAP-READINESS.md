@@ -14,7 +14,7 @@ still, which is a bug that looks like six other bugs.
 
 ---
 
-## The thirteen things, and what breaks without each
+## The fourteen things, and what breaks without each
 
 Each row names the check code `LLK.CheckMap` reports, so a failure message and
 this table are searchable by the same word.
@@ -30,6 +30,7 @@ this table are searchable by the same word.
 | 4 | **Nav bounds that enclose** the keeper spawn and every enemy spawn point | `NavBoundsDoesNotCoverSpawn` | Enemies spawn off-mesh and are inert in a way that reads exactly like a broken behaviour tree. The usual version of this is a volume that covers the shop floor and stops short of the back of house, which is where the spawn points are |
 | 4a | **A keeper spawn that projects onto the navmesh** | `SpawnOffNavmesh` | Every route query fails from a start point that is not on the mesh, which reads as the whole floor being unreachable rather than as one actor being 30cm too low |
 | 5 | **A walkable route** from the keeper spawn to every enemy spawn point | `NoRouteFromSpawn` / `RouteUnverified` | The first Sweeper is placed somewhere it can see you and never reach you. `RouteUnverified` is not a pass — see *The route check is honest about not knowing* below |
+| 5a | **Enemy spawn points that project onto the navmesh** | `EnemySpawnOffNavmesh` | A route finding that blames the building for one actor 30cm into the floor. Every path to an off-mesh point comes back partial |
 | 6 | **Sight-blocking geometry above eye height** — shelving, gondola runs, the internal wall | `NoOccludingGeometry` | Perception degenerates to raw distance. The whole floor becomes one room and light stops being a trade |
 | 7 | **No unbroken sightline longer than `MaxSightlineStuds` (34)** from the keeper spawn | `SightlineTooLong` | A lit keeper is hunted from 38 studs by something they had no way of seeing. `FLLKStoreFloorPlan` already carries this rule; this is it checked against real geometry instead of against arithmetic |
 | 8 | **One open test lane**, tagged `LLK.TestLane.Open` | `TestLaneOpenMissing` / `TestLaneOpenBlocked` | Nothing proves the visibility source can return `Clear`. A trace that always reports blocked makes every enemy blind and passes every "is it safe" test |
@@ -57,14 +58,16 @@ generate. So "is it built" cannot answer "does a mesh exist"; only
 `NavBoundsVolumes` and `NavDataActors` can, and `Evaluate` now checks those
 before reading any query result.
 
-**One known limitation of requirement 5, recorded rather than hidden.** The
-route query projects the *keeper* spawn onto the navmesh and paths from there,
-but it paths **to** each enemy spawn's raw position. So an enemy spawn that is
-itself off-mesh - sunk into the floor, or on a counter - comes back as a
-partial path and is reported as `NoRouteFromSpawn` rather than as a misplaced
-actor. The finding is not wrong, it is just less specific than it could be, and
-the fix is one more projection per enemy spawn. It is listed as the next item
-in the handoff.
+**Requirement 5a is why "one more projection" was not the whole fix.** The
+route query paths **to** each enemy spawn's raw position, so an enemy spawn
+that is itself off-mesh comes back as a partial path. Before 5a existed the
+only truthful thing to report that as was `NoRouteFromSpawn` - correct, and
+about the wrong thing. Codex declined to change the query alone to claim
+"misplaced actor", which was right: a query cannot report a finding the
+contract has no code for, and making the route query *say* something more
+specific than the contract can represent is how a diagnostic starts lying.
+The code, the observation and the chain link now exist; the projection that
+fills the count is the one item left in the handoff.
 
 **Requirement 4 is necessary and not sufficient, and says so in its name.** It
 checks that the spawn points fall inside the *bounds of the volumes*, which is

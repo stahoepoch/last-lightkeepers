@@ -55,6 +55,7 @@ namespace LLKMapReadinessTestFixture
 		Obs.SpawnPointsOutsideNavBounds = 0;
 		Obs.NavigationBuilt = true;
 		Obs.SpawnOnNavmesh = true;
+		Obs.EnemySpawnsOffNavmesh = 0;
 		Obs.RouteFromSpawnReaches = true;
 		Obs.ProbedDirections = 32;
 		Obs.BlockedDirections = 11;
@@ -289,6 +290,57 @@ bool FLLKMapReadinessTest::RunTest(const FString& Parameters)
 			Report.Findings.Num(), 1);
 		TestTrue(TEXT("and it is RouteUnverified"),
 			Report.Has(ELLKMapCheck::RouteUnverified));
+	}
+
+	{
+		// The distinction this code was added for. An off-mesh enemy spawn
+		// makes every path to it partial, so before this the finding was
+		// NoRouteFromSpawn - true, and about the wrong thing. One actor 30cm
+		// into the floor is not a blocked building.
+		FLLKMapObservations Obs = ReadyMap();
+		Obs.EnemySpawnsOffNavmesh = 2;
+		Obs.FirstEnemySpawnOffNavmesh = FVector(-900.f, 420.f, 15.f);
+		Obs.RouteFromSpawnReaches = false;
+
+		const FLLKMapReport Report = LLKMapReadiness::Evaluate(Obs);
+
+		TestTrue(TEXT("a misplaced enemy spawn is reported as a misplaced enemy spawn"),
+			Report.Has(ELLKMapCheck::EnemySpawnOffNavmesh));
+		TestFalse(TEXT("and not as a blocked route, which is the true-but-misleading answer"),
+			Report.Has(ELLKMapCheck::NoRouteFromSpawn));
+		TestTrue(TEXT("with the count and a position, so it is findable in the level"),
+			Report.Describe().Contains(TEXT("2 enemy spawn"))
+			&& Report.Describe().Contains(TEXT("-900")));
+		TestEqual(TEXT("one finding"), Report.Findings.Num(), 1);
+	}
+
+	{
+		// All three of the spawn questions are asked and answered well, and a
+		// route is still genuinely blocked. This is the case that has to
+		// survive: adding the new code must not swallow a real blockage.
+		FLLKMapObservations Obs = ReadyMap();
+		Obs.EnemySpawnsOffNavmesh = 0;
+		Obs.RouteFromSpawnReaches = false;
+
+		const FLLKMapReport Report = LLKMapReadiness::Evaluate(Obs);
+		TestTrue(TEXT("a genuinely blocked route still reports as one"),
+			Report.Has(ELLKMapCheck::NoRouteFromSpawn));
+		TestFalse(TEXT("and does not accuse the spawn points"),
+			Report.Has(ELLKMapCheck::EnemySpawnOffNavmesh));
+	}
+
+	{
+		// Unset, not zero. Nobody projected the enemy spawns, so the honest
+		// finding is about the query that did not run.
+		FLLKMapObservations Obs = ReadyMap();
+		Obs.EnemySpawnsOffNavmesh.Reset();
+		Obs.RouteFromSpawnReaches.Reset();
+
+		const FLLKMapReport Report = LLKMapReadiness::Evaluate(Obs);
+		TestTrue(TEXT("an unasked enemy-spawn projection is RouteUnverified, not a pass"),
+			Report.Has(ELLKMapCheck::RouteUnverified));
+		TestFalse(TEXT("and unset is not read as zero off-mesh spawns being a failure"),
+			Report.Has(ELLKMapCheck::EnemySpawnOffNavmesh));
 	}
 
 	// ---- 3. the same failure is not said twice ---------------------------

@@ -18,11 +18,27 @@ nowhere to build navigation, so a map with no bounds volume reported
 volume and nav-data counts before reading any query answer. Fixed on Claude's
 side with two tests that fail without it.
 
-**The one item left**, small and Codex's: project each enemy spawn onto the
-navmesh before pathing to it, so an off-mesh enemy spawn reports as a misplaced
-actor rather than as a blocked route. See "known limitation" in
-`docs/MAP-READINESS.md`. Not urgent - the current finding is true, just less
-specific than it could be.
+**The one item left**, and Codex was right that it needed contract work
+first. "Project the endpoint" could not honestly become "misplaced actor"
+while `NoRouteFromSpawn` was the only code available to report it. So the
+contract side is now landed: `EnemySpawnsOffNavmesh` (a `TOptional<int32>`),
+`FirstEnemySpawnOffNavmesh`, the `EnemySpawnOffNavmesh` code, and the chain
+link that reports it **before** the route - because every path to an off-mesh
+point comes back partial.
+
+What is left in the seam, with the three cases it then distinguishes:
+
+- Project each enemy spawn with the same extent as the keeper spawn, set
+  `EnemySpawnsOffNavmesh` to the count and `FirstEnemySpawnOffNavmesh` to the
+  first one. Zero when they all project; unset when it could not be asked.
+- Path only to spawns that projected. Pathing to one that did not makes the
+  route answer inherit the same partial path, and then both findings describe
+  the same misplaced actor.
+
+That gives: `SpawnOffNavmesh` for the keeper spawn, `EnemySpawnOffNavmesh` for
+an enemy spawn, and `NoRouteFromSpawn` only when both ends are valid and the
+building is genuinely in the way. A test asserts that third case still fires,
+so the new code cannot swallow a real blockage.
 
 Read `docs/MAP-READINESS.md` first — it is the contract this completes, and it
 already lists every check code and the reason each one is on the list. Read
