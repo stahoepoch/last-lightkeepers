@@ -32,6 +32,7 @@
 #include "Data/LLKEnemyDef.h"
 #include "Data/LLKLanternData.h"
 #include "Enemies/LLKSweeperBrain.h"
+#include "LLKUnits.h"
 #include "Misc/AutomationTest.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -70,7 +71,10 @@ namespace LLKSweeperBrainTestFixture
 		Senses.Notice.Sense = ELLKNoticeSense::LitProximity;
 		Senses.Notice.Visibility = ELLKVisibility::Clear;
 		Senses.Notice.bNoticed = true;
-		Senses.KeeperPosition = FVector(DistanceStuds * 28.f, 0.f, 0.f);
+		// Row 61: the conversion lives in one place, including in a test. A raw
+		// 28 here is the same drift the guard exists to catch, and it caught
+		// this one.
+		Senses.KeeperPosition = FVector(LLKUnits::DistanceFromStuds(DistanceStuds), 0.f, 0.f);
 		Senses.DistanceToKeeperStuds = DistanceStuds;
 		Senses.bHasPatrolPoint = true;
 		return Senses;
