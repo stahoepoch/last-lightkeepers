@@ -2,6 +2,7 @@
 
 #include "Data/LLKEnemyDef.h"
 #include "LLKUnits.h"
+#include "Storm/LLKLightField.h"
 
 namespace LLKPerception
 {
@@ -53,25 +54,34 @@ namespace LLKPerception
 		}
 	}
 
-	float LitThresholdFrom(float LanternIntensity)
+	float AggroRadiusAt(float DarkStuds, float LitStuds, float Detectability)
 	{
-		// Half the lantern's intensity: one lantern at the edge of its own
-		// reach, since BrightnessAt falls to I/2 at distance r. The same
-		// derivation ULLKRelicComponent uses, on purpose - see the header.
-		return FMath::Max(0.f, LanternIntensity) * 0.5f;
+		// Both ends through ReachOrZero, so a family that lost one radius to a
+		// failed import cannot have the other one silently stand in for it.
+		// Zero at either end still produces a usable number here, and
+		// SenseReaching's own guard is what refuses to act on it.
+		const float Dark = ReachOrZero(DarkStuds);
+		const float Lit = ReachOrZero(LitStuds);
+		return FMath::Lerp(Dark, Lit, FMath::Clamp(Detectability, 0.f, 1.f));
 	}
 
 	ELLKNoticeSense SenseReaching(
 		const FLLKEnemyDef& Enemy,
 		const FLLKPerceiver& Perceiver,
-		const FLLKPerceivedKeeper& Keeper,
-		float LitThreshold)
+		const FLLKPerceivedKeeper& Keeper)
 	{
-		// Lit by the FIELD, not by the keeper's own switch. The header says
+		// Marked by the FIELD, not by the keeper's own switch. The header says
 		// why at length; the short version is that a dark keeper standing in
 		// a teammate's cone is lit, and anything else makes light stop being
 		// a shared cost.
-		const bool bLit = Keeper.Brightness > LitThreshold;
+		//
+		// `bLit` is now a floor rather than a threshold, and it is only read
+		// by the senses that gate on "is a lantern burning at all"
+		// (`scanRequiresActiveLantern`, `wakeRequiresActiveLantern`). The
+		// Sweeper below does not use it: its reach is continuous in
+		// detectability, which is the whole of row 80.
+		const float Detectability = FMath::Clamp(Keeper.Detectability, 0.f, 1.f);
+		const bool bLit = Detectability >= LLKLightField::DetectabilityFloor;
 
 		// ---- Sweepers: proximity, with light deciding how far -----------
 		//
@@ -80,9 +90,13 @@ namespace LLKPerception
 		// would invent the single number this game teaches hardest.
 		if (Enemy.AggroRadiusDark.IsSet() && Enemy.AggroRadiusLit.IsSet())
 		{
-			const float Radius = bLit
-				? Enemy.AggroRadiusLit.GetValue()
-				: Enemy.AggroRadiusDark.GetValue();
+			// **Lerped, not chosen.** The two authored radii are the ends of a
+			// range and detectability is the position on it, so a hooded
+			// lantern is noticed from between the two. At 0 and 1 this returns
+			// exactly the two values the switch used to pick, which is why
+			// `data/enemies.json` needed no change for any of this.
+			const float Radius = AggroRadiusAt(
+				Enemy.AggroRadiusDark.GetValue(), Enemy.AggroRadiusLit.GetValue(), Detectability);
 			if (WithinStuds(Perceiver.Position, Keeper.Position, Radius))
 			{
 				return ELLKNoticeSense::LitProximity;
@@ -196,11 +210,10 @@ namespace LLKPerception
 		const FLLKEnemyDef& Enemy,
 		const FLLKPerceiver& Perceiver,
 		const FLLKPerceivedKeeper& Keeper,
-		float LitThreshold,
 		const ILLKVisibilitySource* Visibility)
 	{
 		FLLKNotice Result;
-		Result.Sense = SenseReaching(Enemy, Perceiver, Keeper, LitThreshold);
+		Result.Sense = SenseReaching(Enemy, Perceiver, Keeper);
 
 		// Nothing reached, so there is nothing for a wall to interrupt. Not
 		// asking saves a trace per enemy per keeper per tick for the common
@@ -239,16 +252,19 @@ namespace LLKPerception
 		return Result;
 	}
 
-	float NoticeRangeStuds(const FLLKEnemyDef& Enemy, float Brightness, float LitThreshold)
+	float NoticeRangeStuds(const FLLKEnemyDef& Enemy, float Detectability)
 	{
-		const bool bLit = Brightness > LitThreshold;
+		const float Marked = FMath::Clamp(Detectability, 0.f, 1.f);
+		const bool bLit = Marked >= LLKLightField::DetectabilityFloor;
 
 		// Every return goes through ReachOrZero, so a radius this function
-		// reports is always one SenseReaching would actually act on.
+		// reports is always one SenseReaching would actually act on - and for
+		// the Sweeper it is the same lerp SenseReaching uses, not a restatement
+		// of it, so a debug readout cannot disagree with the behaviour.
 		if (Enemy.AggroRadiusDark.IsSet() && Enemy.AggroRadiusLit.IsSet())
 		{
-			return ReachOrZero(
-				bLit ? Enemy.AggroRadiusLit.GetValue() : Enemy.AggroRadiusDark.GetValue());
+			return AggroRadiusAt(
+				Enemy.AggroRadiusDark.GetValue(), Enemy.AggroRadiusLit.GetValue(), Marked);
 		}
 		if (Enemy.SightRange.IsSet() && Enemy.SightConeDegrees.IsSet())
 		{

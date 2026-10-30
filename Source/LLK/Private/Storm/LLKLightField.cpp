@@ -21,6 +21,30 @@ namespace LLKLightField
 		return Total;
 	}
 
+	float DetectabilityAt(const TArray<FLLKLightSource>& Sources, const FVector& Point)
+	{
+		float Total = 0.f;
+		for (const FLLKLightSource& Source : Sources)
+		{
+			// Radius only. Intensity is deliberately not consulted here: a
+			// level's visual brightness is free to be retuned by eye and must
+			// not move how far an enemy notices from. The two guards differ on
+			// purpose, and `LLK.LightField.Detectability` asserts it.
+			if (Source.Detectability <= 0.f || Source.RadiusCm <= 0.f)
+			{
+				continue;
+			}
+
+			const float DistanceSquared = FVector::DistSquared(Source.Position, Point);
+			const float RadiusSquared = Source.RadiusCm * Source.RadiusCm;
+			Total += Source.Detectability / (1.f + DistanceSquared / RadiusSquared);
+		}
+
+		// Clamped, unlike brightness. See the header: this indexes between two
+		// authored radii, so it has a top.
+		return FMath::Min(Total, 1.f);
+	}
+
 	bool FindBrightestPosition(
 		const TArray<FLLKLightSource>& Sources, FVector& OutPosition, float& OutBrightness)
 	{

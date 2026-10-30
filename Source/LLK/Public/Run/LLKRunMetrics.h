@@ -57,6 +57,22 @@ enum class ELLKRunEvent : uint8
 	LanternOn,
 	LanternOff,
 
+	/**
+	 * A keeper changed lantern level. `Value` is the index, `Detail` the name.
+	 *
+	 * **The question this exists to answer is whether the dial gets used at
+	 * all.** Chris authored three named settings on 2026-10-30, and the
+	 * failure mode for a feature like that is not that it plays badly - it is
+	 * that everybody leaves it on Working for the whole run and nobody ever
+	 * finds out, because the behaviour and the no-behaviour look identical in
+	 * a log. `LitFraction` cannot see it: a run spent entirely hooded and a
+	 * run spent entirely open are both "lit the whole time".
+	 *
+	 * Emitted only on an actual change - `SetActiveLevelIndex` returns false
+	 * for a no-op precisely so this stream stays readable.
+	 */
+	LightLevelChanged,
+
 	/** A relic left a shelf. Row 53's whole point is that this costs light. */
 	RelicTaken,
 

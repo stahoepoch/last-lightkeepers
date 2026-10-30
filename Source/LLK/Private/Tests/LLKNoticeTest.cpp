@@ -40,11 +40,11 @@
 // what made that collide, which means it was always going to.
 namespace LLKNoticeTestFixture
 {
-	FLLKPerceivedKeeper KeeperAt(float Studs, float Brightness)
+	FLLKPerceivedKeeper KeeperAt(float Studs, float Detectability)
 	{
 		FLLKPerceivedKeeper Keeper;
 		Keeper.Position = FVector(LLKUnits::DistanceFromStuds(Studs), 0.f, 0.f);
-		Keeper.Brightness = Brightness;
+		Keeper.Detectability = Detectability;
 		return Keeper;
 	}
 
@@ -100,9 +100,10 @@ bool FLLKNoticeTest::RunTest(const FString& Parameters)
 {
 	using namespace LLKNoticeTestFixture;
 
-	const float Threshold = LLKPerception::LitThresholdFrom(250.f);
-	const float Lit = Threshold + 1.f;
-	const float Dark = Threshold - 1.f;
+	// Detectability, 0 to 1, since row 80. See LLKPerceptionTest for why the
+	// derived brightness threshold could not express a hooded lantern.
+	const float Lit = 1.f;
+	const float Dark = 0.f;
 
 	const FLLKEnemyDef Sweeper = MakeSweeper();
 	const FLLKPerceiver At = FacingForward();
@@ -114,7 +115,7 @@ bool FLLKNoticeTest::RunTest(const FString& Parameters)
 	// ---- 1. a wall stops the notice, and says so ------------------------
 	{
 		const FCountingVisibility Wall(ELLKVisibility::Blocked);
-		const FLLKNotice Notice = LLKPerception::Notice(Sweeper, At, InReach, Threshold, &Wall);
+		const FLLKNotice Notice = LLKPerception::Notice(Sweeper, At, InReach, &Wall);
 
 		TestFalse(TEXT("FAILURE MODE 1: a blocked line does not notice"), Notice.bNoticed);
 		TestEqual(TEXT("and the sense that was stopped is still reported, because "
@@ -130,7 +131,7 @@ bool FLLKNoticeTest::RunTest(const FString& Parameters)
 	// ---- the same enemy, the same keeper, a clear line -------------------
 	{
 		const FCountingVisibility Clear(ELLKVisibility::Clear);
-		const FLLKNotice Notice = LLKPerception::Notice(Sweeper, At, InReach, Threshold, &Clear);
+		const FLLKNotice Notice = LLKPerception::Notice(Sweeper, At, InReach, &Clear);
 
 		TestTrue(TEXT("a clear line notices"), Notice.bNoticed);
 		TestEqual(TEXT("by proximity"), Notice.Sense, ELLKNoticeSense::LitProximity);
@@ -140,7 +141,7 @@ bool FLLKNoticeTest::RunTest(const FString& Parameters)
 	// ---- 2 and 3. Unknown is neither clear nor silently blocked ----------
 	{
 		const FCountingVisibility CannotTell(ELLKVisibility::Unknown);
-		const FLLKNotice Notice = LLKPerception::Notice(Sweeper, At, InReach, Threshold, &CannotTell);
+		const FLLKNotice Notice = LLKPerception::Notice(Sweeper, At, InReach, &CannotTell);
 
 		TestFalse(TEXT("FAILURE MODE 2: an unanswerable trace does not notice"), Notice.bNoticed);
 		TestEqual(TEXT("FAILURE MODE 3: and it is reported as Unknown rather than as Blocked, "
@@ -153,7 +154,7 @@ bool FLLKNoticeTest::RunTest(const FString& Parameters)
 	{
 		AddExpectedError(TEXT("no visibility source"), EAutomationExpectedErrorFlags::Contains, 1);
 
-		const FLLKNotice Notice = LLKPerception::Notice(Sweeper, At, InReach, Threshold, nullptr);
+		const FLLKNotice Notice = LLKPerception::Notice(Sweeper, At, InReach, nullptr);
 
 		TestFalse(TEXT("FAILURE MODE 4: an unwired source notices nothing"), Notice.bNoticed);
 		TestEqual(TEXT("and does not pretend the line was clear"),
@@ -170,7 +171,7 @@ bool FLLKNoticeTest::RunTest(const FString& Parameters)
 
 		const FCountingVisibility Wall(ELLKVisibility::Blocked);
 		const FLLKNotice Notice = LLKPerception::Notice(
-			Warden, At, KeeperAt(200.f, Dark), Threshold, &Wall);
+			Warden, At, KeeperAt(200.f, Dark), &Wall);
 
 		TestTrue(TEXT("FAILURE MODE 5: the Warden notices through a wall, from 200 studs, in the dark"),
 			Notice.bNoticed);
@@ -190,7 +191,7 @@ bool FLLKNoticeTest::RunTest(const FString& Parameters)
 		// The same keeper as the clear-line case above, gone dark: 20 studs is
 		// outside a Sweeper's 12-stud dark radius, so no sense reaches.
 		const FLLKNotice Notice = LLKPerception::Notice(
-			Sweeper, At, KeeperAt(20.f, Dark), Threshold, &Clear);
+			Sweeper, At, KeeperAt(20.f, Dark), &Clear);
 
 		TestEqual(TEXT("no sense reaches a dark keeper at 20 studs"),
 			Notice.Sense, ELLKNoticeSense::None);
@@ -207,7 +208,7 @@ bool FLLKNoticeTest::RunTest(const FString& Parameters)
 
 		// 100 studs, lit, far outside every radius a Sweeper has.
 		const FLLKNotice Notice = LLKPerception::Notice(
-			Sweeper, At, KeeperAt(100.f, Lit), Threshold, &AlwaysClear);
+			Sweeper, At, KeeperAt(100.f, Lit), &AlwaysClear);
 
 		TestFalse(TEXT("FAILURE MODE 7: a source that always answers Clear notices nobody "
 			"it could not already reach"), Notice.bNoticed);

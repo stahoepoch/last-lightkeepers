@@ -94,10 +94,10 @@ TArray<const FLLKEnemyDef*> ULLKEnemyRosterSubsystem::GetAllFamilies() const
 }
 
 float ULLKEnemyRosterSubsystem::NoticeRangeStuds(
-	ELLKEnemyFamily Family, float Brightness, float LitThreshold) const
+	ELLKEnemyFamily Family, float Detectability) const
 {
 	const FLLKEnemyDef* Def = FindFamily(Family);
 	return Def != nullptr
-		? LLKPerception::NoticeRangeStuds(*Def, Brightness, LitThreshold)
+		? LLKPerception::NoticeRangeStuds(*Def, Detectability)
 		: 0.f;
 }

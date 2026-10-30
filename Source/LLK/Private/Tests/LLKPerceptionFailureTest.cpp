@@ -89,7 +89,13 @@ bool FLLKPerceptionFailureTest::RunTest(const FString& Parameters)
 {
 	UE_LOG(LogTemp, Log, TEXT("LLK perception failure test reached RunTest."));
 
-	const float Threshold = LLKPerception::LitThresholdFrom(AuthoredLanternIntensity);
+	// **Detectability, not brightness, since row 80.** The bar is a numerical
+	// floor rather than a derived threshold: `LitThresholdFrom` is gone,
+	// because half the lantern's intensity was a bar every lit keeper cleared
+	// at distance zero no matter how dim their lantern was.
+	const float Floor = LLKLightField::DetectabilityFloor;
+	const float Lit = 1.f;
+	const float Dark = 0.f;
 
 	// =====================================================================
 	// 1. A LIT TEAMMATE CAN EXPOSE A DARK TEAMMATE
@@ -116,51 +122,75 @@ bool FLLKPerceptionFailureTest::RunTest(const FString& Parameters)
 
 		FLLKPerceivedKeeper B;
 		B.Position = KeeperB;
-		B.Brightness = LLKLightField::BrightnessAt(ALit, KeeperB);
+		B.Detectability = LLKLightField::DetectabilityAt(ALit, KeeperB);
 
 		TestTrue(TEXT("a dark keeper 10 studs from a lit teammate is measurably lit"),
-			B.Brightness > Threshold);
+			B.Detectability > Floor);
 		TestEqual(TEXT("so a Sweeper 20 studs away notices them, on a lantern they never lit"),
-			LLKPerception::SenseReaching(SweeperDef, Sweeper, B, Threshold),
+			LLKPerception::SenseReaching(SweeperDef, Sweeper, B),
 			ELLKNoticeSense::LitProximity);
 
 		// --- A's lantern off, nothing else changed --------------------
 		const TArray<FLLKLightSource> AllDark;
 		FLLKPerceivedKeeper BDark = B;
-		BDark.Brightness = LLKLightField::BrightnessAt(AllDark, KeeperB);
+		BDark.Detectability = LLKLightField::DetectabilityAt(AllDark, KeeperB);
 
 		TestEqual(TEXT("with the crew dark that same keeper has no light on them at all"),
-			BDark.Brightness, 0.f);
+			BDark.Detectability, 0.f);
 		TestEqual(TEXT("and the same Sweeper in the same spot notices nothing"),
-			LLKPerception::SenseReaching(SweeperDef, Sweeper, BDark, Threshold),
+			LLKPerception::SenseReaching(SweeperDef, Sweeper, BDark),
 			ELLKNoticeSense::None);
 
 		// --- how close you have to stand, which is a derived answer ---
 		//
-		// **This relationship is not a coincidence and is worth pinning.**
-		// The lit threshold is half the lantern's intensity, and
-		// `BrightnessAt` is `I / (1 + d^2/r^2)`, so the crossover sits
-		// exactly at `d == r`: a teammate exposes you out to the lantern's
-		// own authored attenuation radius and not one stud further. That
-		// makes "stay outside their light" a rule a player can see rather
-		// than a number they have to be told.
-		const float JustInside =
-			LLKLightField::BrightnessAt(ALit, StudsAlongX(LanternRadiusStuds - 1.f));
-		const float JustOutside =
-			LLKLightField::BrightnessAt(ALit, StudsAlongX(LanternRadiusStuds + 1.f));
+		// **This assertion changed shape at row 80 and the reason is a real
+		// design consequence, not a test being fixed up.** It used to pin a
+		// crossover: the threshold was `I/2`, `BrightnessAt` is
+		// `I / (1 + d^2/r^2)`, so "lit" meant exactly `d < r` and a teammate
+		// exposed you out to their authored radius and *not one stud further*.
+		// A cliff, and a very teachable one.
+		//
+		// Detectability has no such cliff, deliberately. `LLKLightField`'s own
+		// header forbids one - *"a hard cutoff would make the brightest
+		// position jump discontinuously as a keeper walked a step, and an
+		// enemy that changes its mind on a boundary reads as broken rather
+		// than as dangerous"* - and Chris asked for the opposite of a cliff in
+		// so many words: *"even the slightest light charges an enemy and they
+		// move, but the brighter the more powerful"*.
+		//
+		// So the teachable rule is no longer "stay outside their light". It is
+		// "distance from their light always helps", which is what these
+		// assertions now pin: monotonic decay, converging on the dark radius
+		// and never reaching it. Whether the softer rule teaches as well as
+		// the cliff did is a playtest question (row 79), not a code one.
+		const float Inside = LLKLightField::DetectabilityAt(
+			ALit, StudsAlongX(LanternRadiusStuds - 1.f));
+		const float Outside = LLKLightField::DetectabilityAt(
+			ALit, StudsAlongX(LanternRadiusStuds + 1.f));
+		const float WellOutside = LLKLightField::DetectabilityAt(ALit, StudsAlongX(40.f));
 
-		TestTrue(TEXT("one stud inside the lantern's radius a teammate is still lit"),
-			JustInside > Threshold);
-		TestTrue(TEXT("one stud outside it they are not"), JustOutside < Threshold);
-		TestTrue(TEXT("so exposure reaches exactly as far as the lantern says it does"),
-			JustInside > Threshold && JustOutside < Threshold);
+		TestTrue(TEXT("stepping out of a teammate's radius always reduces exposure"),
+			Outside < Inside);
+		TestTrue(TEXT("and walking further reduces it again, with no boundary to game"),
+			WellOutside < Outside);
+		TestTrue(TEXT("at the radius itself a teammate is half as marked as the holder"),
+			FMath::IsNearlyEqual(
+				LLKLightField::DetectabilityAt(ALit, StudsAlongX(LanternRadiusStuds)), 0.5f, 0.01f));
 
-		// And at 40 studs the teammate is genuinely clear, not marginally so.
+		// The consequence that matters, stated in studs rather than in field
+		// units: a keeper drifting away from a lit teammate is noticed from
+		// steadily nearer, and the floor is the authored dark radius.
+		const FLLKEnemyDef SweeperReach = MakeSweeper();
+		const float NearReach = LLKPerception::NoticeRangeStuds(SweeperReach, Inside);
+		const float FarReach = LLKPerception::NoticeRangeStuds(SweeperReach, WellOutside);
+		TestTrue(TEXT("so the Sweeper's reach shrinks as the keeper walks away"),
+			FarReach < NearReach);
+		TestTrue(TEXT("and never shrinks past the authored dark radius"), FarReach >= 12.f);
+		TestTrue(TEXT("nor grows past the authored lit one"), NearReach <= 38.f);
+
 		FLLKPerceivedKeeper Far;
 		Far.Position = StudsAlongX(40.f);
-		Far.Brightness = LLKLightField::BrightnessAt(ALit, Far.Position);
-		TestTrue(TEXT("a keeper 40 studs from the lit one is not exposed by them"),
-			Far.Brightness < Threshold);
+		Far.Detectability = WellOutside;
 	}
 
 	// =====================================================================
@@ -179,10 +209,10 @@ bool FLLKPerceptionFailureTest::RunTest(const FString& Parameters)
 
 		FLLKPerceivedKeeper Behind;
 		Behind.Position = StudsAlongX(-10.f);
-		Behind.Brightness = Threshold + 1.f;
+		Behind.Detectability = Lit;
 
 		TestEqual(TEXT("a lit keeper directly BEHIND a Sweeper is still noticed"),
-			LLKPerception::SenseReaching(SweeperDef, Sweeper, Behind, Threshold),
+			LLKPerception::SenseReaching(SweeperDef, Sweeper, Behind),
 			ELLKNoticeSense::LitProximity);
 
 		// Every direction, not just the convenient two.
@@ -194,11 +224,11 @@ bool FLLKPerceptionFailureTest::RunTest(const FString& Parameters)
 			FLLKPerceivedKeeper Around;
 			Around.Position = FVector(
 				Distance * FMath::Cos(Radians), Distance * FMath::Sin(Radians), 0.f);
-			Around.Brightness = Threshold + 1.f;
+			Around.Detectability = Lit;
 
 			TestEqual(
 				*FString::Printf(TEXT("and noticed from %d degrees, by proximity not sight"), Degrees),
-				LLKPerception::SenseReaching(SweeperDef, Sweeper, Around, Threshold),
+				LLKPerception::SenseReaching(SweeperDef, Sweeper, Around),
 				ELLKNoticeSense::LitProximity);
 		}
 
@@ -207,8 +237,8 @@ bool FLLKPerceptionFailureTest::RunTest(const FString& Parameters)
 		FLLKPerceiver Reversed = Sweeper;
 		Reversed.Facing = -FVector::ForwardVector;
 		TestEqual(TEXT("turning a Sweeper around changes nothing it notices"),
-			LLKPerception::SenseReaching(SweeperDef, Reversed, Behind, Threshold),
-			LLKPerception::SenseReaching(SweeperDef, Sweeper, Behind, Threshold));
+			LLKPerception::SenseReaching(SweeperDef, Reversed, Behind),
+			LLKPerception::SenseReaching(SweeperDef, Sweeper, Behind));
 	}
 
 	// =====================================================================
@@ -226,31 +256,31 @@ bool FLLKPerceptionFailureTest::RunTest(const FString& Parameters)
 
 		FLLKPerceivedKeeper Ahead;
 		Ahead.Position = StudsAlongX(50.f);
-		Ahead.Brightness = Threshold + 1.f;
+		Ahead.Detectability = Lit;
 
 		TestEqual(TEXT("a complete Stocker sees a keeper ahead of it"),
-			LLKPerception::SenseReaching(MakeStocker(), Stocker, Ahead, Threshold),
+			LLKPerception::SenseReaching(MakeStocker(), Stocker, Ahead),
 			ELLKNoticeSense::SightCone);
 
 		FLLKEnemyDef NoCone = MakeStocker();
 		NoCone.SightConeDegrees.Reset();
 		TestEqual(TEXT("a Stocker with a range but no cone sees nothing"),
-			LLKPerception::SenseReaching(NoCone, Stocker, Ahead, Threshold),
+			LLKPerception::SenseReaching(NoCone, Stocker, Ahead),
 			ELLKNoticeSense::None);
 
 		FLLKEnemyDef NoRange = MakeStocker();
 		NoRange.SightRange.Reset();
 		TestEqual(TEXT("and a Stocker with a cone but no range sees nothing either"),
-			LLKPerception::SenseReaching(NoRange, Stocker, Ahead, Threshold),
+			LLKPerception::SenseReaching(NoRange, Stocker, Ahead),
 			ELLKNoticeSense::None);
 
 		// Not even at zero distance, where an unbounded-vision bug would
 		// most plausibly still return a hit.
 		FLLKPerceivedKeeper Touching;
 		Touching.Position = FVector::ZeroVector;
-		Touching.Brightness = Threshold + 1.f;
+		Touching.Detectability = Lit;
 		TestEqual(TEXT("a half-imported Stocker does not notice somebody standing on it"),
-			LLKPerception::SenseReaching(NoRange, Stocker, Touching, Threshold),
+			LLKPerception::SenseReaching(NoRange, Stocker, Touching),
 			ELLKNoticeSense::None);
 	}
 
@@ -268,18 +298,18 @@ bool FLLKPerceptionFailureTest::RunTest(const FString& Parameters)
 		// promises. "Go dark and break sight."
 		FLLKPerceivedKeeper DarkClose;
 		DarkClose.Position = StudsAlongX(5.f);
-		DarkClose.Brightness = Threshold - 1.f;
+		DarkClose.Detectability = Dark;
 		TestEqual(TEXT("a dark keeper can walk right past a Window Walker"),
-			LLKPerception::SenseReaching(WalkerDef, Walker, DarkClose, Threshold),
+			LLKPerception::SenseReaching(WalkerDef, Walker, DarkClose),
 			ELLKNoticeSense::None);
 
 		// Lit, but outside wakeRange and inside the bare sightRange. If that
 		// range counted as vision, every mannequin would be a watchman.
 		FLLKPerceivedKeeper LitBetween;
 		LitBetween.Position = StudsAlongX(34.f);
-		LitBetween.Brightness = Threshold + 1.f;
+		LitBetween.Detectability = Lit;
 		TestEqual(TEXT("a lit keeper inside the bare sightRange but outside wakeRange is unnoticed"),
-			LLKPerception::SenseReaching(WalkerDef, Walker, LitBetween, Threshold),
+			LLKPerception::SenseReaching(WalkerDef, Walker, LitBetween),
 			ELLKNoticeSense::None);
 
 		// And a Walker with ONLY the bare range has no sense whatsoever.
@@ -287,17 +317,17 @@ bool FLLKPerceptionFailureTest::RunTest(const FString& Parameters)
 		RangeOnly.WakeRange.Reset();
 		FLLKPerceivedKeeper LitClose;
 		LitClose.Position = StudsAlongX(5.f);
-		LitClose.Brightness = Threshold + 1.f;
+		LitClose.Detectability = Lit;
 		TestEqual(TEXT("a Walker with a sight range and no wake range notices nothing at all"),
-			LLKPerception::SenseReaching(RangeOnly, Walker, LitClose, Threshold),
+			LLKPerception::SenseReaching(RangeOnly, Walker, LitClose),
 			ELLKNoticeSense::None);
 		TestEqual(TEXT("and offers no notice range, so nothing can be sized against it"),
-			LLKPerception::NoticeRangeStuds(RangeOnly, Threshold + 1.f, Threshold), 0.f);
+			LLKPerception::NoticeRangeStuds(RangeOnly, Lit), 0.f);
 
 		// The positive control, so the four negatives above are not all
 		// passing for the same uninteresting reason.
 		TestEqual(TEXT("but a lit keeper inside wakeRange does wake it"),
-			LLKPerception::SenseReaching(WalkerDef, Walker, LitClose, Threshold),
+			LLKPerception::SenseReaching(WalkerDef, Walker, LitClose),
 			ELLKNoticeSense::Wake);
 	}
 
@@ -317,7 +347,7 @@ bool FLLKPerceptionFailureTest::RunTest(const FString& Parameters)
 		// false positive out of a defaulted radius.
 		FLLKPerceivedKeeper PointBlank;
 		PointBlank.Position = FVector::ZeroVector;
-		PointBlank.Brightness = AuthoredLanternIntensity * 4.f;
+		PointBlank.Detectability = Lit;
 
 		struct FMalformed
 		{
@@ -371,7 +401,7 @@ bool FLLKPerceptionFailureTest::RunTest(const FString& Parameters)
 		for (const FMalformed& Case : Broken)
 		{
 			const ELLKNoticeSense Sense =
-				LLKPerception::SenseReaching(Case.Def, At, PointBlank, Threshold);
+				LLKPerception::SenseReaching(Case.Def, At, PointBlank);
 
 			TestEqual(
 				*FString::Printf(TEXT("%s notices nothing, even point blank and lit"), Case.What),
@@ -385,7 +415,7 @@ bool FLLKPerceptionFailureTest::RunTest(const FString& Parameters)
 
 			TestEqual(
 				*FString::Printf(TEXT("and %s offers no range to invent from"), Case.What),
-				LLKPerception::NoticeRangeStuds(Case.Def, PointBlank.Brightness, Threshold), 0.f);
+				LLKPerception::NoticeRangeStuds(Case.Def, PointBlank.Detectability), 0.f);
 		}
 	}
 
@@ -406,23 +436,23 @@ bool FLLKPerceptionFailureTest::RunTest(const FString& Parameters)
 		// which is what "outside perception" means operationally.
 		for (const float Studs : { 1.f, 20.f, 100.f, 500.f })
 		{
-			for (const float Brightness : { 0.f, AuthoredLanternIntensity })
+			for (const float Marked : { Dark, Lit })
 			{
 				FLLKPerceivedKeeper Keeper;
 				Keeper.Position = StudsAlongX(Studs);
-				Keeper.Brightness = Brightness;
+				Keeper.Detectability = Marked;
 
 				TestEqual(
 					*FString::Printf(
-						TEXT("the Warden's answer at %.0f studs and %.0f brightness is StormAuthority"),
-						Studs, Brightness),
-					LLKPerception::SenseReaching(Warden, At, Keeper, Threshold),
+						TEXT("the Warden's answer at %.0f studs and %.2f detectability is StormAuthority"),
+						Studs, Marked),
+					LLKPerception::SenseReaching(Warden, At, Keeper),
 					ELLKNoticeSense::StormAuthority);
 			}
 		}
 
-		TestEqual(TEXT("row 7: and it has no notice range at any brightness"),
-			LLKPerception::NoticeRangeStuds(Warden, AuthoredLanternIntensity, Threshold), 0.f);
+		TestEqual(TEXT("row 7: and it has no notice range at any detectability"),
+			LLKPerception::NoticeRangeStuds(Warden, Lit), 0.f);
 		TestFalse(TEXT("and it still cannot be damaged"), Warden.CanBeDamaged());
 
 		// --- the other half: convergence is the light field's answer ---
@@ -457,9 +487,13 @@ bool FLLKPerceptionFailureTest::RunTest(const FString& Parameters)
 		// does not feed the other.
 		FLLKPerceivedKeeper BrightKeeper;
 		BrightKeeper.Position = Far;
-		BrightKeeper.Brightness = TargetBrightness;
+		// Clamped into the 0-1 detectability range: the field's brightness is
+		// in candelas and this struct is not any more, which is the split row
+		// 80 introduced. The Warden ignores the value either way, which is
+		// exactly what this assertion is for.
+		BrightKeeper.Detectability = Lit;
 		TestEqual(TEXT("the Warden does not perceive its own convergence target either"),
-			LLKPerception::SenseReaching(Warden, At, BrightKeeper, Threshold),
+			LLKPerception::SenseReaching(Warden, At, BrightKeeper),
 			ELLKNoticeSense::StormAuthority);
 	}
 

@@ -175,24 +175,22 @@ FLLKSweeperSenses ALLKSweeper::Observe(const float DeltaSeconds)
 	Senses.KeeperPosition = KeeperActor->GetActorLocation();
 	Senses.DistanceToKeeperStuds = DistanceStuds;
 
-	// **Brightness at the keeper, not "is their lantern on".** The light field
-	// is the one definition of how lit a spot is, and a keeper standing in a
-	// teammate's cone with their own lantern off is lit - which is what makes
-	// light a shared cost.
-	float Brightness = 0.f;
-	float LanternIntensity = 0.f;
+	// **Detectability at the keeper, not "is their lantern on".** The light
+	// field is the one definition of how marked a spot is, and a keeper
+	// standing in a teammate's cone with their own lantern off is marked -
+	// which is what makes light a shared cost.
+	//
+	// **This read brightness and a derived threshold until row 80.** Both are
+	// gone, and the reason is worth keeping: the threshold was half the
+	// lantern's intensity, a keeper's own lantern is at distance zero, so
+	// every lit keeper cleared it by a factor of two no matter how dim or how
+	// small their light was. A hooded setting could not have meant anything.
+	// Detectability is authored per level, so now it can.
+	float Detectability = 0.f;
 	if (const ULLKZonePressureSubsystem* Pressure = World->GetSubsystem<ULLKZonePressureSubsystem>())
 	{
-		const TArray<FLLKLightSource> Sources = Pressure->GetLitLightSources();
-		Brightness = LLKLightField::BrightnessAt(Sources, Senses.KeeperPosition);
-
-		// The threshold is derived from a lantern's own authored intensity, so
-		// the brightest source present stands in for it. One definition of
-		// "lit enough to notice", shared with the relics (row 53).
-		for (const FLLKLightSource& Source : Sources)
-		{
-			LanternIntensity = FMath::Max(LanternIntensity, Source.Intensity);
-		}
+		Detectability = LLKLightField::DetectabilityAt(
+			Pressure->GetLitLightSources(), Senses.KeeperPosition);
 	}
 
 	FLLKPerceiver Perceiver;
@@ -201,7 +199,7 @@ FLLKSweeperSenses ALLKSweeper::Observe(const float DeltaSeconds)
 
 	FLLKPerceivedKeeper Perceived;
 	Perceived.Position = Senses.KeeperPosition;
-	Perceived.Brightness = Brightness;
+	Perceived.Detectability = Detectability;
 
 	// The trace, through the seam M2.5 built for exactly this: perception asks
 	// a visibility source and never learns that a `UWorld` exists. `Unknown`
@@ -209,8 +207,7 @@ FLLKSweeperSenses ALLKSweeper::Observe(const float DeltaSeconds)
 	// through geometry nobody could measure.
 	const FLLKWorldVisibility Visibility(World, this);
 
-	Senses.Notice = LLKPerception::Notice(
-		Def, Perceiver, Perceived, LLKPerception::LitThresholdFrom(LanternIntensity), &Visibility);
+	Senses.Notice = LLKPerception::Notice(Def, Perceiver, Perceived, &Visibility);
 
 	return Senses;
 }

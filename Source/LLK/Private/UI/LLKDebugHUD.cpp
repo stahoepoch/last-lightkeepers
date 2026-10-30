@@ -838,10 +838,12 @@ void ALLKDebugHUD::DrawStormPanel(
 	{
 		if (const FLLKEnemyDef* Sweeper = Roster->FindFamily(ELLKEnemyFamily::Sweepers))
 		{
-			const float Threshold = LLKPerception::LitThresholdFrom(
-				Storm->GetRules() != nullptr ? 250.f : 0.f);
-			NoticedLit = LLKPerception::NoticeRangeStuds(*Sweeper, Threshold + 1.f, Threshold);
-			NoticedDark = LLKPerception::NoticeRangeStuds(*Sweeper, 0.f, Threshold);
+			// The two ends of the range, asked for by detectability rather
+			// than by a brightness: 1 is a fully open lantern and 0 is a dark
+			// crew. Row 80 made everything between them reachable too, so this
+			// readout now shows the ends of a span and not two states.
+			NoticedLit = LLKPerception::NoticeRangeStuds(*Sweeper, 1.f);
+			NoticedDark = LLKPerception::NoticeRangeStuds(*Sweeper, 0.f);
 		}
 	}
 

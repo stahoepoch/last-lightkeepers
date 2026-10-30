@@ -42,6 +42,7 @@
 #include "Data/LLKLanternData.h"
 #include "Lantern/LLKLanternComponent.h"
 #include "Lantern/LLKLanternFeel.h"
+#include "LLKUnits.h"
 #include "LLKLanternLightComponent.generated.h"
 
 UCLASS(ClassGroup = (LLK), meta = (BlueprintSpawnableComponent))
@@ -70,9 +71,53 @@ public:
 	UFUNCTION(BlueprintPure, Category = "LLK|Lantern")
 	ELLKDataSource GetLightSource() const { return LightSource; }
 
-	/** The reach in STUDS, after resolution. What enemy and visibility logic must agree with. */
+	/** The reach in STUDS at the active level. What enemy and visibility logic must agree with. */
 	UFUNCTION(BlueprintPure, Category = "LLK|Lantern")
-	float GetRadiusStuds() const { return ResolvedRules.RadiusStuds; }
+	float GetRadiusStuds() const { return GetActiveLevel().RadiusStuds; }
+
+	/**
+	 * The named setting this lantern is currently on.
+	 *
+	 * Falls back to a synthesised single level when the asset carries none -
+	 * see `FLLKLanternLightRules::ResolveLevel`. So this is always a real
+	 * level and callers never branch on whether levels were authored.
+	 */
+	FLLKLanternLightLevel GetActiveLevel() const { return ResolvedRules.ResolveLevel(ActiveLevelIndex); }
+
+	/** Which level, as an index into the authored list. */
+	UFUNCTION(BlueprintPure, Category = "LLK|Lantern")
+	int32 GetActiveLevelIndex() const { return ActiveLevelIndex; }
+
+	/**
+	 * How far this light reaches as far as GAMEPLAY is concerned, in cm.
+	 *
+	 * **Not `AttenuationRadius`, and that is the point.** Chris's rule for
+	 * levels, 2026-10-30: *"transitions smoothly lerp visually, while gameplay
+	 * resolves to the named state."* A visual lerp necessarily moves the
+	 * component's attenuation radius part-way between two settings, and
+	 * `ULLKZonePressureSubsystem::GetLitLightSources` used to read exactly
+	 * that value - so a crossfade would have made relic legibility and enemy
+	 * reach wobble for the duration of a cosmetic transition.
+	 *
+	 * This is the same seam `GetGameplayLightLocation` exists for, in the
+	 * other axis: that one keeps the sway out of position, this one keeps the
+	 * fade out of reach. The conversion is `LLKUnits`' and happens here only
+	 * (row 61).
+	 */
+	float GetGameplayRadiusCm() const { return LLKUnits::DistanceFromStuds(GetRadiusStuds()); }
+
+	/**
+	 * Switches to a named level by index, clamped, and applies it.
+	 *
+	 * Idempotent, and returns true only when the level actually changed - the
+	 * caller is what emits `ELLKRunEvent::LightLevelChanged`, and a telemetry
+	 * stream full of no-op switches would make the one metric that can answer
+	 * "did anybody use the dial" unreadable.
+	 */
+	bool SetActiveLevelIndex(int32 Index);
+
+	/** How many settings this lantern has. One when none are authored. */
+	int32 GetLevelCount() const { return ResolvedRules.LevelCount(); }
 
 	/** The rules in use, so a test asserts against the same values the light applies. */
 	const FLLKLanternLightRules& GetResolvedRules() const { return ResolvedRules; }
@@ -180,6 +225,18 @@ protected:
 	UPROPERTY(VisibleInstanceOnly, Category = "LLK|Lantern")
 	ELLKDataSource LightSource = ELLKDataSource::Unresolved;
 
+	/**
+	 * Which authored level is in use. Set from `DefaultLevelName` on resolve.
+	 *
+	 * **This component is not where the level is decided**, for the same
+	 * reason it is not where the lantern's on/off state is decided: this is a
+	 * listener (see the file header), and a replicated fact needs one writer.
+	 * Whatever owns the keeper's input pushes a level down through
+	 * `SetActiveLevelIndex`; this stores it so the light and the field agree.
+	 */
+	UPROPERTY(VisibleInstanceOnly, Category = "LLK|Lantern")
+	int32 ActiveLevelIndex = 0;
+
 	UPROPERTY()
 	TWeakObjectPtr<ULLKLanternComponent> WatchedLantern;
 
@@ -211,4 +268,7 @@ protected:
 
 	/** Advances the cosmetic filter and applies it. Never touches gameplay. */
 	void TickFeel(float DeltaSeconds);
+
+	/** Pushes the active level's reach and cone onto the light. Instant, by design. */
+	void ApplyActiveLevel();
 };

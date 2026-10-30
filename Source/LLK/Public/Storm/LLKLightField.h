@@ -48,6 +48,20 @@ struct FLLKLightSource
 
 	/** Attenuation radius in CENTIMETRES - already converted, row 61. */
 	float RadiusCm = 0.f;
+
+	/**
+	 * How much this source marks whoever it falls on, 0 to 1.
+	 *
+	 * Authored per lantern level (`FLLKLanternLightLevel::Detectability`) and
+	 * never computed from `Intensity`, because a value derived from intensity
+	 * cancels out of every threshold in the game. One is today's lit lantern;
+	 * a hooded one is lower and a work light is at the top.
+	 *
+	 * Defaults to 1 so that a source constructed without thinking about this -
+	 * a distress pulse, a test fixture, anything written before levels existed
+	 * - behaves exactly as it did when lit was a bool.
+	 */
+	float Detectability = 1.f;
 };
 
 namespace LLKLightField
@@ -67,6 +81,52 @@ namespace LLKLightField
 	 * mind on a boundary reads as broken rather than as dangerous.
 	 */
 	LLK_API float BrightnessAt(const TArray<FLLKLightSource>& Sources, const FVector& Point);
+
+	/**
+	 * How marked a keeper standing at this point is, from 0 to 1.
+	 *
+	 * **The enemy-facing half of the field, and the reason it is a separate
+	 * function from `BrightnessAt`.** Brightness answers "can a relic be read
+	 * here", and it is measured in candelas that cancel out of their own
+	 * threshold. This answers "how much attention does standing here buy", and
+	 * it is measured in a number Chris authored per lantern level. The two were
+	 * one question while light was a bool, and `FLLKPerceivedKeeper`'s header
+	 * already named the condition for splitting them: *"if a playtest wants
+	 * them different, the difference should be authored in `data/`"*. Row 80
+	 * authored it.
+	 *
+	 * Same falloff as brightness - `D / (1 + d^2/r^2)`, summed - so there is
+	 * one definition of how far light carries and a hooded lantern falls off
+	 * on the same curve as an open one. Summing is the same physics argument
+	 * `BrightnessAt` makes: three keepers huddled together are more noticeable
+	 * than one, without anybody deciding that they should be.
+	 *
+	 * **Clamped to 1 at the top**, which is the one place this differs from
+	 * brightness. The result indexes between `aggroRadiusDark` and
+	 * `aggroRadiusLit`, and a crew of four with open lanterns must not be
+	 * noticed from four times the lit radius - row 5 prices light, and a
+	 * superlinear price on standing together would delete the huddling
+	 * instinct `LLKLightField`'s own header is built to reward.
+	 */
+	LLK_API float DetectabilityAt(const TArray<FLLKLightSource>& Sources, const FVector& Point);
+
+	/**
+	 * The detectability below which nothing notices at all.
+	 *
+	 * **A numerical guard, not a balance value, and the difference matters
+	 * because this is the kind of constant that gets tuned by accident.** The
+	 * falloff is asymptotic, so a lantern on the far side of the building
+	 * contributes a vanishing but non-zero amount to every keeper in the world.
+	 * Without a floor, `scanRequiresActiveLantern` and `wakeRequiresActiveLantern`
+	 * would wake every mannequin on the map the moment anyone lit anything.
+	 *
+	 * 0.01 is where `D / (1 + d^2/r^2)` puts a single full-detectability source
+	 * at roughly ten times its own radius - 300 studs at today's reach, which
+	 * is further than any authored sightline and further than any room. It is
+	 * derived from the curve rather than chosen, which is why it is here and
+	 * not in `data/`.
+	 */
+	constexpr float DetectabilityFloor = 0.01f;
 
 	/**
 	 * The brightest source position, or false when nothing is lit.

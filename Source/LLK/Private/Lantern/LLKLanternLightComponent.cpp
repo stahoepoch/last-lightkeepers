@@ -201,16 +201,12 @@ void ULLKLanternLightComponent::ResolveAndApplyLight()
 		}
 	}
 
-	// The one conversion, through the one authority (row 61). A raw radius in
-	// centimetres here would make this the second place spatial values are
-	// authored, which is precisely what LLKUnits.h exists to prevent.
-	SetAttenuationRadius(LLKUnits::DistanceFromStuds(ResolvedRules.RadiusStuds));
-
-	// Outer is the authored angle - the edge of what is lit, and the half
-	// other systems read. Inner is a fraction of it and stays in code,
-	// because it softens the falloff and changes nothing about reach.
-	SetOuterConeAngle(ResolvedRules.ConeAngleDegrees);
-	SetInnerConeAngle(ResolvedRules.ConeAngleDegrees * InnerConeFraction);
+	// The level comes from the data by NAME, so reordering `levels` in the
+	// JSON cannot change what a lantern switches on to. Clamped by
+	// DefaultLevelIndex, which returns 0 rather than INDEX_NONE for a name
+	// nobody authored - a light with no level would be a light with no reach.
+	ActiveLevelIndex = ResolvedRules.DefaultLevelIndex();
+	ApplyActiveLevel();
 
 	SetIntensity(ResolvedRules.Intensity);
 	SetLightColor(ResolvedRules.WarmColor.ToLinearColor());
@@ -222,18 +218,65 @@ void ULLKLanternLightComponent::ResolveAndApplyLight()
 			TEXT("ULLKLanternLightComponent: no ULLKLanternData resolved - running on DECLARED FALLBACK light ")
 			TEXT("(radius %.0f studs / %.0f cm, cone %.0f deg, intensity %.1f, shadows %s). ")
 			TEXT("Run Tools/import_data.py and set LanternData."),
-			ResolvedRules.RadiusStuds, LLKUnits::DistanceFromStuds(ResolvedRules.RadiusStuds),
-			ResolvedRules.ConeAngleDegrees, ResolvedRules.Intensity,
+			GetRadiusStuds(), GetGameplayRadiusCm(),
+			GetActiveLevel().ConeAngleDegrees, ResolvedRules.Intensity,
 			ResolvedRules.bCastsShadows ? TEXT("on") : TEXT("off"));
 	}
 	else
 	{
+		// The level count is in the log on purpose. `light.levels` does not
+		// exist in `data/lantern.json` yet, so a current asset reports ONE
+		// level - which is the line that tells whoever reads it that the
+		// importer has not been taught the key rather than that the dial is
+		// broken. See docs/HANDOFF-CODEX-LANTERN-LEVELS.md.
+		const FLLKLanternLightLevel Level = GetActiveLevel();
 		UE_LOG(LogLLK, Log,
-			TEXT("ULLKLanternLightComponent: light from ULLKLanternData - radius %.0f studs / %.0f cm, ")
-			TEXT("cone %.0f deg, intensity %.1f."),
-			ResolvedRules.RadiusStuds, LLKUnits::DistanceFromStuds(ResolvedRules.RadiusStuds),
-			ResolvedRules.ConeAngleDegrees, ResolvedRules.Intensity);
+			TEXT("ULLKLanternLightComponent: light from ULLKLanternData - level %s (%d of %d), ")
+			TEXT("radius %.0f studs / %.0f cm, cone %.0f deg, intensity %.1f, detectability %.2f."),
+			*Level.Name.ToString(), ActiveLevelIndex + 1, GetLevelCount(),
+			Level.RadiusStuds, GetGameplayRadiusCm(),
+			Level.ConeAngleDegrees, ResolvedRules.Intensity, Level.Detectability);
 	}
+}
+
+void ULLKLanternLightComponent::ApplyActiveLevel()
+{
+	const FLLKLanternLightLevel Level = GetActiveLevel();
+
+	// The one conversion, through the one authority (row 61). A raw radius in
+	// centimetres here would make this the second place spatial values are
+	// authored, which is precisely what LLKUnits.h exists to prevent.
+	//
+	// Applied instantly. Chris's rule is that gameplay resolves to the named
+	// state while the LOOK lerps, so a future crossfade belongs in TickFeel
+	// alongside the sway - never here, and never where
+	// GetGameplayRadiusCm could read it.
+	SetAttenuationRadius(LLKUnits::DistanceFromStuds(Level.RadiusStuds));
+
+	// Outer is the authored angle - the edge of what is lit, and the half
+	// other systems read. Inner is a fraction of it and stays in code,
+	// because it softens the falloff and changes nothing about reach.
+	SetOuterConeAngle(Level.ConeAngleDegrees);
+	SetInnerConeAngle(Level.ConeAngleDegrees * InnerConeFraction);
+}
+
+bool ULLKLanternLightComponent::SetActiveLevelIndex(int32 Index)
+{
+	const int32 Clamped = FMath::Clamp(Index, 0, GetLevelCount() - 1);
+	if (Clamped == ActiveLevelIndex)
+	{
+		return false;
+	}
+
+	ActiveLevelIndex = Clamped;
+	ApplyActiveLevel();
+
+	const FLLKLanternLightLevel Level = GetActiveLevel();
+	UE_LOG(LogLLK, Log,
+		TEXT("ULLKLanternLightComponent: level %s - reach %.0f studs, cone %.0f deg, ")
+		TEXT("detectability %.2f."),
+		*Level.Name.ToString(), Level.RadiusStuds, Level.ConeAngleDegrees, Level.Detectability);
+	return true;
 }
 
 void ULLKLanternLightComponent::WatchLantern(ULLKLanternComponent* InLantern)

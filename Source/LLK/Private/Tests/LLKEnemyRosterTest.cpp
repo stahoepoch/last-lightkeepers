@@ -46,7 +46,7 @@ bool FLLKEnemyRosterTest::RunTest(const FString& Parameters)
 	// The number that matters: a missing roster must not hand a caller a
 	// radius. `LLKStoreFloorPlan` will size sightlines against this.
 	TestEqual(TEXT("and offers no notice range to size a sightline against"),
-		Roster->NoticeRangeStuds(ELLKEnemyFamily::Sweepers, 999.f, 1.f), 0.f);
+		Roster->NoticeRangeStuds(ELLKEnemyFamily::Sweepers, 1.f), 0.f);
 
 	// ---- 2. a table is queried by FAMILY, not by row name ---------------
 	//
@@ -92,18 +92,23 @@ bool FLLKEnemyRosterTest::RunTest(const FString& Parameters)
 	TestNull(TEXT("a family absent from the table is nullptr, never a near-miss row"),
 		Roster->FindFamily(ELLKEnemyFamily::Glimmers));
 	TestEqual(TEXT("and its notice range is zero rather than a neighbour's"),
-		Roster->NoticeRangeStuds(ELLKEnemyFamily::Glimmers, 999.f, 1.f), 0.f);
+		Roster->NoticeRangeStuds(ELLKEnemyFamily::Glimmers, 1.f), 0.f);
 
 	// ---- 3. the roster's range agrees with the rule ---------------------
 	//
 	// Row 7 through the roster rather than through the rule, since this is
 	// the path a spawner will take.
 	TestEqual(TEXT("a lit keeper is noticed from the Sweeper's lit radius"),
-		Roster->NoticeRangeStuds(ELLKEnemyFamily::Sweepers, 200.f, 125.f), 38.f);
+		Roster->NoticeRangeStuds(ELLKEnemyFamily::Sweepers, 1.f), 38.f);
 	TestEqual(TEXT("a dark one from the dark radius"),
-		Roster->NoticeRangeStuds(ELLKEnemyFamily::Sweepers, 10.f, 125.f), 12.f);
+		Roster->NoticeRangeStuds(ELLKEnemyFamily::Sweepers, 0.f), 12.f);
 	TestEqual(TEXT("and the Warden from neither"),
-		Roster->NoticeRangeStuds(ELLKEnemyFamily::Warden, 200.f, 125.f), 0.f);
+		Roster->NoticeRangeStuds(ELLKEnemyFamily::Warden, 1.f), 0.f);
+
+	// Row 80 through the roster too: the two authored radii are the ends of a
+	// range now, so a hooded keeper sits between them rather than at one end.
+	TestEqual(TEXT("and a half-marked keeper sits between the two radii"),
+		Roster->NoticeRangeStuds(ELLKEnemyFamily::Sweepers, 0.5f), 25.f);
 
 	// ---- 4. losing the table loses the roster, not half of it -----------
 	//

@@ -64,14 +64,18 @@ public:
 	ELLKDataSource GetSource() const { return Source; }
 
 	/**
-	 * How far this family notices a keeper in this light, in studs.
+	 * How far this family notices a keeper at this detectability, in studs.
 	 *
 	 * The convenience `LLKStoreFloorPlan`'s sightline rule wants: it is
 	 * written against `Sweepers.aggroRadiusLit` being 38 and currently
 	 * restates the number in a comment. Returns 0 for an unknown family,
 	 * which is the same "no plausible guess" rule as everything else here.
+	 *
+	 * `Detectability` is 0 to 1 from `LLKLightField::DetectabilityAt`, not a
+	 * brightness - so a sightline sized for the worst case asks for 1 rather
+	 * than for a candela figure it would have to know the threshold of.
 	 */
-	float NoticeRangeStuds(ELLKEnemyFamily Family, float Brightness, float LitThreshold) const;
+	float NoticeRangeStuds(ELLKEnemyFamily Family, float Detectability) const;
 
 #if WITH_DEV_AUTOMATION_TESTS
 	/** Injects a table so a test is not at the mercy of whether Content/Data was generated. */

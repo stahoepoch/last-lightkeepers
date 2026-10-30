@@ -206,35 +206,52 @@ struct FLLKPerceivedKeeper
 	FVector Position = FVector::ZeroVector;
 
 	/**
-	 * Light at this keeper's position, from `LLKLightField::BrightnessAt`.
+	 * How marked this keeper is, 0 to 1, from `LLKLightField::DetectabilityAt`.
 	 *
-	 * **Not "my lantern is on".** A keeper standing in a teammate's cone with
-	 * their own lantern off has a high brightness here and must be treated as
-	 * lit, because that is what makes light a shared cost and what makes the
-	 * brightest-keeper lesson teachable. Feeding this from a bool is the one
-	 * mistake that would quietly uncouple the whole enemy roster from the
+	 * **Not "my lantern is on", and no longer "how bright is it here".** A
+	 * keeper standing in a teammate's cone with their own lantern off is
+	 * marked, because that is what makes light a shared cost and what makes
+	 * the brightest-keeper lesson teachable. Feeding this from a bool is the
+	 * one mistake that would quietly uncouple the whole enemy roster from the
 	 * crew's light.
+	 *
+	 * **It was `Brightness` in candelas until row 80.** The reason it is not
+	 * any more is that brightness could not express a hooded lantern: the
+	 * threshold it was compared against is derived from intensity, intensity
+	 * cancels, and a keeper's own lantern sits at distance zero - so every lit
+	 * keeper cleared the bar at any radius and any brightness. Detectability is
+	 * authored per level instead, which is what lets dim mean less attention.
 	 */
 	UPROPERTY(BlueprintReadWrite, Category = "LLK|Perception")
-	float Brightness = 0.f;
+	float Detectability = 0.f;
 };
 
 namespace LLKPerception
 {
 	/**
-	 * The brightness above which a keeper counts as lit.
+	 * How far this family notices a keeper at this detectability, in studs.
 	 *
-	 * **Derived from the lantern, and deliberately the same derivation the
-	 * relic uses.** `ULLKRelicComponent` sets its identify threshold to half
-	 * the lantern's intensity - one lantern at the edge of its own reach,
-	 * since `BrightnessAt` falls to `I/2` at distance `r`. "Readable by
-	 * lantern light" and "noticeable as lit" are not obviously the same
-	 * question, but having one definition Chris can split later is better
-	 * than two constants that drift apart silently. If a playtest wants them
-	 * different, the difference should be authored in `data/` rather than
-	 * appearing here.
+	 * **The one function light passes through**, and the reason a hooded
+	 * lantern means anything. A Sweeper authors two radii - `aggroRadiusDark`
+	 * 12 and `aggroRadiusLit` 38 - and until row 80 the only question asked of
+	 * light was which of the two to use. Now those two are the ends of a range
+	 * and detectability says where on it the keeper sits:
+	 *
+	 * ```
+	 * Radius = Lerp(AggroRadiusDark, AggroRadiusLit, Detectability)
+	 * ```
+	 *
+	 * **The ends are unchanged**, which is what makes this safe to land before
+	 * the data exists: at 0 a crew is noticed from 12 as it always was, and at
+	 * 1 from 38 as it always was. A single level authored at detectability 1 is
+	 * bit-for-bit the behaviour this project shipped with.
+	 *
+	 * Chris's sentence, 2026-10-30: *"even the slightest light charges an enemy
+	 * and they move, but the brighter the more powerful"*. This is that, and it
+	 * is deliberately the only place it is true - he was equally clear that the
+	 * clock stays out of it (rows 72 and 73).
 	 */
-	LLK_API float LitThresholdFrom(float LanternIntensity);
+	LLK_API float AggroRadiusAt(float DarkStuds, float LitStuds, float Detectability);
 
 	/**
 	 * Which of this family's senses reaches this keeper, or None.
@@ -255,8 +272,7 @@ namespace LLKPerception
 	LLK_API ELLKNoticeSense SenseReaching(
 		const FLLKEnemyDef& Enemy,
 		const FLLKPerceiver& Perceiver,
-		const FLLKPerceivedKeeper& Keeper,
-		float LitThreshold);
+		const FLLKPerceivedKeeper& Keeper);
 
 	/**
 	 * Does this enemy notice this keeper right now, walls included.
@@ -288,7 +304,6 @@ namespace LLKPerception
 		const FLLKEnemyDef& Enemy,
 		const FLLKPerceiver& Perceiver,
 		const FLLKPerceivedKeeper& Keeper,
-		float LitThreshold,
 		const ILLKVisibilitySource* Visibility);
 
 	/**
@@ -303,5 +318,5 @@ namespace LLKPerception
 	 * In STUDS, like everything in `data/`. Row 61: the conversion happens
 	 * where the value is used, not here.
 	 */
-	LLK_API float NoticeRangeStuds(const FLLKEnemyDef& Enemy, float Brightness, float LitThreshold);
+	LLK_API float NoticeRangeStuds(const FLLKEnemyDef& Enemy, float Detectability);
 }

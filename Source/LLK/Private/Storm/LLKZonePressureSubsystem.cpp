@@ -292,6 +292,10 @@ TArray<FLLKLightSource> ULLKZonePressureSubsystem::GetLitLightSources() const
 		Source.Position = Pulse.Position;
 		Source.Intensity = Pulse.Intensity;
 		Source.RadiusCm = Pulse.RadiusCm;
+		// Detectability left at its default of 1. A distress pulse is row
+		// 73's price for the Anchor Revive - it is MEANT to wake the room, so
+		// a hooded crew does not get a quiet revive out of it.
+		Source.Detectability = 1.f;
 		Sources.Add(Source);
 	}
 
@@ -340,10 +344,26 @@ TArray<FLLKLightSource> ULLKZonePressureSubsystem::GetLitLightSources() const
 		// it. LLK.Lantern.Feel asserts that no sway can change it.
 		Source.Position = Light->GetGameplayLightLocation();
 		Source.Intensity = Light->GetResolvedRules().Intensity;
-		// Already in centimetres: the light converted it through LLKUnits
-		// when it resolved, and converting again here would be the second
-		// place spatial values are handled.
-		Source.RadiusCm = Light->AttenuationRadius;
+
+		// **The active level's reach, not the component's attenuation
+		// radius.** This read `Light->AttenuationRadius` until row 80, which
+		// was correct while a lantern had exactly one setting and became a
+		// seam the moment it had three: Chris's rule is that *"transitions
+		// smoothly lerp visually, while gameplay resolves to the named
+		// state"*, so the attenuation radius is now a value a cosmetic
+		// crossfade is allowed to move. Reading it here would have made relic
+		// legibility and every Sweeper's reach wobble for the length of a
+		// fade.
+		//
+		// Same seam as the position above, in the other axis, and the
+		// conversion still happens once inside the component (row 61).
+		Source.RadiusCm = Light->GetGameplayRadiusCm();
+
+		// Authored per level and never derived from intensity - the whole
+		// point of FLLKLanternLightLevel::Detectability. A lantern with no
+		// authored levels resolves to one at 1.0, which is what the field saw
+		// before levels existed.
+		Source.Detectability = Light->GetActiveLevel().Detectability;
 		Sources.Add(Source);
 	}
 

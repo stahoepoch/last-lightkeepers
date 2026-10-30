@@ -238,6 +238,7 @@ namespace LLKRunMetrics
 		case ELLKRunEvent::RunStarted:          return TEXT("RunStarted");
 		case ELLKRunEvent::LanternOn:           return TEXT("LanternOn");
 		case ELLKRunEvent::LanternOff:          return TEXT("LanternOff");
+		case ELLKRunEvent::LightLevelChanged:   return TEXT("LightLevelChanged");
 		case ELLKRunEvent::RelicTaken:          return TEXT("RelicTaken");
 		case ELLKRunEvent::ThresholdCrossed:    return TEXT("ThresholdCrossed");
 		case ELLKRunEvent::WardenConverged:     return TEXT("WardenConverged");
