@@ -104,6 +104,19 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
  */
 struct FLLKDistressPulse
 {
+	/**
+	 * Who owns this pulse, or `NAME_None` for a one-shot nobody refreshes.
+	 *
+	 * Added 2026-10-30 for the extraction rig (row 75). The anchor revive's
+	 * flare has a known duration at the moment it is lit, so it needs no
+	 * owner; the rig's work lights last as long as a recovery operation does,
+	 * and a recovery operation has no knowable length - the hold pauses
+	 * whenever the boarding route empties. A named pulse can therefore be
+	 * refreshed rather than re-added, which is the difference between one
+	 * light that stays on and six hundred stacked copies of one.
+	 */
+	FName Source;
+
 	FVector Position = FVector::ZeroVector;
 
 	/** Candelas, taken from the keeper's own lantern rather than invented. */
@@ -328,6 +341,20 @@ public:
 	 * eight seconds", stated in the units the game already uses.
 	 */
 	void AddDistressPulse(const FVector& Position, float Intensity, float RadiusCm, float Seconds);
+
+	/**
+	 * The same flare, owned by a name, so it can be kept alive instead of stacked.
+	 *
+	 * Calling this repeatedly with one `Source` moves and re-arms a single
+	 * pulse. Stop calling it and that pulse runs out on its own, which is how
+	 * a light that belongs to an ongoing event fades rather than vanishing at
+	 * the instant the event ends.
+	 *
+	 * `NAME_None` is refused rather than treated as a source, because an
+	 * unnamed refreshable pulse is the stacking bug with extra steps.
+	 */
+	void AddOrRefreshDistressPulse(
+		FName Source, const FVector& Position, float Intensity, float RadiusCm, float Seconds);
 
 	/** How many flares are currently lit. For the tests and the readout. */
 	int32 GetDistressPulseCount() const { return DistressPulses.Num(); }

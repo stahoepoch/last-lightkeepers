@@ -214,6 +214,58 @@ void ULLKStormChargeSubsystem::AddDistressPulse(
 	OnDistressPulse.Broadcast(Position, Seconds);
 }
 
+void ULLKStormChargeSubsystem::AddOrRefreshDistressPulse(
+	const FName Source, const FVector& Position, float Intensity, float RadiusCm, float Seconds)
+{
+	// **Why this exists, which is row 75's doing.** The anchor revive's flare
+	// knows how long it will last the moment it is lit, so it is added once
+	// and forgotten. The extraction rig's work lights do not: row 75 pauses
+	// the hold whenever the boarding route empties, so a recovery operation
+	// has no knowable length - and Chris's rule for that pause is that the
+	// lights and the converged patrols PERSIST while a crew steps away, so
+	// that stepping away *"buys survival time, not a free reset or a safer
+	// retry"*. A duration computed at the call would have gone out underneath
+	// a long pause and made hiding the safe play, which is the opposite of
+	// what he locked.
+	//
+	// So the owner re-arms a short pulse while its event is underway, and the
+	// pulse outlives the event by exactly one refresh when they stop. One
+	// entry per source, because the alternative is one entry per frame.
+	if (Source.IsNone())
+	{
+		UE_LOG(LogLLK, Warning,
+			TEXT("A refreshable pulse needs a source name. An unnamed one would stack a new ")
+			TEXT("light every frame."));
+		return;
+	}
+
+	for (FLLKDistressPulse& Pulse : DistressPulses)
+	{
+		if (Pulse.Source != Source)
+		{
+			continue;
+		}
+
+		// Re-armed, not re-announced. `OnDistressPulse` is a one-shot cue for
+		// presentation, and firing it every frame would be a siren that
+		// restarts sixty times a second.
+		Pulse.Position = Position;
+		Pulse.Intensity = Intensity;
+		Pulse.RadiusCm = RadiusCm;
+		Pulse.SecondsRemaining = FMath::Max(Pulse.SecondsRemaining, Seconds);
+		return;
+	}
+
+	// First refresh of a new source: the validation, the log and the cue all
+	// belong to the one-shot path, so it does that work.
+	const int32 Before = DistressPulses.Num();
+	AddDistressPulse(Position, Intensity, RadiusCm, Seconds);
+	if (DistressPulses.Num() > Before)
+	{
+		DistressPulses.Last().Source = Source;
+	}
+}
+
 void ULLKStormChargeSubsystem::ExpireDistressPulses(float DeltaSeconds)
 {
 	for (int32 Index = DistressPulses.Num() - 1; Index >= 0; --Index)

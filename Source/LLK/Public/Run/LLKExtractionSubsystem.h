@@ -189,6 +189,22 @@ protected:
 
 	void ResolveSecuredHaul();
 
+	/**
+	 * Keeps the rig's lights lit for as long as the operation runs. Row 75.
+	 *
+	 * Chris's rule for the pause - *"the siren, rig lights, and converged
+	 * patrols persist, so stepping away buys survival time, not a free reset
+	 * or a safer retry"* - cannot be served by a light with a duration fixed
+	 * at the call, because a paused hold has no knowable length. So the light
+	 * is a named pulse re-armed every tick while the extraction is underway,
+	 * and it runs out one refresh after the operation ends rather than
+	 * blinking off at the instant of a cancel.
+	 */
+	void RefreshRigLight();
+
+	/** The one pulse the rig owns, so refreshing it replaces rather than stacks. */
+	static FName RigLightSourceName();
+
 	void PublishSnapshot();
 
 	bool HasExtractionAuthority() const;
@@ -208,6 +224,34 @@ protected:
 	TSet<FName> SatisfiedRequirements;
 
 	bool bHoldStalled = false;
+
+	/**
+	 * The rig's brightness, captured at the call from the caller's lantern.
+	 *
+	 * **Not an authored number, and that is flagged rather than hidden.**
+	 * Nothing in `data/` says how bright a recovery rig is. The anchor
+	 * revive's flare borrows the keeper's own lantern for the same reason, and
+	 * a rig should almost certainly be brighter than a hand lantern - that
+	 * value belongs in `loot.json` beside the exit, which means it arrives
+	 * with Codex's importer rather than here.
+	 */
+	float RigIntensity = 0.f;
+
+	float RigRadiusCm = 0.f;
+
+	/** Used for the light's position only when no boarding route is registered. */
+	TWeakObjectPtr<AActor> RigLightFallback;
+
+	/**
+	 * How long each refresh of the rig's light lasts.
+	 *
+	 * Long enough that a hitching frame cannot let it lapse, short enough that
+	 * the lights going out reads as the operation ending. It is a refresh
+	 * interval rather than a duration anybody tunes, which is why it is here
+	 * and not in `data/`.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Extraction", meta = (ClampMin = "0.1"))
+	float RigLightRefreshSeconds = 1.f;
 
 	/** Logged once per call rather than once per frame. */
 	bool bWarnedAboutMissingRoute = false;

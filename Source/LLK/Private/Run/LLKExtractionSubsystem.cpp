@@ -210,60 +210,32 @@ ELLKExtractionRefusal ULLKExtractionSubsystem::CallExtraction(const FName PointI
 	// instead of 12; both of those now point at the dock without learning that
 	// extraction exists.
 	//
-	// **The one number here that is not authored, and it is Chris's.** Nothing
-	// in `data/` says how bright a recovery rig is, so the caller's own lantern
-	// stands in for it - the same stand-in the anchor revive's distress pulse
-	// uses, and the same honesty about it. A rig should almost certainly be
-	// brighter than a hand lantern; that value belongs in `loot.json` beside
-	// the exit, which means it arrives with Codex's importer rather than here.
+	// **It is re-armed every tick rather than lit once for a computed
+	// duration**, which is row 75's pause rule showing up somewhere it was not
+	// obvious. Chris: *"the siren, rig lights, and converged patrols persist,
+	// so stepping away buys survival time, not a free reset or a safer
+	// retry."* A pulse of siren-plus-hold seconds would have expired during a
+	// long pause and left the dock dark while the extraction was still
+	// underway - which would have made hiding the safe play and inverted the
+	// rule it was supposed to serve.
+	//
+	// **The brightness is the one unauthored number here**, and the header
+	// says whose it is. The caller's own lantern stands in for the rig.
 	if (Announce.bConvergeAllPatrols)
 	{
-		if (UWorld* World = GetWorld())
+		RigIntensity = 0.f;
+		RigRadiusCm = 0.f;
+		RigLightFallback = Caller;
+
+		if (const ULLKLanternLightComponent* Light = Caller != nullptr
+				? Caller->FindComponentByClass<ULLKLanternLightComponent>()
+				: nullptr)
 		{
-			if (ULLKStormChargeSubsystem* Storm = World->GetSubsystem<ULLKStormChargeSubsystem>())
-			{
-				float Intensity = 0.f;
-				float RadiusCm = 0.f;
-				if (const ULLKLanternLightComponent* Light = Caller != nullptr
-						? Caller->FindComponentByClass<ULLKLanternLightComponent>()
-						: nullptr)
-				{
-					Intensity = Light->GetResolvedRules().Intensity;
-					RadiusCm = Light->AttenuationRadius;
-				}
-
-				// At the dock, not at the caller: the light is the operation,
-				// and the operation is at the bay whether the crew is there
-				// yet or not. Falls back to the caller's own position only
-				// when no route is registered, which is a map that cannot
-				// really extract anyway.
-				FVector Position = FVector::ZeroVector;
-				bool bHavePosition = false;
-				for (const FLLKBoardingRoute& Route : Routes)
-				{
-					if (Route.PointId == State.PointId && Route.Anchor.IsValid())
-					{
-						Position = Route.Anchor->GetActorLocation();
-						bHavePosition = true;
-						break;
-					}
-				}
-				if (!bHavePosition && Caller != nullptr)
-				{
-					Position = Caller->GetActorLocation();
-					bHavePosition = true;
-				}
-
-				if (bHavePosition)
-				{
-					// For the whole operation: the siren, then the hold. The
-					// building is interested the entire time, not just at the
-					// moment somebody keyed the radio.
-					Storm->AddDistressPulse(Position, Intensity, RadiusCm,
-						State.SirenSecondsRemaining + State.HoldSecondsRequired);
-				}
-			}
+			RigIntensity = Light->GetResolvedRules().Intensity;
+			RigRadiusCm = Light->AttenuationRadius;
 		}
+
+		RefreshRigLight();
 	}
 
 	OnExtractionCalled.Broadcast(State.PointId, State.SirenSecondsRemaining);
@@ -414,6 +386,14 @@ void ULLKExtractionSubsystem::Tick(float DeltaTime)
 
 	Apply(LLKExtraction::Advance(State, Input));
 
+	// While it is underway at all - announcing or holding, moving or stalled.
+	// A stalled hold is the case that matters: the operation is still running,
+	// so the dock is still lit and the building is still interested.
+	if (State.IsUnderway())
+	{
+		RefreshRigLight();
+	}
+
 	SecondsSinceSnapshot += DeltaTime;
 	if (SecondsSinceSnapshot >= SnapshotIntervalSeconds)
 	{
@@ -473,6 +453,61 @@ void ULLKExtractionSubsystem::Apply(const FLLKExtractionStep& Step)
 		OnExtractionFailed.Broadcast();
 		PublishSnapshot();
 	}
+}
+
+void ULLKExtractionSubsystem::RefreshRigLight()
+{
+	if (!Announce.bConvergeAllPatrols || !(RigIntensity > 0.f) || !(RigRadiusCm > 0.f))
+	{
+		// No convergence authored, or a caller with no lantern to borrow
+		// brightness from. `AddOrRefreshDistressPulse` would refuse it anyway;
+		// refused silently here rather than warning once a frame.
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	ULLKStormChargeSubsystem* Storm = World != nullptr
+		? World->GetSubsystem<ULLKStormChargeSubsystem>() : nullptr;
+	if (Storm == nullptr)
+	{
+		return;
+	}
+
+	// At the dock, not at the caller: the light is the operation, and the
+	// operation is at the bay whether the crew is standing in it or not. The
+	// caller's position is a fallback for a map with no route registered,
+	// which cannot really extract anyway.
+	FVector Position;
+	const FLLKBoardingRoute* Route = Routes.FindByPredicate(
+		[this](const FLLKBoardingRoute& Candidate)
+		{
+			return Candidate.PointId == State.PointId && Candidate.Anchor.IsValid();
+		});
+
+	if (Route != nullptr)
+	{
+		Position = Route->Anchor->GetActorLocation();
+	}
+	else if (const AActor* Fallback = RigLightFallback.Get())
+	{
+		Position = Fallback->GetActorLocation();
+	}
+	else
+	{
+		return;
+	}
+
+	Storm->AddOrRefreshDistressPulse(
+		RigLightSourceName(), Position, RigIntensity, RigRadiusCm, RigLightRefreshSeconds);
+}
+
+FName ULLKExtractionSubsystem::RigLightSourceName()
+{
+	// One name for the whole run, because there is one rig and one dock cycle
+	// at a time. Two concurrent extractions would need two, and row 75's
+	// AlreadyUnderway refusal is what guarantees there is never a second.
+	static const FName Name(TEXT("ExtractionRig"));
+	return Name;
 }
 
 void ULLKExtractionSubsystem::ResolveSecuredHaul()

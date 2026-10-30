@@ -157,9 +157,36 @@ for (const rel of [PURE_HEADER, PURE_IMPL, SUBSYSTEM_HEADER, SUBSYSTEM_IMPL, TES
   // Row 74's convergence IS allowed, because a light is a local consequence.
   check(
     "ROW 74: convergence is spent as light rather than as weather",
-    /AddDistressPulse/.test(impl),
+    /AddOrRefreshDistressPulse/.test(impl),
     "the rig arrives with its lamps lit; the building notices the light. " +
       "Row 72 left light allowed to do exactly this and nothing more",
+  );
+
+  // ROW 75, Chris's lock on the pause: "the siren, rig lights, and converged
+  // patrols persist, so stepping away buys survival time, not a free reset or
+  // a safer retry." That is a rule about a light's DURATION, and no pure
+  // function can hold it - a hold that pauses has no knowable length, so a
+  // pulse lit once for siren-plus-hold seconds would lapse underneath a long
+  // pause and make hiding the safe play. The light has to be re-armed while
+  // the operation runs, and the shape of that is checkable here.
+  check(
+    "ROW 75: the rig's light is re-armed while the extraction is underway",
+    /IsUnderway\(\)\s*\)\s*\{\s*RefreshRigLight\(\);/.test(impl),
+    "including while the hold is stalled: a crew that steps off the route has " +
+      "not ended the operation, and the dock is still lit",
+  );
+  check(
+    "ROW 75: and its duration is never computed from the siren plus the hold",
+    !/SirenSecondsRemaining\s*\+\s*State\.HoldSecondsRequired/.test(impl),
+    "that was the original version and it was wrong: a paused hold outlives " +
+      "it, the dock goes dark mid-extraction, and stepping away becomes the " +
+      "safe play rather than a survival cost",
+  );
+  check(
+    "ROW 75: one named pulse rather than one per frame",
+    /RigLightSourceName\(\)/.test(impl),
+    "an unowned pulse re-armed every tick is sixty lights a second, each one " +
+      "walked by the Warden's brightest-position search",
   );
 }
 
