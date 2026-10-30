@@ -122,6 +122,16 @@ The rule layer is in. The body is not:
 | Replicated level state on `ULLKLanternComponent`, and a key to cycle it | **Claude** |
 | The visual crossfade between levels | **Claude**, in `TickFeel` beside the sway |
 | `PostProcessVolume` exposure clamp | **Codex** — and still first, per `docs/LIGHTING-IN-UNREAL.md` |
+| **Row 80 itself, in `docs/DECISIONS.md`** | **Claude**, not yet written |
+
+**Row 80 is referenced by this change and does not exist yet.** The code
+comments, `LIGHTING-IN-UNREAL.md` and this file all cite it as the row that
+ratifies named lantern levels and authored detectability; 79 is the highest row
+in the log. It is unwritten for a lane reason rather than an oversight:
+`docs/DECISIONS.md` has an uncommitted line in it from another writer, and
+staging the file would commit their in-flight edit under someone else's message
+(row 26). 80 is the correct number and nobody else has claimed it. Whoever
+finds the file clean should write it, from `d065469`'s commit message.
 
 **The crossfade has a trap already closed, so do not reopen it.**
 `GetLitLightSources` read `Light->AttenuationRadius` until `d065469`. That was
