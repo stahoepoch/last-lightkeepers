@@ -298,6 +298,53 @@ Point 4 and point 5 are worth doing deliberately rather than trusting: both of
 the bugs the last perception commit fixed were found by breaking something on
 purpose and watching whether anything noticed.
 
+## A second, smaller ask: let the harness floor have a navmesh
+
+Added 2026-10-30, after the Sweeper's pawn landed (row 78).
+
+**One line in `Config/DefaultEngine.ini`, which is yours.** The harness builds
+its whole floor at runtime - `ALLKTestGameMode` spawns the slab, the shelving,
+the counters, the spawn point and now the extraction zone - so no navmesh can
+have been built for it at cook time. With static generation the Sweeper notices
+a keeper, telegraphs, and then stands still forever, because every path query
+returns nothing.
+
+What it needs:
+
+    [/Script/NavigationSystem.NavigationSystemV1]
+    bAutoCreateNavigationData=True
+
+    [/Script/NavigationSystem.RecastNavMesh]
+    RuntimeGeneration=Dynamic
+
+Check the exact section names against 5.8 rather than trusting these - the
+runtime-generation setting has moved between versions, and the one that
+matters is whichever one the project settings UI writes under
+**Project Settings → Navigation Mesh → Runtime Generation = Dynamic**.
+
+**Why it is worth doing rather than waiting for the authored store.** Chris's
+test order, 2026-10-30: bare extraction first, *"then add the Sweeper to that
+exact same dock bay immediately"* - and the whole point of that order is that
+one variable changes between the passes. Pass two is already one console line
+(`LLK.Harness.Sweeper 1`), and this is the only thing standing between that
+line and a Sweeper that actually walks.
+
+**What I am NOT asking for**, because it would cross back into my lane or his:
+
+- A `NavMeshBoundsVolume` in any map. The harness spawns one if it needs to,
+  or the authored store carries its own; either way that is runtime or
+  `Content/`.
+- Anything about what the Sweeper does with a path. Row 78 keeps the route
+  authored by the map and the decision in `LLKSweeperBrain`.
+- `AIModule` in `LLK.Build.cs`. The pawn deliberately follows a queried path
+  itself rather than using `AAIController`, precisely so that this handoff
+  stayed one line instead of a dependency. If crowd avoidance is ever wanted,
+  that is a separate ask with a reason attached.
+
+**Done when** `LLK.Harness.Sweeper 1` in an empty level produces a Sweeper that
+walks its tagged patrol route, and `LLK.CheckMap` on that same harness world
+reports something other than `NavBoundsMissing`.
+
 ## Out of scope
 
 - Patrol routes, patrol authoring, and anything an enemy *does* with a path.
