@@ -34,7 +34,7 @@
 //
 //   node tests/enemies.test.mjs
 
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -172,6 +172,55 @@ for (const [name, family] of families) {
     "a lit radius a few studs larger is a difference a player cannot notice, " +
       "which is a trade nobody learns to make",
   );
+}
+
+// ---- ROW 16: the brain cannot skip the telegraph ------------------------
+//
+// Chris, 2026-10-30, on why the Sweeper comes before the siren: it "answers
+// the real question: whether extraction is a tense decision or twenty seconds
+// of waiting." It only answers that fairly if the announcement cannot be
+// skipped, which is row 16 - sound before sight, as a build requirement.
+//
+// `LLK.Enemies.SweeperBrain` asserts the behaviour. This asserts what a
+// behavioural test cannot: that the brain's own code has no path from noticing
+// to moving which does not pass through the announcement, and that it stays
+// world-free so the encounter can be judged before a map exists.
+{
+  const stripBrainComments = (src) =>
+    src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+
+  const brainPath = "Source/LLK/Private/Enemies/LLKSweeperBrain.cpp";
+  const brainFull = join(root, brainPath);
+  const brain = existsSync(brainFull) ? stripBrainComments(readFileSync(brainFull, "utf8")) : "";
+
+  check("the Sweeper brain exists", brain.length > 0, brainPath);
+
+  check(
+    "ROW 16: noticing a keeper enters Telegraph",
+    /State = ELLKSweeperState::Telegraph;/.test(brain),
+    "a Sweeper that went straight to Pursue would be a fair fight with an " +
+      "unfair presentation",
+  );
+  check(
+    "ROW 16: and Pursue is only ever entered from Telegraph or Search",
+    (brain.match(/State = ELLKSweeperState::Pursue;/g) ?? []).length === 2,
+    "two: the telegraph finishing, and a search re-acquiring. A third would " +
+      "be a path from noticing to chasing with no announcement in between",
+  );
+  check(
+    "ROW 16: the telegraph length is authored rather than a constant",
+    /Def\.AudioTelegraphSeconds/.test(brain),
+    "audioTelegraphSeconds is Chris's number, per family (row 55)",
+  );
+
+  for (const forbidden of ["UWorld", "GetWorld", "AActor", "MoveTo", "NavigationSystem"]) {
+    check(
+      `the brain never names ${forbidden}`,
+      !brain.includes(forbidden),
+      "the pawn measures and moves; the brain decides. The same split " +
+        "LLKMapReadiness and LLKLanternFeel use",
+    );
+  }
 }
 
 console.log(`\n${checks - failures}/${checks} passed`);

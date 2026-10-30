@@ -1,6 +1,9 @@
 #include "Loot/LLKBurden.h"
 
-namespace
+// Named rather than anonymous: unity builds merge anonymous namespaces across
+// files, and `LLKExtraction.cpp` has its own `Finite`. This project has paid
+// for that lesson once already, in the M2.5 feel slice.
+namespace LLKBurdenDetail
 {
 	/**
 	 * The rail that is not the design.
@@ -16,6 +19,8 @@ namespace
 		return FMath::IsFinite(Value) ? Value : 0.f;
 	}
 }
+
+using namespace LLKBurdenDetail;
 
 namespace LLKBurden
 {
