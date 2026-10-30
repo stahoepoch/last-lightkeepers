@@ -139,7 +139,10 @@ public:
 	 * angle mean exactly one thing.
 	 */
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Lantern", meta = (ClampMin = "0", ClampMax = "1"))
-	float InnerConeFraction = 0.47f;
+	// Keep the fully-lit centre deliberately small. The outer cone remains the
+	// authored gameplay reach; this only gives its edge room to fall off like a
+	// lantern instead of presenting a hard flashlight core.
+	float InnerConeFraction = 0.24f;
 
 protected:
 	UFUNCTION()
