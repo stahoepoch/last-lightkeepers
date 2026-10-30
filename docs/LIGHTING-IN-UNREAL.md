@@ -72,6 +72,46 @@ If the look ever genuinely needs the renderer and the field to disagree, the
 honest change is to make the *thresholds* read the field's intensity explicitly
 rather than quietly inheriting it, and to say so here. Nobody has needed that.
 
+### Row 80 strengthened this rather than breaking it
+
+**Added 2026-10-30.** Chris's three named lantern levels looked like they would
+cost this section: a dial over brightness makes brightness a gameplay input,
+and then every candela figure on this page is a balance change.
+
+His architecture avoided it, and the avoidance is the interesting part. *"Each
+level needs a separate authored 'detectability' value, not just
+intensity/radius."* So the number enemies read is authored per level
+(`FLLKLanternLightLevel::Detectability`, 0 to 1) and **nothing derives it from
+intensity**. The consequence is that `intensity` is now freer than when this
+file was written:
+
+- **Relic legibility** cancels it, by the derivation above. Unchanged.
+- **Perception does not read it at all.** `LLKPerception::LitThresholdFrom` is
+  deleted; `LLKLightField::DetectabilityAt` consults radius and detectability
+  and never intensity. `LLK.Lantern.Levels` asserts this directly by moving
+  intensity from 10 to 400 candelas and requiring every enemy's reach to stay
+  put.
+
+The trap it was closing is worth recording, because two reasonable builds of a
+brightness dial both do nothing. A dial over `intensity` cancels. A dial over
+`radiusStuds` fails for a subtler reason: `ALLKSweeper` asks for light at the
+keeper's *own* position, where their own lantern sits at distance zero, so
+brightness there is `I` against a bar of `I/2` — cleared by a factor of two at
+any radius at all. **A keeper holding a lit lantern was lit, unconditionally.**
+Hooding would have cost sight and bought no concealment.
+
+**One thing did change, and it is a design consequence rather than a code
+one.** The old threshold made "lit" mean exactly `d < r`, so a teammate exposed
+you out to their authored radius and *not one stud further* — a cliff, and a
+very teachable one, pinned on purpose in `LLK.Enemies.PerceptionFailures`.
+Detectability has no cliff. `LLKLightField`'s own header forbids one, and
+Chris's *"even the slightest light charges an enemy and they move"* asks for the
+opposite of one. So the teachable rule is now **"distance from their light
+always helps"** instead of "stay outside their light". Softer, continuous, no
+boundary to game. Whether it teaches as well as the cliff did is a playtest
+question (row 79), and the test now pins monotonic decay rather than a
+crossover.
+
 ---
 
 ## Why it renders white, and the order to fix it in
@@ -120,15 +160,26 @@ either of them appears to do anything.
 An unclamped scene makes every brightness value temporary.
 
 **2. `light.radiusStuds` is gameplay. `light.intensity` is not.**
-See the derivation above before trusting either half of that sentence.
+See the derivation above before trusting either half of that sentence. Since
+row 80 there is a third: `detectability` is gameplay too, it is authored per
+level, and nothing may ever compute it from a brightness.
 
-**3. Nothing cosmetic joins the light field.**
+**3. A cosmetic transition may move the light. It may not move the reach.**
+Chris's rule for levels: *"transitions smoothly lerp visually, while gameplay
+resolves to the named state."* `SetAttenuationRadius` is a cosmetic knob now
+that a fade can touch, so gameplay reads
+`ULLKLanternLightComponent::GetGameplayRadiusCm()` instead - the same seam
+`GetGameplayLightLocation()` is, in the other axis. A fade that reaches relic
+legibility or a Sweeper's reach is this project's oldest bug shape wearing a
+new coat.
+
+**4. Nothing cosmetic joins the light field.**
 `GetLitLightSources()` is what the Warden and every Sweeper read. A glow, a
 muzzle flash, a UI bloom or an emissive sign that ends up in it is a lure
 nobody authored. `tests/light-authority.test.mjs` guards the related rule that
 the cosmetic transform never becomes the gameplay anchor.
 
-**4. The lantern's unit stays pinned in code.**
+**5. The lantern's unit stays pinned in code.**
 `IntensityUnits = ELightUnits::Candelas` is set in the constructor with its
 reasoning attached: Unreal's default is Unitless with a normal value of 5000, so
 an authored 250 means nothing until the unit is fixed. Do not move it to

@@ -1,0 +1,134 @@
+# Handoff to Codex — `light.levels` needs four lines in the importer
+
+Written 2026-10-30 by Claude, after landing the detectability rule layer in
+`d065469`. One new key, one validator block, one struct field to copy. The C++
+that reads it is already in and already tested; the data cannot arrive without
+you because `Tools/import_data.py` is your lane (`docs/LANES.md`) and its
+`exact()` check would reject the key on sight.
+
+---
+
+## What Chris decided
+
+An adjustable lantern, as three named states rather than a slider. His words,
+2026-10-30:
+
+> Build it after the exposure pass as three named states: **Hooded** — close
+> reading, minimal spill, enemies only react nearby. **Working** — current
+> practical lantern. **Open** — broad, bright work light; strongest local enemy
+> response. Keep the zone clock unchanged... The important implementation rule:
+> each level needs a separate authored "detectability" value, not just
+> intensity/radius.
+
+That last sentence is the architecture and it is load-bearing. The two obvious
+builds both silently do nothing:
+
+- **A dial over `intensity`** cancels out. Every light threshold in the game is
+  `I * 0.5f`, so "lit" reduces to `d < r` — the derivation is in
+  `docs/LIGHTING-IN-UNREAL.md`.
+- **A dial over `radiusStuds`** does nothing either, less obviously.
+  `ALLKSweeper` asks the field for light at the keeper's *own* position, where
+  their own lantern is at distance zero. Brightness there is `I` against a bar
+  of `I/2`, cleared by a factor of two at any radius whatsoever.
+
+So detectability is authored and nothing derives it. `LLK.Lantern.Levels`
+asserts both halves: that detectability moves a Sweeper's reach, and that
+moving intensity by a factor of forty moves nothing at all.
+
+---
+
+## The key, as it should appear in `data/lantern.json`
+
+Inside the existing `light` block. **The three numeric values are Chris's**
+(lane table: Claude owns the schema, Chris owns the values), so the ones below
+are a shape to validate against rather than tuning to commit:
+
+```json
+"levels": [
+  { "name": "Hooded",  "radiusStuds": 10, "coneAngleDegrees": 44,  "detectability": 0.20 },
+  { "name": "Working", "radiusStuds": 30, "coneAngleDegrees": 72,  "detectability": 0.75 },
+  { "name": "Open",    "radiusStuds": 52, "coneAngleDegrees": 100, "detectability": 1.00 }
+],
+"defaultLevel": "Working"
+```
+
+`intensity`, `warmColor` and `castsShadows` stay where they are, shared by
+every level. That is deliberate and it is the thing to protect: a per-level
+intensity would make every candela figure a balance change and end the lighting
+pass being safe to do by eye.
+
+### Validation worth having
+
+`validate_lantern` already refuses degenerate lights, which is the right
+instinct here too. The checks that matter:
+
+- `levels` is a non-empty array; each row is exactly
+  `{name, radiusStuds, coneAngleDegrees, detectability}`.
+- `radiusStuds > 0` and `0 < coneAngleDegrees <= 180` per row — the same two
+  guards the block already applies, for the same reason.
+- `0 <= detectability <= 1`. Out of range is not tuning: the C++ clamps it, so
+  an authored 2.0 would read as a level that works and silently behaves as 1.0.
+- `defaultLevel` names a row that exists. The C++ falls back to the first level
+  rather than failing, so a typo here is invisible at runtime.
+- **`detectability` strictly increasing down the list**, and `radiusStuds` too.
+  Chris authored these as an ordered dim-to-bright progression; a list where
+  Hooded is more detectable than Open is a data bug no runtime check can
+  distinguish from a design choice.
+- Worth considering: the top level's `radiusStuds` against
+  `enemies.json`'s `aggroRadiusLit` of 38. `_radiusNote` already warns that
+  above 38 the asymmetry inverts — you would see patrols before they aggro and
+  light becomes pure advantage. A 52-stud Open level crosses that line, so it
+  is Chris's call and not a bug, but `tests/balance.test.mjs` is the place that
+  should say so out loud.
+
+### The struct to fill
+
+`FLLKLanternLightRules` in `Source/LLK/Public/Data/LLKLanternData.h` already
+carries them (`d065469`):
+
+```cpp
+TArray<FLLKLanternLightLevel> Levels;   // name, radiusStuds, coneAngleDegrees, detectability
+FName DefaultLevelName = TEXT("Working");
+```
+
+`FLLKLanternLightLevel::DescribesARealLevel()` is there for the same job
+`DescribesARealLight()` does one struct down — a stale asset that resolves and
+hands back zeros is more dangerous than a missing one.
+
+---
+
+## Nothing is blocked on you, and nothing breaks if this waits
+
+**Behaviour today is unchanged.** `Levels` is empty on every asset in
+existence, and `ResolveLevel` synthesises a single level carrying the block's
+own `radiusStuds` and `coneAngleDegrees` at detectability 1 — which is
+bit-for-bit the one setting the game shipped with. The lerp's endpoints are the
+two states perception already had.
+
+So the order is yours to choose. The one thing worth knowing: a current asset
+logs `level Working (1 of 3)` only once you land this, and `(1 of 1)` until
+then. That line is in `ResolveAndApplyLight` specifically so the next person to
+read a log can tell "the importer has not been taught the key" from "the dial
+is broken".
+
+## What is still missing after this, and whose it is
+
+The rule layer is in. The body is not:
+
+| | Whose |
+| --- | --- |
+| `light.levels` in the JSON, and the importer taught the key | **Codex** (this file) |
+| The three numbers | **Chris** |
+| Replicated level state on `ULLKLanternComponent`, and a key to cycle it | **Claude** |
+| The visual crossfade between levels | **Claude**, in `TickFeel` beside the sway |
+| `PostProcessVolume` exposure clamp | **Codex** — and still first, per `docs/LIGHTING-IN-UNREAL.md` |
+
+**The crossfade has a trap already closed, so do not reopen it.**
+`GetLitLightSources` read `Light->AttenuationRadius` until `d065469`. That was
+correct while a lantern had one setting and became wrong the moment it had
+three: a fade moves the attenuation radius every frame, so relic legibility and
+every Sweeper's reach would have wobbled for the length of a transition. It now
+reads `GetGameplayRadiusCm()`, which resolves to the named state. `SetAttenuationRadius`
+is free for cosmetics; anything gameplay reads must not come from it.
+`LLK.Lantern.Levels` section 5 asserts this by moving the attenuation radius
+behind the game's back and requiring the gameplay answer not to follow.
