@@ -475,7 +475,30 @@ void ULLKInteractorComponent::ClearCarriedOnWipe()
 		return;
 	}
 
-	CarriedCount = 0;
+	SetCarriedCount(0);
+}
+
+void ULLKInteractorComponent::SetCarriedCount(const int32 NewCount)
+{
+	const AActor* Owner = GetOwner();
+	if (Owner == nullptr || !Owner->HasAuthority() || NewCount == CarriedCount)
+	{
+		return;
+	}
+
+	CarriedCount = NewCount;
+
+	// Announced on the server too, not only through the OnRep. A listen
+	// server's own keeper never receives its own replication, so a burden that
+	// only updated in `OnRep_CarriedCount` would be the one keeper in the crew
+	// who carries a haul for free - and that keeper is whoever is hosting,
+	// which is Chris on every playtest.
+	OnCarriedCountChanged.Broadcast(CarriedCount);
+}
+
+void ULLKInteractorComponent::OnRep_CarriedCount()
+{
+	OnCarriedCountChanged.Broadcast(CarriedCount);
 }
 
 void ULLKInteractorComponent::TryTakeFocused()
@@ -531,11 +554,12 @@ void ULLKInteractorComponent::ServerTake_Implementation(ULLKRelicComponent* Reli
 		return;
 	}
 
-	++CarriedCount;
+	SetCarriedCount(CarriedCount + 1);
 
-	// Burden, carry slots and the haul are `loot.json`'s rules and a later
-	// row; this is a count, and it says so rather than pretending to be an
-	// inventory.
+	// Carry slots and the haul are `loot.json`'s rules and a later row; this
+	// is a count, and it says so rather than pretending to be an inventory.
+	// Burden now reads it - `ALLKCharacter` turns this number into a speed
+	// through `LLKBurden`, and nothing else about the count has changed.
 	UE_LOG(LogLLK, Log, TEXT("Took %s. Carrying %d."),
 		*Relic->GetDisplayName().ToString(), CarriedCount);
 

@@ -14,6 +14,7 @@
 #include "Lantern/LLKLanternLightComponent.h"
 #include "Characters/LLKVitalsComponent.h"
 #include "Loot/LLKInteractorComponent.h"
+#include "Loot/LLKBurden.h"
 #include "Run/LLKRunStateSubsystem.h"
 #include "LLKUnits.h"
 #include "Storm/LLKZonePressureSubsystem.h"
@@ -97,6 +98,21 @@ void ALLKCharacter::BeginPlay()
 		LanternLight->SetLanternData(LanternData);
 		LanternLight->WatchLantern(Lantern);
 	}
+
+	if (Interactor != nullptr)
+	{
+		// Burden, bound the same way everything else here is: the component
+		// announces, the character decides what it means for movement. The
+		// interactor knows nothing about speed.
+		Interactor->OnCarriedCountChanged.AddDynamic(this, &ALLKCharacter::OnCarriedCountChanged);
+	}
+
+	// Once at the start, so the crouch speed and the walk speed are burdened
+	// from the first frame rather than from the first time something changed.
+	// `ResolveSpeeds` sets the authored numbers; this is where the haul is
+	// taken off them, and a keeper who loads in already carrying - which a
+	// rejoin will be - must not be fast until they pick something up.
+	ApplyMovementSpeed();
 
 	if (Vitals != nullptr)
 	{
@@ -183,6 +199,16 @@ void ALLKCharacter::ResolveSpeeds()
 		SpeedSource = ELLKDataSource::Asset;
 	}
 
+	// Burden's own rules, from `loot.json` rather than from the lantern's
+	// file, because carrying is loot's business. A missing asset leaves the
+	// struct's defaults, which are zeros - burden off, which is exactly what
+	// every run before M3 was playing, and the relic component already warns
+	// loudly about the same asset being absent.
+	if (const ULLKLootRulesData* Loot = LootRules.LoadSynchronous())
+	{
+		BurdenRules = Loot->Burden;
+	}
+
 	WalkSpeedCms = LLKUnits::SpeedFromStuds(WalkStuds);
 	SprintSpeedCms = LLKUnits::SpeedFromStuds(SprintStuds);
 	CrouchSpeedCms = LLKUnits::SpeedFromStuds(CrouchStuds);
@@ -262,10 +288,35 @@ bool ALLKCharacter::IsDowned() const
 	return Vitals != nullptr && Vitals->IsDowned();
 }
 
+float ALLKCharacter::GetBurdenMultiplier() const
+{
+	// The points are relics carried. Chris's note in `loot.json` is narrower
+	// than the key names: *"Only relics impose a small movement penalty;
+	// supplies, components, and restoration crates do not."* The interactor's
+	// count is a count of relics taken, so it is already the right number.
+	const int32 Points = Interactor != nullptr ? Interactor->GetCarriedCount() : 0;
+	return LLKBurden::SpeedMultiplier(Points, BurdenRules);
+}
+
+void ALLKCharacter::OnCarriedCountChanged(int32 CarriedCount)
+{
+	// The haul changed, so the speed has. Event-driven rather than polled:
+	// this happens a handful of times in a run, and `ApplyMovementSpeed` is
+	// the one place a speed is ever set.
+	ApplyMovementSpeed();
+}
+
 void ALLKCharacter::ApplyMovementSpeed()
 {
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
 	{
+		// Applied to every speed rather than to walking alone, so a burdened
+		// keeper cannot sprint away from a cost they accepted - and applied
+		// here, in the single function that assigns a speed, so there is no
+		// path to a movement value that forgot about the haul.
+		const float Burden = GetBurdenMultiplier();
+		Movement->MaxWalkSpeedCrouched = CrouchSpeedCms * Burden;
+
 		if (IsDowned())
 		{
 			// `downedWalkSpeed: 0` converted through LLKUnits like every other
@@ -276,7 +327,7 @@ void ALLKCharacter::ApplyMovementSpeed()
 			return;
 		}
 
-		Movement->MaxWalkSpeed = bSprinting ? SprintSpeedCms : WalkSpeedCms;
+		Movement->MaxWalkSpeed = (bSprinting ? SprintSpeedCms : WalkSpeedCms) * Burden;
 	}
 }
 

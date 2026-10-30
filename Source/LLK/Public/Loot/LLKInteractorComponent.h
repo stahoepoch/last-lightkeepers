@@ -34,6 +34,16 @@ class ULLKVitalsComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FLLKFocusChanged, ULLKRelicComponent*, Focused);
 
+/**
+ * How many relics this keeper is carrying has changed. M3's burden.
+ *
+ * Fires on the server when the count moves and on each client when the
+ * replicated value arrives, so both sides recompute the same speed from the
+ * same count. The alternative - polling the count in the movement path - would
+ * be a per-frame read of a value that changes a handful of times a run.
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FLLKCarriedCountChanged, int32, CarriedCount);
+
 UCLASS(ClassGroup = (LLK), meta = (BlueprintSpawnableComponent))
 class LLK_API ULLKInteractorComponent : public UActorComponent
 {
@@ -51,6 +61,10 @@ public:
 	/** Fires when focus moves to a different object, or away from everything. */
 	UPROPERTY(BlueprintAssignable, Category = "LLK|Interact")
 	FLLKFocusChanged OnFocusChanged;
+
+	/** Fires when the carried count changes, on the server and on every client. */
+	UPROPERTY(BlueprintAssignable, Category = "LLK|Interact")
+	FLLKCarriedCountChanged OnCarriedCountChanged;
 
 	/**
 	 * Asks to take whatever has focus.
@@ -188,8 +202,21 @@ protected:
 
 	float CallHeldSeconds = 0.f;
 
-	UPROPERTY(Replicated)
+	/**
+	 * Replicated WITH a notify, which it did not have until burden read it.
+	 *
+	 * A plain `Replicated` count was enough while the only consumer was a
+	 * readout drawn every frame. A speed derived from it needs to know when it
+	 * moved, and on a client the only moment that is knowable is the OnRep.
+	 */
+	UPROPERTY(ReplicatedUsing = OnRep_CarriedCount)
 	int32 CarriedCount = 0;
+
+	UFUNCTION()
+	void OnRep_CarriedCount();
+
+	/** Server: sets the count and announces it once. The only writer. */
+	void SetCarriedCount(int32 NewCount);
 
 	float SecondsSinceSearch = 0.f;
 

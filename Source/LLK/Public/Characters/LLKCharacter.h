@@ -24,6 +24,7 @@
 #include "Data/LLKDataTypes.h"
 #include "Characters/LLKVitalsComponent.h"
 #include "Data/LLKLanternData.h"
+#include "Data/LLKLootRulesData.h"
 #include "LLKCharacter.generated.h"
 
 class UCameraComponent;
@@ -136,6 +137,19 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "LLK|Movement")
 	float GetSprintSpeed() const { return SprintSpeedCms; }
+
+	/**
+	 * What carrying a haul costs this keeper, as a multiplier on every speed.
+	 *
+	 * 1.0 empty-handed. The rule is `LLKBurden`'s and the points are the
+	 * interactor's relic count; this is the seam, so a readout and the
+	 * movement path cannot disagree about how slow a keeper is.
+	 */
+	UFUNCTION(BlueprintPure, Category = "LLK|Movement")
+	float GetBurdenMultiplier() const;
+
+	/** The authored burden rules this pawn resolved, for a readout to explain. */
+	const FLLKBurdenRules& GetBurdenRules() const { return BurdenRules; }
 
 	/** Launch speed in cm/s, after the stud conversion. */
 	UFUNCTION(BlueprintPure, Category = "LLK|Movement")
@@ -440,4 +454,22 @@ protected:
 	float WalkSpeedCms = 0.f;
 	float SprintSpeedCms = 0.f;
 	float CrouchSpeedCms = 0.f;
+
+	/**
+	 * `loot.json`'s `burden` block, resolved once beside the speeds.
+	 *
+	 * Read here rather than in the interactor because this is where a speed
+	 * is decided, and row 55 keeps the values Chris's: 0.04 per relic to a cap
+	 * of 0.12, which is his playtest call that *"ordinary loot must not make a
+	 * raid feel sluggish."*
+	 */
+	FLLKBurdenRules BurdenRules;
+
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Movement")
+	TSoftObjectPtr<ULLKLootRulesData> LootRules =
+		TSoftObjectPtr<ULLKLootRulesData>(FSoftObjectPath(TEXT("/Game/Data/DA_LootRules.DA_LootRules")));
+
+	/** Re-applies the speeds when the haul changes. Bound to the interactor. */
+	UFUNCTION()
+	void OnCarriedCountChanged(int32 CarriedCount);
 };

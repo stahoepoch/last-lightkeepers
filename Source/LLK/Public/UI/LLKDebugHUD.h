@@ -104,6 +104,25 @@ protected:
 	 */
 	void DrawRelicPanel(float& CursorY);
 
+	/**
+	 * The haul and what it costs to carry, as one line. M3's burden.
+	 *
+	 * **Row 5's shape applied to weight: the cause beside the consequence.**
+	 * The storm panel shows what light does by printing the time it costs, and
+	 * burden needs the same treatment or a player feels sluggish and blames
+	 * the controls. `carrying 2 - 8% slower` is diagnosable; a keeper who is
+	 * quietly 8% slower is not.
+	 *
+	 * It also says when the next relic is free, because the authored cap is
+	 * part of the decision: at 0.04 to a cap of 0.12 the fourth relic costs
+	 * nothing, and a crew that knows that pushes their luck on purpose rather
+	 * than by accident.
+	 *
+	 * Drawn only while carrying something. An empty-handed keeper has nothing
+	 * to be told.
+	 */
+	void DrawBurdenLine(float& CursorY);
+
 	/** How far the readout looks for a relic, in STUDS. Converted at the boundary, row 61. */
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Debug", meta = (ClampMin = "0"))
 	float RelicSearchStuds = 12.f;

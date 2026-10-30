@@ -14,6 +14,7 @@
 #include "Loot/LLKInteractorComponent.h"
 #include "LLKGameState.h"
 #include "LLKUnits.h"
+#include "Loot/LLKBurden.h"
 #include "Loot/LLKRelicComponent.h"
 #include "Run/LLKExtractionZone.h"
 #include "Storm/LLKZonePressureSubsystem.h"
@@ -150,8 +151,11 @@ void ALLKDebugHUD::DrawHUD()
 	// Seven lines plus the spacer, at the current scale. Measured rather than
 	// drawn-then-resized, because the canvas is immediate-mode and the panel
 	// has to go down before the text does.
-	// Seven storm lines, a spacer, and two relic lines.
-	DrawBacking(LineHeight * GetUIScale() * 10.6f);
+	// Seven storm lines, a spacer, two relic lines, and the haul's one when
+	// there is a haul. Measured for the tallest case rather than the current
+	// one: a panel that grows and shrinks as a keeper picks things up is a
+	// panel that flickers.
+	DrawBacking(LineHeight * GetUIScale() * 11.8f);
 
 	float CursorY = PanelOrigin.Y * GetUIScale();
 
@@ -177,6 +181,7 @@ void ALLKDebugHUD::DrawHUD()
 	DrawStormPanel(Storm, GameState->GetStormSnapshot(), CursorY);
 
 	CursorY += LineHeight * GetUIScale() * 0.6f;
+	DrawBurdenLine(CursorY);
 	DrawRelicPanel(CursorY);
 
 	// Drawn last so it sits over everything, and outside the panel entirely:
@@ -605,6 +610,48 @@ void ALLKDebugHUD::DrawWorldPrompt()
 	Item.Scale = FVector2D(LabelScale, LabelScale);
 	Item.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.9f));
 	Canvas->DrawItem(Item);
+}
+
+void ALLKDebugHUD::DrawBurdenLine(float& CursorY)
+{
+	const ALLKCharacter* Character = Cast<ALLKCharacter>(GetOwningPawn());
+	const ULLKInteractorComponent* Interactor =
+		Character != nullptr ? Character->GetInteractor() : nullptr;
+	if (Interactor == nullptr)
+	{
+		return;
+	}
+
+	const int32 Carried = Interactor->GetCarriedCount();
+	if (Carried <= 0)
+	{
+		return;
+	}
+
+	const FLLKBurdenRules& Rules = Character->GetBurdenRules();
+	const float Penalty = LLKBurden::PenaltyFraction(Carried, Rules);
+	const int32 CapAt = LLKBurden::PointsUntilCapped(Rules);
+
+	// The three things that line can say, in the order a player needs them:
+	// what you have, what it costs, and whether the next one is free.
+	FString Line = FString::Printf(TEXT("HAUL  carrying %d"), Carried);
+	if (Penalty > 0.f)
+	{
+		Line += FString::Printf(TEXT("  -  %.0f%% slower"), Penalty * 100.f);
+	}
+	else
+	{
+		// Burden is authored off, which every run before M3 was playing. Said
+		// rather than left looking like a zero somebody forgot to fill in.
+		Line += TEXT("  -  no burden authored");
+	}
+
+	if (CapAt > 0 && Carried >= CapAt)
+	{
+		Line += TEXT("  -  the next one is free");
+	}
+
+	DrawLine(Line, Penalty > 0.f ? ColourUrgent : ColourQuiet, CursorY, 1.1f);
 }
 
 void ALLKDebugHUD::DrawRelicPanel(float& CursorY)
