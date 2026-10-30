@@ -7,6 +7,10 @@
 #include "HAL/IConsoleManager.h"
 #include "Harness/LLKStoreFloorPlan.h"
 #include "LLKUnits.h"
+#include "NavMesh/NavMeshBoundsVolume.h"
+#include "NavigationData.h"
+#include "NavigationPath.h"
+#include "NavigationSystem.h"
 
 namespace LLKMapReadiness
 {
@@ -42,37 +46,6 @@ namespace LLKMapReadiness
 		 * is the back wall has no cover, however many walls it has.
 		 */
 		constexpr float CoverMattersWithinStuds = 38.f;
-
-		/**
-		 * Whether this actor is of a class with this name, anywhere up its
-		 * chain.
-		 *
-		 * **Why a string and not a type.** `ANavMeshBoundsVolume` and
-		 * `ARecastNavMesh` live in the engine's `NavigationSystem` module, and
-		 * including their headers means adding that module to
-		 * `Source/LLK/LLK.Build.cs`, which is Codex's lane (`docs/LANES.md`).
-		 * The module is loaded by default at runtime, so the actors are there
-		 * to find - it is only the compile-time link that is not mine to add.
-		 *
-		 * Walks the superclass chain so a Blueprint subclass of a nav volume,
-		 * or a project-specific `ARecastNavMesh` subclass, still counts.
-		 */
-		bool IsClassNamed(const AActor* Actor, const TCHAR* ClassName)
-		{
-			if (Actor == nullptr)
-			{
-				return false;
-			}
-
-			for (const UClass* Class = Actor->GetClass(); Class != nullptr; Class = Class->GetSuperClass())
-			{
-				if (Class->GetName() == ClassName)
-				{
-					return true;
-				}
-			}
-			return false;
-		}
 
 		/** Every actor carrying this tag, in level order. */
 		TArray<const AActor*> ActorsTagged(const UWorld* World, const FName& Tag)
@@ -247,7 +220,7 @@ namespace LLKMapReadiness
 		return Report;
 	}
 
-	FLLKMapObservations Observe(const UWorld* World, const FLLKStoreFloorPlan& Plan)
+	FLLKMapObservations Observe(UWorld* World, const FLLKStoreFloorPlan& Plan)
 	{
 		FLLKMapObservations Obs;
 		Obs.MaxSightlineStuds = Plan.MaxSightlineStuds;
@@ -288,23 +261,16 @@ namespace LLKMapReadiness
 
 		// ---- requirements 2, 3, 4: navigation -----------------------------
 		//
-		// Class names rather than types - see IsClassNamed for why that is
-		// not laziness.
 		TArray<FBox> NavBounds;
-		for (TActorIterator<AActor> It(World); It; ++It)
+		for (TActorIterator<ANavMeshBoundsVolume> It(World); It; ++It)
 		{
-			if (IsClassNamed(*It, TEXT("NavMeshBoundsVolume")))
-			{
-				++Obs.NavBoundsVolumes;
-				NavBounds.Add(It->GetComponentsBoundingBox(/*bNonColliding=*/true));
-			}
-			else if (IsClassNamed(*It, TEXT("NavigationData")))
-			{
-				// ARecastNavMesh derives from ANavigationData, so matching the
-				// base catches the Recast one and any other nav data type
-				// without this file knowing which is in use.
-				++Obs.NavDataActors;
-			}
+			++Obs.NavBoundsVolumes;
+			NavBounds.Add(It->GetComponentsBoundingBox(/*bNonColliding=*/true));
+		}
+
+		for (TActorIterator<ANavigationData> It(World); It; ++It)
+		{
+			++Obs.NavDataActors;
 		}
 
 		if (!NavBounds.IsEmpty())
@@ -332,25 +298,42 @@ namespace LLKMapReadiness
 			}
 		}
 
-		// HANDOFF(Codex): NavigationSystem. The module is linked as of 7d811f3
-		// and the contract below is complete, so this is the one piece left -
-		// three queries filling three TOptionals, and nothing else in this
-		// file. docs/HANDOFF-CODEX-NAVIGATION.md has the API with header line
-		// numbers and the three traps that each produce a check that always
-		// says yes.
-		//
-		//   Obs.NavigationBuilt       <- NavSys->IsNavigationBuilt(...)
-		//   Obs.SpawnOnNavmesh        <- NavSys->ProjectPointToNavigation(KeeperSpawn, ...)
-		//   Obs.RouteFromSpawnReaches <- FindPathToLocationSynchronously per
-		//                                enemy spawn; reaches means a path that
-		//                                is valid AND NOT partial, because a
-		//                                blocked route comes back partial
-		//                                rather than null.
-		//
-		// All three stay unset when the nav system is null or the question
-		// could not be asked. Unset is not false: Evaluate reports
-		// RouteUnverified for "nobody asked" and NoRouteFromSpawn for "asked
-		// and got no", and those are different sentences.
+		// HANDOFF(Codex): NavigationSystem complete. The typed queries below
+		// replace the former class-name workaround and leave unanswered checks
+		// unset rather than calling them passes.
+		// NavigationSystem's query APIs take a mutable UWorld*. Observe does
+		// not mutate the map; the non-const parameter exists only because the
+		// engine does not express that read-only contract in its API.
+		if (UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(World))
+		{
+			Obs.NavigationBuilt = NavSys->IsNavigationBuilt(World->GetWorldSettings());
+			if (Obs.NavigationBuilt.Get(false))
+			{
+				FNavLocation ProjectedKeeperSpawn;
+				// A 50cm horizontal / 100cm vertical tolerance accepts a normal
+				// PlayerStart at floor height, but does not turn a spawn floating
+				// metres above the floor into a false pass.
+				const FVector ProjectionExtent(50.f, 50.f, 100.f);
+				Obs.SpawnOnNavmesh = NavSys->ProjectPointToNavigation(
+					KeeperSpawn, ProjectedKeeperSpawn, ProjectionExtent);
+
+				if (Obs.SpawnOnNavmesh.Get(false) && !EnemySpawns.IsEmpty())
+				{
+					bool bEverySpawnReaches = true;
+					for (const AActor* Spawn : EnemySpawns)
+					{
+						UNavigationPath* Path = UNavigationSystemV1::FindPathToLocationSynchronously(
+							World, ProjectedKeeperSpawn.Location, Spawn->GetActorLocation());
+						if (Path == nullptr || !Path->IsValid() || Path->IsPartial())
+						{
+							bEverySpawnReaches = false;
+							break;
+						}
+					}
+					Obs.RouteFromSpawnReaches = bEverySpawnReaches;
+				}
+			}
+		}
 
 		// ---- requirements 6 and 7: the sightline sweep --------------------
 		const float ReachCm = LLKUnits::DistanceFromStuds(SweepReachStuds);
@@ -403,7 +386,7 @@ namespace LLKMapReadiness
 		return Obs;
 	}
 
-	FLLKMapReport Check(const UWorld* World, const FLLKStoreFloorPlan& Plan)
+	FLLKMapReport Check(UWorld* World, const FLLKStoreFloorPlan& Plan)
 	{
 		return Evaluate(Observe(World, Plan));
 	}

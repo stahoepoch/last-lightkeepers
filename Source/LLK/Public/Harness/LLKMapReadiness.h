@@ -295,13 +295,14 @@ namespace LLKMapReadiness
 	/**
 	 * The measuring. Traces, iterates actors, concludes nothing.
 	 *
-	 * Read-only with respect to the world. Safe to call in PIE, in a
+	 * Read-only with respect to the world. Takes a mutable UWorld only because
+	 * NavigationSystem's query API requires one. Safe to call in PIE, in a
 	 * packaged build, and from a commandlet.
 	 */
-	LLK_API FLLKMapObservations Observe(const UWorld* World, const FLLKStoreFloorPlan& Plan);
+	LLK_API FLLKMapObservations Observe(UWorld* World, const FLLKStoreFloorPlan& Plan);
 
 	/** Both halves, for the console command and for anything else that wants it. */
-	LLK_API FLLKMapReport Check(const UWorld* World, const FLLKStoreFloorPlan& Plan);
+	LLK_API FLLKMapReport Check(UWorld* World, const FLLKStoreFloorPlan& Plan);
 
 	/** The code's name, which is the same word `docs/MAP-READINESS.md` uses. */
 	LLK_API FString NameOf(ELLKMapCheck Check);
