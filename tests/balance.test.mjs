@@ -89,81 +89,93 @@ console.log("\nStorm Charge");
   check("the duty profiles are named in data, not implied here", 
     PROFILES.normal.duty < PROFILES.bright.duty && PROFILES.bright.duty < PROFILES.panic.duty);
 
-  // Chris's Warden arrival rule, 2026-10-28. He set the targets; lightSensitivity
-  // was derived to hit them. These lock the shape so a future tuning pass cannot
-  // quietly turn the lantern back into a button that starts a six-minute chase.
+  // ---- ROW 72: the night has one length, and this suite used to deny it --
+  //
+  // **Everything between here and the stage targets was a simulation of a
+  // model the code no longer implements, and it passed 160/160 while being
+  // wrong.** That is the worst state a suite can be in, because a green run
+  // reads as evidence. What was here: `wardenAt(crew, duty)`, which projected
+  // the Warden's arrival from a lantern multiplier on a diminishing curve and
+  // a separate dampened Warden meter, asserted across three named duty
+  // profiles and four crew sizes.
+  //
+  // Row 72 retired all of it. Light does not change the clock's rate, there
+  // is one clock rather than two, and so the night is the same length for
+  // every crew whatever they do with their lanterns. The simulation had
+  // nothing left to vary.
+  //
+  // What replaces it is smaller and it is the honest shape: one arrival time,
+  // derived from the baseline, checked against the bands Chris authored.
   {
     const w = storm.warden;
-    const decay = lamp.diminishingDecay;
-    const mult = (n) =>
-      storm.lantern.curve === "diminishing"
-        ? 1 + lamp.perLanternBonus * (1 - decay ** n) / (1 - decay)
-        : Math.min(1 + lamp.perLanternBonus * n, lamp.maxMultiplier);
-    // arrival for `crew` lanterns lit a `duty` fraction of the night
-    const wardenAt = (crew, duty) => {
-      const full = 1 + (mult(crew) - 1) * duty;
-      return w.chargeValue / (base * (1 + w.lightSensitivity * (full - 1)));
-    };
-
-    check("the Warden still costs light something", w.lightSensitivity > 0);
-    check(
-      "the Warden is NOT on the full lantern curve - that is the whole point of the split",
-      w.lightSensitivity < 1,
-    );
-    check(
-      "a fully dark crew meets the Warden near the end of the night, not before it",
-      wardenAt(4, 0) >= targetLow,
-      `got ${wardenAt(4, 0).toFixed(0)}s`,
-    );
-    // "Warden: the closing act, around minutes 9-11 for a normally lit crew."
+    const arrival = w.chargeValue / base;
     const [wardenLow, wardenHigh] = w.arrivalBandSeconds;
 
-    // PROFILE "normal" (25%) - the baseline. Must land in the band, every crew size.
-    for (const crew of [1, 2, 3, 4]) {
-      check(
-        `[${PROFILES.normal.label}] crew of ${crew} meets the Warden in ${wardenLow}-${wardenHigh}s`,
-        wardenAt(crew, PROFILES.normal.duty) >= wardenLow && wardenAt(crew, PROFILES.normal.duty) <= wardenHigh,
-        `got ${wardenAt(crew, PROFILES.normal.duty).toFixed(0)}s`,
-      );
-    }
-
-    // PROFILE "bright" (50%) - MAY be early, must stay survivable. Chris,
-    // 2026-10-28: "deliberately bright/risky play; the Warden can arrive
-    // earlier, but should remain survivable and not invalidate the run." The
-    // testable form of "does not invalidate the run" is that a bright crew
-    // still gets at least a complete early-exit raid before the closing act.
-    for (const crew of [1, 2, 3, 4]) {
-      check(
-        `[${PROFILES.bright.label}] crew of ${crew} still gets a full early-exit raid first`,
-        wardenAt(crew, PROFILES.bright.duty) > storm.run.earlyExitSeconds,
-        `got ${wardenAt(crew, PROFILES.bright.duty).toFixed(0)}s vs early exit ${storm.run.earlyExitSeconds}s`,
-      );
-    }
+    // **This is the one number row 72 knocked out of tune, and it is Chris's
+    // to set.** The band 540-660s was authored for a NORMALLY LIT crew under
+    // the old multiplier: at duty 0.25 the dampened Warden rate was about
+    // 1.11x, so 700 charge landed around 630s, inside it. At the flat rate
+    // 700 charge is 700 seconds, which is past the band - and there is no
+    // longer any such thing as a normally lit crew for the band to describe.
+    //
+    // Two one-number fixes, both his: set `warden.chargeValue` to about 600
+    // (dead centre of the band at 1/s), or widen `warden.arrivalBandSeconds`
+    // to include 700. Deliberately left failing rather than papered over: the
+    // data and the rule genuinely disagree, and a guard that hid that would
+    // be the thing this suite exists to prevent.
     check(
-      `[${PROFILES.bright.label}] is allowed to be earlier than the band - light always costs`,
-      wardenAt(4, PROFILES.bright.duty) < wardenAt(4, PROFILES.normal.duty),
+      `the Warden arrives at ${arrival.toFixed(0)}s, inside the authored band ${wardenLow}-${wardenHigh}s`,
+      arrival >= wardenLow && arrival <= wardenHigh,
+      `got ${arrival.toFixed(0)}s — ROW 72 RETUNE, CHRIS'S CALL: at the flat rate, warden.chargeValue ${storm.warden.chargeValue} is ${arrival.toFixed(0)}s. Set chargeValue to ~${Math.round((wardenLow + wardenHigh) / 2)} or widen arrivalBandSeconds`,
     );
-
-    // PROFILE "panic" (100%) - not regular play. One rule only: his floor.
-    for (const crew of [1, 2, 3, 4]) {
-      check(
-        `[${PROFILES.panic.label}] crew of ${crew} never meets the Warden at minute four`,
-        wardenAt(crew, PROFILES.panic.duty) > 300,
-        `got ${wardenAt(crew, PROFILES.panic.duty).toFixed(0)}s`,
-      );
-    }
     check(
-      "a dark crew gets the Warden LATER than a lit one - darkness buys the whole raid",
-      wardenAt(4, 0) > wardenHigh,
-      `dark ${wardenAt(4, 0).toFixed(0)}s vs band top ${wardenHigh}s`,
+      "and after the early exit, so an early-leaving crew never meets it",
+      arrival > storm.run.earlyExitSeconds,
+      `arrival ${arrival.toFixed(0)}s vs early exit ${storm.run.earlyExitSeconds}s`,
     );
-    // "Four players using light should reach the Warden somewhat earlier than
-    // solo, but never at minute four."
     check(
-      "four lit players reach the Warden earlier than a lit solo keeper",
-      wardenAt(4, NORMALLY_LIT_DUTY) < wardenAt(1, NORMALLY_LIT_DUTY),
+      "and before the hard ceiling, so the ceiling is not a second night",
+      arrival <= storm.run.hardCeilingSeconds,
     );
+    check(
+      "the thresholds are crossed before the Warden arrives",
+      thresholds.every((t) => t.value < w.chargeValue),
+    );
+  }
 
+  // ---- and the guard that the retired data is actually retired ----------
+  //
+  // The lantern curve, the dampening and the duty profiles are still in
+  // data/storm-charge.json: deleting values there is Chris's call (row 55),
+  // not this file's. So the guard is not "the data is gone" - it is "the code
+  // does not read it." A re-coupling would be one line in the subsystem, and
+  // this is the line that would catch it.
+  {
+    const subsystem = readFileSync(
+      join(root, "Source", "LLK", "Private", "Storm", "LLKStormChargeSubsystem.cpp"),
+      "utf8",
+    ).replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*/g, "");
+
+    check(
+      "ROW 72: the subsystem does not read the lantern curve",
+      !subsystem.includes("Rules->Lantern") && !subsystem.includes("LanternMultiplier("),
+      "light must not be an input to the clock's rate",
+    );
+    check(
+      "ROW 72: and does not read the Warden's light sensitivity",
+      !subsystem.includes("LightSensitivity"),
+      "that was the second meter's dampening; there is one meter now",
+    );
+    check(
+      "ROW 72: the rate is the baseline and nothing else",
+      /GetCurrentRate\(\) const\s*\{\s*return Rules != nullptr \? Rules->BaselineRatePerSecond : 0\.f;/.test(subsystem),
+      "a rate expression with a second term in it is the regression",
+    );
+    check(
+      "the retired lantern block is still in the data, for Chris to delete or keep",
+      typeof lamp.perLanternBonus === "number",
+      "this guard is about the code, not about tidying his file",
+    );
   }
 
   // Chris's stage targets, 2026-10-28: "First pressure: early, around minutes

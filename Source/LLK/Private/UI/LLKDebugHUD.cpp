@@ -6,6 +6,9 @@
 #include "Engine/World.h"
 #include "Characters/LLKCharacter.h"
 #include "Characters/LLKVitalsComponent.h"
+#include "Data/LLKEnemyDef.h"
+#include "Enemies/LLKEnemyRosterSubsystem.h"
+#include "Enemies/LLKPerception.h"
 #include "EngineUtils.h"
 #include "GameFramework/Pawn.h"
 #include "Loot/LLKInteractorComponent.h"
@@ -593,7 +596,6 @@ void ALLKDebugHUD::DrawStormPanel(
 	// does not: one path means both screens show the same thing for the same
 	// reason, which is the first thing M1.9's two-machine test needs.
 	const int32 Lit = Snapshot.LitLanternCount;
-	const float Multiplier = Snapshot.Multiplier;
 
 	// ---- which stage the night is in, M2.3 ----------------------------
 	//
@@ -649,24 +651,22 @@ void ALLKDebugHUD::DrawStormPanel(
 		// the same ULLKStormChargeData, so the countdown agrees without the
 		// server sending one - and it keeps ticking smoothly between the
 		// 10Hz snapshots instead of stepping.
-		const float Seconds = Storm->SecondsUntilSnapshotEscalation(Snapshot, Lit);
+		const float Seconds = Storm->SecondsUntilSnapshotEscalation(Snapshot);
 
 		DrawLine(
 			FString::Printf(TEXT("%s in %s"),
 				*Snapshot.NextEscalationId.ToString(), *FormatSeconds(Seconds)),
 			bWardenNext ? ColourUrgent : ColourHeading, CursorY, 1.6f);
 
-		// The counterfactual, which is the actual teaching. One line that
-		// says what the other choice costs - "and 0:58 lit" beside "2:24
-		// dark" is row 5 without a word of tutorial text.
-		const int32 Counterfactual = Lit > 0 ? 0 : 1;
-		const float OtherSeconds = Storm->SecondsUntilSnapshotEscalation(Snapshot, Counterfactual);
-
-		DrawLine(
-			FString::Printf(TEXT("  %s if you %s"),
-				*FormatSeconds(OtherSeconds),
-				Lit > 0 ? TEXT("put every lantern out") : TEXT("light one lantern")),
-			ColourCause, CursorY);
+		// **The counterfactual used to live here and row 72 moved it.** This
+		// line read "2:24 dark" against "0:58 lit", which was row 5 with no
+		// tutorial text - and it was only true while the lantern accelerated
+		// the clock. It does not any more, so the same sentence would now be
+		// a lie told in two identical numbers.
+		//
+		// The cost did not disappear; it moved to where it can be seen. It is
+		// printed below as the distance you can be noticed from, which is the
+		// same teaching device aimed at the thing that actually changed.
 	}
 	else
 	{
@@ -679,16 +679,39 @@ void ALLKDebugHUD::DrawStormPanel(
 	//
 	// A player shown only the consequence learns to fear the meter. Shown
 	// both, they learn what they did.
+	// The rate is one number now and it is the same for everybody, so the
+	// interesting line is no longer "what is light costing the clock" but
+	// "what is light costing you". Read off the authored Sweeper rather than
+	// restated: 38 studs lit against 12 dark is the largest consequence of
+	// the lantern in the data, and it is the roster's first real consumer.
+	float NoticedLit = 0.f;
+	float NoticedDark = 0.f;
+	const UWorld* PanelWorld = Storm->GetWorld();
+	if (const ULLKEnemyRosterSubsystem* Roster = PanelWorld != nullptr
+			? PanelWorld->GetSubsystem<ULLKEnemyRosterSubsystem>() : nullptr)
+	{
+		if (const FLLKEnemyDef* Sweeper = Roster->FindFamily(ELLKEnemyFamily::Sweepers))
+		{
+			const float Threshold = LLKPerception::LitThresholdFrom(
+				Storm->GetRules() != nullptr ? 250.f : 0.f);
+			NoticedLit = LLKPerception::NoticeRangeStuds(*Sweeper, Threshold + 1.f, Threshold);
+			NoticedDark = LLKPerception::NoticeRangeStuds(*Sweeper, 0.f, Threshold);
+		}
+	}
+
 	DrawLine(
-		FString::Printf(TEXT("lanterns lit  %d       multiplier  x%.2f       rate  %.2f/s"),
-			Lit, Multiplier,
-			// Rate from the snapshot's multiplier, not from a live recount:
-			// a client has no lanterns registered, so GetCurrentRate() there
-			// would print the baseline while the multiplier beside it said
-			// x2.50 - two numbers from two machines on one line.
-			Storm->GetRules() != nullptr
-				? Storm->GetRules()->BaselineRatePerSecond * Multiplier : 0.f),
+		FString::Printf(TEXT("lanterns lit  %d       rate  %.2f/s       (light does not change it)"),
+			Lit,
+			Storm->GetRules() != nullptr ? Storm->GetRules()->BaselineRatePerSecond : 0.f),
 		Lit > 0 ? ColourCause : ColourQuiet, CursorY);
+
+	if (NoticedLit > 0.f && NoticedDark > 0.f)
+	{
+		DrawLine(
+			FString::Printf(TEXT("  a Sweeper notices you from %.0f studs lit, %.0f dark"),
+				NoticedLit, NoticedDark),
+			Lit > 0 ? ColourCause : ColourQuiet, CursorY);
+	}
 
 	// ---- the two meters, last, because they are the trivia -------------
 	DrawLine(
@@ -699,14 +722,13 @@ void ALLKDebugHUD::DrawStormPanel(
 			*FormatSeconds(Snapshot.ElapsedSeconds)),
 		ColourQuiet, CursorY);
 
-	// Row 54: the Warden's own dampened meter, shown separately because it is
-	// a different cost for the same light. Seeing x2.50 beside x1.45 is the
-	// clearest statement of the dampening anybody will get.
+	// Row 54 still gives the Warden its own arrival value; row 72 took away
+	// its second meter. So this reads the one clock against the Warden's
+	// threshold - the same arithmetic every other countdown on this panel
+	// uses, which is the point of there being one clock.
 	DrawLine(
-		FString::Printf(TEXT("warden  %.0f       x%.2f       arrives  %s%s"),
-			Snapshot.WardenCharge,
-			Snapshot.WardenMultiplier,
-			*FormatSeconds(Storm->SecondsUntilWardenFrom(Snapshot.WardenCharge, Lit)),
+		FString::Printf(TEXT("warden  arrives  %s%s"),
+			*FormatSeconds(Storm->SecondsUntilWarden()),
 			Snapshot.bWardenConverged ? TEXT("  (here)") : TEXT("")),
 		Snapshot.bWardenConverged ? ColourUrgent : ColourQuiet, CursorY);
 

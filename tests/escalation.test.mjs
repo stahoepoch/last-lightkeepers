@@ -139,8 +139,14 @@ for (const entry of FORBIDDEN_CALLERS) {
     "the old signature surviving as an overload would reopen the hole",
   );
 
-  // The allowlist itself. Both entries are things a crew CHOSE and were
+  // The allowlist itself. Every entry is something a crew CHOSE and was
   // priced for; anything else arriving here is the rule being broken.
+  //
+  // **It was two entries until row 72 and is now one.** `AnchorRevive` was
+  // retired on 2026-10-29: the revive's price is a local distress pulse now,
+  // and leaving the enum value would have left a compiling route by which a
+  // keeper getting up could be charged to the weather again. Updating this
+  // guard was deliberate, which is what its own failure message asks for.
   const enumBlock = clean.match(/enum class ELLKStormSpike\s*:\s*uint8\s*\{([^}]*)\}/);
   check("the spike allowlist exists as an enum", enumBlock !== null);
 
@@ -150,7 +156,7 @@ for (const entry of FORBIDDEN_CALLERS) {
       .map((e) => e.trim())
       .filter((e) => e.length > 0);
 
-    const ALLOWED = ["ExtractionCall", "AnchorRevive"];
+    const ALLOWED = ["ExtractionCall"];
     check(
       `the allowlist is exactly ${ALLOWED.join(" and ")}`,
       entries.length === ALLOWED.length && ALLOWED.every((a) => entries.includes(a)),

@@ -1,23 +1,35 @@
-// The meter. M1.4.
+// The pressure clock. M1.4, retuned by row 72 on 2026-10-29.
 //
-// This is the clock the whole game runs on. It rises on its own, it rises
-// faster when keepers are lit, and it never falls - row 6, which is not a
-// guideline here: there is no subtracting accessor on this class and
-// `AddSpike` clamps at zero so that a negative spike cannot be smuggled in as
-// a reduction.
+// This is the clock the whole game runs on. It rises on its own and it never
+// falls - row 6, which is not a guideline here: there is no subtracting
+// accessor on this class and `AddSpike` clamps at zero so that a negative
+// spike cannot be smuggled in as a reduction.
 //
-// **It owns two meters, not one.** Row 54 split the Warden out of the generic
-// thresholds, because conflating them taught players that using a lantern
-// starts a six-minute chase - so they correctly optimised toward darkness.
-// The Warden accrues on its own dampened meter at
-// `1 + LightSensitivity * (LanternMultiplier - 1)`, and the two are tracked
-// separately all the way through rather than derived from each other at the
-// end.
+// **Light does not touch its rate, and that is new.** Until 2026-10-29 it rose
+// faster when keepers were lit, on a diminishing curve, and that was the
+// largest lever in the game - a dark crew's night ran nearly five times longer
+// than a lit crew's. Chris retired it because it could not be explained:
+// *"The storm gets worse on its own. A lantern does not feed the storm. It
+// only lets nearby machines notice you."* A meter that claimed to be the
+// night arriving while your lamp accelerated it was two claims that could not
+// both be true. Light still costs, locally, through `LLKPerception` and the
+// light field.
 //
-// **The curve lives in data, including the retired one.** Row 12 says
-// switching back to `linearCapped` must never need a code change. Both curves
-// are implemented, and `LanternMultiplier` reads which one to use from the
-// asset rather than from a constant here.
+// **One clock per run, never two.** Row 72 again, and it cost this class its
+// second meter. The Warden used to accrue on its own dampened float at
+// `1 + LightSensitivity * (LanternMultiplier - 1)`. With the rate flat, that
+// second meter would have advanced at exactly the same speed as the first -
+// two copies of one fact, replicated separately, able to disagree for no
+// benefit. The Warden's arrival is now a threshold on the one clock. Row 54
+// still holds: its arrival is its own event, and none of it is perception.
+//
+// **What it is called is zone-authored, which this class does not do yet.**
+// Row 70: the mall's clock is Storm Arrival and a future solar farm's is
+// Solar Output - the same mechanic with a true sentence behind each. The
+// stage names and effects are already data-driven (rows 12 and 33), so only
+// the rate's source needs to become per-zone. The class and asset are still
+// named `StormCharge`; renaming them touches Codex's importer, so it is a
+// coordinated commit rather than a drive-by.
 //
 // **It counts lanterns rather than trusting a counter.** Registered lanterns
 // are recounted every tick instead of being incremented on the state-changed
@@ -69,18 +81,55 @@ class ULLKLanternComponent;
 UENUM(BlueprintType)
 enum class ELLKStormSpike : uint8
 {
-	/** `extractionCall.stormChargeSpike` - the loud call. The crew's decision. */
-	ExtractionCall,
-	/** `anchorRevive.stormChargeSpike` - a solo keeper spending their one way back up. */
-	AnchorRevive
+	/**
+	 * `extractionCall.stormChargeSpike` - the loud call. The crew's decision.
+	 *
+	 * **The only entry, as of row 72.** `AnchorRevive` used to be the second
+	 * one and has been retired: the revive's price is now a local distress
+	 * pulse, so there must be no code path by which it could be charged to
+	 * the clock again. Removing the value rather than leaving it unused is
+	 * the difference between a decision and a thing that merely has no
+	 * callers today.
+	 *
+	 * The extraction call is NOT light, so row 72 does not forbid it. Whether
+	 * it should survive on the same reasoning - weather does not care about
+	 * your radio either - is the open question recorded in
+	 * `docs/THE-LANTERN.md`.
+	 */
+	ExtractionCall
 };
 
 /** Fires once, on authority, the first time a threshold's value is passed. */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 	FLLKStormThresholdCrossed, FName, ThresholdId, float, Charge);
 
-/** Fires once, on authority, when the Warden's own meter fills. Row 7: it is unkillable. */
+/** Fires once, on authority, when the clock reaches the Warden's value. Row 7: it is unkillable. */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FLLKWardenConverged);
+
+/** A keeper's distress flare: where it is, and how long it lasts. */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
+	FLLKDistressPulseSignature, FVector, Position, float, Seconds);
+
+/**
+ * Light the crew paid for rather than chose.
+ *
+ * Row 72's price for the Anchor Revive. Not a `UPROPERTY` and not replicated:
+ * it exists to be a light source on the server for a few seconds, and a client
+ * that needs to show the flare is told by `OnDistressPulse` instead of
+ * inferring it from a list.
+ */
+struct FLLKDistressPulse
+{
+	FVector Position = FVector::ZeroVector;
+
+	/** Candelas, taken from the keeper's own lantern rather than invented. */
+	float Intensity = 0.f;
+
+	/** Already centimetres, like every other `FLLKLightSource`. Row 61. */
+	float RadiusCm = 0.f;
+
+	float SecondsRemaining = 0.f;
+};
 
 UCLASS()
 class LLK_API ULLKStormChargeSubsystem : public UTickableWorldSubsystem
@@ -140,9 +189,6 @@ public:
 	float GetCharge() const { return Charge; }
 
 	UFUNCTION(BlueprintPure, Category = "LLK|Storm")
-	float GetWardenCharge() const { return WardenCharge; }
-
-	UFUNCTION(BlueprintPure, Category = "LLK|Storm")
 	bool HasWardenConverged() const { return bWardenConverged; }
 
 	// ---------------------------------------------------------- the stage
@@ -193,17 +239,18 @@ public:
 	UFUNCTION(BlueprintPure, Category = "LLK|Storm")
 	float GetElapsedSeconds() const { return ElapsedSeconds; }
 
-	/** The multiplier the meter is rising at right now, from the live lantern count. */
-	UFUNCTION(BlueprintPure, Category = "LLK|Storm")
-	float GetCurrentMultiplier() const;
-
-	/** Charge per second right now - baseline times the multiplier above. */
+	/**
+	 * Pressure per second right now.
+	 *
+	 * **Flat, as of row 72.** There used to be a `GetCurrentMultiplier` and a
+	 * `GetCurrentWardenMultiplier` either side of this, both driven by the lit
+	 * lantern count. They are gone: nothing a player does changes the rate at
+	 * which the night arrives. Light costs locally instead, which is what
+	 * `LLKPerception` and the light field are for.
+	 */
 	UFUNCTION(BlueprintPure, Category = "LLK|Storm")
 	float GetCurrentRate() const;
 
-	/** The Warden's dampened multiplier right now. Row 54: a different cost for the same light. */
-	UFUNCTION(BlueprintPure, Category = "LLK|Storm")
-	float GetCurrentWardenMultiplier() const;
 
 	/**
 	 * The lowest threshold not yet crossed, or the Warden once they all are.
@@ -215,7 +262,7 @@ public:
 	bool GetNextEscalation(FName& OutId, float& OutTargetCharge, float& OutCurrentCharge) const;
 
 	/**
-	 * Seconds until `TargetCharge`, at the rate `LitCount` lanterns produce.
+	 * Seconds until `TargetCharge` at the clock's one rate.
 	 *
 	 * **This is the number that makes the lantern a decision rather than a
 	 * light.** A meter climbing from 336 to 480 teaches nothing; "patrols hunt
@@ -228,10 +275,10 @@ public:
 	 * `TNumericLimits<float>::Max()` when the rate is zero - never a division
 	 * by it, and never a plausible-looking zero.
 	 */
-	float SecondsUntilCharge(float FromCharge, float TargetCharge, int32 LitCount) const;
+	float SecondsUntilCharge(float FromCharge, float TargetCharge) const;
 
 	/** Same projection for the Warden's own dampened meter, from its live value. */
-	float SecondsUntilWarden(int32 LitCount) const;
+	float SecondsUntilWarden() const;
 
 	/**
 	 * The Warden projection from an arbitrary meter value.
@@ -242,7 +289,7 @@ public:
 	 * client and server agree on the countdown without the server having to
 	 * send one - and what makes that agreement testable.
 	 */
-	float SecondsUntilWardenFrom(float FromWardenCharge, int32 LitCount) const;
+
 
 	/**
 	 * Everything a client is allowed to know, as one struct.
@@ -258,10 +305,10 @@ public:
 	 * Seconds to the next escalation described by a snapshot.
 	 *
 	 * The one projection entry point the HUD uses, server and client alike.
-	 * It reads `NextFromCharge` rather than assuming `Charge`, because when
-	 * the Warden is next the measurement is against its own dampened meter.
+	 * It reads `NextFromCharge` rather than assuming `Charge` so that a
+	 * client projects from the value the server actually published.
 	 */
-	float SecondsUntilSnapshotEscalation(const FLLKStormSnapshot& Snapshot, int32 LitCount) const;
+	float SecondsUntilSnapshotEscalation(const FLLKStormSnapshot& Snapshot) const;
 
 	/**
 	 * True where this subsystem is actually accruing - server or standalone.
@@ -296,6 +343,30 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "LLK|Storm")
 	FLLKStormThresholdCrossed OnThresholdCrossed;
 
+	/**
+	 * A keeper spent their Anchor Revive and lit the room doing it.
+	 *
+	 * Broadcast at the moment of the revive. The light itself is already in
+	 * the field by then, so a listener is for the audible half and the visual
+	 * flare - not for deciding who notices, which the field answers.
+	 */
+	UPROPERTY(BlueprintAssignable, Category = "LLK|Storm")
+	FLLKDistressPulseSignature OnDistressPulse;
+
+	/**
+	 * Adds a distress flare at a position for a number of seconds.
+	 *
+	 * Every value is authored somewhere else: intensity and radius come from
+	 * the reviving keeper's own lantern rules, and the duration from
+	 * `revive.reviveSeconds`. Nothing new was tuned for this, which is the
+	 * point - the price is "you are the brightest thing in the building for
+	 * eight seconds", stated in the units the game already uses.
+	 */
+	void AddDistressPulse(const FVector& Position, float Intensity, float RadiusCm, float Seconds);
+
+	/** How many flares are currently lit. For the tests and the readout. */
+	int32 GetDistressPulseCount() const { return DistressPulses.Num(); }
+
 	UPROPERTY(BlueprintAssignable, Category = "LLK|Storm")
 	FLLKWardenConverged OnWardenConverged;
 
@@ -311,10 +382,10 @@ public:
 	 * rests on can be asserted without a world, a tick or a lantern. Mirrors
 	 * `multiplier()` in `tests/pacing.mjs`; row 12 keeps both curves real.
 	 */
-	static float LanternMultiplier(const FLLKLanternChargeRules& Rules, int32 LitCount);
+
 
 	/** The Warden's dampening, row 54. At sensitivity 0 it ignores light entirely. */
-	static float WardenMultiplierFrom(float LanternMult, float LightSensitivity);
+
 
 	/** The tuning in use, so a test can assert against the same numbers the meter uses. */
 	const ULLKStormChargeData* GetRules() const { return Rules; }
@@ -348,7 +419,7 @@ public:
 	 * That is what lets M1.8 assert the curve, the dampening and "only ever
 	 * rises" against the real code path rather than a copy of it.
 	 */
-	void AdvanceForTest(float DeltaSeconds, int32 LitCount) { Advance(DeltaSeconds, LitCount); }
+	void AdvanceForTest(float DeltaSeconds) { Advance(DeltaSeconds); }
 
 	/** Injects tuning so a test is not at the mercy of whether `Content/Data` was generated. */
 	void SetRulesForTest(ULLKStormChargeData* InRules)
@@ -366,7 +437,10 @@ protected:
 	 * One step of both meters. No world, no lantern lookup - the lit count is
 	 * passed in. Everything that decides how fast the night moves is here.
 	 */
-	void Advance(float DeltaSeconds, int32 LitCount);
+	void Advance(float DeltaSeconds);
+
+	/** Ticks the flares down and drops the expired ones. */
+	void ExpireDistressPulses(float DeltaSeconds);
 
 	/**
 	 * Fires any threshold or Warden event the meters have newly earned.
@@ -403,7 +477,14 @@ protected:
 	TSet<FName> CrossedThresholds;
 
 	float Charge = 0.f;
-	float WardenCharge = 0.f;
+	/**
+	 * Transient light the crew paid for rather than chose.
+	 *
+	 * Only the Anchor Revive creates these today. Not replicated: the field
+	 * they feed is read on the server, and a client that needs to see the
+	 * flare gets it from `OnDistressPulse`.
+	 */
+	TArray<FLLKDistressPulse> DistressPulses;
 	float ElapsedSeconds = 0.f;
 	bool bWardenConverged = false;
 

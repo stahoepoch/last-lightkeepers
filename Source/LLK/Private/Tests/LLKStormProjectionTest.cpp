@@ -45,60 +45,52 @@ bool FLLKStormProjectionTest::RunTest(const FString& Parameters)
 	// One charge unit is one second of darkness, so dark, the seconds to a
 	// threshold are its value. PatrolsAlert is 270.
 	TestNearlyEqual(TEXT("dark, PatrolsAlert is 270 seconds away"),
-		Storm->SecondsUntilCharge(0.f, 270.f, 0), 270.f, 0.01f);
+		Storm->SecondsUntilCharge(0.f, 270.f), 270.f, 0.01f);
 
-	// Lit, at the locked 2.5x anchor, the same distance takes 108 seconds -
-	// which is the `oneLanternSeconds: 108` already published in
-	// storm-charge.json. The engine and the data agreeing on that number is
-	// the point of this assertion.
-	TestNearlyEqual(TEXT("one lantern makes it 108 seconds, as the data says"),
-		Storm->SecondsUntilCharge(0.f, 270.f, 1), 108.f, 0.01f);
-
-	// ---- 2. THE COUNTERFACTUAL'S DIRECTION ----------------------------
+	// ---- 2. ROW 72: the projection has no second answer ---------------
 	//
-	// The one that would teach the opposite of the game. If light ever
-	// projected as MORE time, the HUD would tell the player, in their own
-	// numbers, that lighting the lantern is free.
-	for (int32 Lit = 1; Lit <= 4; ++Lit)
-	{
-		TestTrue(*FString::Printf(TEXT("%d lantern(s) leaves less time than darkness"), Lit),
-			Storm->SecondsUntilCharge(0.f, 270.f, Lit) < Storm->SecondsUntilCharge(0.f, 270.f, 0));
-		if (Lit > 1)
-		{
-			TestTrue(*FString::Printf(TEXT("and %d leaves less time than %d"), Lit, Lit - 1),
-				Storm->SecondsUntilCharge(0.f, 270.f, Lit)
-					< Storm->SecondsUntilCharge(0.f, 270.f, Lit - 1));
-		}
-	}
+	// **This section used to be the most important one in the file** and it
+	// is now the opposite assertion. It checked the counterfactual's
+	// DIRECTION: that one lantern projected as 108 seconds against darkness's
+	// 270, that more lanterns always left less time, and that if light ever
+	// projected as MORE time the HUD would be telling the player in their own
+	// numbers that lighting up was free.
+	//
+	// Row 72 removed the counterfactual by removing its cause. There is one
+	// rate, so there is one projection, and the thing to guard is that no
+	// second answer creeps back in. A projection that varied with anything
+	// but the authored baseline would now be the bug.
+	const float Projected = Storm->SecondsUntilCharge(0.f, 270.f);
+	TestNearlyEqual(TEXT("the projection is the threshold divided by the one rate"),
+		Projected, 270.f / Rules->BaselineRatePerSecond, 0.01f);
+	TestNearlyEqual(TEXT("ROW 72: and asking again gives the same answer, because "
+		"nothing about the crew is an input to it"),
+		Storm->SecondsUntilCharge(0.f, 270.f), Projected, 0.0001f);
 
 	// ---- 3. a zero rate is never a division, and never "now" ----------
 	ULLKStormChargeData* Stopped = ULLKStormChargeSubsystem::MakeFallbackRules(Storm);
 	Stopped->BaselineRatePerSecond = 0.f;
 	Storm->SetRulesForTest(Stopped);
-	const float Never = Storm->SecondsUntilCharge(0.f, 270.f, 0);
+	const float Never = Storm->SecondsUntilCharge(0.f, 270.f);
 	TestTrue(TEXT("a zero rate projects as never, not as zero seconds"),
 		Never >= TNumericLimits<float>::Max() * 0.5f);
 	TestEqual(TEXT("and the readout renders it as a dash"),
 		ALLKDebugHUD::FormatSeconds(Never), FString(TEXT("--:--")));
 	Storm->SetRulesForTest(Rules);
 
-	// ---- 4. the Warden comes off its own meter, row 54 -----------------
+	// ---- 4. the Warden comes off the one clock ------------------------
 	//
-	// Dark, both meters rise together, so the Warden's 700 is 700 seconds
-	// away. Lit, the thresholds speed up by 2.5x and the Warden only by
-	// 1.45x - so projecting it off the thresholds' rate would make a lit
-	// crew look like it meets the Warden far sooner than it does.
-	TestNearlyEqual(TEXT("dark, the Warden is 700 seconds away"),
-		Storm->SecondsUntilWarden(0), 700.f, 0.01f);
-
-	const float WardenLit = Storm->SecondsUntilWarden(1);
-	const float ThresholdPaceLit = Storm->SecondsUntilCharge(0.f, 700.f, 1);
-	TestTrue(TEXT("lit, the Warden still arrives sooner than it would in the dark"),
-		WardenLit < 700.f);
-	TestTrue(TEXT("but much later than the thresholds' pace would suggest"),
-		WardenLit > ThresholdPaceLit * 1.5f);
-	TestNearlyEqual(TEXT("specifically at the dampened 1.45x rate"),
-		WardenLit, 700.f / 1.45f, 0.5f);
+	// Row 54 still gives it its own arrival VALUE. Row 72 took away its own
+	// METER: this used to assert that a lit crew met the Warden at the
+	// dampened 1.45x rate while the thresholds ran at 2.5x, which was the
+	// whole point of there being two meters. With one clock the Warden's
+	// 700 is 700 seconds, and the only thing worth asserting is that the
+	// countdown and the threshold arithmetic are the same arithmetic.
+	TestNearlyEqual(TEXT("the Warden is 700 seconds away"),
+		Storm->SecondsUntilWarden(), 700.f, 0.01f);
+	TestNearlyEqual(TEXT("ROW 72: by exactly the same calculation as any other threshold"),
+		Storm->SecondsUntilWarden(),
+		Storm->SecondsUntilCharge(0.f, Rules->Warden.ChargeValue), 0.0001f);
 
 	// ---- 5. the next escalation, and the order it is found in ----------
 	FName NextId;
@@ -108,23 +100,26 @@ bool FLLKStormProjectionTest::RunTest(const FString& Parameters)
 		Storm->GetNextEscalation(NextId, Target, Current));
 	TestEqual(TEXT("and it is the lowest threshold, not the first in the array"),
 		NextId, FName(TEXT("PatrolsAlert")));
-	TestEqual(TEXT("reported against the thresholds' own meter"), Current, Storm->GetCharge());
+	TestEqual(TEXT("reported against the clock"), Current, Storm->GetCharge());
 
-	// Cross both thresholds. The Warden must then be what is next, and it
-	// must be reported against ITS meter - mixing the two is failure mode 3.
-	Storm->AdvanceForTest(500.f, 0);
+	// Cross both thresholds. The Warden must then be what is next. This used
+	// to assert that it was reported against its OWN meter and that mixing
+	// the two was a failure; row 72 removed the second meter, so the
+	// assertion inverts: everything is reported against the one clock, and
+	// the old failure mode is now unreachable by construction.
+	Storm->AdvanceForTest(500.f);
 	TestTrue(TEXT("with both thresholds crossed something is still coming"),
 		Storm->GetNextEscalation(NextId, Target, Current));
 	TestEqual(TEXT("and it is the Warden"), NextId, FName(TEXT("WardenConverges")));
-	TestEqual(TEXT("reported against the Warden's meter, not the thresholds'"),
-		Current, Storm->GetWardenCharge());
+	TestEqual(TEXT("reported against the one clock, like every other threshold"),
+		Current, Storm->GetCharge());
 	TestEqual(TEXT("against the Warden's own value"), Target, Rules->Warden.ChargeValue);
 
 	// ---- 6. nothing left to send ---------------------------------------
 	//
 	// The one state a countdown must not render. Drive the Warden in and the
 	// readout must stop claiming anything is on its way.
-	Storm->AdvanceForTest(1200.f, 0);
+	Storm->AdvanceForTest(1200.f);
 	TestTrue(TEXT("the Warden has converged"), Storm->HasWardenConverged());
 	TestFalse(TEXT("and nothing is reported as still coming"),
 		Storm->GetNextEscalation(NextId, Target, Current));

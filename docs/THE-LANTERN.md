@@ -288,27 +288,52 @@ legitimate sources of escalation, alongside light. His new rule removes light
 from that list for a good reason; whether it removes the other two is the
 question the code is waiting on.
 
-### The two coherent shapes — *the one open question*
+### Settled, and built: one clock, and the revive re-priced
 
-**A. One meter, time only.** The storm is weather and nothing touches it.
-Light's cost is entirely local: perception, wake states, noise, position. The
-revive and the extraction call get re-priced in attention. Simplest, most
-legible, and the version his message literally describes.
+Chris, 2026-10-29: *"Meter first - today. It is a small decision with a large
+blast radius; the greybox should teach the correct rule, not a rule we know we
+are retiring."* His lock, and `DECISIONS.md` row 72 carries it in full:
 
-**B. Two meters.** *Storm Arrival* is time only and drives the night's stages
-and the Warden - nothing the player does moves it. A second, choice-driven
-value tracks how awake the building is, raised by light, theft, depth, alarms,
-the revive and the extraction call. The lantern still never touches the
-weather; it wakes machines, which is his own third bullet. Every locked price
-keeps working and light keeps a crew-level cost.
+- One pressure clock per run, never two.
+- Zone-authored, not universally "Storm Charge" - Storm Arrival in the mall,
+  Solar Output at a future solar farm.
+- **Light never changes that clock's rate.**
+- Light creates only local consequences: visibility, enemy wakefulness,
+  detection, readable relics, and the physical risk of carrying it.
+- Stage names and effects already have the right data-driven shape; only the
+  rate's source needs to become zone-specific later.
 
-Claude's recommendation is **B**, on the grounds that his third bullet already
-describes a second axis - *"the building wakes up progressively"* - and that B
-costs nothing that is currently working while A costs the three things above.
-But A is coherent, it is simpler, and it is the one he appears to be asking
-for, so this is his call and not a drafting detail.
+The Anchor Revive's new price, also his: *"it consumes the one emergency
+Anchor for that run and sends a local distress pulse - bright, audible, and
+attractive to nearby machines - but does not alter the global clock. A solo
+player gets back up, but wakes up the room."*
 
-**What is NOT waiting on it:** the rename. "Storm Charge" is a bad name under
-either shape, and `ULLKStormChargeSubsystem`, `ULLKStormChargeData`,
-`stormChargeSpike` and the rest can become *Storm Arrival* the moment he picks
-between that and *Night*. He offered both.
+**It is implemented in the currency the game already had.** The pulse is a
+light source in the field for as long as the revive took, which makes the
+keeper almost certainly the brightest thing in the building - and the brightest
+thing is what the Warden converges on and what a Sweeper notices from 38 studs
+rather than 12. No new number was authored: the brightness and reach are the
+keeper's own lantern's, and the duration is `revive.reviveSeconds`. Which means
+the price is legible without a readout, and it scales with the lantern if the
+lantern is ever retuned.
+
+### The extraction call is the last inconsistency — *open*
+
+`extractionCall.stormChargeSpike` is 180 and still moves the clock. Row 72
+forbids *light* from moving it, and the extraction call is not light, so the
+letter of the rule permits it.
+
+The spirit may not. The argument that retired the lantern's multiplier -
+weather does not care about your lamp - applies equally to a radio. If the
+clock is the night arriving, then **nothing the crew does should move it**,
+which is a cleaner rule to hold and a much easier one to explain.
+
+The replacement price is already authored: `convergeAllPatrols: true` and an
+eight-second siren. Calling extraction would summon everything rather than
+advancing the night, which is arguably more frightening and is certainly more
+local.
+
+Left as it is, deliberately, because deleting a number Chris authored on an
+inference is the mistake this file has been careful not to make twice. It is
+one decision: does the clock belong to the weather alone, or to the weather
+plus the crew's loudest choice?

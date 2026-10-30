@@ -70,25 +70,28 @@ bool FLLKStormSnapshotTest::RunTest(const FString& Parameters)
 	Client->SetRulesForTest(Rules);
 
 	// ---- 2. the snapshot agrees with the meter it was built from --------
-	Server->AdvanceForTest(120.f, 1);
+	Server->AdvanceForTest(120.f);
 	FLLKStormSnapshot Snapshot = Server->BuildSnapshot();
 
 	TestTrue(TEXT("a built snapshot is published"), Snapshot.bPublished);
 	TestEqual(TEXT("charge matches the server"), Snapshot.Charge, Server->GetCharge());
-	TestEqual(TEXT("the Warden's charge matches the server"),
-		Snapshot.WardenCharge, Server->GetWardenCharge());
 	TestEqual(TEXT("elapsed matches the server"), Snapshot.ElapsedSeconds, Server->GetElapsedSeconds());
-	TestEqual(TEXT("the multiplier matches the server"),
-		Snapshot.Multiplier, Server->GetCurrentMultiplier());
-	TestEqual(TEXT("the Warden's multiplier matches the server"),
-		Snapshot.WardenMultiplier, Server->GetCurrentWardenMultiplier());
+
+	// Three fields used to be asserted here - WardenCharge, Multiplier and
+	// WardenMultiplier - and row 72 removed all three from the snapshot
+	// rather than leaving them replicating constants. The lit lantern count
+	// stays, because how many lanterns are burning is still a true fact about
+	// the crew; it simply no longer decides anything about the clock.
 	TestEqual(TEXT("the source is the server's, not a guess"),
 		Snapshot.RulesSource, Server->GetRulesSource());
 
-	// The two meters must have genuinely diverged by now, or the assertions
-	// below could pass by both being the same number.
-	TestTrue(TEXT("by now the two meters disagree, so the test can tell them apart"),
-		Snapshot.Charge > Snapshot.WardenCharge + 1.f);
+	// This used to assert that the two meters had genuinely diverged, so that
+	// the agreement assertions below could not pass by both being the same
+	// number. Row 72 left one meter, so the guard it needed instead is that
+	// the clock has actually moved - a snapshot of zero would make every
+	// agreement below true and meaningless.
+	TestTrue(TEXT("the clock has moved, so the agreement below is not trivially true"),
+		Snapshot.Charge > 1.f);
 
 	// ---- 3. THE AGREEMENT. A client reaches the server's answer ---------
 	//
@@ -97,8 +100,8 @@ bool FLLKStormSnapshotTest::RunTest(const FString& Parameters)
 	// on the same second.
 	for (int32 Lit = 0; Lit <= 4; ++Lit)
 	{
-		const float ServerSeconds = Server->SecondsUntilSnapshotEscalation(Server->BuildSnapshot(), Lit);
-		const float ClientSeconds = Client->SecondsUntilSnapshotEscalation(Snapshot, Lit);
+		const float ServerSeconds = Server->SecondsUntilSnapshotEscalation(Server->BuildSnapshot());
+		const float ClientSeconds = Client->SecondsUntilSnapshotEscalation(Snapshot);
 		TestNearlyEqual(
 			*FString::Printf(TEXT("client and server agree on the countdown at %d lantern(s)"), Lit),
 			ClientSeconds, ServerSeconds, 0.01f);
@@ -114,8 +117,8 @@ bool FLLKStormSnapshotTest::RunTest(const FString& Parameters)
 	// whose "if you light one lantern" disagreed with the server's would be
 	// teaching a lesson the server does not enforce.
 	TestNearlyEqual(TEXT("client and server agree on the dark counterfactual"),
-		Client->SecondsUntilSnapshotEscalation(Snapshot, 0),
-		Server->SecondsUntilSnapshotEscalation(Server->BuildSnapshot(), 0), 0.01f);
+		Client->SecondsUntilSnapshotEscalation(Snapshot),
+		Server->SecondsUntilSnapshotEscalation(Server->BuildSnapshot()), 0.01f);
 
 	// ---- 4. FAILURE MODE 1: which meter the next escalation is measured on
 	//
@@ -127,27 +130,30 @@ bool FLLKStormSnapshotTest::RunTest(const FString& Parameters)
 	// Cross both thresholds so the Warden becomes next, and the measured
 	// meter must switch with it. Getting this wrong is wrong by the whole of
 	// the dampening, and wrong in the reassuring direction.
-	Server->AdvanceForTest(500.f, 0);
+	Server->AdvanceForTest(500.f);
 	Snapshot = Server->BuildSnapshot();
 	TestEqual(TEXT("the Warden is now next"),
 		Snapshot.NextEscalationId, FName(TEXT("WardenConverges")));
-	TestEqual(TEXT("and NextFromCharge switched to the Warden's meter"),
-		Snapshot.NextFromCharge, Snapshot.WardenCharge);
-	TestNotEqual(TEXT("which is NOT the thresholds' charge"),
+	// This used to assert that NextFromCharge switched to the Warden's own
+	// meter and was NOT the thresholds' charge. Row 72 inverts it: there is
+	// one clock, so the Warden is measured against the same charge as every
+	// other threshold, and a snapshot that reported anything else would now
+	// be the bug.
+	TestEqual(TEXT("ROW 72: NextFromCharge is the one clock, for the Warden too"),
 		Snapshot.NextFromCharge, Snapshot.Charge);
 
 	// A client projecting the Warden from that snapshot must still match.
 	TestNearlyEqual(TEXT("client and server agree on the Warden's arrival"),
-		Client->SecondsUntilSnapshotEscalation(Snapshot, 0),
-		Server->SecondsUntilWarden(0), 0.01f);
+		Client->SecondsUntilSnapshotEscalation(Snapshot),
+		Server->SecondsUntilWarden(), 0.01f);
 
 	// ---- 5. nothing left to send, over the wire ------------------------
-	Server->AdvanceForTest(1200.f, 0);
+	Server->AdvanceForTest(1200.f);
 	Snapshot = Server->BuildSnapshot();
-	TestTrue(TEXT("the Warden has converged"), Snapshot.bWardenConverged);
+	TestTrue(TEXT("the Warden has converged"), Server->HasWardenConverged());
 	TestFalse(TEXT("and the snapshot reports nothing still coming"), Snapshot.bHasNextEscalation);
 	TestEqual(TEXT("so a client projects never, and renders a dash"),
-		ALLKDebugHUD::FormatSeconds(Client->SecondsUntilSnapshotEscalation(Snapshot, 0)),
+		ALLKDebugHUD::FormatSeconds(Client->SecondsUntilSnapshotEscalation(Snapshot)),
 		FString(TEXT("--:--")));
 
 	// ---- 6. the lit count, and the ghost light it must not have ---------

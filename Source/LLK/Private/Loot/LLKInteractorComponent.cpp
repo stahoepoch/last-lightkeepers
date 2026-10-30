@@ -6,6 +6,7 @@
 #include "GameFramework/Pawn.h"
 #include "LLK.h"
 #include "LLKUnits.h"
+#include "Lantern/LLKLanternLightComponent.h"
 #include "Storm/LLKStormChargeSubsystem.h"
 #include "Characters/LLKVitalsComponent.h"
 #include "Loot/LLKRelicComponent.h"
@@ -273,14 +274,42 @@ void ULLKInteractorComponent::ServerAnchorRevive_Implementation()
 		return;
 	}
 
-	// The price, paid by the chooser. Row 64 line three allows this precisely
-	// because it is a decision the keeper made - the same reason being
-	// contained may never move the meter.
+	// **The price, re-priced by row 72.** It used to be
+	// `AddSpike(AnchorRevive)` - a permanent 120 on the global meter - and
+	// that is now forbidden: the clock is the night arriving and a keeper
+	// getting up cannot make the weather worse. Chris's replacement, 2026-10-29:
+	// *"it consumes the one emergency Anchor for that run and sends a local
+	// distress pulse - bright, audible, and attractive to nearby machines -
+	// but does not alter the global clock. A solo player gets back up, but
+	// wakes up the room."*
+	//
+	// So the price is paid in the currency the game already has. The pulse is
+	// a light source in the field for as long as the revive took, which makes
+	// the keeper almost certainly the brightest thing in the building - and
+	// the brightest thing is what the Warden converges on (row 7, row 54) and
+	// what `LLKPerception` notices from 38 studs rather than 12. No new
+	// number was authored for this: the brightness and reach are the keeper's
+	// own lantern's, and the duration is the revive's own.
 	if (const UWorld* World = GetWorld())
 	{
 		if (ULLKStormChargeSubsystem* Storm = World->GetSubsystem<ULLKStormChargeSubsystem>())
 		{
-			Storm->AddSpike(ELLKStormSpike::AnchorRevive);
+			float Intensity = 0.f;
+			float RadiusCm = 0.f;
+			if (const ULLKLanternLightComponent* Light =
+					Owner->FindComponentByClass<ULLKLanternLightComponent>())
+			{
+				Intensity = Light->GetResolvedRules().Intensity;
+				RadiusCm = Light->AttenuationRadius;
+			}
+
+			// Deliberately not defaulted when the keeper has no light
+			// component. AddDistressPulse refuses a pulse with no reach and
+			// says so, which is the same rule the light field follows about a
+			// lantern with no radius: an entry that contributes nothing must
+			// not look like one that does.
+			Storm->AddDistressPulse(
+				Owner->GetActorLocation(), Intensity, RadiusCm, Own->GetAnchorReviveSeconds());
 		}
 	}
 }

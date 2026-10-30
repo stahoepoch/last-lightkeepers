@@ -38,21 +38,19 @@ struct FLLKStormSnapshot
 	UPROPERTY(BlueprintReadOnly, Category = "LLK|Storm")
 	float Charge = 0.f;
 
-	/** The Warden's own dampened meter, row 54. Never derived from the above. */
-	UPROPERTY(BlueprintReadOnly, Category = "LLK|Storm")
-	float WardenCharge = 0.f;
-
 	UPROPERTY(BlueprintReadOnly, Category = "LLK|Storm")
 	float ElapsedSeconds = 0.f;
 
-	/** The rate multiplier in force when this snapshot was taken. */
-	UPROPERTY(BlueprintReadOnly, Category = "LLK|Storm")
-	float Multiplier = 1.f;
-
-	UPROPERTY(BlueprintReadOnly, Category = "LLK|Storm")
-	float WardenMultiplier = 1.f;
-
-	/** Lit lanterns the server counted. A crew is at most four. */
+	/**
+	 * Lit lanterns the server counted. A crew is at most four.
+	 *
+	 * **Still here, and no longer a rate input.** Row 72 retired the
+	 * multiplier this used to feed, and the three fields that carried it -
+	 * `WardenCharge`, `Multiplier` and `WardenMultiplier` - are gone rather
+	 * than left replicating constants. The count stays because how many
+	 * lanterns are lit is a true local fact worth putting on a readout; it
+	 * simply no longer decides how fast the night arrives.
+	 */
 	UPROPERTY(BlueprintReadOnly, Category = "LLK|Storm")
 	uint8 LitLanternCount = 0;
 

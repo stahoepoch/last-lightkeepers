@@ -153,9 +153,7 @@ bool FLLKNightStageTest::RunTest(const FString& Parameters)
 	bool bEverFell = false;
 	for (int32 Step = 0; Step < 200; ++Step)
 	{
-		// Alternating lit counts, so the rate changes under it - a stage that
-		// only rises when the rate is constant has not been tested.
-		Server->AdvanceForTest(5.f, Step % 3);
+		Server->AdvanceForTest(5.f);
 		const int32 Index = static_cast<int32>(Server->GetNightStage().Index);
 		if (Index < HighestSeen)
 		{

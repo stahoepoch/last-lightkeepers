@@ -59,16 +59,16 @@ bool FLLKKnockdownEscalationTest::RunTest(const FString& Parameters)
 	Storm->RegisterLantern(Lantern);
 
 	// ---- 1. a dark keeper going down changes nothing --------------------
-	Storm->AdvanceForTest(10.f, Storm->GetLitLanternCount());
+	Storm->AdvanceForTest(10.f);
 	const float ChargeBefore = Storm->GetCharge();
-	const float WardenBefore = Storm->GetWardenCharge();
 
 	Vitals->SetDownedForTest(true, ELLKDownedReason::Contained);
 
-	TestEqual(TEXT("going down does not move the thresholds' meter"),
+	// Row 64 line three, and it is now easier to hold than it was: with one
+	// clock that light does not touch, the number of ways a knockdown could
+	// accidentally escalate the night went from two to one.
+	TestEqual(TEXT("going down does not move the clock"),
 		Storm->GetCharge(), ChargeBefore);
-	TestEqual(TEXT("and does not move the Warden's meter"),
-		Storm->GetWardenCharge(), WardenBefore);
 	TestEqual(TEXT("and does not count as a spike of any size"),
 		Storm->GetCharge() - ChargeBefore, 0.f);
 
@@ -80,12 +80,12 @@ bool FLLKKnockdownEscalationTest::RunTest(const FString& Parameters)
 	// somebody is on the floor. A downed keeper is not a tax.
 	Vitals->SetDownedForTest(true, ELLKDownedReason::Contained);
 	const float BeforeWaiting = Storm->GetCharge();
-	Storm->AdvanceForTest(60.f, Storm->GetLitLanternCount());
+	Storm->AdvanceForTest(60.f);
 	const float WhileDowned = Storm->GetCharge() - BeforeWaiting;
 
 	Vitals->SetDownedForTest(false, ELLKDownedReason::Revived);
 	const float BeforeStanding = Storm->GetCharge();
-	Storm->AdvanceForTest(60.f, Storm->GetLitLanternCount());
+	Storm->AdvanceForTest(60.f);
 	const float WhileStanding = Storm->GetCharge() - BeforeStanding;
 
 	TestNearlyEqual(TEXT("sixty seconds on the floor costs exactly what sixty seconds standing costs"),
@@ -102,19 +102,29 @@ bool FLLKKnockdownEscalationTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("a standing keeper with a lit lantern counts as one lit lantern"),
 		Storm->GetLitLanternCount(), 1);
 
+	// **Row 72 inverted this section, and it cost row 64 an emergent
+	// property worth recording.** What used to be asserted here: a lit keeper
+	// made the night run faster, and containment therefore SLOWED the night,
+	// because a downed keeper's lantern is forced off and the lit count drops.
+	// Row 64 called that "a property nobody designed" and liked it.
+	//
+	// It is gone, because it was a consequence of light driving the clock. The
+	// replacement is duller and stronger: containment moves the clock in
+	// NEITHER direction. Row 64 line three - escalation is never caused by
+	// failing - used to need an argument about which way the emergent effect
+	// pointed. Now it needs none, and there is no direction left for a future
+	// change to get backwards.
 	const float LitRate = Storm->GetCurrentRate();
-	TestTrue(TEXT("and the night runs faster while they are lit"),
-		LitRate > Rules->BaselineRatePerSecond);
+	TestEqual(TEXT("ROW 72: a lit keeper does not make the night run faster"),
+		LitRate, Rules->BaselineRatePerSecond);
 
 	Vitals->SetDownedForTest(true, ELLKDownedReason::Contained);
-	TestFalse(TEXT("going down puts their lantern out"), Lantern->IsLanternOn());
-	TestEqual(TEXT("so the lit count falls"), Storm->GetLitLanternCount(), 0);
+	TestFalse(TEXT("going down still puts their lantern out"), Lantern->IsLanternOn());
+	TestEqual(TEXT("so the lit count still falls"), Storm->GetLitLanternCount(), 0);
 
 	const float DownedRate = Storm->GetCurrentRate();
-	TestTrue(TEXT("and the night SLOWS when a keeper is contained, never speeds up"),
-		DownedRate < LitRate);
-	TestEqual(TEXT("back to the baseline, because nobody is lit"),
-		DownedRate, Rules->BaselineRatePerSecond);
+	TestEqual(TEXT("and the clock does not move in EITHER direction for it"),
+		DownedRate, LitRate);
 
 	// ---- 4. the one spike that IS allowed, and why ----------------------
 	//
@@ -135,10 +145,14 @@ bool FLLKKnockdownEscalationTest::RunTest(const FString& Parameters)
 	// Sweeper in its own file could have written AddSpike(60, "Knockdown")
 	// and passed both the compiler and the source guard. With an enum there
 	// is no entry for failure, so the mistake does not compile.
-	TestEqual(TEXT("there are exactly two authorised spike causes"),
-		int32(StaticEnum<ELLKStormSpike>()->NumEnums()) - 1, 2);
+	// One, as of row 72. AnchorRevive was the second and is retired - its
+	// price is a local distress pulse now, and leaving the enum value would
+	// have left a compiling route by which a future caller could charge a
+	// keeper's revive to the weather again.
+	TestEqual(TEXT("ROW 72: there is exactly one authorised spike cause"),
+		int32(StaticEnum<ELLKStormSpike>()->NumEnums()) - 1, 1);
 	const float BeforeChosen = Storm->GetCharge();
-	Storm->AddSpike(ELLKStormSpike::AnchorRevive);
+	Storm->AddSpike(ELLKStormSpike::ExtractionCall);
 	TestTrue(TEXT("a chosen spike does raise the meter"), Storm->GetCharge() > BeforeChosen);
 
 	return true;

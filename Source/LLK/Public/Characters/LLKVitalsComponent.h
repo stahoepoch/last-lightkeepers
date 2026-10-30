@@ -128,6 +128,13 @@ public:
 	UFUNCTION(BlueprintPure, Category = "LLK|Vitals")
 	bool IsBeingRevived() const { return ReviveSeconds > 0.f; }
 
+	/**
+	 * How long the Anchor Revive takes, and therefore how long its distress
+	 * pulse lasts. Row 72: the pulse's duration is the revive's own rather
+	 * than a new authored number.
+	 */
+	float GetAnchorReviveSeconds() const { return AnchorReviveSeconds; }
+
 	/** Who is holding, or null. Read by a HUD to name the rescuer. */
 	UFUNCTION(BlueprintPure, Category = "LLK|Vitals")
 	AActor* GetRescuer() const { return Rescuer.Get(); }

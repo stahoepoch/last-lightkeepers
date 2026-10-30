@@ -19,11 +19,7 @@ namespace
 	 * escalating, which is the one failure mode nobody would notice.
 	 */
 	constexpr float FallbackBaselineRate = 1.f;
-	constexpr float FallbackPerLanternBonus = 1.5f;
-	constexpr float FallbackMaxMultiplier = 5.f;
-	constexpr float FallbackDiminishingDecay = 0.6f;
 	constexpr float FallbackWardenChargeValue = 700.f;
-	constexpr float FallbackWardenLightSensitivity = 0.3f;
 	constexpr float FallbackPatrolsAlertValue = 270.f;
 	constexpr float FallbackPatrolsHuntValue = 480.f;
 	constexpr float FallbackExtractionSpike = 180.f;
@@ -38,12 +34,12 @@ ULLKStormChargeData* ULLKStormChargeSubsystem::MakeFallbackRules(UObject* Outer)
 
 	Fallback->BaselineRatePerSecond = FallbackBaselineRate;
 
-	Fallback->Lantern.PerLanternBonus = FallbackPerLanternBonus;
-	Fallback->Lantern.MaxMultiplier = FallbackMaxMultiplier;
-	// Row 12: diminishing is the active curve. The clamp above is inert under
-	// it and kept only so switching back needs no code change.
-	Fallback->Lantern.Curve = ELLKLanternCurve::Diminishing;
-	Fallback->Lantern.DiminishingDecay = FallbackDiminishingDecay;
+	// **The lantern block is deliberately NOT populated here, as of row 72.**
+	// The rate does not read it, so a fallback that filled it in would be
+	// declaring a curve nothing consults - and the next person to find those
+	// four lines would reasonably conclude the curve was still live. The keys
+	// remain in `data/storm-charge.json` because deleting values there is
+	// Chris's call (row 55); inventing them here is not.
 
 	// Row 54: the Warden is NOT one of the thresholds. Two entries, as in the data.
 	// **The effect sentences are part of the fallback, not decoration.**
@@ -69,8 +65,11 @@ ULLKStormChargeData* ULLKStormChargeSubsystem::MakeFallbackRules(UObject* Outer)
 	Hunt.Effect = TEXT("All patrols actively hunt. Glimmer scan frequency increases.");
 	Fallback->Thresholds.Add(Hunt);
 
+	// Row 54 keeps the Warden its own arrival VALUE. Row 72 took away its
+	// own meter, so `LightSensitivity` - the dampening that made its second
+	// meter rise more slowly than the first - is no longer set here for the
+	// same reason the lantern block is not.
 	Fallback->Warden.ChargeValue = FallbackWardenChargeValue;
-	Fallback->Warden.LightSensitivity = FallbackWardenLightSensitivity;
 
 	// The two spikes, because they are meter values and this class applies
 	// them. Everything else on the asset - loot payouts, the run's band,
@@ -117,11 +116,8 @@ void ULLKStormChargeSubsystem::ResolveRules()
 		Rules = MakeFallbackRules(this);
 		UE_LOG(LogLLK, Warning,
 			TEXT("ULLKStormChargeSubsystem: no /Game/Data/DA_StormCharge - running on DECLARED FALLBACK tuning ")
-			TEXT("(baseline %.2f/s, per-lantern +%.2f, decay %.2f, Warden %.0f at sensitivity %.2f). ")
-			TEXT("Run Tools/import_data.py."),
-			Rules->BaselineRatePerSecond, Rules->Lantern.PerLanternBonus,
-			Rules->Lantern.DiminishingDecay, Rules->Warden.ChargeValue,
-			Rules->Warden.LightSensitivity);
+			TEXT("(baseline %.2f/s flat, Warden at %.0f). Run Tools/import_data.py."),
+			Rules->BaselineRatePerSecond, Rules->Warden.ChargeValue);
 	}
 	else
 	{
@@ -175,40 +171,78 @@ int32 ULLKStormChargeSubsystem::GetLitLanternCount() const
 	return Count;
 }
 
-float ULLKStormChargeSubsystem::LanternMultiplier(const FLLKLanternChargeRules& InRules, int32 LitCount)
+void ULLKStormChargeSubsystem::AddDistressPulse(
+	const FVector& Position, float Intensity, float RadiusCm, float Seconds)
 {
-	// A dark crew pays the baseline and nothing more. Not a special case so
-	// much as the curve's own value at zero, stated rather than computed:
-	// `decay^0` is 1, so the series is 0 and the multiplier is 1.
-	if (LitCount <= 0)
+	// **Row 72's replacement price for the Anchor Revive.** It used to cost a
+	// permanent spike of 120 on the global meter, which row 72 forbids: a solo
+	// keeper getting up cannot make the weather worse. Chris's price instead:
+	// *"it consumes the one emergency Anchor for that run and sends a local
+	// distress pulse - bright, audible, and attractive to nearby machines -
+	// but does not alter the global clock. A solo player gets back up, but
+	// wakes up the room."*
+	//
+	// **Paid in the currency the game already has.** The pulse is a light
+	// source in the field for the duration of the revive, so for those seconds
+	// the keeper is very likely the brightest thing in the building - which
+	// means `FindBrightestPosition` sends the Warden at them and
+	// `LLKPerception` notices them, with no new enemy code and no new authored
+	// number. Every value comes from the keeper's own lantern rules and from
+	// `revive.reviveSeconds`.
+	if (Intensity <= 0.f || RadiusCm <= 0.f || Seconds <= 0.f)
 	{
-		return 1.f;
+		// A pulse with no reach, no brightness or no duration is not a pulse.
+		// Refused rather than added as a zero, for the same reason the light
+		// field skips a lantern with no radius: an entry that contributes
+		// nothing is an entry that looks like it should.
+		UE_LOG(LogLLK, Warning,
+			TEXT("Distress pulse refused: intensity %.1f, radius %.1fcm, %.2fs."),
+			Intensity, RadiusCm, Seconds);
+		return;
 	}
 
-	if (InRules.Curve == ELLKLanternCurve::Diminishing)
-	{
-		// `(1 - decay^n) / (1 - decay)`, with the limit taken at decay == 1
-		// where that expression divides by zero and the series is just n.
-		const float Decay = InRules.DiminishingDecay;
-		const float Series = FMath::IsNearlyEqual(Decay, 1.f)
-			? static_cast<float>(LitCount)
-			: (1.f - FMath::Pow(Decay, static_cast<float>(LitCount))) / (1.f - Decay);
-		return 1.f + InRules.PerLanternBonus * Series;
-	}
+	FLLKDistressPulse Pulse;
+	Pulse.Position = Position;
+	Pulse.Intensity = Intensity;
+	Pulse.RadiusCm = RadiusCm;
+	Pulse.SecondsRemaining = Seconds;
+	DistressPulses.Add(Pulse);
 
-	// Retired on 2026-10-27 and deliberately still here, row 12: every lantern
-	// past the clamp is free under this curve, which is why it was retired.
-	return FMath::Min(1.f + InRules.PerLanternBonus * static_cast<float>(LitCount), InRules.MaxMultiplier);
+	UE_LOG(LogLLK, Log,
+		TEXT("Distress pulse at %s: %.0f intensity, %.0fcm, %.1fs. The room is awake."),
+		*Position.ToCompactString(), Intensity, RadiusCm, Seconds);
+
+	OnDistressPulse.Broadcast(Position, Seconds);
 }
 
-float ULLKStormChargeSubsystem::WardenMultiplierFrom(float LanternMult, float LightSensitivity)
+void ULLKStormChargeSubsystem::ExpireDistressPulses(float DeltaSeconds)
 {
-	return 1.f + LightSensitivity * (LanternMult - 1.f);
+	for (int32 Index = DistressPulses.Num() - 1; Index >= 0; --Index)
+	{
+		DistressPulses[Index].SecondsRemaining -= DeltaSeconds;
+		if (DistressPulses[Index].SecondsRemaining <= 0.f)
+		{
+			DistressPulses.RemoveAtSwap(Index);
+		}
+	}
 }
 
 TArray<FLLKLightSource> ULLKStormChargeSubsystem::GetLitLightSources() const
 {
 	TArray<FLLKLightSource> Sources;
+
+	// Pulses first, so a revive's light is in the field on the same frame it
+	// was spent. They are sources exactly like a lantern is: nothing
+	// downstream knows the difference, which is what makes "wakes up the room"
+	// a mechanical fact rather than a sentence in a design document.
+	for (const FLLKDistressPulse& Pulse : DistressPulses)
+	{
+		FLLKLightSource Source;
+		Source.Position = Pulse.Position;
+		Source.Intensity = Pulse.Intensity;
+		Source.RadiusCm = Pulse.RadiusCm;
+		Sources.Add(Source);
+	}
 
 	for (const TWeakObjectPtr<ULLKLanternComponent>& Weak : Lanterns)
 	{
@@ -270,23 +304,20 @@ bool ULLKStormChargeSubsystem::GetBrightestLitPosition(FVector& OutPosition, flo
 	return LLKLightField::FindBrightestPosition(GetLitLightSources(), OutPosition, OutBrightness);
 }
 
-float ULLKStormChargeSubsystem::GetCurrentMultiplier() const
-{
-	return Rules != nullptr ? LanternMultiplier(Rules->Lantern, GetLitLanternCount()) : 1.f;
-}
-
 float ULLKStormChargeSubsystem::GetCurrentRate() const
 {
-	return Rules != nullptr ? Rules->BaselineRatePerSecond * GetCurrentMultiplier() : 0.f;
-}
-
-float ULLKStormChargeSubsystem::GetCurrentWardenMultiplier() const
-{
-	if (Rules == nullptr)
-	{
-		return 1.f;
-	}
-	return WardenMultiplierFrom(GetCurrentMultiplier(), Rules->Warden.LightSensitivity);
+	// **Flat, and that is the decision.** Row 72: the pressure clock is the
+	// night arriving and nothing a player does changes its rate. There used to
+	// be a lantern multiplier here, on a diminishing curve, and it was the
+	// single largest lever in the game - a dark crew's night ran nearly five
+	// times longer than a brightly lit one's.
+	//
+	// It is gone because it could not be explained. Weather does not care
+	// about your lamp, and a meter that said "the storm is arriving" while
+	// your lantern accelerated it was two claims that could not both be true.
+	// Light still costs - locally, through being noticed - which is what
+	// LLKPerception and the light field are for.
+	return Rules != nullptr ? Rules->BaselineRatePerSecond : 0.f;
 }
 
 bool ULLKStormChargeSubsystem::GetNextEscalation(FName& OutId, float& OutTargetCharge, float& OutCurrentCharge) const
@@ -320,14 +351,14 @@ bool ULLKStormChargeSubsystem::GetNextEscalation(FName& OutId, float& OutTargetC
 		return true;
 	}
 
-	// Everything crossed, so the Warden is what is left to arrive - and it
-	// reads from its OWN meter, row 54. Reporting the thresholds' charge here
-	// would make the countdown wrong by the whole of the dampening.
+	// Everything crossed, so the Warden is what is left to arrive - and as of
+	// row 72 it is a threshold on the one clock rather than a second meter,
+	// so the countdown reads from the same charge every other threshold does.
 	if (!bWardenConverged)
 	{
 		OutId = TEXT("WardenConverges");
 		OutTargetCharge = Rules->Warden.ChargeValue;
-		OutCurrentCharge = WardenCharge;
+		OutCurrentCharge = Charge;
 		return true;
 	}
 
@@ -336,14 +367,14 @@ bool ULLKStormChargeSubsystem::GetNextEscalation(FName& OutId, float& OutTargetC
 	return false;
 }
 
-float ULLKStormChargeSubsystem::SecondsUntilCharge(float FromCharge, float TargetCharge, int32 LitCount) const
+float ULLKStormChargeSubsystem::SecondsUntilCharge(float FromCharge, float TargetCharge) const
 {
 	if (Rules == nullptr)
 	{
 		return TNumericLimits<float>::Max();
 	}
 
-	const float Rate = Rules->BaselineRatePerSecond * LanternMultiplier(Rules->Lantern, LitCount);
+	const float Rate = Rules->BaselineRatePerSecond;
 	if (Rate <= 0.f)
 	{
 		// Never a division, and never a plausible zero. A baseline tuned to 0
@@ -358,30 +389,21 @@ float ULLKStormChargeSubsystem::SecondsUntilCharge(float FromCharge, float Targe
 	return (TargetCharge - FromCharge) / Rate;
 }
 
-float ULLKStormChargeSubsystem::SecondsUntilWarden(int32 LitCount) const
+float ULLKStormChargeSubsystem::SecondsUntilWarden() const
 {
-	return SecondsUntilWardenFrom(WardenCharge, LitCount);
-}
-
-float ULLKStormChargeSubsystem::SecondsUntilWardenFrom(float FromWardenCharge, int32 LitCount) const
-{
-	if (Rules == nullptr)
-	{
-		return TNumericLimits<float>::Max();
-	}
-
-	// One formula, two callers: the server from its live meter, a client from
-	// the replicated snapshot. Two copies of this arithmetic is how client and
-	// server start disagreeing about when the Warden arrives.
-	const float Multiplier = LanternMultiplier(Rules->Lantern, LitCount);
-	const float Rate = Rules->BaselineRatePerSecond
-		* WardenMultiplierFrom(Multiplier, Rules->Warden.LightSensitivity);
-	if (Rate <= 0.f)
-	{
-		return TNumericLimits<float>::Max();
-	}
-
-	return (Rules->Warden.ChargeValue - FromWardenCharge) / Rate;
+	// **Derived from the one clock, not accumulated beside it.** Row 72 says
+	// one pressure clock per run, never two, and this is where that bites:
+	// WardenCharge used to be a second float advancing at its own light-
+	// sensitive rate. With the rate flat, a second meter would have advanced
+	// at exactly the same speed as the first - two copies of one fact, and a
+	// thing that can disagree with itself across a network for no benefit.
+	//
+	// So the Warden's arrival is a threshold on the clock like any other. Row
+	// 54 still holds: its arrival is its own event with its own value, and
+	// nothing about it is perception.
+	return Rules != nullptr
+		? SecondsUntilCharge(Charge, Rules->Warden.ChargeValue)
+		: TNumericLimits<float>::Max();
 }
 
 FLLKStormSnapshot ULLKStormChargeSubsystem::BuildSnapshot() const
@@ -389,10 +411,7 @@ FLLKStormSnapshot ULLKStormChargeSubsystem::BuildSnapshot() const
 	FLLKStormSnapshot Snapshot;
 	Snapshot.bPublished = true;
 	Snapshot.Charge = Charge;
-	Snapshot.WardenCharge = WardenCharge;
 	Snapshot.ElapsedSeconds = ElapsedSeconds;
-	Snapshot.Multiplier = GetCurrentMultiplier();
-	Snapshot.WardenMultiplier = GetCurrentWardenMultiplier();
 	// A crew is at most four; uint8 is not a micro-optimisation so much as a
 	// statement that a count which needed more would be a bug.
 	Snapshot.LitLanternCount = static_cast<uint8>(FMath::Clamp(GetLitLanternCount(), 0, 255));
@@ -416,19 +435,19 @@ FLLKStormSnapshot ULLKStormChargeSubsystem::BuildSnapshot() const
 }
 
 float ULLKStormChargeSubsystem::SecondsUntilSnapshotEscalation(
-	const FLLKStormSnapshot& Snapshot, int32 LitCount) const
+	const FLLKStormSnapshot& Snapshot) const
 {
 	if (!Snapshot.bHasNextEscalation)
 	{
 		return TNumericLimits<float>::Max();
 	}
 
-	if (Snapshot.NextEscalationId == TEXT("WardenConverges"))
-	{
-		return SecondsUntilWardenFrom(Snapshot.NextFromCharge, LitCount);
-	}
-
-	return SecondsUntilCharge(Snapshot.NextFromCharge, Snapshot.NextTargetCharge, LitCount);
+	// One branch, where there used to be two. The Warden's countdown was
+	// measured against its own dampened meter; with one clock it is measured
+	// against the clock, like everything else. Which also means a client and
+	// a server can no longer disagree about the Warden by the width of a
+	// multiplier neither of them replicated.
+	return SecondsUntilCharge(Snapshot.NextFromCharge, Snapshot.NextTargetCharge);
 }
 
 void ULLKStormChargeSubsystem::PublishSnapshot()
@@ -467,7 +486,7 @@ void ULLKStormChargeSubsystem::Tick(float DeltaTime)
 		return;
 	}
 
-	Advance(DeltaTime, GetLitLanternCount());
+	Advance(DeltaTime);
 
 	// Throttled. The meter moves at most about four units a second and the
 	// readout renders whole seconds, so sixty packets a second would change
@@ -481,7 +500,7 @@ void ULLKStormChargeSubsystem::Tick(float DeltaTime)
 	}
 }
 
-void ULLKStormChargeSubsystem::Advance(float DeltaSeconds, int32 LitCount)
+void ULLKStormChargeSubsystem::Advance(float DeltaSeconds)
 {
 	if (Rules == nullptr || DeltaSeconds <= 0.f)
 	{
@@ -489,15 +508,11 @@ void ULLKStormChargeSubsystem::Advance(float DeltaSeconds, int32 LitCount)
 	}
 
 	ElapsedSeconds += DeltaSeconds;
+	Charge += Rules->BaselineRatePerSecond * DeltaSeconds;
 
-	const float Multiplier = LanternMultiplier(Rules->Lantern, LitCount);
-	Charge += Rules->BaselineRatePerSecond * Multiplier * DeltaSeconds;
-
-	// The Warden's own meter, row 54. Derived from the same multiplier but
-	// accumulated separately, so that dampening changes when it arrives
-	// without ever changing what the thresholds mean.
-	const float WardenMultiplier = WardenMultiplierFrom(Multiplier, Rules->Warden.LightSensitivity);
-	WardenCharge += Rules->BaselineRatePerSecond * WardenMultiplier * DeltaSeconds;
+	// Pulses expire on the same tick that advances the clock, so a pulse
+	// cannot outlive the run or be left lit by a missed update.
+	ExpireDistressPulses(DeltaSeconds);
 
 	AnnounceCrossings();
 }
@@ -520,11 +535,11 @@ void ULLKStormChargeSubsystem::AnnounceCrossings()
 		}
 	}
 
-	if (!bWardenConverged && WardenCharge >= Rules->Warden.ChargeValue)
+	if (!bWardenConverged && Charge >= Rules->Warden.ChargeValue)
 	{
 		bWardenConverged = true;
-		UE_LOG(LogLLK, Log, TEXT("The Warden converges at %.0fs elapsed (Warden meter %.0f)."),
-			ElapsedSeconds, WardenCharge);
+		UE_LOG(LogLLK, Log, TEXT("The Warden converges at %.0fs elapsed (pressure %.0f)."),
+			ElapsedSeconds, Charge);
 		OnWardenConverged.Broadcast();
 	}
 }
@@ -610,12 +625,15 @@ float ULLKStormChargeSubsystem::GetSpikeAmount(ELLKStormSpike Cause) const
 	{
 	case ELLKStormSpike::ExtractionCall:
 		return Rules->ExtractionCall.StormChargeSpike;
-	case ELLKStormSpike::AnchorRevive:
-		return Rules->AnchorRevive.StormChargeSpike;
 	}
 
-	// Unreachable while the enum has two entries, and returning nothing rather
-	// than guessing if a third is ever added without a price in the data.
+	// `anchorRevive.stormChargeSpike` is still in the data and is deliberately
+	// no longer reachable from here - row 72 re-priced the revive as a local
+	// pulse. Deleting a value from `data/storm-charge.json` is Chris's call
+	// (row 55), so the number stays and the code path does not.
+	//
+	// Unreachable while the enum has one entry, and returning nothing rather
+	// than guessing if a second is ever added without a price in the data.
 	return 0.f;
 }
 
@@ -652,10 +670,8 @@ void ULLKStormChargeSubsystem::ApplySpike(float Amount, ELLKStormSpike Cause)
 	// exists to stop a LANTERN from summoning the Warden, and a siren is not a
 	// lantern. If he wants the Warden deaf to sirens, this is the line, and it
 	// wants a `spikeReachesWarden` key in the data rather than a decision here.
-	WardenCharge += Amount;
-
-	UE_LOG(LogLLK, Log, TEXT("Storm Charge spike: +%.0f from %s (now %.0f / Warden %.0f)."),
-		Amount, *UEnum::GetValueAsString(Cause), Charge, WardenCharge);
+	UE_LOG(LogLLK, Log, TEXT("Pressure spike: +%.0f from %s (now %.0f)."),
+		Amount, *UEnum::GetValueAsString(Cause), Charge);
 
 	// Announced at the moment of the call rather than on the next tick: a
 	// spike that crosses a threshold is the game telling the player what their

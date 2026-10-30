@@ -32,8 +32,8 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FLLKStormChargeCurveTest,
-	"LLK.Storm.LanternCurve",
+	FLLKStormFlatRateTest,
+	"LLK.Storm.FlatRate",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -41,85 +41,74 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	"LLK.Storm.Accrual",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
 
-bool FLLKStormChargeCurveTest::RunTest(const FString& Parameters)
+bool FLLKStormFlatRateTest::RunTest(const FString& Parameters)
 {
-	UE_LOG(LogTemp, Log, TEXT("LLK storm charge curve test reached RunTest."));
+	// **This test used to assert the lantern curve and now asserts its
+	// absence.** Row 72, 2026-10-29: *"Light never changes that clock's
+	// rate."* What was here was good work on a rule we retired - the 2.5x
+	// one-lantern anchor, the diminishing series, the 4.75 asymptote - and
+	// keeping any of it would have meant a green suite guarding a model the
+	// design had abandoned. That is worse than no test, because it reads as
+	// evidence.
+	//
+	// So the assertions below are the new rule stated as the old one's
+	// negative: no count of lanterns, and no arrangement of them, changes how
+	// fast the night arrives.
+	ULLKStormChargeSubsystem* Clock = NewObject<ULLKStormChargeSubsystem>(GetTransientPackage());
+	ULLKStormChargeData* Rules = ULLKStormChargeSubsystem::MakeFallbackRules(Clock);
+	Rules->BaselineRatePerSecond = 1.f;
+	Rules->Warden.ChargeValue = 700.f;
+	Clock->SetRulesForTest(Rules);
 
-	const ULLKStormChargeData* Rules = ULLKStormChargeSubsystem::MakeFallbackRules(GetTransientPackage());
-	const FLLKLanternChargeRules& Lantern = Rules->Lantern;
+	// 1. The rate is the baseline, and it is the baseline whatever the crew
+	//    is doing. There is no longer an accessor that could say otherwise -
+	//    GetCurrentMultiplier and GetCurrentWardenMultiplier are gone, so a
+	//    reintroduced multiplier would have to be a new API and would show up
+	//    in review rather than hiding in an existing call.
+	TestEqual(TEXT("the rate is the authored baseline"),
+		Clock->GetCurrentRate(), Rules->BaselineRatePerSecond);
 
-	// The fallbacks must be the diminishing curve, or every assertion below
-	// is testing the retired one by accident.
-	TestEqual(TEXT("the declared fallback uses the diminishing curve"),
-		Lantern.Curve, ELLKLanternCurve::Diminishing);
+	// 2. Sixty seconds is sixty units, and it is sixty units in the dark and
+	//    sixty units with the whole crew lit. Run as two independent clocks
+	//    rather than as one clock twice, so a sticky multiplier cannot be
+	//    hidden by order of operations.
+	ULLKStormChargeSubsystem* Dark = NewObject<ULLKStormChargeSubsystem>(GetTransientPackage());
+	Dark->SetRulesForTest(Rules);
+	ULLKStormChargeSubsystem* Lit = NewObject<ULLKStormChargeSubsystem>(GetTransientPackage());
+	Lit->SetRulesForTest(Rules);
 
-	// 1. A dark crew pays the baseline and no more. Row 6 means the meter
-	//    still rises here - what must not happen is it rising faster.
-	TestEqual(TEXT("no lanterns is exactly 1x"),
-		ULLKStormChargeSubsystem::LanternMultiplier(Lantern, 0), 1.f);
-	TestEqual(TEXT("a negative count cannot go below 1x"),
-		ULLKStormChargeSubsystem::LanternMultiplier(Lantern, -3), 1.f);
-
-	// 2. THE LOCKED ANCHOR. One lantern is 2.5x. It survived the switch from
-	//    linearCapped to diminishing precisely because both curves preserve
-	//    it, and every minute figure in storm-charge.json assumes it.
-	TestNearlyEqual(TEXT("one lantern is the locked 2.5x anchor"),
-		ULLKStormChargeSubsystem::LanternMultiplier(Lantern, 1), 2.5f, 0.001f);
-
-	// 3. ROW 12: no keeper's light is free. Asserted as a property rather
-	//    than as the numbers 3.40 / 3.94 / 4.26, so that a retune of
-	//    perLanternBonus or diminishingDecay cannot make this pass while the
-	//    design intent is broken.
-	float Previous = ULLKStormChargeSubsystem::LanternMultiplier(Lantern, 1);
-	float PreviousStep = Previous - 1.f;
-	for (int32 Count = 2; Count <= 8; ++Count)
+	for (int32 Second = 0; Second < 60; ++Second)
 	{
-		const float Current = ULLKStormChargeSubsystem::LanternMultiplier(Lantern, Count);
-		const float Step = Current - Previous;
-
-		TestTrue(*FString::Printf(TEXT("lantern %d costs something"), Count), Step > 0.f);
-		TestTrue(*FString::Printf(TEXT("lantern %d costs less than lantern %d"), Count, Count - 1),
-			Step < PreviousStep);
-
-		Previous = Current;
-		PreviousStep = Step;
+		Dark->AdvanceForTest(1.f);
+		Lit->AdvanceForTest(1.f);
 	}
 
-	// 4. The self-limit. `1 + bonus/(1 - decay)` is the asymptote - 4.75 with
-	//    the current values - and the curve must approach it without reaching
-	//    it, which is what makes maxMultiplier inert rather than merely
-	//    unused.
-	const float Asymptote = 1.f + Lantern.PerLanternBonus / (1.f - Lantern.DiminishingDecay);
-	TestTrue(TEXT("even twenty lanterns stay under the self-limit"),
-		ULLKStormChargeSubsystem::LanternMultiplier(Lantern, 20) < Asymptote);
-	TestTrue(TEXT("the self-limit sits above the one-lantern anchor"), Asymptote > 2.5f);
+	TestNearlyEqual(TEXT("sixty seconds is sixty units"), Dark->GetCharge(), 60.f, 0.01f);
+	TestNearlyEqual(TEXT("ROW 72: and the same sixty whatever the lanterns were doing"),
+		Lit->GetCharge(), Dark->GetCharge(), 0.001f);
 
-	// 5. The retired curve is still real, row 12: switching back must never
-	//    need a code change. This also records WHY it was retired - the
-	//    clamp makes two different crew sizes cost the same.
-	FLLKLanternChargeRules Linear = Lantern;
-	Linear.Curve = ELLKLanternCurve::LinearCapped;
-	TestNearlyEqual(TEXT("the retired curve keeps the same one-lantern anchor"),
-		ULLKStormChargeSubsystem::LanternMultiplier(Linear, 1), 2.5f, 0.001f);
-	TestEqual(TEXT("and clamps three and four lanterns to the same cost, which is why it was retired"),
-		ULLKStormChargeSubsystem::LanternMultiplier(Linear, 3),
-		ULLKStormChargeSubsystem::LanternMultiplier(Linear, 4));
+	// 3. The Warden arrives on the one clock, at a time arithmetic can state.
+	//    700 at one per second is 700 seconds, from the clock rather than from
+	//    a second meter that used to run beside it.
+	TestNearlyEqual(TEXT("the Warden's arrival is a threshold on the one clock"),
+		Dark->SecondsUntilWarden(), 700.f - 60.f, 0.01f);
 
-	// 6. Row 54's dampening. At sensitivity 0 the Warden ignores light
-	//    entirely; at 1 it behaves exactly as the old third threshold did.
-	//    Those two ends are what make 0.3 a dial rather than a magic number.
-	const float OneLantern = ULLKStormChargeSubsystem::LanternMultiplier(Lantern, 1);
-	TestEqual(TEXT("at sensitivity 0 the Warden ignores light"),
-		ULLKStormChargeSubsystem::WardenMultiplierFrom(OneLantern, 0.f), 1.f);
-	TestEqual(TEXT("at sensitivity 1 the Warden feels light in full"),
-		ULLKStormChargeSubsystem::WardenMultiplierFrom(OneLantern, 1.f), OneLantern);
-	TestTrue(TEXT("at the tuned sensitivity light still costs something"),
-		ULLKStormChargeSubsystem::WardenMultiplierFrom(OneLantern, Rules->Warden.LightSensitivity) > 1.f);
-	TestTrue(TEXT("but less than it costs the thresholds"),
-		ULLKStormChargeSubsystem::WardenMultiplierFrom(OneLantern, Rules->Warden.LightSensitivity) < OneLantern);
+	// 4. Row 6 is untouched: it still only rises.
+	const float Before = Dark->GetCharge();
+	Dark->AdvanceForTest(1.f);
+	TestTrue(TEXT("ROW 6: the clock still only rises"), Dark->GetCharge() > Before);
+
+	// 5. And the one thing that may still move it discretely. The extraction
+	//    call is not light, so row 72 does not forbid it - see the open
+	//    question recorded in docs/THE-LANTERN.md about whether it should.
+	const float BeforeSpike = Dark->GetCharge();
+	Dark->AddSpike(ELLKStormSpike::ExtractionCall);
+	TestTrue(TEXT("the extraction call still moves the clock"),
+		Dark->GetCharge() > BeforeSpike);
 
 	return true;
 }
+
 
 bool FLLKStormChargeAccrualTest::RunTest(const FString& Parameters)
 {
@@ -131,45 +120,37 @@ bool FLLKStormChargeAccrualTest::RunTest(const FString& Parameters)
 
 	// 1. It starts at zero and nothing has happened yet.
 	TestEqual(TEXT("the meter starts at zero"), Storm->GetCharge(), 0.f);
-	TestEqual(TEXT("the Warden's meter starts at zero"), Storm->GetWardenCharge(), 0.f);
 	TestFalse(TEXT("the Warden has not converged"), Storm->HasWardenConverged());
 
 	// 2. A dark crew: one charge unit is one second of darkness, which is the
 	//    sentence `storm-charge.json` opens with.
-	Storm->AdvanceForTest(10.f, 0);
-	TestNearlyEqual(TEXT("ten dark seconds is ten charge"), Storm->GetCharge(), 10.f, 0.001f);
-	TestNearlyEqual(TEXT("and ten on the Warden's meter too"), Storm->GetWardenCharge(), 10.f, 0.001f);
+	Storm->AdvanceForTest(10.f);
+	TestNearlyEqual(TEXT("ten seconds is ten charge"), Storm->GetCharge(), 10.f, 0.001f);
 
-	// 3. A lit keeper. Ten seconds at the locked 2.5x anchor is 25, and the
-	//    Warden takes 1 + 0.3*(2.5-1) = 1.45x of the same ten seconds. This
-	//    is row 54 in one assertion: the same light, two different costs.
+	// 3. ROW 72: ten more seconds is ten more charge, and there is no third
+	//    number. This section used to assert the 2.5x lit anchor and the
+	//    Warden's 1.45x dampening - the same light at two different costs -
+	//    and both are retired. What replaces them is the absence: the only
+	//    thing that advances this clock is time.
 	const float ChargeBefore = Storm->GetCharge();
-	const float WardenBefore = Storm->GetWardenCharge();
-	Storm->AdvanceForTest(10.f, 1);
-	TestNearlyEqual(TEXT("ten lit seconds is 25 charge"), Storm->GetCharge() - ChargeBefore, 25.f, 0.001f);
-	TestNearlyEqual(TEXT("but only 14.5 to the Warden"),
-		Storm->GetWardenCharge() - WardenBefore, 14.5f, 0.001f);
-	TestTrue(TEXT("so the Warden's meter now trails the thresholds'"),
-		Storm->GetWardenCharge() < Storm->GetCharge());
+	Storm->AdvanceForTest(10.f);
+	TestNearlyEqual(TEXT("ROW 72: ten more seconds is ten more charge, not twenty-five"),
+		Storm->GetCharge() - ChargeBefore, 10.f, 0.001f);
 
-	// 4. ROW 6, the one that matters most. No step of any size, with any
-	//    lantern count, may lower either meter.
+	// 4. ROW 6, the one that matters most. No step of any size may lower it.
 	float Highest = Storm->GetCharge();
-	float HighestWarden = Storm->GetWardenCharge();
 	for (int32 Step = 0; Step < 40; ++Step)
 	{
-		Storm->AdvanceForTest(1.f, Step % 5);
+		Storm->AdvanceForTest(1.f);
 		TestTrue(TEXT("the meter never falls"), Storm->GetCharge() >= Highest);
-		TestTrue(TEXT("the Warden's meter never falls"), Storm->GetWardenCharge() >= HighestWarden);
 		Highest = Storm->GetCharge();
-		HighestWarden = Storm->GetWardenCharge();
 	}
 
 	// 5. A zero or negative delta is not a rewind. A paused or hitching frame
 	//    must not run the night backwards.
-	Storm->AdvanceForTest(0.f, 4);
+	Storm->AdvanceForTest(0.f);
 	TestEqual(TEXT("a zero-second step changes nothing"), Storm->GetCharge(), Highest);
-	Storm->AdvanceForTest(-5.f, 4);
+	Storm->AdvanceForTest(-5.f);
 	TestEqual(TEXT("a negative step changes nothing"), Storm->GetCharge(), Highest);
 
 	// 6. A negative spike is refused outright rather than applied. This is
@@ -179,7 +160,7 @@ bool FLLKStormChargeAccrualTest::RunTest(const FString& Parameters)
 	Storm->AddSpikeAmountForTest(-500.f, ELLKStormSpike::ExtractionCall);
 	TestEqual(TEXT("a negative spike is refused"), Storm->GetCharge(), Highest);
 
-	// 7. A real spike rises, on both meters. The extraction call's 180 is
+	// 7. A real spike rises. The extraction call's 180 is
 	//    three minutes of darkness applied at once, deliberately large
 	//    against thresholds of 270 and 480: calling it should move you a
 	//    stage, so calling early and calling late are different decisions.
@@ -196,15 +177,23 @@ bool FLLKStormChargeAccrualTest::RunTest(const FString& Parameters)
 	// Both delegates are dynamic and BlueprintAssignable - the things that
 	// react to a threshold are presentation and spawning, some of it Chris's -
 	// so they bind to a UFUNCTION rather than a lambda.
+	// Drive past PatrolsAlert BEFORE the listener exists. This used to happen
+	// by accident: the spike plus the lit-crew accrual above put the meter
+	// past 270 on its own. At the flat rate it does not, so the ordering this
+	// assertion depends on is now explicit rather than incidental.
+	while (Storm->GetCharge() < 300.f)
+	{
+		Storm->AdvanceForTest(1.f);
+	}
+
 	ULLKStormTestListener* Listener = NewObject<ULLKStormTestListener>(GetTransientPackage());
 	Storm->OnThresholdCrossed.AddDynamic(Listener, &ULLKStormTestListener::OnThresholdCrossed);
 	Storm->OnWardenConverged.AddDynamic(Listener, &ULLKStormTestListener::OnWardenConverged);
 
-	// A dark crew, so the Warden's dampened meter rises at the same rate as
-	// the thresholds' - the longest honest path to all three events.
+	// One clock, so there is one honest path to all three events.
 	for (int32 Second = 0; Second < 1200; ++Second)
 	{
-		Storm->AdvanceForTest(1.f, 0);
+		Storm->AdvanceForTest(1.f);
 	}
 
 	// PatrolsAlert was already crossed before the lambda was attached - the
