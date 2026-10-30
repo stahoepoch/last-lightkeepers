@@ -730,6 +730,135 @@ console.log("\nRung one, the departure generator");
     light.castsShadows === true,
     "revealed geometry with no shadow reads as flat, and looting is a judgement about shape",
   );
+
+  // ---- named levels, if any are authored --------------------------------
+  //
+  // **Conditional on purpose, and this is not a test being lenient.**
+  // `light.levels` does not exist in `data/lantern.json` yet: Chris authored
+  // three named states on 2026-10-30 and `Tools/import_data.py` has to be
+  // taught the key before the values can land (see
+  // `docs/HANDOFF-CODEX-LANTERN-LEVELS.md`). The C++ is in and tested, and an
+  // asset with no levels resolves to the single setting the game shipped with.
+  //
+  // So these checks are written now, against his seeds, so that the moment
+  // the key lands they either pass or say exactly which number moved. A
+  // conditional block is the honest shape for a schema that is agreed and not
+  // yet imported; it is not a reason to skip writing the rule down.
+  //
+  // His seeds, 2026-10-30, explicitly "seed - not lock":
+  //
+  //   | state   | reach | detectability | Sweeper notices from |
+  //   | Hooded  |     8 |          0.20 |                 17.2 |
+  //   | Working |    20 |          0.55 |                 26.3 |
+  //   | Open    |    30 |          1.00 |                 38.0 |
+  //
+  // The notice column is `Lerp(aggroRadiusDark, aggroRadiusLit, detectability)`
+  // and is derived rather than authored - it is in the comment because it is
+  // what the asymmetry check below compares against.
+  if (Array.isArray(light.levels)) {
+    const noticeFrom = (d) =>
+      sweeper.aggroRadiusDark +
+      (sweeper.aggroRadiusLit - sweeper.aggroRadiusDark) * Math.max(0, Math.min(1, d));
+
+    check(
+      "there is more than one level, or the list is doing nothing",
+      light.levels.length >= 2,
+      `${light.levels.length} level(s): one authored level is the same as none, since the ` +
+        `component synthesises a single setting from the block's own radius anyway`,
+    );
+
+    for (const [index, level] of light.levels.entries()) {
+      const at = `levels[${index}] ${level.name ?? "(unnamed)"}`;
+
+      check(
+        `${at} is a named setting with a reach`,
+        typeof level.name === "string" &&
+          level.name.length > 0 &&
+          typeof level.radiusStuds === "number" &&
+          level.radiusStuds > 0,
+        "named rather than indexed so a log line and a test read the same thing",
+      );
+
+      check(
+        `${at} authors detectability in 0-1`,
+        typeof level.detectability === "number" &&
+          level.detectability >= 0 &&
+          level.detectability <= 1,
+        `${level.detectability}: the C++ clamps it, so an out-of-range value would read as ` +
+          `a level that works while silently behaving as one that does not`,
+      );
+
+      // **The one asymmetry that must hold at EVERY level.** Row 5: light
+      // reveals value and attracts danger, and it stops costing anything the
+      // moment a keeper can see a patrol before the patrol reacts. Per level,
+      // the comparison is against that level's OWN notice radius, not the lit
+      // one - a hooded lantern is not judged against a reach it never has.
+      check(
+        `${at} is noticed from beyond its own edge`,
+        level.radiusStuds < noticeFrom(level.detectability),
+        `reach ${level.radiusStuds} vs noticed from ` +
+          `${noticeFrom(level.detectability).toFixed(1)}: at or above it, this level would ` +
+          `let a keeper see patrols before the patrols react, and light would be pure ` +
+          `advantage at that setting`,
+      );
+
+      if (index > 0) {
+        const previous = light.levels[index - 1];
+        check(
+          `${at} is dimmer-to-brighter in order`,
+          level.radiusStuds > previous.radiusStuds &&
+            level.detectability > previous.detectability,
+          `${previous.name} reaches ${previous.radiusStuds} at ${previous.detectability} and ` +
+            `${level.name} reaches ${level.radiusStuds} at ${level.detectability}: Chris ` +
+            `authored these as an ordered progression, and a list where a dimmer setting ` +
+            `gives away more is a data bug no runtime check can tell from a design choice`,
+        );
+      }
+    }
+
+    // **The "shows you something" rule belongs to the DEFAULT level alone**,
+    // and separating it out is the substantive thing this block decides.
+    //
+    // The check above at line ~688 - reach must exceed `aggroRadiusDark` or
+    // "lighting the lantern would never show you anything you had not already
+    // been detected by, so it would be pure cost and no player would use it" -
+    // was written when the lantern had one setting that had to do every job.
+    // Applied per level it would fail Hooded, whose reach of 8 sits below the
+    // dark radius of 12.
+    //
+    // **Hooded is not pure cost, and the reason is row 53.** Relics are
+    // visible but unreadable in darkness, so a keeper navigates by silhouette
+    // with no lantern at all, hoods up at arm's length to read one, and takes
+    // it - `ULLKRelicComponent::GetInteractBlock` returns `NeedsLight` until
+    // the relic is inside the lantern's radius, so light, not a separate
+    // interact range, is what gates taking it. Hooded buys exactly that, for
+    // 5 studs of extra notice radius over being dark. It is the cheapest way
+    // to read a relic, which is a real use and not a seeing tool.
+    //
+    // The level that still has to do both jobs is the one a lantern switches
+    // on to, so that is where the rule applies.
+    const fallbackName = typeof light.defaultLevel === "string" ? light.defaultLevel : "Working";
+    const def = light.levels.find((l) => l.name === fallbackName);
+
+    check(
+      "the default level names a level that exists",
+      def !== undefined,
+      `${fallbackName} is not among ${light.levels.map((l) => l.name).join(", ")}: the C++ ` +
+        `falls back to the first level rather than failing, so a typo here is invisible at ` +
+        `runtime`,
+    );
+
+    if (def !== undefined) {
+      check(
+        "the default level shows you something you were not already detected by",
+        def.radiusStuds > sweeper.aggroRadiusDark,
+        `${def.name} reaches ${def.radiusStuds} vs aggroRadiusDark ${sweeper.aggroRadiusDark}: ` +
+          `below it, the setting a lantern switches on to would never reveal anything that ` +
+          `had not already noticed you. Dimmer levels are exempt - they are for reading ` +
+          `relics at arm's length, not for seeing - but the default is not`,
+      );
+    }
+  }
 }
 
 

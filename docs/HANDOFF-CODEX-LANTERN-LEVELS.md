@@ -39,18 +39,31 @@ moving intensity by a factor of forty moves nothing at all.
 
 ## The key, as it should appear in `data/lantern.json`
 
-Inside the existing `light` block. **The three numeric values are Chris's**
-(lane table: Claude owns the schema, Chris owns the values), so the ones below
-are a shape to validate against rather than tuning to commit:
+Inside the existing `light` block. **These are Chris's own seeded values**,
+given 2026-10-30 and explicitly *"seed - not lock"* - the reaches and
+detectabilities are his, the cone angles are not and still need him:
 
 ```json
 "levels": [
-  { "name": "Hooded",  "radiusStuds": 10, "coneAngleDegrees": 44,  "detectability": 0.20 },
-  { "name": "Working", "radiusStuds": 30, "coneAngleDegrees": 72,  "detectability": 0.75 },
-  { "name": "Open",    "radiusStuds": 52, "coneAngleDegrees": 100, "detectability": 1.00 }
+  { "name": "Hooded",  "radiusStuds":  8, "coneAngleDegrees": 44,  "detectability": 0.20 },
+  { "name": "Working", "radiusStuds": 20, "coneAngleDegrees": 72,  "detectability": 0.55 },
+  { "name": "Open",    "radiusStuds": 30, "coneAngleDegrees": 100, "detectability": 1.00 }
 ],
 "defaultLevel": "Working"
 ```
+
+They give a Sweeper notice radius of 17.2, 26.3 and 38.0 studs respectively,
+by `Lerp(aggroRadiusDark 12, aggroRadiusLit 38, detectability)`. All three were
+run against `tests/balance.test.mjs` with the levels seeded in temporarily:
+14 new checks, all passing, 164/164.
+
+**Note what this does to the number every doc in the project quotes.** Today's
+lantern reaches 30 studs; under these seeds 30 is the *Open* setting and the
+default drops to 20. So today's lantern becomes the loud choice, which reads as
+deliberate - *"Open remains the 'I can see and everyone knows it' choice"* - but
+it means `radiusStuds: 30` stops being "the lantern's reach" and becomes "one
+of three", and the `_radiusNote` in `data/lantern.json` is written about the
+single-setting world.
 
 `intensity`, `warmColor` and `castsShadows` stay where they are, shared by
 every level. That is deliberate and it is the thing to protect: a per-level
@@ -74,12 +87,29 @@ instinct here too. The checks that matter:
   Chris authored these as an ordered dim-to-bright progression; a list where
   Hooded is more detectable than Open is a data bug no runtime check can
   distinguish from a design choice.
-- Worth considering: the top level's `radiusStuds` against
-  `enemies.json`'s `aggroRadiusLit` of 38. `_radiusNote` already warns that
-  above 38 the asymmetry inverts — you would see patrols before they aggro and
-  light becomes pure advantage. A 52-stud Open level crosses that line, so it
-  is Chris's call and not a bug, but `tests/balance.test.mjs` is the place that
-  should say so out loud.
+**`tests/balance.test.mjs` already checks all of the above** as of this
+handoff's companion commit, in a block conditional on `light.levels` existing -
+so the moment you land the key the suite either passes or names the number that
+moved. It also settles one rule that needed deciding, recorded here because it
+is a design call and not a test detail:
+
+> **The "shows you something" rule belongs to the default level alone.**
+
+That check - reach must exceed `aggroRadiusDark`, or *"lighting the lantern
+would never show you anything you had not already been detected by, so it would
+be pure cost and no player would use it"* - was written when the lantern had one
+setting doing every job. Applied per level it fails Hooded, whose reach of 8
+sits below the dark radius of 12.
+
+**Hooded is not pure cost, though, and the reason is row 53.** Relics are
+visible but unreadable in darkness, so the loop is: navigate dark by
+silhouette, hood up at arm's length to read one, take it. And taking it is
+gated by light rather than by a separate range -
+`ULLKRelicComponent::GetInteractBlock` returns `NeedsLight` until the relic is
+inside the lantern's radius. So Hooded buys exactly that reading, for five
+studs of extra notice radius over being dark, which makes it the cheapest way
+to read a relic rather than a bad way to see. The rule applies to the setting a
+lantern switches on to, because that is the one still doing both jobs.
 
 ### The struct to fill
 
