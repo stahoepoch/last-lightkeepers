@@ -15,7 +15,9 @@
 #include "LLKGameState.h"
 #include "LLKUnits.h"
 #include "Loot/LLKRelicComponent.h"
+#include "Run/LLKExtractionZone.h"
 #include "Storm/LLKZonePressureSubsystem.h"
+#include "UI/LLKExtractionReadout.h"
 
 namespace
 {
@@ -180,6 +182,103 @@ void ALLKDebugHUD::DrawHUD()
 	// Drawn last so it sits over everything, and outside the panel entirely:
 	// this one belongs to the object, not to the readout.
 	DrawWorldPrompt();
+
+	// And last of all, the climax. Nothing of it is in the panel above - not
+	// a line, not a phase name - because a permanent line about extraction is
+	// the top-left paragraph by another route.
+	DrawExtraction();
+}
+
+void ALLKDebugHUD::DrawExtraction()
+{
+	const UWorld* World = GetWorld();
+	if (Canvas == nullptr || World == nullptr)
+	{
+		return;
+	}
+
+	const ALLKGameState* GameState = World->GetGameState<ALLKGameState>();
+	if (GameState == nullptr)
+	{
+		return;
+	}
+
+	const ALLKCharacter* Character = Cast<ALLKCharacter>(GetOwningPawn());
+	const ULLKInteractorComponent* Interactor =
+		Character != nullptr ? Character->GetInteractor() : nullptr;
+
+	// **The prompt and the key agree because they read the same focus.** The
+	// interactor resolves the zone last of its three - a casualty, then a
+	// relic, then the bay - and `BeginInteract` branches in that order, so the
+	// prompt is suppressed in exactly the cases where E would do something
+	// else. A prompt offering a key that lifts a brooch instead is the bug
+	// this whole component was built to avoid.
+	const bool bAtZone = Interactor != nullptr
+		&& Interactor->GetFocusedZone() != nullptr
+		&& Interactor->GetFocusedCasualty() == nullptr
+		&& Interactor->GetFocused() == nullptr;
+
+	const FLLKExtractionReadout Readout =
+		LLKExtractionReadout::Describe(GameState->GetExtractionSnapshot(), bAtZone);
+	if (!Readout.HasAnything())
+	{
+		return;
+	}
+
+	UFont* Font = GEngine != nullptr ? GEngine->GetMediumFont() : nullptr;
+	if (Font == nullptr)
+	{
+		return;
+	}
+
+	const float Scale = GetUIScale();
+
+	// ---- the offer, at the zone ----------------------------------------
+	//
+	// Projected from the zone's own position, so it belongs to the dock the
+	// way the relic bracket belongs to the shelf.
+	if (!Readout.ZonePrompt.IsEmpty() && Interactor != nullptr)
+	{
+		const ALLKExtractionZone* Zone = Interactor->GetFocusedZone();
+		const FVector Screen = Zone != nullptr ? Canvas->Project(Zone->GetActorLocation()) : FVector::ZeroVector;
+		if (Zone != nullptr && Screen.Z > 0.f)
+		{
+			float W = 0.f;
+			float H = 0.f;
+			const float S = 1.2f * Scale;
+			Canvas->TextSize(Font, Readout.ZonePrompt, W, H, S, S);
+
+			FCanvasTextItem Item(
+				FVector2D(Screen.X - W * 0.5f, Screen.Y),
+				FText::FromString(Readout.ZonePrompt), Font, ColourCause);
+			Item.Scale = FVector2D(S, S);
+			Item.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.95f));
+			Canvas->DrawItem(Item);
+		}
+	}
+
+	// ---- the event, centre screen ---------------------------------------
+	if (!Readout.Centre.IsEmpty())
+	{
+		// Above the middle rather than on it, so it is not under the crosshair
+		// a keeper is aiming a lantern with. Below the wipe message's line,
+		// which is the only other thing allowed to speak here - and the two
+		// never overlap, because a failed extraction says nothing.
+		const float CentreX = Canvas->SizeX * 0.5f;
+		const float Y = Canvas->SizeY * 0.3f;
+
+		float W = 0.f;
+		float H = 0.f;
+		const float S = 2.1f * Scale;
+		Canvas->TextSize(Font, Readout.Centre, W, H, S, S);
+
+		FCanvasTextItem Item(FVector2D(CentreX - W * 0.5f, Y),
+			FText::FromString(Readout.Centre), Font,
+			Readout.bUrgent ? ColourUrgent : ColourCause);
+		Item.Scale = FVector2D(S, S);
+		Item.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.95f));
+		Canvas->DrawItem(Item);
+	}
 }
 
 float ALLKDebugHUD::DrawProgressBar(

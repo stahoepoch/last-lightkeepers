@@ -28,6 +28,7 @@
 #include "Components/ActorComponent.h"
 #include "LLKInteractorComponent.generated.h"
 
+class ALLKExtractionZone;
 class ULLKRelicComponent;
 class ULLKVitalsComponent;
 
@@ -71,6 +72,17 @@ public:
 	 */
 	UFUNCTION(BlueprintPure, Category = "LLK|Interact")
 	ULLKVitalsComponent* GetFocusedCasualty() const { return FocusedCasualty; }
+
+	/**
+	 * The extraction zone this keeper is standing in, or null. M3.
+	 *
+	 * Resolved locally and by overlap rather than by aim, because standing in
+	 * a bay is not something you point at. It is the lowest-priority focus:
+	 * a casualty, then a relic, then the zone - so a keeper reaching for a
+	 * brooch on the dock floor takes the brooch, and looks away to call.
+	 */
+	UFUNCTION(BlueprintPure, Category = "LLK|Interact")
+	ALLKExtractionZone* GetFocusedZone() const { return FocusedZone; }
 
 	/** Press: begin a hold, or spend the anchor revive if this keeper is the one down. */
 	UFUNCTION(BlueprintCallable, Category = "LLK|Interact")
@@ -130,6 +142,27 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void ServerAnchorRevive();
 
+	/**
+	 * Server. Starts the hold that calls extraction, and the hold is a confirmation.
+	 *
+	 * Held on the server for the reason the revive is: a client that could
+	 * decide a hold had completed could complete it instantly. The whole
+	 * price of calling is the siren and the convergence, so there is nothing
+	 * here worth cheating - which is exactly when a project drifts into
+	 * trusting clients about one thing and then about another.
+	 */
+	UFUNCTION(Server, Reliable)
+	void ServerBeginExtractionCall(ALLKExtractionZone* Zone);
+
+	UFUNCTION(Server, Reliable)
+	void ServerCancelExtractionCall();
+
+	/** Server. One step of the call hold; cancels itself if the keeper leaves or falls. */
+	void TickExtractionCall(float DeltaSeconds);
+
+	/** The zone whose trigger this keeper is inside, locally. */
+	ALLKExtractionZone* FindZone() const;
+
 	/** Finds the nearest downed teammate in reach, by the same aim rule as loot. */
 	ULLKVitalsComponent* FindCasualty() const;
 
@@ -142,9 +175,18 @@ protected:
 	UPROPERTY()
 	TObjectPtr<ULLKVitalsComponent> FocusedCasualty;
 
+	UPROPERTY()
+	TObjectPtr<ALLKExtractionZone> FocusedZone;
+
 	/** Who we asked the server to revive, so releasing E cancels the right hold. */
 	UPROPERTY()
 	TObjectPtr<ULLKVitalsComponent> Holding;
+
+	/** Server only: the zone being called from, and how long E has been down. */
+	UPROPERTY()
+	TObjectPtr<ALLKExtractionZone> CallingZone;
+
+	float CallHeldSeconds = 0.f;
 
 	UPROPERTY(Replicated)
 	int32 CarriedCount = 0;
@@ -154,4 +196,18 @@ protected:
 	/** Focus is resolved a few times a second, not every frame. A prompt does not need 60Hz. */
 	UPROPERTY(EditAnywhere, Category = "LLK|Interact", meta = (ClampMin = "0.01"))
 	float SearchIntervalSeconds = 0.08f;
+
+	/**
+	 * How long E must be held to call extraction.
+	 *
+	 * **A confirmation, not a cost**, and the distinction is why this is not
+	 * in `data/`: the cost of calling is the siren, the convergence and the
+	 * hold, all of which Chris authored. This exists so that a keeper fumbling
+	 * for a relic in the bay cannot summon a recovery rig by brushing a key,
+	 * which is the single most annoying way to lose a run. If it ever becomes
+	 * a tuned part of the decision rather than a safeguard against a misclick,
+	 * it belongs beside the exit in `loot.json` and this should move.
+	 */
+	UPROPERTY(EditAnywhere, Category = "LLK|Interact", meta = (ClampMin = "0"))
+	float CallHoldSeconds = 1.f;
 };

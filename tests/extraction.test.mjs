@@ -67,8 +67,10 @@ const SUBSYSTEM_HEADER = "Source/LLK/Public/Run/LLKExtractionSubsystem.h";
 const SUBSYSTEM_IMPL = "Source/LLK/Private/Run/LLKExtractionSubsystem.cpp";
 const TEST = "Source/LLK/Private/Tests/LLKExtractionTest.cpp";
 const ZONE_TEST = "Source/LLK/Private/Tests/LLKExtractionZoneTest.cpp";
+const READOUT_IMPL = "Source/LLK/Private/UI/LLKExtractionReadout.cpp";
+const HUD_IMPL = "Source/LLK/Private/UI/LLKDebugHUD.cpp";
 
-for (const rel of [PURE_HEADER, PURE_IMPL, SUBSYSTEM_HEADER, SUBSYSTEM_IMPL, TEST, ZONE_TEST]) {
+for (const rel of [PURE_HEADER, PURE_IMPL, SUBSYSTEM_HEADER, SUBSYSTEM_IMPL, TEST, ZONE_TEST, READOUT_IMPL, HUD_IMPL]) {
   check(`${rel} exists`, read(rel) !== null, "the guard names a file that is not there");
 }
 
@@ -286,6 +288,61 @@ for (const rel of [PURE_HEADER, PURE_IMPL, SUBSYSTEM_HEADER, SUBSYSTEM_IMPL, TES
     /leaving the route costs time, never progress/.test(test),
     "if Chris wants a reset instead, this is the assertion that should fail " +
       "first and be changed on purpose",
+  );
+}
+
+// ---- 4b. the words live in one place, and the HUD only draws them ------
+//
+// Chris, 2026-10-30: *"It must not become another top-left debug paragraph...
+// Put the actionable prompt in-world at the zone; reserve centre-screen
+// messaging for the active climax."* The readout is a debug HUD today and his
+// real widget later, so the wording and the rules about when to show it live
+// in `LLKExtractionReadout` - otherwise the real widget starts by
+// reimplementing them from a screenshot.
+{
+  const readout = stripComments(read(READOUT_IMPL) ?? "");
+  const hud = stripComments(read(HUD_IMPL) ?? "");
+
+  for (const line of ["RECOVERY INCOMING", "HOLD THE DOCK", "RECOVERY HOLDING", "SECURED"]) {
+    check(
+      `the readout owns the words "${line}"`,
+      readout.includes(line),
+      "one authority for what extraction says",
+    );
+    check(
+      `and the HUD does not spell "${line}" itself`,
+      !hud.includes(line),
+      "a HUD that builds its own strings is a second authority, and the one " +
+        "that drifts is whichever nobody is reading",
+    );
+  }
+
+  check(
+    "the prompt is the only thing drawn at the zone",
+    readout.includes("Hold [E]") && !hud.includes("Hold [E]"),
+  );
+
+  // The centre slot is for the climax only, so an idle run fills neither slot.
+  // Sliced to the Idle branch's own `return` rather than matched with a
+  // character budget: the branches sit next to each other once comments are
+  // stripped, and a window wide enough to cover one reaches into the next.
+  const idleAt = readout.indexOf("case ELLKExtractionPhase::Idle:");
+  const idleBranch = idleAt < 0
+    ? ""
+    : readout.slice(idleAt, readout.indexOf("return Readout;", idleAt));
+  check(
+    "ROW 75: an idle run says nothing centre screen",
+    idleBranch.length > 0 && !idleBranch.includes("Readout.Centre"),
+    "a permanent line about extraction is the top-left paragraph by another route",
+  );
+
+  // And the HUD's prompt agrees with what E actually does, by reading the
+  // same focus the key branches on rather than searching again.
+  check(
+    "the prompt is suppressed when E would do something else",
+    /GetFocusedCasualty\(\) == nullptr[\s\S]{0,200}GetFocused\(\) == nullptr/.test(hud),
+    "a casualty and a relic both outrank the bay, in the interactor and on " +
+      "screen, or the prompt offers a key that lifts a brooch",
   );
 }
 

@@ -152,6 +152,18 @@ protected:
 	 */
 	void DrawDownedPanel(const class ULLKVitalsComponent* Own);
 
+	/**
+	 * Extraction, in the two places Chris allowed it. M3.
+	 *
+	 * *"It must not become another top-left debug paragraph. Make it
+	 * contextual... Put the actionable prompt in-world at the zone; reserve
+	 * centre-screen messaging for the active climax."* So this draws nothing
+	 * at all for most of a run, nothing in the panel ever, and the words come
+	 * from `LLKExtractionReadout::Describe` rather than from here - the real
+	 * HUD is his, and it should read one function instead of a screenshot.
+	 */
+	void DrawExtraction();
+
 	/** A filled bar, for a hold. Returns the height it used. */
 	float DrawProgressBar(const FVector2D& At, float Width, float Fraction, const FLinearColor& Colour) const;
 

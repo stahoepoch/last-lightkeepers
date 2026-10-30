@@ -10,6 +10,9 @@
 #include "Storm/LLKZonePressureSubsystem.h"
 #include "Characters/LLKVitalsComponent.h"
 #include "Loot/LLKRelicComponent.h"
+#include "Run/LLKExtractionSubsystem.h"
+#include "Components/BoxComponent.h"
+#include "Run/LLKExtractionZone.h"
 #include "Net/UnrealNetwork.h"
 
 ULLKInteractorComponent::ULLKInteractorComponent()
@@ -33,6 +36,12 @@ void ULLKInteractorComponent::TickComponent(
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	// **Before the search interval, not after it.** Focus is resolved a few
+	// times a second because a prompt does not need 60Hz, but a hold that only
+	// advanced on those frames would take as long as the interval made it -
+	// the hold is a duration the player feels, so it gets every frame.
+	TickExtractionCall(DeltaTime);
+
 	SecondsSinceSearch += DeltaTime;
 	if (SecondsSinceSearch < SearchIntervalSeconds)
 	{
@@ -43,6 +52,11 @@ void ULLKInteractorComponent::TickComponent(
 	// A body outranks loot. Resolved first so the prompt never flickers
 	// between a fallen crewmate and a brooch on the shelf behind them.
 	FocusedCasualty = FindCasualty();
+
+	// Lowest priority of the three, and resolved last for that reason: a
+	// keeper standing in the bay reaching for a brooch on the dock floor takes
+	// the brooch. Looking away from it is how they call.
+	FocusedZone = FindZone();
 
 	ULLKRelicComponent* Found = FocusedCasualty != nullptr ? nullptr : FindFocus();
 	if (Found == Focused)
@@ -203,6 +217,15 @@ void ULLKInteractorComponent::BeginInteract()
 		}
 	}
 
+	// The zone is checked after a casualty and after loot, and `TryTakeFocused`
+	// is a no-op with nothing focused, so the order below reads as: a body,
+	// then a thing you are looking at, then the bay you are standing in.
+	if (FocusedCasualty == nullptr && Focused == nullptr && FocusedZone != nullptr)
+	{
+		ServerBeginExtractionCall(FocusedZone);
+		return;
+	}
+
 	if (FocusedCasualty != nullptr)
 	{
 		Holding = FocusedCasualty;
@@ -220,6 +243,136 @@ void ULLKInteractorComponent::EndInteract()
 		ServerCancelRevive(Holding);
 		Holding = nullptr;
 	}
+
+	// Unconditional: the server knows whether there was a call hold to drop,
+	// and a client tracking that separately is a second copy of the same fact
+	// that can disagree with the first.
+	ServerCancelExtractionCall();
+}
+
+void ULLKInteractorComponent::ServerBeginExtractionCall_Implementation(ALLKExtractionZone* Zone)
+{
+	const AActor* Owner = GetOwner();
+	if (Owner == nullptr || !Owner->HasAuthority() || Zone == nullptr)
+	{
+		return;
+	}
+
+	// Re-checked on the server because the client asked based on its own view,
+	// exactly as the revive is. The per-frame validation in TickExtractionCall
+	// is what enforces the commitment; this refuses an opening request that
+	// was never valid.
+	const ULLKVitalsComponent* Own = Owner->FindComponentByClass<ULLKVitalsComponent>();
+	if (Own == nullptr || Own->IsDowned())
+	{
+		return;
+	}
+
+	if (Zone->CountKeepersStanding() <= 0)
+	{
+		// The keeper asking is not in the bay by the server's reckoning. A
+		// client cannot be trusted about where it is standing, and the zone's
+		// own occupancy is the one answer the hold already depends on.
+		return;
+	}
+
+	CallingZone = Zone;
+	CallHeldSeconds = 0.f;
+}
+
+void ULLKInteractorComponent::ServerCancelExtractionCall_Implementation()
+{
+	const AActor* Owner = GetOwner();
+	if (Owner == nullptr || !Owner->HasAuthority())
+	{
+		return;
+	}
+
+	CallingZone = nullptr;
+	CallHeldSeconds = 0.f;
+}
+
+void ULLKInteractorComponent::TickExtractionCall(float DeltaSeconds)
+{
+	const AActor* Owner = GetOwner();
+	if (Owner == nullptr || !Owner->HasAuthority() || CallingZone == nullptr)
+	{
+		return;
+	}
+
+	// **Three ways the hold drops, and all three are the keeper's own doing.**
+	// Walking out of the bay, going down, or the zone's level unloading under
+	// them. A hold that survived any of those would be a recovery rig
+	// summoned by somebody who was not there to ask for it.
+	const ULLKVitalsComponent* Own = Owner->FindComponentByClass<ULLKVitalsComponent>();
+	if (Own == nullptr || Own->IsDowned() || CallingZone->CountKeepersStanding() <= 0)
+	{
+		CallingZone = nullptr;
+		CallHeldSeconds = 0.f;
+		return;
+	}
+
+	CallHeldSeconds += FMath::Max(0.f, DeltaSeconds);
+	if (CallHeldSeconds < CallHoldSeconds)
+	{
+		return;
+	}
+
+	// Cleared before the call, not after: `CallExtraction` logs, broadcasts
+	// and lights the dock, and a re-entrant path back into this function
+	// would otherwise find a completed hold still sitting here.
+	const FName PointId = CallingZone->ExtractionPointId;
+	CallingZone = nullptr;
+	CallHeldSeconds = 0.f;
+
+	const UWorld* World = GetWorld();
+	ULLKExtractionSubsystem* Extraction =
+		World != nullptr ? World->GetSubsystem<ULLKExtractionSubsystem>() : nullptr;
+	if (Extraction == nullptr)
+	{
+		return;
+	}
+
+	// The subsystem decides, including refusing. The caller is passed for the
+	// rig's light, which borrows this keeper's own lantern until a rig
+	// brightness is authored (row 75).
+	Extraction->CallExtraction(PointId, GetOwner());
+}
+
+ALLKExtractionZone* ULLKInteractorComponent::FindZone() const
+{
+	const AActor* Owner = GetOwner();
+	const UWorld* World = GetWorld();
+	if (Owner == nullptr || World == nullptr)
+	{
+		return nullptr;
+	}
+
+	const ULLKExtractionSubsystem* Extraction = World->GetSubsystem<ULLKExtractionSubsystem>();
+	if (Extraction == nullptr)
+	{
+		return nullptr;
+	}
+
+	// **By overlap and not by aim**, because standing in a bay is not
+	// something you point at - which is also why this is the one focus with no
+	// reach and no dot product.
+	//
+	// Resolved from the zones' own triggers on this machine. The zone actor
+	// replicates, so a client has its box and can answer "am I in it" for its
+	// own pawn; the server still decides whether a hold may start, so a client
+	// that got this wrong would only see a prompt it could not use.
+	for (const FName& PointId : Extraction->GetExitIds())
+	{
+		ALLKExtractionZone* Zone = Extraction->FindZone(PointId);
+		const UPrimitiveComponent* Trigger = Zone != nullptr ? Zone->GetTrigger() : nullptr;
+		if (Trigger != nullptr && Trigger->IsOverlappingActor(Owner))
+		{
+			return Zone;
+		}
+	}
+
+	return nullptr;
 }
 
 void ULLKInteractorComponent::ServerBeginRevive_Implementation(ULLKVitalsComponent* Target)
