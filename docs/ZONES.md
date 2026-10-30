@@ -123,6 +123,31 @@ Walkers, the Ficus and the Warden. The Ficus is confirmed, not pending —
 
 ## Zone 2 — the solar farm
 
+> **Open conflict, 2026-10-29, awaiting Chris.** Everything below describes
+> the farm as a **night** raid whose inversion is ambient blue light. On
+> 2026-10-29 Chris reached a different conclusion in conversation - *"Then
+> it's a day raid"* - with solar output as the exit clock and the morning
+> service window as the way in. He reached it believing Claude remembered an
+> intended day raid; Claude had in fact reported the opposite, that no day
+> raid exists anywhere in the repo, and this section is what does exist.
+>
+> **Both versions are good and they cost different things.** The day version
+> inverts harder (night to day, manufacture light to hunt shadow, local
+> exposure to universal) and it fits `PREMISE.md` better than it looks: at
+> dawn the array's output is low, so the service window is the premise's own
+> gap arriving on a schedule you can read, rather than an exception to
+> *"in daylight they are fed."* What it loses is named below as "Storm Charge
+> gets a rhythm": lightning striking the array gave the meter punctuation,
+> *"periods of breathing room punctuated by that just cost us ninety
+> seconds"*, which row 64 requires as relief. A smooth solar climb has none.
+> **Passing cloud is the day version's lightning** - transient shadow that
+> arrives and leaves - and it is exactly his own sentence for the zone: *"Do
+> we cross the exposed bright row now, or wait for a shadow that may vanish
+> before we get there?"*
+>
+> Nothing here is rewritten until he says which it is. Row 70's zone pressure
+> clock works for either.
+
 Where they charge. Going there is the first time you are not scavenging around
 the machines but walking into the thing that feeds them.
 
