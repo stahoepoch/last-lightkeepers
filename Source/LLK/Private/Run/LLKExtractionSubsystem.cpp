@@ -8,6 +8,7 @@
 #include "LLKGameState.h"
 #include "Lantern/LLKLanternLightComponent.h"
 #include "Loot/LLKInteractorComponent.h"
+#include "Run/LLKExtractionZone.h"
 #include "Run/LLKRunStateSubsystem.h"
 #include "Storm/LLKStormChargeSubsystem.h"
 
@@ -193,7 +194,7 @@ ELLKExtractionRefusal ULLKExtractionSubsystem::CallExtraction(const FName PointI
 
 	State = Next;
 	bHoldStalled = false;
-	bWarnedAboutMissingRoute = false;
+	bWarnedAboutMissingZone = false;
 
 	UE_LOG(LogLLK, Log,
 		TEXT("EXTRACTION CALLED at %s. Siren %.0fs, then hold %.0fs. Call %d this run."),
@@ -271,33 +272,70 @@ bool ULLKExtractionSubsystem::CancelExtraction()
 	return true;
 }
 
-void ULLKExtractionSubsystem::RegisterBoardingRoute(
-	const FName PointId, AActor* Anchor, const float RadiusCm)
+void ULLKExtractionSubsystem::RegisterZone(ALLKExtractionZone* Zone)
 {
-	if (PointId.IsNone() || Anchor == nullptr || !(RadiusCm > 0.f))
+	if (Zone == nullptr)
 	{
-		UE_LOG(LogLLK, Warning,
-			TEXT("RegisterBoardingRoute refused: a route needs an exit id, an anchor and a radius."));
 		return;
 	}
 
-	// One route per exit. Two would mean a hold that could be progressed from
-	// two places, which is a second boarding route by another name.
-	UnregisterBoardingRoute(PointId);
+	if (Zone->ExtractionPointId.IsNone())
+	{
+		UE_LOG(LogLLK, Warning,
+			TEXT("%s has no ExtractionPointId, so no exit can use it. Set it to one of: %s"),
+			*Zone->GetName(),
+			GetExitIds().IsEmpty()
+				? TEXT("none - run Tools/import_data.py")
+				: *FString::JoinBy(GetExitIds(), TEXT(", "),
+					[](const FName& Id) { return Id.ToString(); }));
+		return;
+	}
 
-	FLLKBoardingRoute Route;
-	Route.PointId = PointId;
-	Route.Anchor = Anchor;
-	Route.RadiusCm = RadiusCm;
-	Routes.Add(Route);
+	if (const ALLKExtractionZone* Existing = FindZone(Zone->ExtractionPointId))
+	{
+		if (Existing != Zone)
+		{
+			// Refused rather than replaced. Replacing would make the answer
+			// depend on which zone began play last, which is not a thing
+			// anybody placing two of them could reason about.
+			UE_LOG(LogLLK, Warning,
+				TEXT("%s is a second zone for %s - %s already is. Ignoring the new one: one exit, ")
+				TEXT("one boarding route, or the hold could be advanced from two places."),
+				*Zone->GetName(), *Zone->ExtractionPointId.ToString(), *Existing->GetName());
+		}
+		return;
+	}
 
-	UE_LOG(LogLLK, Log, TEXT("Boarding route registered for %s, %.0fcm around %s."),
-		*PointId.ToString(), RadiusCm, *Anchor->GetName());
+	Zones.Add(Zone);
+
+	UE_LOG(LogLLK, Log, TEXT("Extraction zone registered for %s: %s."),
+		*Zone->ExtractionPointId.ToString(), *Zone->GetName());
 }
 
-void ULLKExtractionSubsystem::UnregisterBoardingRoute(const FName PointId)
+void ULLKExtractionSubsystem::UnregisterZone(ALLKExtractionZone* Zone)
 {
-	Routes.RemoveAll([PointId](const FLLKBoardingRoute& Route) { return Route.PointId == PointId; });
+	Zones.RemoveAll([Zone](const TWeakObjectPtr<ALLKExtractionZone>& Candidate)
+	{
+		return !Candidate.IsValid() || Candidate.Get() == Zone;
+	});
+}
+
+ALLKExtractionZone* ULLKExtractionSubsystem::FindZone(const FName PointId) const
+{
+	if (PointId.IsNone())
+	{
+		return nullptr;
+	}
+
+	for (const TWeakObjectPtr<ALLKExtractionZone>& Weak : Zones)
+	{
+		ALLKExtractionZone* Zone = Weak.Get();
+		if (Zone != nullptr && Zone->ExtractionPointId == PointId)
+		{
+			return Zone;
+		}
+	}
+	return nullptr;
 }
 
 TOptional<int32> ULLKExtractionSubsystem::ObserveBoardingRoute() const
@@ -305,52 +343,17 @@ TOptional<int32> ULLKExtractionSubsystem::ObserveBoardingRoute() const
 	// Nobody measured. The distinction this `TOptional` exists for: no dock in
 	// the map is a different fact from a dock with nobody standing in it, and
 	// only one of them is the crew's fault.
-	const FLLKBoardingRoute* Route = Routes.FindByPredicate(
-		[this](const FLLKBoardingRoute& Candidate)
-		{
-			return Candidate.PointId == State.PointId && Candidate.Anchor.IsValid();
-		});
-
-	if (Route == nullptr)
+	const ALLKExtractionZone* Zone = FindZone(State.PointId);
+	if (Zone == nullptr)
 	{
 		return TOptional<int32>();
 	}
 
-	const ULLKRunStateSubsystem* Run = GetRunState();
-	if (Run == nullptr)
-	{
-		return TOptional<int32>();
-	}
-
-	const FVector Centre = Route->Anchor->GetActorLocation();
-	const float RadiusSquared = Route->RadiusCm * Route->RadiusCm;
-
-	int32 Count = 0;
-	for (const ULLKVitalsComponent* Keeper : Run->GetKeepers())
-	{
-		const AActor* Owner = Keeper != nullptr ? Keeper->GetOwner() : nullptr;
-		if (Owner == nullptr)
-		{
-			continue;
-		}
-
-		// A downed keeper is not boarding anything. This is the rule that
-		// makes the hold mean "keep the route clear" rather than "have a body
-		// in the bay": a crew that drags itself to the dock and goes down
-		// there has not extracted, and row 74 is explicit that there is no
-		// driver who comes in to collect them.
-		if (Keeper->IsDowned())
-		{
-			continue;
-		}
-
-		if (FVector::DistSquared(Owner->GetActorLocation(), Centre) <= RadiusSquared)
-		{
-			++Count;
-		}
-	}
-
-	return Count;
+	// `CountKeepersStanding`, not `CountKeepersInside`. Row 75: a downed
+	// keeper does not hold the route, because row 74 is explicit that no
+	// driver comes into the building to collect anybody. The zone reports both
+	// numbers and this is the one that is a rule.
+	return Zone->CountKeepersStanding();
 }
 
 void ULLKExtractionSubsystem::Tick(float DeltaTime)
@@ -419,24 +422,16 @@ void ULLKExtractionSubsystem::Apply(const FLLKExtractionStep& Step)
 	// because an extraction that never finishes and never explains itself is
 	// indistinguishable from a bug in the state machine - which is exactly the
 	// confusion `LLK.CheckMap` was written to prevent for enemies.
-	if (Step.bHoldStalled && !bWarnedAboutMissingRoute
-		&& State.Phase == ELLKExtractionPhase::Holding)
+	if (Step.bHoldStalled && !bWarnedAboutMissingZone
+		&& State.Phase == ELLKExtractionPhase::Holding
+		&& FindZone(State.PointId) == nullptr)
 	{
-		const bool bHaveRoute = Routes.ContainsByPredicate(
-			[this](const FLLKBoardingRoute& Route)
-			{
-				return Route.PointId == State.PointId && Route.Anchor.IsValid();
-			});
-
-		if (!bHaveRoute)
-		{
-			bWarnedAboutMissingRoute = true;
-			UE_LOG(LogLLK, Warning,
-				TEXT("EXTRACTION CANNOT COMPLETE: no boarding route registered for %s, so the hold ")
-				TEXT("will never advance. The dock is map work - see DECISIONS.md row 74 and ")
-				TEXT("docs/MAP-READINESS.md."),
-				*State.PointId.ToString());
-		}
+		bWarnedAboutMissingZone = true;
+		UE_LOG(LogLLK, Warning,
+			TEXT("EXTRACTION CANNOT COMPLETE: no ALLKExtractionZone registered for %s, so the hold ")
+			TEXT("will never advance. The dock is map work - see DECISIONS.md rows 74 and 75 and ")
+			TEXT("docs/MAP-READINESS.md."),
+			*State.PointId.ToString());
 	}
 
 	if (Step.bSecured)
@@ -478,15 +473,9 @@ void ULLKExtractionSubsystem::RefreshRigLight()
 	// caller's position is a fallback for a map with no route registered,
 	// which cannot really extract anyway.
 	FVector Position;
-	const FLLKBoardingRoute* Route = Routes.FindByPredicate(
-		[this](const FLLKBoardingRoute& Candidate)
-		{
-			return Candidate.PointId == State.PointId && Candidate.Anchor.IsValid();
-		});
-
-	if (Route != nullptr)
+	if (const ALLKExtractionZone* Zone = FindZone(State.PointId))
 	{
-		Position = Route->Anchor->GetActorLocation();
+		Position = Zone->GetActorLocation();
 	}
 	else if (const AActor* Fallback = RigLightFallback.Get())
 	{

@@ -66,8 +66,9 @@ const PURE_IMPL = "Source/LLK/Private/Run/LLKExtraction.cpp";
 const SUBSYSTEM_HEADER = "Source/LLK/Public/Run/LLKExtractionSubsystem.h";
 const SUBSYSTEM_IMPL = "Source/LLK/Private/Run/LLKExtractionSubsystem.cpp";
 const TEST = "Source/LLK/Private/Tests/LLKExtractionTest.cpp";
+const ZONE_TEST = "Source/LLK/Private/Tests/LLKExtractionZoneTest.cpp";
 
-for (const rel of [PURE_HEADER, PURE_IMPL, SUBSYSTEM_HEADER, SUBSYSTEM_IMPL, TEST]) {
+for (const rel of [PURE_HEADER, PURE_IMPL, SUBSYSTEM_HEADER, SUBSYSTEM_IMPL, TEST, ZONE_TEST]) {
   check(`${rel} exists`, read(rel) !== null, "the guard names a file that is not there");
 }
 
@@ -190,6 +191,53 @@ for (const rel of [PURE_HEADER, PURE_IMPL, SUBSYSTEM_HEADER, SUBSYSTEM_IMPL, TES
   );
 }
 
+// ---- 2b. the subsystem does no geometry of its own ---------------------
+//
+// Chris, 2026-10-30: the zone actor *"should own only the trigger volume and
+// which keepers are currently inside, feeding the state machine's pause/advance
+// rule."* For one day the subsystem measured a radius itself, and the reason
+// that had to go is not tidiness: a sphere cannot describe a bay mouth, and two
+// places doing geometry is how they come to disagree about who is in the bay.
+{
+  const impl = stripComments(read(SUBSYSTEM_IMPL) ?? "");
+  const header = stripComments(read(SUBSYSTEM_HEADER) ?? "");
+
+  for (const forbidden of ["DistSquared", "RadiusCm *", "FVector::Dist"]) {
+    check(
+      `the subsystem measures no distances of its own (${forbidden.trim()})`,
+      !impl.includes(forbidden),
+      "the zone owns the volume and answers the question; the subsystem asks " +
+        "it, the way perception asks an ILLKVisibilitySource",
+    );
+  }
+
+  check(
+    "and the radius-based route is gone rather than left beside it",
+    !impl.includes("FLLKBoardingRoute") && !header.includes("FLLKBoardingRoute"),
+    "a placeholder kept next to its replacement is a second way to measure",
+  );
+
+  // ROW 75's rule, and the reason the zone reports two numbers: a downed
+  // keeper is in the bay and holds nothing, because row 74 is explicit that no
+  // driver comes inside to collect anybody.
+  check(
+    "ROW 75: the hold reads who is STANDING in the zone",
+    /CountKeepersStanding\(\)/.test(impl),
+    "CountKeepersInside is geometry and belongs to a readout; only standing " +
+      "keepers hold a boarding route",
+  );
+  check(
+    "and never advances on a bay full of downed keepers",
+    !/ObserveBoardingRoute[\s\S]{0,400}CountKeepersInside/.test(impl),
+    "row 74: nobody comes into the building to collect anybody",
+  );
+  check(
+    "one zone per exit, with the second refused rather than replacing the first",
+    /is a second zone for/.test(impl),
+    "replacing would make the answer depend on which zone began play last",
+  );
+}
+
 // ---- 3. the hold cannot resolve from an unmeasured route ----------------
 {
   const impl = stripComments(read(PURE_IMPL) ?? "");
@@ -221,6 +269,14 @@ for (const rel of [PURE_HEADER, PURE_IMPL, SUBSYSTEM_HEADER, SUBSYSTEM_IMPL, TES
     test.includes('"LLK.Run.Extraction"'),
     "this file guards architecture only. Deleting the automation test would " +
       "leave every rule about holds, cancels and wipes unchecked",
+  );
+
+  const zoneTest = read(ZONE_TEST) ?? "";
+  check(
+    "the zone's occupancy test exists",
+    zoneTest.includes('"LLK.Run.ExtractionZone"'),
+    "entering twice, a destroyed keeper and a downed keeper are three ways a " +
+      "hold could advance with an empty bay",
   );
 
   // The tuning decision the header flags, asserted so that flipping it is a

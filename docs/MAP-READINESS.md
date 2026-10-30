@@ -191,11 +191,23 @@ belong to the enemy, not to this function.
 Added 2026-10-30 with M3's extraction rules (row 75), and deliberately NOT a
 fifteenth check.
 
-`ULLKExtractionSubsystem` needs one piece of geometry and only one:
-`RegisterBoardingRoute(PointId, Anchor, RadiusCm)` - a position and a radius
-per exit, which is the part of the dock a crew has to hold. Row 74 keeps the rig
-on the service-road side and the driver out of the interior, so nothing else
-about the dock is a rule.
+`ULLKExtractionSubsystem` needs one piece of geometry and only one: an
+`ALLKExtractionZone` per exit, which is the part of the dock a crew has to
+hold. Row 74 keeps the rig on the service-road side and the driver out of the
+interior, so nothing else about the dock is a rule.
+
+**Placing one is the whole of the map work for extraction.** Drop the actor in,
+type `LoadingDock` or `FreightLift` into its `ExtractionPointId`, and size its
+box to the bay mouth. It registers itself at `BeginPlay`, reports who is
+standing in it, and owns nothing else - no mesh, no rig, no visuals. A zone
+whose id nothing authored says so by name at `BeginPlay`, and a second zone for
+one exit is refused rather than replacing the first.
+
+It is a box rather than a sphere because a boarding route is a mouth: the
+stretch between the bay door and the first shelf, which a radius cannot
+describe without including the aisle behind it or excluding half the bay. The
+subsystem measured a radius itself for one day; that was a placeholder, and it
+is gone rather than kept beside its replacement.
 
 **What happens today, with no map:** the hold cannot advance, because an
 unmeasured route is not an empty one. The subsystem says so once per call, by
@@ -207,7 +219,7 @@ name:
 That is the same discipline as `LLK.CheckMap` - name the missing thing rather
 than let somebody discover it by watching a timer not move - applied at the
 moment it matters rather than as a map-load check. **It becomes a check here
-when the greybox has a dock to check**, and it will want `NoBoardingRoute` as
+when the greybox has a dock to check**, and it will want `NoExtractionZone` as
 its code. Writing the check before there is a dock would mean every greybox
 reports a missing route for the whole of M2.5, which is how a warning stops
 being read.

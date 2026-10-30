@@ -13,12 +13,16 @@
 //     flag. Two of that block's three fields; the third is the retired spike,
 //     which this class never reads and `FLLKExtractionAnnounce` cannot carry.
 //   - `ULLKRunStateSubsystem` for the wipe and for who is still in the run.
-//   - Boarding routes, registered by whatever actor ends up representing a
-//     dock. Row 74 keeps the rig outside and the driver out of the interior,
-//     so the route is the only geometry a rule here ever needs.
+//   - `ALLKExtractionZone`, one per exit, which owns the trigger volume and
+//     who is standing in it. Row 74 keeps the rig outside and the driver out
+//     of the interior, so that zone is the only geometry a rule here ever
+//     needs. **The subsystem does no geometry of its own** - it asks the zone,
+//     the way perception asks an `ILLKVisibilitySource`. It measured a radius
+//     itself for one day and that was a placeholder: a sphere cannot describe
+//     a bay mouth, and two places doing geometry is how they come to disagree.
 //
-// **The route is the honest seam to the greybox, and it fails loudly.** No map
-// exists yet, so no route is registered, so the hold cannot advance - and
+// **The zone is the honest seam to the greybox, and it fails loudly.** No map
+// exists yet, so no zone is registered, so the hold cannot advance - and
 // rather than letting that look like a hold that simply takes forever, the
 // subsystem logs the exit by name once per call: the `LLK.CheckMap` discipline
 // applied to the one piece of geometry extraction needs. An extraction that
@@ -40,6 +44,7 @@
 class ULLKLootRulesData;
 class ULLKStormChargeData;
 class ULLKRunStateSubsystem;
+class ALLKExtractionZone;
 
 /** Called, with the exit's id and how long the siren will run. */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
@@ -57,31 +62,6 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(
 
 /** The crew wiped with an extraction underway, or without ever calling one. */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FLLKExtractionFailed);
-
-/**
- * One dock's boarding route.
- *
- * A position and a radius rather than a volume, because a radius is the one
- * shape that needs no `.uasset` and no geometry: the greybox can register a
- * plain actor and the rule works. A real bay mouth is a volume and will want
- * one, and that is a map-lane decision rather than a rule change - this struct
- * is what the rule reads either way.
- */
-USTRUCT(BlueprintType)
-struct FLLKBoardingRoute
-{
-	GENERATED_BODY()
-
-	UPROPERTY(BlueprintReadOnly, Category = "LLK|Extraction")
-	FName PointId;
-
-	UPROPERTY(BlueprintReadOnly, Category = "LLK|Extraction")
-	TWeakObjectPtr<AActor> Anchor;
-
-	/** Centimetres. Row 61: converted at the boundary, never stored in studs. */
-	UPROPERTY(BlueprintReadOnly, Category = "LLK|Extraction")
-	float RadiusCm = 0.f;
-};
 
 UCLASS()
 class LLK_API ULLKExtractionSubsystem : public UTickableWorldSubsystem
@@ -106,10 +86,20 @@ public:
 	/** Call it off. Server only. True if there was something to cancel. */
 	bool CancelExtraction();
 
-	/** Registered by the dock actor, whenever the greybox grows one. */
-	void RegisterBoardingRoute(FName PointId, AActor* Anchor, float RadiusCm);
+	/**
+	 * Registered by the zone itself at `BeginPlay`, so a greybox dock is an
+	 * actor with an exit id typed into it and nothing else.
+	 *
+	 * One zone per exit. A second one for the same id is refused rather than
+	 * kept, because two volumes for one exit is a hold that can be advanced
+	 * from two places.
+	 */
+	void RegisterZone(ALLKExtractionZone* Zone);
 
-	void UnregisterBoardingRoute(FName PointId);
+	void UnregisterZone(ALLKExtractionZone* Zone);
+
+	/** The zone for an exit, or null. Null is why a hold can stall forever. */
+	ALLKExtractionZone* FindZone(FName PointId) const;
 
 	/**
 	 * The gate on `FLLKExtractionPoint::Requires`.
@@ -181,7 +171,13 @@ protected:
 	/** Reads the two data assets. Fallbacks are declared, as everywhere else. */
 	void ResolveRules();
 
-	/** Counts keepers on the called exit's route. Unset when nothing measured it. */
+	/**
+	 * Asks the called exit's zone who is standing in it.
+	 *
+	 * Unset when there is no zone, which is a different fact from an empty one
+	 * and the whole reason the input is a `TOptional`: no dock in the map is
+	 * not the crew's fault, and must never secure a haul on its own.
+	 */
 	TOptional<int32> ObserveBoardingRoute() const;
 
 	/** Broadcasts a step's transitions and keeps the new state. Decides nothing. */
@@ -219,7 +215,8 @@ protected:
 
 	FLLKExtractionState State;
 
-	TArray<FLLKBoardingRoute> Routes;
+	/** Weak: a zone's level can be unloaded under a running extraction. */
+	TArray<TWeakObjectPtr<ALLKExtractionZone>> Zones;
 
 	TSet<FName> SatisfiedRequirements;
 
@@ -239,7 +236,7 @@ protected:
 
 	float RigRadiusCm = 0.f;
 
-	/** Used for the light's position only when no boarding route is registered. */
+	/** Used for the light's position only when no zone is registered. */
 	TWeakObjectPtr<AActor> RigLightFallback;
 
 	/**
@@ -254,7 +251,7 @@ protected:
 	float RigLightRefreshSeconds = 1.f;
 
 	/** Logged once per call rather than once per frame. */
-	bool bWarnedAboutMissingRoute = false;
+	bool bWarnedAboutMissingZone = false;
 
 	float SecondsSinceSnapshot = 0.f;
 
