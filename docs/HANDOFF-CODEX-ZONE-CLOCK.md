@@ -24,15 +24,26 @@ One writer, one commit.
 
 ## What to rename
 
-| Now | Proposed |
+**Chris chose the names, 2026-10-29**, taking it further than the `Pressure`
+I proposed - *"take the rename further than just Pressure where type names
+matter"* - because `Zone` is what makes the mechanic honest across zones:
+
+| Now | Chris's choice |
 | --- | --- |
-| `ULLKStormChargeSubsystem` | `ULLKPressureClockSubsystem` |
-| `ULLKStormChargeData` | `ULLKPressureClockData` |
-| `FLLKStormSnapshot` | `FLLKPressureSnapshot` |
-| `ELLKStormSpike` | `ELLKPressureSpike` |
-| `/Game/Data/DA_StormCharge` | `/Game/Data/DA_PressureClock` |
-| `data/storm-charge.json` | `data/pressure-clock.json` |
-| `extractionCall.stormChargeSpike` | `extractionCall.pressureSpike` |
+| `ULLKStormChargeSubsystem` | `ULLKZonePressureSubsystem` |
+| `ULLKStormChargeData` | `ULLKZonePressureData` |
+| `FLLKStormSnapshot` | `FLLKZonePressureSnapshot` |
+| `/Game/Data/DA_StormCharge` | `/Game/Data/DA_ZonePressure` |
+| `data/storm-charge.json` | `data/zone-pressure.json` |
+
+His reasoning, and it is the part to keep: *"'Storm' remains the mall's
+authored pressure source and stage fiction; it stops pretending to be the
+universal mechanic. Solar Output can later use the same clock without a
+semantic lie."* So the word Storm does not disappear - it moves from the type
+system into the mall's data, where it is true.
+
+`ELLKStormSpike` is **not** on the list because it no longer exists: row 73
+deleted the spike machinery entirely.
 
 **`Charge` as a field name should go too.** Chris: *"We should avoid the word
 'charge' for both systems... The lantern has a cell, if it ever needs one."*
@@ -49,17 +60,37 @@ impossible.
 - **`data/storm-charge.json`'s values.** Row 55: the schema is Claude's, the
   values are Chris's. Rename keys if you rename the file, change no numbers.
   In particular `warden.arrivalBandSeconds` and `warden.chargeValue` are
-  currently out of tune with each other and that is Chris's call, not a thing
-  to fix in passing - `tests/balance.test.mjs` fails on exactly that line
-  today, on purpose.
+  his. He retuned `warden.arrivalBandSeconds` to 660-720 on 2026-10-29 (row
+  73) so that the 700-charge arrival at 11:40 sits inside it; do not move
+  either number while renaming keys.
 - **The retired lantern block.** `lantern.perLanternBonus`,
   `diminishingDecay`, `maxMultiplier` and `_dutyProfiles` are dead as of row
   72 and deliberately still in the file for Chris to delete. The code no
   longer reads them and `tests/balance.test.mjs` has a source guard that fails
   if it ever does again. Do not re-wire them while renaming keys.
+
 - **The behaviour.** Nothing in this rename changes a rule. If a test needs
   its expected values edited, something has moved that should not have.
 
+
+### Two keys to DELETE, which is the one data change in this handoff
+
+Row 73: *"Remove extractionCall.stormChargeSpike too. Calling extraction
+already has the right price: siren, visible activity, and patrol
+convergence. A radio call cannot accelerate the weather."*
+
+- `extractionCall.stormChargeSpike` (180) and its `_spikeNote`
+- `anchorRevive.stormChargeSpike` (120), dead since row 72
+
+**Both have to go out through you, not me**, and that is the only reason they
+are still there. `Tools/import_data.py` validates with an `exact()` key-set
+match per block (lines 130-131 and 137-138), so deleting a key from the JSON
+without the importer's spec moving in the same commit fails the data contract
+immediately - and `Tools/**` is yours. The C++ no longer reads either value,
+and `ULLKStormChargeData`'s `StormChargeSpike` fields can come out with them.
+
+`tests/escalation.test.mjs` already guards the end state: it counts the
+expressions that add to the meter and fails if there is ever more than one.
 ## Done when
 
 1. `./Tools/build_editor.ps1` succeeds and `./Tools/run_automation.ps1`

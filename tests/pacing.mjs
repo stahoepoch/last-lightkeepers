@@ -1,5 +1,22 @@
 // Run-pacing simulation. A report, not a test.
 //
+// **RETIRED 2026-10-29 by DECISIONS.md rows 72 and 73. Do not read its output
+// as current.** Everything below models the lantern multiplier against
+// lantern-charge drain, and there is no lantern multiplier any more: the clock
+// rises at `baselineRatePerSecond` and nothing a player does changes it. Every
+// row this prints is a projection from a retired rule.
+//
+// Kept rather than deleted, for one reason: it is the record of how
+// `maxMultiplier` was interrogated and why `diminishing` won, and the
+// reasoning - that a crew cannot hold a 100% duty cycle because lanterns die
+// and the multiplier falls back on its own - is the kind of second-order
+// effect worth remembering we looked for. It is history, not a tool.
+//
+// `data/storm-charge.json`'s `_derivation` note still says "verify with: node
+// tests/pacing.mjs". That instruction is also retired. The live guard is
+// `tests/balance.test.mjs`, which now asserts one arrival time and fails if
+// the subsystem ever reads the lantern block again.
+//
 // It existed to interrogate one number: maxMultiplier in storm-charge.json.
 // Chris retired that number on 2026-10-27 by switching the curve to
 // diminishing, which self-limits and needs no clamp. The harness still runs

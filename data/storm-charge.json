@@ -89,8 +89,8 @@
     "chargeValue": 700,
     "_chargeValueNote": "Unchanged. A dark crew still meets the Warden at 700s = 11:40, inside the 10-12 minute night, which is exactly where Chris wants it. Raising it would have pushed dark crews past the end of the raid again - which is why he said not to simply raise all thresholds.",
 
-    "arrivalBandSeconds": [540, 660],
-    "_arrivalBandNote": "Chris's target, 2026-10-28: 'Warden: the closing act, around minutes 9-11 for a normally lit crew.' Held as data so tests/balance.test.mjs and tests/pacing.mjs read it instead of each keeping a copy - the same lesson O1 taught. A fully dark crew is deliberately LATER than this band, near the end of the night, which is the point: darkness buys you the whole raid.",
+    "arrivalBandSeconds": [660, 720],
+    "_arrivalBandNote": "RETUNED by Chris, 2026-10-29, row 73: 'Keep Warden at 700; move its arrival band to 660-720 seconds. At the flat rate, it arrives at 11:40 - late in the 10-12 minute run, but still before the 780-second ceiling and with enough time for a last extraction call. The old 540-660 band belonged to the retired lantern multiplier.' The band used to describe a NORMALLY LIT crew (duty 0.25) under the lantern curve, and row 72 abolished the idea of a normally lit crew having a different night from anyone else. There is one arrival now and the band is simply where it is allowed to be. tests/balance.test.mjs reads this rather than keeping a copy, and it failed on exactly this line between rows 72 and 73 rather than being quietly retuned.",
 
     "lightSensitivity": 0.3,
     "_rule": "The Warden accrues on its own dampened meter: wardenMultiplier = 1 + lightSensitivity * (lanternMultiplier - 1). At 0 the Warden ignores light entirely and always arrives at 11:40; at 1 it behaves exactly as the old third threshold did. 0.4 means a lit crew still summons it earlier - light always costs - but using a lantern is no longer a button that starts a six-minute chase.",

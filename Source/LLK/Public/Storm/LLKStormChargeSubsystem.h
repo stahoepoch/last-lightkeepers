@@ -1,9 +1,16 @@
-// The pressure clock. M1.4, retuned by row 72 on 2026-10-29.
+// The pressure clock. M1.4, retuned by rows 72 and 73 on 2026-10-29.
 //
 // This is the clock the whole game runs on. It rises on its own and it never
-// falls - row 6, which is not a guideline here: there is no subtracting
-// accessor on this class and `AddSpike` clamps at zero so that a negative
-// spike cannot be smuggled in as a reduction.
+// falls - row 6, which is not a guideline here but a property of the one
+// function that writes it: `Advance` takes a delta, adds the baseline times
+// that delta, and nothing else in the project writes `Charge` at all.
+//
+// **Nothing a player does moves it.** Row 73: *"Clock means weather alone."*
+// Light does not change its rate (row 72), and as of row 73 neither does the
+// extraction call - the last priced spike - because *"a radio call cannot
+// accelerate the weather."* Row 6 no longer needs enforcing against a
+// negative spike, and row 64 line three no longer needs an allowlist of
+// permitted causes, because there are no causes.
 //
 // **Light does not touch its rate, and that is new.** Until 2026-10-29 it rose
 // faster when keepers were lit, on a diminishing curve, and that was the
@@ -56,48 +63,25 @@
 
 class ULLKLanternComponent;
 
-/**
- * The only things in this game permitted to spike the meter.
- *
- * **An allowlist, not a label, and the difference is Codex's finding.**
- * `AddSpike` used to take an `FName Reason`, which logged beautifully and
- * enforced nothing: an enemy could have written
- * `AddSpike(60, TEXT("Knockdown"))` and both the compiler and the
- * architectural source guard would have allowed it, because the guard only
- * scanned the knockdown component's own file. A future Sweeper in a new file
- * was a free pass.
- *
- * With a typed cause, failure-triggered escalation is **not expressible**.
- * There is no enum entry for it, so the mistake is a compile error rather
- * than something a grep has to remember to look for. Row 64 line three -
- * escalation comes from choices the crew can identify, never from failing -
- * is now enforced by the type system.
- *
- * **Adding an entry here is a design decision and `tests/escalation.test.mjs`
- * treats it as one:** the guard asserts this list's exact contents, so a new
- * cause fails the data suite until somebody updates the guard deliberately.
- * Both entries below are things a crew CHOSE to do and were priced for.
- */
-UENUM(BlueprintType)
-enum class ELLKStormSpike : uint8
-{
-	/**
-	 * `extractionCall.stormChargeSpike` - the loud call. The crew's decision.
-	 *
-	 * **The only entry, as of row 72.** `AnchorRevive` used to be the second
-	 * one and has been retired: the revive's price is now a local distress
-	 * pulse, so there must be no code path by which it could be charged to
-	 * the clock again. Removing the value rather than leaving it unused is
-	 * the difference between a decision and a thing that merely has no
-	 * callers today.
-	 *
-	 * The extraction call is NOT light, so row 72 does not forbid it. Whether
-	 * it should survive on the same reasoning - weather does not care about
-	 * your radio either - is the open question recorded in
-	 * `docs/THE-LANTERN.md`.
-	 */
-	ExtractionCall
-};
+// **`ELLKStormSpike` was here and row 73 deleted it.**
+//
+// It was an allowlist rather than a label, and that was Codex's finding:
+// `AddSpike` had taken an `FName Reason`, which logged beautifully and
+// enforced nothing, so a future Sweeper in a new file could have written
+// `AddSpike(60, TEXT("Knockdown"))` past both the compiler and the source
+// guard. A typed cause made failure-triggered escalation inexpressible, and
+// row 64 line three was enforced by the type system.
+//
+// Chris retired the last entry on 2026-10-29: *"Clock means weather alone.
+// Remove extractionCall.stormChargeSpike too. Calling extraction already has
+// the right price: siren, visible activity, and patrol convergence. A radio
+// call cannot accelerate the weather."*
+//
+// So the allowlist is not empty - it is absent, which is stronger. There is no
+// public API on this class that adds to the meter, so there is no longer a
+// thing to allow or forbid. The enum's own doc comment argued that the right
+// shape for this rule was to make the mistake impossible to express; the
+// strongest form of that turned out to be having no expression at all.
 
 /** Fires once, on authority, the first time a threshold's value is passed. */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
@@ -321,25 +305,6 @@ public:
 	UFUNCTION(BlueprintPure, Category = "LLK|Storm")
 	bool IsAccruing() const { return HasStormAuthority(); }
 
-	/**
-	 * A one-off jump, from one of the two causes permitted to cause one.
-	 *
-	 * **The amount is looked up from the data rather than passed in**, which
-	 * removes the second degree of freedom: caller code cannot choose a cause
-	 * *or* a number. `extractionCall.stormChargeSpike` is 180 and
-	 * `anchorRevive.stormChargeSpike` is 120, and both live in
-	 * `storm-charge.json` where Chris can retune them.
-	 *
-	 * Row 6 still holds in one place - a non-positive amount is dropped
-	 * rather than applied, so no expression anywhere can lower this meter,
-	 * including a spike somebody later tunes negative.
-	 */
-	void AddSpike(ELLKStormSpike Cause);
-
-	/** The authored amount for a cause, or 0 when the rules have not resolved. */
-	UFUNCTION(BlueprintPure, Category = "LLK|Storm")
-	float GetSpikeAmount(ELLKStormSpike Cause) const;
-
 	UPROPERTY(BlueprintAssignable, Category = "LLK|Storm")
 	FLLKStormThresholdCrossed OnThresholdCrossed;
 
@@ -401,15 +366,6 @@ public:
 	static ULLKStormChargeData* MakeFallbackRules(UObject* Outer);
 
 #if WITH_DEV_AUTOMATION_TESTS
-	/**
-	 * An arbitrary amount, for tests only.
-	 *
-	 * Exists so row 6's refusal of a negative spike stays testable now that
-	 * the public API takes a cause rather than a number. A shipped build has
-	 * no route to it, which is the point: the only amounts reachable in a game
-	 * are the two the data authorises.
-	 */
-	void AddSpikeAmountForTest(float Amount, ELLKStormSpike Cause) { ApplySpike(Amount, Cause); }
 
 	/**
 	 * Drives the accrual with no world and no lanterns.
@@ -443,15 +399,14 @@ protected:
 	void ExpireDistressPulses(float DeltaSeconds);
 
 	/**
-	 * Fires any threshold or Warden event the meters have newly earned.
+	 * Fires any threshold or Warden event the clock has newly earned.
 	 *
-	 * Split out of `Advance` so that `AddSpike` announces at the moment of the
-	 * call rather than on the next tick, without either path owning a second
-	 * copy of the crossing rules.
+	 * It was split out of `Advance` so that a spike could announce at the
+	 * moment of the call rather than on the next tick. Row 73 removed spikes,
+	 * so `Advance` is now its only caller - and it stays a separate function
+	 * because the crossing rules are worth having in one place whether or not
+	 * two paths need them.
 	 */
-	/** The one place a spike is actually applied. Both entry points land here. */
-	void ApplySpike(float Amount, ELLKStormSpike Cause);
-
 	void AnnounceCrossings();
 
 	/** Pushes a fresh snapshot into the GameState. Server only, throttled. */

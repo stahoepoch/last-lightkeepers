@@ -31,7 +31,7 @@
 //
 //   node tests/escalation.test.mjs
 
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -106,79 +106,108 @@ for (const entry of FORBIDDEN_CALLERS) {
   }
 }
 
-// ---- THE ALLOWLIST, which is what actually enforces the rule ------------
+// ---- NO MECHANISM AT ALL, which is stronger than an allowlist -----------
 //
-// **Codex found the hole in the first version of this guard.** It scanned only
-// `LLKVitalsComponent`, so a future Sweeper in its own file could have written
-// `Storm->AddSpike(60, TEXT("Knockdown"))` and passed. And `FName Reason`
-// accepted any text at all: a named reason is good logging and no
-// enforcement whatsoever.
+// **This guard has been through three shapes and the third is the last one.**
 //
-// The fix was to make the mistake inexpressible rather than detectable:
-// `AddSpike` now takes a typed `ELLKStormSpike`, so there is no way to spell
-// "Knockdown". Which means the thing worth guarding is no longer a list of
-// files - it is the ENUM'S CONTENTS. Any failure-triggered escalation now
-// requires adding an entry here first, wherever the caller lives, and this
-// check is what makes that a deliberate act rather than a quiet one.
+// First it scanned `LLKVitalsComponent` for a spike call, and Codex found the
+// hole: a future Sweeper in its own file could have written
+// `Storm->AddSpike(60, TEXT("Knockdown"))` and passed, because the guard only
+// looked in one place. And `FName Reason` accepted any text at all - a named
+// reason is good logging and no enforcement whatsoever.
+//
+// Second it guarded the CONTENTS of a typed `ELLKStormSpike` allowlist, so
+// failure-triggered escalation was inexpressible rather than merely
+// detectable: there was no way to spell "Knockdown", wherever the caller
+// lived.
+//
+// Third, and now: there is no allowlist, because there is no mechanism. Chris,
+// 2026-10-29, row 73: *"Clock means weather alone... A radio call cannot
+// accelerate the weather."* The extraction call was the last priced spike, and
+// with it gone `Advance` is the only function in the project that writes the
+// meter, and it takes nothing but a delta.
+//
+// So the thing to guard is an ABSENCE, which is the easiest kind of rule to
+// keep and the hardest to notice breaking. Row 64 line three - escalation
+// comes from choices the crew can identify, never from failing - used to need
+// an argument about which causes were permitted. It now needs none: nothing a
+// player does moves the clock, so failure cannot be a special case of
+// anything.
 {
-  const stormPath = "Source/LLK/Public/Storm/LLKStormChargeSubsystem.h";
-  const full = join(root, stormPath);
-  const src = existsSync(full) ? readFileSync(full, "utf8") : "";
+  const stormHeader = "Source/LLK/Public/Storm/LLKStormChargeSubsystem.h";
+  const stormImpl = "Source/LLK/Private/Storm/LLKStormChargeSubsystem.cpp";
+  const headerFull = join(root, stormHeader);
+  const implFull = join(root, stormImpl);
+  const src = existsSync(headerFull) ? readFileSync(headerFull, "utf8") : "";
+  const impl = existsSync(implFull) ? readFileSync(implFull, "utf8") : "";
   const clean = stripComments(src);
+  const cleanImpl = stripComments(impl);
 
-  check(
-    "AddSpike takes a typed cause, not free text",
-    /AddSpike\s*\(\s*ELLKStormSpike\s+Cause\s*\)/.test(clean),
-    "a free-text reason logs beautifully and enforces nothing - an enemy could " +
-      "name its spike anything and the type system would not care",
-  );
+  check("the clock's header was found", src.length > 0, stormHeader);
 
-  check(
-    "and no longer accepts an FName reason anywhere",
-    !/AddSpike\s*\([^)]*FName/.test(clean),
-    "the old signature surviving as an overload would reopen the hole",
-  );
-
-  // The allowlist itself. Every entry is something a crew CHOSE and was
-  // priced for; anything else arriving here is the rule being broken.
-  //
-  // **It was two entries until row 72 and is now one.** `AnchorRevive` was
-  // retired on 2026-10-29: the revive's price is a local distress pulse now,
-  // and leaving the enum value would have left a compiling route by which a
-  // keeper getting up could be charged to the weather again. Updating this
-  // guard was deliberate, which is what its own failure message asks for.
-  const enumBlock = clean.match(/enum class ELLKStormSpike\s*:\s*uint8\s*\{([^}]*)\}/);
-  check("the spike allowlist exists as an enum", enumBlock !== null);
-
-  if (enumBlock) {
-    const entries = enumBlock[1]
-      .split(",")
-      .map((e) => e.trim())
-      .filter((e) => e.length > 0);
-
-    const ALLOWED = ["ExtractionCall"];
+  // 1. The mechanism is gone, not merely unused.
+  for (const gone of ["AddSpike", "ApplySpike", "GetSpikeAmount", "ELLKStormSpike"]) {
     check(
-      `the allowlist is exactly ${ALLOWED.join(" and ")}`,
-      entries.length === ALLOWED.length && ALLOWED.every((a) => entries.includes(a)),
-      `found: ${entries.join(", ") || "nothing"}. Every entry must be something the ` +
-        `crew chose and was priced for. Adding one is a design decision about row 64 ` +
-        `line three - escalation comes from choices, never from failing - so update ` +
-        `this guard deliberately or not at all`,
+      `ROW 73: ${gone} no longer exists in the clock's API`,
+      !clean.includes(gone),
+      "an unused spike entry point is a spike entry point; the rule is that there is no way to move the clock",
     );
+  }
+  check(
+    "ROW 73: and no spike implementation survives either",
+    !cleanImpl.includes("ApplySpike") && !cleanImpl.includes("ELLKStormSpike"),
+    "a private implementation with no declaration is still a thing somebody re-declares",
+  );
 
-    // Named explicitly, because these are the words somebody reaches for when
-    // they want the night to react to a knockdown.
-    for (const forbidden of ["Knockdown", "Downed", "Contained", "Death", "Wipe", "Failure"]) {
-      check(
-        `the allowlist has no entry for ${forbidden}`,
-        !entries.some((e) => e.toLowerCase().includes(forbidden.toLowerCase())),
-        "escalation triggered by failure is punishment the player cannot diagnose",
-      );
+  // 2. Exactly one expression writes the meter, and it is time.
+  const writes = (cleanImpl.match(/Charge\s*\+=/g) ?? []).length;
+  check(
+    "ROW 73: exactly one expression adds to the meter",
+    writes === 1,
+    `found ${writes}. Every one of them is a way for something other than time to advance the night`,
+  );
+  check(
+    "and that expression is the baseline times a delta",
+    /Charge \+= Rules->BaselineRatePerSecond \* DeltaSeconds;/.test(cleanImpl),
+    "a second term in the accrual is the regression this whole guard exists for",
+  );
+
+  // 3. And nothing anywhere else reaches for the meter to raise it. Walked
+  //    across the whole module rather than checked in one file, because that
+  //    was the first version's hole.
+  const sourceFiles = [];
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (/\.(cpp|h)$/.test(entry.name)) {
+        sourceFiles.push({
+          rel: full.slice(root.length + 1).split("\\").join("/"),
+          src: readFileSync(full, "utf8"),
+        });
+      }
+    }
+  };
+  walk(join(root, "Source", "LLK"));
+
+  check("the module was walked", sourceFiles.length > 20, `found ${sourceFiles.length} files`);
+
+  let reachers = 0;
+  for (const { rel, src: fileSrc } of sourceFiles) {
+    if (rel.includes("/Storm/") || rel.includes("/Tests/")) continue;
+    if (/(AddSpike|ApplySpike)/.test(stripComments(fileSrc))) {
+      reachers += 1;
+      console.log(`       ${rel}`);
     }
   }
+  check(
+    "ROW 73: nothing outside the clock tries to raise it",
+    reachers === 0,
+    `${reachers} file(s) listed above. Row 64 line three, enforced across the whole module rather than in one file`,
+  );
 
   check(
-    "and the header still records why failure may not feed the meter",
+    "and the header still records why nothing may feed the meter",
     /only ever rises|row 6/i.test(src),
     "the reasoning has to survive beside the rule, or the next reader restores " +
       "the shortcut",

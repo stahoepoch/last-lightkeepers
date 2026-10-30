@@ -98,13 +98,13 @@ bool FLLKStormFlatRateTest::RunTest(const FString& Parameters)
 	Dark->AdvanceForTest(1.f);
 	TestTrue(TEXT("ROW 6: the clock still only rises"), Dark->GetCharge() > Before);
 
-	// 5. And the one thing that may still move it discretely. The extraction
-	//    call is not light, so row 72 does not forbid it - see the open
-	//    question recorded in docs/THE-LANTERN.md about whether it should.
-	const float BeforeSpike = Dark->GetCharge();
-	Dark->AddSpike(ELLKStormSpike::ExtractionCall);
-	TestTrue(TEXT("the extraction call still moves the clock"),
-		Dark->GetCharge() > BeforeSpike);
+	// 5. ROW 73: nothing moves it discretely either. The extraction call was
+	//    the last priced spike and Chris retired it the same day - *"a radio
+	//    call cannot accelerate the weather"* - so the assertion is that time
+	//    is the only thing that advanced the clock across this whole test.
+	//    120 seconds of advancing, 120 units, and no other contribution.
+	TestNearlyEqual(TEXT("ROW 73: across the whole test, charge equals seconds elapsed"),
+		Dark->GetCharge(), Dark->GetElapsedSeconds(), 0.001f);
 
 	return true;
 }
@@ -153,23 +153,19 @@ bool FLLKStormChargeAccrualTest::RunTest(const FString& Parameters)
 	Storm->AdvanceForTest(-5.f);
 	TestEqual(TEXT("a negative step changes nothing"), Storm->GetCharge(), Highest);
 
-	// 6. A negative spike is refused outright rather than applied. This is
-	//    the one route by which something could subtract from the meter -
-	//    an extraction-call tuning someone later sets negative - and row 6
-	//    is enforced here rather than trusted.
-	Storm->AddSpikeAmountForTest(-500.f, ELLKStormSpike::ExtractionCall);
-	TestEqual(TEXT("a negative spike is refused"), Storm->GetCharge(), Highest);
-
-	// 7. A real spike rises. The extraction call's 180 is
-	//    three minutes of darkness applied at once, deliberately large
-	//    against thresholds of 270 and 480: calling it should move you a
-	//    stage, so calling early and calling late are different decisions.
-	// The amount now comes from the data rather than the caller, so this also
-	// asserts the lookup instead of only the accrual.
-	TestTrue(TEXT("the extraction call has an authored price"),
-		Storm->GetSpikeAmount(ELLKStormSpike::ExtractionCall) > 0.f);
-	Storm->AddSpike(ELLKStormSpike::ExtractionCall);
-	TestTrue(TEXT("a real spike raises the meter"), Storm->GetCharge() > Highest);
+	// 6 and 7. **Both sections are gone and their absence is the assertion.**
+	//    Section 6 refused a negative spike, because an extraction-call tuning
+	//    somebody later set negative was the one route by which anything could
+	//    subtract from the meter. Section 7 asserted that a real spike raised
+	//    it. Row 73 removed spikes entirely, so neither route exists: there is
+	//    no public method on this class that changes the charge, and `Advance`
+	//    is the only expression in the project that writes it.
+	//
+	//    Row 6 is therefore no longer defended here. It is defended by
+	//    `tests/escalation.test.mjs`, which counts the expressions that add to
+	//    the meter and fails if there is ever more than one.
+	TestNearlyEqual(TEXT("ROW 73: after everything above, charge is still just elapsed seconds"),
+		Storm->GetCharge(), Storm->GetElapsedSeconds(), 0.001f);
 
 	// 8. Thresholds fire once each, in order, and the Warden is not one of
 	//    them (row 54). Drive the meter well past both thresholds and the

@@ -22,9 +22,7 @@ namespace
 	constexpr float FallbackWardenChargeValue = 700.f;
 	constexpr float FallbackPatrolsAlertValue = 270.f;
 	constexpr float FallbackPatrolsHuntValue = 480.f;
-	constexpr float FallbackExtractionSpike = 180.f;
 	constexpr float FallbackSirenSeconds = 8.f;
-	constexpr float FallbackAnchorReviveSpike = 120.f;
 }
 
 ULLKStormChargeData* ULLKStormChargeSubsystem::MakeFallbackRules(UObject* Outer)
@@ -76,10 +74,11 @@ ULLKStormChargeData* ULLKStormChargeSubsystem::MakeFallbackRules(UObject* Outer)
 	// the revive timings - is somebody else's row and is left at zero rather
 	// than half-copied here, where a stale duplicate would be worse than an
 	// obvious hole.
-	Fallback->ExtractionCall.StormChargeSpike = FallbackExtractionSpike;
+	// Row 73: no spike, so no spike price. The extraction call's real price
+	// is the two lines below - everything converges and a siren runs for
+	// eight seconds - and it was always the better half of that pricing.
 	Fallback->ExtractionCall.SirenSeconds = FallbackSirenSeconds;
 	Fallback->ExtractionCall.bConvergeAllPatrols = true;
-	Fallback->AnchorRevive.StormChargeSpike = FallbackAnchorReviveSpike;
 
 	return Fallback;
 }
@@ -614,77 +613,20 @@ FString ULLKStormChargeSubsystem::GetThresholdEffect(FName ThresholdId) const
 	return FString();
 }
 
-float ULLKStormChargeSubsystem::GetSpikeAmount(ELLKStormSpike Cause) const
-{
-	if (Rules == nullptr)
-	{
-		return 0.f;
-	}
-
-	switch (Cause)
-	{
-	case ELLKStormSpike::ExtractionCall:
-		return Rules->ExtractionCall.StormChargeSpike;
-	}
-
-	// `anchorRevive.stormChargeSpike` is still in the data and is deliberately
-	// no longer reachable from here - row 72 re-priced the revive as a local
-	// pulse. Deleting a value from `data/storm-charge.json` is Chris's call
-	// (row 55), so the number stays and the code path does not.
-	//
-	// Unreachable while the enum has one entry, and returning nothing rather
-	// than guessing if a second is ever added without a price in the data.
-	return 0.f;
-}
-
-void ULLKStormChargeSubsystem::AddSpike(ELLKStormSpike Cause)
-{
-	ApplySpike(GetSpikeAmount(Cause), Cause);
-}
-
-void ULLKStormChargeSubsystem::ApplySpike(float Amount, ELLKStormSpike Cause)
-{
-	// Row 6, enforced rather than documented. A negative spike is dropped, not
-	// applied, so no expression anywhere in the codebase lowers this meter -
-	// including an extraction call whose tuning someone later sets negative.
-	if (Amount <= 0.f)
-	{
-		if (Amount < 0.f)
-		{
-			UE_LOG(LogLLK, Warning,
-				TEXT("ULLKStormChargeSubsystem: refused a negative spike of %.0f from %s. ")
-				TEXT("Row 6: the meter only ever rises."),
-				Amount, *UEnum::GetValueAsString(Cause));
-		}
-		return;
-	}
-
-	Charge += Amount;
-
-	// **The spike hits both meters, and that is an assumption, not data.**
-	// `data/storm-charge.json` gives the extraction call 180 and the anchor
-	// revive 120, and says nothing about whether the Warden's dampened meter
-	// takes them too. Applying them undampened is the reading that matches
-	// Chris's words - "a deliberate loud spike: flare, siren, enemies
-	// converging, regardless of current Storm Charge" - since the dampening
-	// exists to stop a LANTERN from summoning the Warden, and a siren is not a
-	// lantern. If he wants the Warden deaf to sirens, this is the line, and it
-	// wants a `spikeReachesWarden` key in the data rather than a decision here.
-	UE_LOG(LogLLK, Log, TEXT("Pressure spike: +%.0f from %s (now %.0f)."),
-		Amount, *UEnum::GetValueAsString(Cause), Charge);
-
-	// Announced at the moment of the call rather than on the next tick: a
-	// spike that crosses a threshold is the game telling the player what their
-	// decision just cost, and a frame late is a frame detached from the cause.
-	AnnounceCrossings();
-
-	// Published immediately too, bypassing the throttle. A spike is a discrete
-	// thing the crew did - calling extraction, spending the anchor revive -
-	// and up to a tenth of a second of the HUD showing the old number is a
-	// tenth of a second where the siren appears to have cost nothing.
-	if (HasStormAuthority())
-	{
-		SecondsSinceSnapshot = 0.f;
-		PublishSnapshot();
-	}
-}
+// **The spike machinery is gone, as of row 73.** There used to be
+// `GetSpikeAmount`, `AddSpike`, `ApplySpike` and `AddSpikeAmountForTest` here,
+// plus an `ELLKStormSpike` allowlist of causes that a crew had chosen and been
+// priced for. Chris closed the last of them on 2026-10-29: *"Clock means
+// weather alone. Remove extractionCall.stormChargeSpike too. Calling
+// extraction already has the right price: siren, visible activity, and patrol
+// convergence. A radio call cannot accelerate the weather."*
+//
+// So `Advance` is now the only thing in the project that writes `Charge`, and
+// `Advance` takes nothing but a delta. Row 6 - the meter only ever rises -
+// stops needing to be enforced against a negative spike, because there is no
+// longer an expression anywhere that adds to the meter at all. Row 64 line
+// three stops needing an allowlist, because there is nothing to allow.
+//
+// `tests/escalation.test.mjs` guards the absence rather than the allowlist:
+// the strong form of "escalation never comes from failing" is that escalation
+// comes from nothing a player does.

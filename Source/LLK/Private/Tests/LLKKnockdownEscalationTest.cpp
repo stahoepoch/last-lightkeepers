@@ -126,34 +126,41 @@ bool FLLKKnockdownEscalationTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("and the clock does not move in EITHER direction for it"),
 		DownedRate, LitRate);
 
-	// ---- 4. the one spike that IS allowed, and why ----------------------
+	// ---- 4. nothing costs meter any more, which is the stronger rule ----
 	//
-	// `anchorRevive.stormChargeSpike` is 120, and that is not a
-	// contradiction. The anchor revive is a solo keeper CHOOSING to spend
-	// their one self-rescue - an action with a price, like calling
-	// extraction's 180. The rule is not "nothing costs meter", it is
-	// "failure does not cost meter". Being contained is failure; deciding to
-	// get back up on your own is a decision.
-	TestTrue(TEXT("the anchor revive has a price, which is a decision and not a punishment"),
-		Rules->AnchorRevive.StormChargeSpike > 0.f);
-	TestTrue(TEXT("and the extraction call has one too"),
-		Rules->ExtractionCall.StormChargeSpike > 0.f);
-
-	// Both are reachable only through AddSpike, which now takes a TYPED cause
-	// rather than free text. Codex's adversarial review found the hole: a
-	// reason string logged beautifully and enforced nothing, so a future
-	// Sweeper in its own file could have written AddSpike(60, "Knockdown")
-	// and passed both the compiler and the source guard. With an enum there
-	// is no entry for failure, so the mistake does not compile.
-	// One, as of row 72. AnchorRevive was the second and is retired - its
-	// price is a local distress pulse now, and leaving the enum value would
-	// have left a compiling route by which a future caller could charge a
-	// keeper's revive to the weather again.
-	TestEqual(TEXT("ROW 72: there is exactly one authorised spike cause"),
-		int32(StaticEnum<ELLKStormSpike>()->NumEnums()) - 1, 1);
-	const float BeforeChosen = Storm->GetCharge();
-	Storm->AddSpike(ELLKStormSpike::ExtractionCall);
-	TestTrue(TEXT("a chosen spike does raise the meter"), Storm->GetCharge() > BeforeChosen);
+	// **This section used to assert the opposite and was right to.** It
+	// checked that `anchorRevive.stormChargeSpike` was 120 and
+	// `extractionCall.stormChargeSpike` was 180, and argued that neither was
+	// a contradiction: the rule was not "nothing costs meter", it was
+	// "failure does not cost meter". Being contained is failure; choosing to
+	// get back up is a decision, and a decision may carry a price.
+	//
+	// Rows 72 and 73 changed which side of that line everything sits on. The
+	// revive's price became a local distress pulse, the extraction call's
+	// became the siren and the convergence it already had, and the clock
+	// became weather alone. So the rule is now simply "nothing a player does
+	// costs meter", and failure not costing meter is a special case of it
+	// rather than a carve-out that had to be argued for.
+	//
+	// The two numbers are still in `data/storm-charge.json` because deleting
+	// values there is Chris's call (row 55) and the key removal is in Codex's
+	// importer handoff. Nothing reads them, and
+	// `tests/escalation.test.mjs` fails if anything starts to.
+	//
+	// **Row 73 deleted the allowlist rather than shortening it.** This
+	// asserted that exactly one spike cause existed and that it raised the
+	// meter. There are none now: the extraction call was the last, and
+	// *"a radio call cannot accelerate the weather."*
+	//
+	// Which makes this test's whole subject simpler. It exists to prove that
+	// a knockdown never escalates the night, and the strongest version of
+	// that is no longer "knockdown is not on the allowlist" - it is that
+	// nothing is, so there is no list for a future author to add it to.
+	const float BeforeIdle = Storm->GetCharge();
+	Vitals->SetDownedForTest(true, ELLKDownedReason::Contained);
+	Vitals->SetDownedForTest(false, ELLKDownedReason::Revived);
+	TestEqual(TEXT("ROW 73: going down and getting up moves the clock by nothing at all"),
+		Storm->GetCharge(), BeforeIdle);
 
 	return true;
 }
