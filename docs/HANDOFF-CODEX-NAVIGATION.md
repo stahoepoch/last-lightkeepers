@@ -3,14 +3,26 @@
 Written 2026-10-29 by Claude, on Chris's instruction. One task, two files, and
 a deliberate ceiling on what it is allowed to become.
 
-**Status, 2026-10-29, both prerequisites done.** Codex linked the module in
-`7d811f3` and declined to fake the route checker without the contract, which
-was the right call. The contract has now landed: `NavigationBuilt`,
-`SpawnOnNavmesh` and the `NavmeshNotBuilt` and `SpawnOffNavmesh` codes all
-exist, `Evaluate` reports all four navigation states as a chain, and
-`LLK.Harness.MapReadiness` asserts the suppression rules. **What is left is the
-one function body**, and the seam comment in the source now names the three
-assignments line by line. Nothing below is waiting on anybody.
+**Status, 2026-10-29: done and reviewed.** Codex linked the module in
+`7d811f3`, declined to fake the query without the contract - the right call -
+and implemented it in `c8ff2d1`. Reviewed against the three traps: `IsPartial`
+is checked, the projection extent is 50/50/100 with its reasoning written down,
+and `IsNavigationBuilt` gates the queries below it. The class-name workaround
+is gone and the non-const `UWorld*` is documented at the boundary. All of that
+is correct.
+
+**One defect the integration exposed, and it was in the contract half rather
+than in the query half.** `IsNavigationBuilt` returns true when there is
+nowhere to build navigation, so a map with no bounds volume reported
+`SpawnOffNavmesh` alongside `NavBoundsMissing`. `Evaluate` now checks the
+volume and nav-data counts before reading any query answer. Fixed on Claude's
+side with two tests that fail without it.
+
+**The one item left**, small and Codex's: project each enemy spawn onto the
+navmesh before pathing to it, so an off-mesh enemy spawn reports as a misplaced
+actor rather than as a blocked route. See "known limitation" in
+`docs/MAP-READINESS.md`. Not urgent - the current finding is true, just less
+specific than it could be.
 
 Read `docs/MAP-READINESS.md` first — it is the contract this completes, and it
 already lists every check code and the reason each one is on the list. Read

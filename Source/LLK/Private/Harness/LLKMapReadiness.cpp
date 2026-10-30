@@ -140,7 +140,29 @@ namespace LLKMapReadiness
 		// query against an unbuilt navmesh and a projection of a spawn onto a
 		// mesh that does not exist yet both produce a false that means
 		// nothing. So the first real failure is the only one said.
-		if (Obs.NavigationBuilt.IsSet() && !Obs.NavigationBuilt.GetValue())
+		//
+		// **The foundation is the first link, and it was missing until
+		// 2026-10-29.** With no bounds volume or no nav data there is no mesh
+		// to project onto, so `ProjectPointToNavigation` correctly answers
+		// false and `SpawnOffNavmesh` fires on a map whose `PlayerStart` is in
+		// exactly the right place. Worse, it is the more actionable-looking of
+		// the two findings, so it is the one somebody acts on.
+		//
+		// The reason that slipped through is specific and worth keeping:
+		// `UNavigationSystemV1::IsNavigationBuilt` returns **true** when there
+		// is nowhere to build navigation (`NavigationSystem.cpp:2555`), so on a
+		// map with no volume the navmesh reports itself built - vacuously, and
+		// truthfully, since nothing was asked to generate. `NavigationBuilt`
+		// therefore cannot carry this; only the counts can.
+		const bool bNavFoundationMissing = Obs.NavBoundsVolumes <= 0 || Obs.NavDataActors <= 0;
+
+		if (bNavFoundationMissing)
+		{
+			// NavBoundsMissing or NavDataMissing has already been reported
+			// above. Everything below would be measuring against a mesh that
+			// does not exist.
+		}
+		else if (Obs.NavigationBuilt.IsSet() && !Obs.NavigationBuilt.GetValue())
 		{
 			if (Obs.NavDataActors > 0)
 			{
@@ -260,7 +282,6 @@ namespace LLKMapReadiness
 			ECC_WorldStatic, Params);
 
 		// ---- requirements 2, 3, 4: navigation -----------------------------
-		//
 		TArray<FBox> NavBounds;
 		for (TActorIterator<ANavMeshBoundsVolume> It(World); It; ++It)
 		{

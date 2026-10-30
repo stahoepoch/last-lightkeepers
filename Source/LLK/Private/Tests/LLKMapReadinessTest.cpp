@@ -162,6 +162,49 @@ bool FLLKMapReadinessTest::RunTest(const FString& Parameters)
 
 	// ---- the navigation chain, which is four answers and one finding -----
 	{
+		// **The case a real integration produced and no test had.** With no
+		// bounds volume there is no mesh, so ProjectPointToNavigation answers
+		// false and the engine's IsNavigationBuilt answers TRUE - because
+		// there was nowhere to build, which it reports as built. A chain that
+		// starts at NavigationBuilt therefore sails past the real failure and
+		// accuses a PlayerStart that is in exactly the right place.
+		FLLKMapObservations Obs = ReadyMap();
+		Obs.NavBoundsVolumes = 0;
+		Obs.NavDataActors = 0;
+		Obs.NavigationBuilt = true;
+		Obs.SpawnOnNavmesh = false;
+		Obs.RouteFromSpawnReaches = false;
+
+		const FLLKMapReport Report = LLKMapReadiness::Evaluate(Obs);
+
+		TestTrue(TEXT("no bounds volume is the finding"),
+			Report.Has(ELLKMapCheck::NavBoundsMissing));
+		TestFalse(TEXT("and the spawn is NOT accused of being off a mesh that does not exist"),
+			Report.Has(ELLKMapCheck::SpawnOffNavmesh));
+		TestFalse(TEXT("nor the route, for the same reason"),
+			Report.Has(ELLKMapCheck::NoRouteFromSpawn));
+		TestEqual(TEXT("one finding, and it is the one with a fix attached"),
+			Report.Findings.Num(), 1);
+	}
+
+	{
+		// The same hole one link along: a volume, no nav data actor. Nav
+		// disabled in world settings reaches here too, and IsNavigationBuilt
+		// answers true for that as well.
+		FLLKMapObservations Obs = ReadyMap();
+		Obs.NavDataActors = 0;
+		Obs.NavigationBuilt = true;
+		Obs.SpawnOnNavmesh = false;
+
+		const FLLKMapReport Report = LLKMapReadiness::Evaluate(Obs);
+		TestTrue(TEXT("missing nav data is the finding"),
+			Report.Has(ELLKMapCheck::NavDataMissing));
+		TestFalse(TEXT("and the spawn projection is suppressed with it"),
+			Report.Has(ELLKMapCheck::SpawnOffNavmesh));
+		TestEqual(TEXT("one finding"), Report.Findings.Num(), 1);
+	}
+
+	{
 		// An unbuilt navmesh, with the two questions below it answered
 		// falsely as well. **Both of those falses are meaningless** - you
 		// cannot project onto a mesh that has not generated and you cannot

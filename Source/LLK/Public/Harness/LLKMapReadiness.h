@@ -213,6 +213,16 @@ struct FLLKMapObservations
 	 * and `RouteUnverified` is the single finding that covers that - rather
 	 * than three codes all saying the same thing about the same missing
 	 * query.
+	 *
+	 * **A `true` here does not mean a navmesh exists.**
+	 * `UNavigationSystemV1::IsNavigationBuilt` returns true when there is
+	 * nowhere to build navigation, when navigation is disabled in world
+	 * settings, and when the settings pointer is null
+	 * (`NavigationSystem.cpp:2555`) - all of which are "nothing to generate"
+	 * rather than "generated". So whether a mesh exists at all is answered by
+	 * `NavBoundsVolumes` and `NavDataActors`, and `Evaluate` checks those
+	 * first. Reading this field as proof of a mesh is how `SpawnOffNavmesh`
+	 * came to fire on maps with no volume.
 	 */
 	TOptional<bool> NavigationBuilt;
 

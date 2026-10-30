@@ -36,13 +36,35 @@ this table are searchable by the same word.
 | 9 | **One blocked test lane**, tagged `LLK.TestLane.Blocked` | `TestLaneBlockedMissing` / `TestLaneBlockedClear` | Nothing proves the visibility source can return `Blocked`. A trace that always reports clear makes every enemy see through walls |
 
 **The four navigation answers are a chain, not four questions.** No bounds
-volume, navmesh not built, spawn off the mesh, route blocked: each one makes
-the ones after it meaningless, so `LLK.CheckMap` reports the first real failure
-and stops. A route query against an unbuilt navmesh returns false, and
-reporting that false alongside the real problem is how a check with four
-findings sends somebody to fix the wrong one. The acceptance criteria in
+volume or no nav data, navmesh not built, spawn off the mesh, route blocked:
+each one makes the ones after it meaningless, so `LLK.CheckMap` reports the
+first real failure and stops. A route query against an unbuilt navmesh returns
+false, and reporting that false alongside the real problem is how a check with
+four findings sends somebody to fix the wrong one. The acceptance criteria in
 `docs/HANDOFF-CODEX-NAVIGATION.md` pin this: a `PlayerStart` raised three
 metres reports `SpawnOffNavmesh` **and nothing about the route**.
+
+**The chain's first link is the counts, and it was missing for a day.** When
+the real nav queries landed (`c8ff2d1`), a map with no `NavMeshBoundsVolume`
+started reporting `SpawnOffNavmesh` next to `NavBoundsMissing` - and the spawn
+finding is the one that looks actionable, so it is the one somebody would have
+acted on, moving a `PlayerStart` that was in exactly the right place. The cause
+is worth knowing before trusting any nav query:
+`UNavigationSystemV1::IsNavigationBuilt` returns **true when there is nowhere
+to build navigation** (`NavigationSystem.cpp:2555`), and true when navigation
+is disabled in world settings, because in both cases nothing was asked to
+generate. So "is it built" cannot answer "does a mesh exist"; only
+`NavBoundsVolumes` and `NavDataActors` can, and `Evaluate` now checks those
+before reading any query result.
+
+**One known limitation of requirement 5, recorded rather than hidden.** The
+route query projects the *keeper* spawn onto the navmesh and paths from there,
+but it paths **to** each enemy spawn's raw position. So an enemy spawn that is
+itself off-mesh - sunk into the floor, or on a counter - comes back as a
+partial path and is reported as `NoRouteFromSpawn` rather than as a misplaced
+actor. The finding is not wrong, it is just less specific than it could be, and
+the fix is one more projection per enemy spawn. It is listed as the next item
+in the handoff.
 
 **Requirement 4 is necessary and not sufficient, and says so in its name.** It
 checks that the spawn points fall inside the *bounds of the volumes*, which is
