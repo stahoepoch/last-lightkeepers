@@ -6,6 +6,16 @@ that reads it is already in and already tested; the data cannot arrive without
 you because `Tools/import_data.py` is your lane (`docs/LANES.md`) and its
 `exact()` check would reject the key on sight.
 
+**A terminology hazard, introduced by this file's own name.** In Unreal a
+*level* is a map. Here a *level* is one of three lantern settings, because that
+is the word the code uses (`FLLKLanternLightLevel`, `light.levels`). The two
+collide, and they have already caused one real confusion: "no level is authored
+yet" was written about `light.levels` and read as *"no map exists"*, which was
+wrong - `LLK_DockBay` has been committed since `9fe73fa`. Prose in this project
+should say **lantern level** or **named state** when it means the lantern, and
+plain *map* when it means the `.umap`. Chris's own wording was "three named
+states", which has no collision at all.
+
 ---
 
 ## What Chris decided

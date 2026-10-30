@@ -148,3 +148,28 @@ this file is a handoff rather than an edit.
 Requirement 15 is **proposed, not landed**: `docs/MAP-READINESS.md` still lists
 fourteen, and `ELLKMapCheck` has no `GeometryServerOnly`. Whoever adds it owns
 updating both plus a test, and `docs/MAP-READINESS.md` is Claude's lane.
+
+### Update, 2026-10-30: the authored map landed, and this file predates it
+
+**`Content/LLK_DockBay.umap` exists and is committed** (`9fe73fa`, then
+`d3bb8a1`, `0e9c97b` and `366d145`), with 167 placed external actors and 10
+external objects, and `Content/` is clean. So the resolution this file argued
+for - *"the correct resolution of this bug is that the harness stops being the
+thing we play in"* - has happened. Read the sections above as describing the
+harness, which is still what they are about, and not as describing a map that
+does not exist yet.
+
+**That is good news for requirement 15 and does not land it.** The whole point
+of the recommendation above is that level actors load on every client natively,
+so geometry placed in the `.umap` satisfies the rule for free. 167 placed actors
+is what that looks like. But *satisfied in practice* and *checked* are different
+states, and this project's own row 72 is about exactly that gap: nothing in
+`LLK.CheckMap` would notice if the next map went back to spawning its floor
+from a GameMode. Requirement 15 is still unwritten, `docs/MAP-READINESS.md`
+still lists fourteen, and it is still Claude's.
+
+**One thing the map does not yet have:** a `PostProcessVolume`. Searched the
+external actors directly - zero matches - so the exposure clamp
+`docs/LIGHTING-IN-UNREAL.md` makes step one is definitively absent rather than
+unverified. That is the dock bay's single active writer's job under row 41, not
+a gap in this handoff.
