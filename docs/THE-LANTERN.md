@@ -1,8 +1,10 @@
 # The lantern — what it is, how it works, and what it costs
 
 Status: Chris's three-mode model is **his, 2026-10-29**, recorded as
-`DECISIONS.md` row 67. Everything marked *proposed* below is Claude's
-derivation and awaits his word. Everything marked **locked** is cited to the
+`DECISIONS.md` row 67, and so are the sealed cell, the scarcity rules and the
+handling-not-power upgrade axis, recorded the same day as rows 68 and 69.
+Everything still marked *proposed* below is Claude's derivation and awaits his
+word. Everything marked **locked** is cited to the
 row that locked it and is not up for grabs here.
 
 Written answering four questions he asked on 2026-10-29: *"What happens if a
@@ -46,33 +48,48 @@ That single sentence fixes most of what a lantern can be:
   light burning"* (`PREMISE.md`). `LANTERNHOLD.md` makes it literal: *"while
   you are out there, your lamp burns here, where everyone can see it."*
 
-### So what is it made from — *proposed*
+### So what is it made from — Chris, 2026-10-29
 
-**A sealed amber mantle in a brass-and-glass body, serviced at Lanternhold and
-not in the field.** Incandescent rather than electric: a mantle brought to
-heat, giving continuous warm light with no flicker and no cold start.
+**A standardized Lightkeeper inspection lantern with a sealed power cell,
+charged back at Lanternhold between raids, designed to outlast one night
+window.** His words, and the three negatives in them are the design:
 
-Three things that shape earns, which is the test for whether a piece of fiction
-is worth keeping:
+> *"No gasoline cans. No field battery scavenging. No 'you used the named tool
+> and now the game leaves you blind.'"*
 
-1. **It explains why a machine reads it as a sun.** A continuous warm
-   broad-spectrum source is the thing a solar unit was built to drink. A cold
-   blue LED would not be food, and then the premise stops working.
-2. **It explains why the field cannot refill it.** The mantle is the rare part
-   and the hall is where it is serviced, so "go home to the hall" is a
-   mechanical necessity rather than a menu convention — and the hall's lamps
-   and your lantern become the same technology, which is why the order's
-   survival and your light source are the same problem.
-3. **It explains the flicker we do NOT have.** A lantern that stutters would be
-   a scare instrument, and `SOUND.md` already has one of those in the storm
-   strike. The lantern is steady; the building is not. Keeping those apart is
-   what lets a flicker mean something when we eventually want one.
+Each of those closes off a whole genre of busywork. A fuel can is an errand; a
+scavenged battery makes light a loot problem; and a lantern that dies from
+normal use punishes the player for using the one tool the game is about.
 
-The hall's two halves (`PREMISE.md`) give the fiction its weight: *the earliest
-records burned.* An order whose first catastrophe was fire now keeps its light
-in a sealed body and keeps it burning anyway. That is a group with a reason to
-be careful with lanterns, which is the player's whole relationship with the
-object.
+**A sealed cell is a stronger answer than the mantle I proposed**, for a reason
+worth recording because it generalises. A mantle explains the light but invites
+the question *"so where do I get another mantle"* — it is a consumable with
+good manners. A cell that is standardized, sealed and serviced at the hall is
+**institutional**: it is the order's equipment, issued and inspected, and the
+reason you cannot top it up in the field is that you are not supposed to. That
+matches who the Lightkeepers are (*"an order, not a job. Inherited."*) and it
+makes the hall the lantern's home rather than its shop.
+
+What it keeps from the earlier reasoning:
+
+- **Still amber, still warm, still continuous** — because the premise needs a
+  machine to read it as food rather than as a signal, and because
+  `PREMISE.md`'s amber-against-electric-blue is the colour-blind readability
+  rule carrying the premise.
+- **Still steady.** A lantern that stutters is a scare instrument and
+  `SOUND.md` already has one in the storm strike. The lantern is steady; the
+  building is not. That separation is what lets a flicker mean something when
+  we want one — which is exactly what Chris reserved it for below.
+
+**The one logic question it opens, and it is small:** if the cell is charged at
+Lanternhold, what charges Lanternhold? The grid has been dead since the first
+flood. Three answers that all work and one that does not: the hall has its own
+restored means (which makes it a restoration target, and crates already feed
+`LanternholdLandmarks`); it is hand-cranked, which is labour and suits the
+order; or **the storm charges it**, which is the most interesting and the
+cruellest — the thing that ends your night is the thing that buys you the next
+one. The answer that does not work is solar, because the premise spends
+daylight on the machines.
 
 ---
 
@@ -133,82 +150,165 @@ note in the data says why:
 So the honest answer to *"we can't add more fuel?"* is that there is no fuel to
 add, by decision, and the field is a resource with one use rather than a tank.
 
-### Recommendation: no fuel timer — *proposed*
+### Kept, as a mercy rule — Chris, 2026-10-29
 
-Three reasons, in order of how much they would cost to get wrong:
+> *"That was an intentional mercy rule, and I'd keep it for the first slice."*
 
-1. **A fuel timer spoils the experiment.** Row 3's gate asks whether players
-   *choose* darkness. If darkness arrives because a bar emptied, a dark run
-   proves nothing — we would be measuring a tank, not a decision. The one
-   question M4 exists to answer would stop being answerable, and we would not
-   notice, because the data would look the same.
-2. **It competes with the cost that already works.** Light already costs
-   exposure, charge in the machines, and a hand. A fuel bar is a fourth, duller
-   cost that pulls attention away from the three real ones — the same argument
-   that ruled out a lantern speed penalty, and it applies with more force here
-   because a timer is a thing players watch instead of watching the room.
-3. **It would be the one upgrade everybody wants and nobody can have.**
-   `REWARDS.md` locks *"anything touching the lantern"* off the shelf. Add
-   fuel and the shop has an obvious hole in it where the fix should be.
+Decided, and the reasons for it stand: a fuel timer would mean a dark run
+proves nothing about whether players *choose* darkness, which is the only
+question row 3's gate exists to answer, and the telemetry would look identical
+either way.
 
-**What to do instead, if light ever feels too free:** the levers already in
-`data/` are the radius, the intensity and the storm multiplier — all authored,
-all portable, all already read by the enemy rules that have to agree with them.
-And the three modes give a fourth: make raised-lit cost more than stowed-lit.
-None of those requires a bar.
+### If we ever want lantern scarcity, it is not depletion — his list
+
+> *"Never 'the player used light normally, so now they are soft-locked in
+> darkness.'"*
+
+Three shapes he will accept instead, and the common property is that every one
+of them is **caused by an event, not by use**:
+
+| Shape | What causes it |
+| --- | --- |
+| A damaged lantern may flicker | A particular threat did it to you |
+| A rare expedition requires a spare cell | The expedition is unusual, and says so before you leave |
+| A restored workshop repairs a broken lens or mount | You already broke it, and the hall is where it gets fixed |
+
+That is the line to hold: **scarcity may be inflicted and it may be
+situational, but it is never the bill for ordinary use.** A flicker after a
+threat is the building having done something to you, which the player can name.
+An empty tank after a careful hour is the game taxing the verb it is about.
+
+And the flicker has a home now. The lantern is steady precisely so that a
+damaged one reading as unsteady is legible — one channel, no tutorial, and it
+satisfies row 16 without a line of audio.
 
 ---
 
 ## Do they upgrade?
 
-**No, and this is already locked.** `REWARDS.md`: *"Never on the shelf,
-locked: revives, sprint speed, enemy durability, anything touching the lantern,
-and anything that removes or shortens the trip out. Those are the tension
-itself."* `GAME-THESIS.md` says it as a rule: *"No upgrade may remove the
-lantern decision."*
+**Not in power. In handling — Chris, 2026-10-29, row 69.** Which narrows an
+existing lock rather than breaking it: `REWARDS.md` keeps *"anything touching
+the lantern"* off the shelf, and his rule says what that lock was actually
+protecting.
 
-The reason is worth restating because it will come up every time the shop looks
-thin: the lantern is the instrument the game is calibrated against. Every enemy
-radius in `enemies.json` is tuned to its 30-stud reach; `aggroRadiusLit` 38 is
-*eight studs past the edge of your own light*, which is row 5's trade made
-physical. Sell a brighter lantern and every one of those numbers quietly means
-something else.
+> *"No upgrade should make it brighter, longer-range, or remove machine
+> attention; that would sell back the game's tension."*
 
-**What upgrades instead, which is not a consolation:**
+| On the shelf | What it changes |
+| --- | --- |
+| A chest harness | Stowed-lit is steadier |
+| A shutter or hood | A low downward walking light |
+| A better grip | Less visual sway while sprinting |
+| A service mount | The lantern stays up while both hands carry light items |
 
-- **The hall.** Restoration at Lanternhold is visible, permanent and the thing
-  the crates are for.
-- **Everything you carry that is not the lantern.** Gadgets, kit, the relic
-  harness and cradle that reduce the burden of carrying prestige out.
-- **Verbs, not power.** The three modes, the mantle, the vault, and peek are
-  new things you can *do* at full price rather than discounts on what light
-  costs. `GAME-THESIS.md` calls this capability with cost, and it is the only
-  axis the lantern is allowed to grow along.
+**Why the distinction holds up under the numbers.** The lantern is the
+instrument the game is calibrated against: every radius in `enemies.json` is
+tuned to its 30-stud reach, and `aggroRadiusLit` 38 is *eight studs past the
+edge of your own light*, which is row 5's trade made physical. Brightness,
+range and attention are the three terms in that relationship. Handling is not
+in it at all — so a grip that reduces sway cannot change what any enemy number
+means, and that is exactly why it is safe to sell.
+
+**And three of the four are already authored.** `FLLKLanternFeelRules` carries
+`WalkSwayCm`, `SprintSwayCm`, `MaxTrailDegrees` and `MaxLandingKickCm`, so the
+harness and the grip are numbers on an existing struct rather than new systems.
+The shutter is the one that needs building, and it is the most interesting of
+the four because a downward walking light is a fourth mode in all but name -
+worth deciding whether it joins row 67's model rather than sitting beside it.
+
+**What else upgrades**, unchanged: the hall, everything you carry that is not
+the lantern, and verbs at full price rather than discounts on what light costs.
+`GAME-THESIS.md` calls that capability with cost.
 
 ---
 
-## The one thing that needs Chris's word
+## Settled, 2026-10-29: the lantern does not feed the storm
 
-**`DECISIONS.md` row 45 and `docs/THE-NIGHT.md` disagree about what the meter
-is**, and his 2026-10-29 question — *"a lantern should not worsen or accelerate
-the weather"* — is exactly that disagreement surfacing.
+Chris, ending the ambiguity rather than smoothing it:
 
-- Row 45, **locked**: the meter *"is now how much of tonight's storm has
-  arrived."* On that reading a lantern cannot touch it, and the current
-  `stormChargeMultiplier` is wrong.
-- `PREMISE.md`: *"Storm Charge only ever rises — it is not weather. It is the
-  machine population waking up."* And *"light accelerates Storm Charge — you
-  are charging them directly."*
-- `THE-NIGHT.md`, **proposed** and already written: the meter is **charge in
-  the machines**, with two sources — the storm, which is nobody's and
-  inevitable, and your lantern, which is yours, optional and immediate.
+> *"The storm gets worse on its own. A lantern does not feed the storm. It only
+> lets nearby machines notice you."*
 
-The proposed reading is the one that survives his rule without losing anything,
-and it already has the sentence for it:
+And on the words, which is where the confusion lived:
 
-> **Every time you light the lantern, you do to yourself, early, what the storm
-> is going to do to you anyway.**
+> *"We should avoid the word 'charge' for both systems. Storm Charge is really
+> the Night / Storm Arrival meter. The lantern has a cell, if it ever needs
+> one."*
 
-See the closing section of `THE-NIGHT.md`. What it needs is a decision about the
-**name**, because "Storm Charge" is what made this ambiguous in the first place
-and the mechanics are not what is wrong.
+So the world's logic, in his order: dusk, machines on reserve, some slow or
+dormant. Night storm, power and flooding arriving, the building waking
+progressively until extraction is the only sensible choice. And the lantern -
+local, warm, human-made - revealing routes and relics, waking a mannequin,
+giving you away to a Sweeper, making a room feel occupied, and **never making
+the weather worse.**
+
+This supersedes the reading `THE-NIGHT.md` proposed on 2026-10-28, which kept
+the lantern as a second input to one meter. It also narrows `DECISIONS.md` row
+45, which is LOCKED and says the meter *"is now how much of tonight's storm has
+arrived"* - that sentence is now exactly right, and it is right because the
+lantern is no longer one of its inputs. Row 68 records both.
+
+### Three things this costs, which are not in his message
+
+Recorded here because they are consequences rather than objections, and because
+two of them are **locked decisions that priced themselves in the meter he has
+just made untouchable.**
+
+**1. The run stops having a variable length.** `data/storm-charge.json` authors
+`baselineRatePerSecond: 1` and then multiplies it by the lantern curve -
+`perLanternBonus: 1.5` on a diminishing curve at `diminishingDecay: 0.6`,
+giving 2.5x for one lantern and about 4.75x for four. The run timings are tuned
+*against that*: `run.targetSeconds` 660, `earlyExitSeconds` 360,
+`hardCeilingSeconds` 780, with three named duty profiles (`normal` 0.25,
+`bright` 0.5, `panic`). `tests/balance.test.mjs` simulates
+`wardenAt(crew, duty)` and asserts that a fully dark crew meets the Warden near
+the end of the night rather than before it.
+
+Remove the lantern input and all of that collapses to one number. **The Warden
+arrives at the same moment every run, whatever the crew did.** Going dark no
+longer buys time; it only avoids attention. That may well be the better game -
+it is certainly the more legible one - but it is a different one, and the
+`_dutyProfiles` table, the curve, the decay and `maxMultiplier` all become dead
+data on the day it lands.
+
+**2. The Anchor Revive loses its entire price.** Row 9 and
+`data/lantern.json`'s own note: *"once per run is the price. The Anchor Revive
+costs chargesPerRun (1) and a permanent Storm Charge spike of 120, and nothing
+else."* If nothing a player does can move the meter, a solo keeper's
+self-revive becomes free, and row 9 needs a new currency.
+
+**3. The extraction call loses its.** `extractionCall.stormChargeSpike: 180`,
+described in the data as *"three minutes of darkness applied at once"*. It does
+keep `convergeAllPatrols: true` and an 8-second siren, so there is an obvious
+replacement price in attention rather than in the meter - but it is a decision,
+not a rename.
+
+Row 64 names *"the extraction call"* and *"the anchor revive"* among the
+legitimate sources of escalation, alongside light. His new rule removes light
+from that list for a good reason; whether it removes the other two is the
+question the code is waiting on.
+
+### The two coherent shapes — *the one open question*
+
+**A. One meter, time only.** The storm is weather and nothing touches it.
+Light's cost is entirely local: perception, wake states, noise, position. The
+revive and the extraction call get re-priced in attention. Simplest, most
+legible, and the version his message literally describes.
+
+**B. Two meters.** *Storm Arrival* is time only and drives the night's stages
+and the Warden - nothing the player does moves it. A second, choice-driven
+value tracks how awake the building is, raised by light, theft, depth, alarms,
+the revive and the extraction call. The lantern still never touches the
+weather; it wakes machines, which is his own third bullet. Every locked price
+keeps working and light keeps a crew-level cost.
+
+Claude's recommendation is **B**, on the grounds that his third bullet already
+describes a second axis - *"the building wakes up progressively"* - and that B
+costs nothing that is currently working while A costs the three things above.
+But A is coherent, it is simpler, and it is the one he appears to be asking
+for, so this is his call and not a drafting detail.
+
+**What is NOT waiting on it:** the rename. "Storm Charge" is a bad name under
+either shape, and `ULLKStormChargeSubsystem`, `ULLKStormChargeData`,
+`stormChargeSpike` and the rest can become *Storm Arrival* the moment he picks
+between that and *Night*. He offered both.
