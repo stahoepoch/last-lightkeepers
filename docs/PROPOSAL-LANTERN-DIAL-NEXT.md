@@ -102,20 +102,100 @@ So "occupies a hand" is the new mechanic in that paragraph, and it reaches into
 
 ---
 
-## The order, as it stands
+## 3. Three constraints Chris set, each overriding something proposed above
 
-1. **Exposure clamp** in the map (Codex). Still first - every brightness value
-   is temporary until it lands.
-2. **`light.levels`** in the JSON and the importer (Codex), on Chris's seeds.
-3. **Replicated level state and a key to cycle it** (Claude). Without this the
-   levels are inert data and nobody can feel anything.
-4. **Play it.** Three questions, row 79's instrument: does anyone change level
-   unprompted, does hooding get used while looting or while escaping, and does
-   Open ever get chosen on purpose. `ELLKRunEvent::LightLevelChanged` is in
-   place to answer the first two.
-5. Then **the Sweeper coupling**, then **mounting**.
+Added 2026-10-30, relayed through the Unreal MCP session. Each of these narrows
+or retracts something this thread had already written down, which is why they
+are recorded here rather than folded in silently.
 
-Steps 5 and 6 are both this file. Neither should be built before step 4,
-because both are tuning on an input whose feel is unmeasured - and the whole
-reason row 79 exists is that this project decided to stop answering that kind
-of question with opinions.
+### Visual smoothing stays uncoupled from gameplay until it has been felt
+
+> *"A radius boundary visibly travelling inward is compelling, but it can also
+> make perception feel arbitrary during the animation. We can test that
+> deliberately instead of silently baking it in."*
+
+**This retracts the continuously-animating gameplay radius as a default.** It is
+now a hypothesis to test at step 5, not a design decision. Visual falloff may
+smooth; the gameplay radius may not, until proven.
+
+**Already true in code, not merely agreed.** `d065469` made
+`GetLitLightSources` read `ULLKLanternLightComponent::GetGameplayRadiusCm()`
+rather than the component's `AttenuationRadius`, and `SetActiveLevelIndex`
+applies a level instantly. So the conservative option is the one that ships by
+default, and `LLK.Lantern.Levels` section 5 asserts it by moving the attenuation
+radius behind the game's back and requiring the gameplay answer not to follow.
+Testing the other hypothesis later means changing one call; nothing has to be
+undone first.
+
+### `CarriedCount` must not be the only contact signal
+
+> *"An empty-handed keeper still needs to understand they are in danger."*
+
+Chris accepts that contacts should dismantle a run rather than deplete a hidden
+body meter - aim disruption, then a dropped haul, then restraint or downing, so
+every hit has a visible consequence. The objection is that the escalation
+collapses for exactly the keeper who just extracted or has already lost
+everything, so a second signal has to live on the keeper's **own body or
+lantern** rather than in inventory.
+
+Two notes for whoever builds it, neither of which is an argument against him:
+
+- **The hidden meter it replaces is deliberate and already justified**, so the
+  replacement has to beat its argument rather than just differ from it.
+  `data/lantern.json` authors `hitsToKnockDown: 3` with `hitDecaySeconds: 6`,
+  and its own note says why: *"hitsToKnockDown with decay is what makes one
+  Sweeper survivable and four lethal, without giving players a health bar to
+  optimise."* A visible consequence per hit is a better answer to that than
+  three invisible ticks - but "no health bar to optimise" is the property to
+  preserve.
+- **The lantern is the obvious second channel**, and it is already a replicated,
+  player-legible, shared-cost object. A contact that disturbs the light itself
+  is visible to the keeper, to their crew, and to every other Sweeper through
+  the field - which is more information than a body effect would carry, for the
+  same hit.
+
+Nothing to build now: the Sweeper coupling is sequenced behind playing the
+levels, and so is this.
+
+### Mounted is an information tax, not a stat tax
+
+> *"Avoid 'mounted = slower stats.' The real cost is committing your beam and
+> attention to one direction while the dark exists everywhere else."*
+
+Consistent with row 77 and with section 2 above, and it closes off the lazy
+implementation. **It does not resolve the collision this file already flagged:**
+"mounted holds its direction" makes direction authoritative, while
+`LLKLanternFeel` treats direction as cosmetic and free, and those two have to
+agree before either moves. That stays open - and it may not be resolved by
+giving mounted a movement penalty.
+
+---
+
+## The order, as Chris set it
+
+Relayed 2026-10-30. **Step 1 is not negotiable, and the reason is this thread's
+whole subject:**
+
+> *"Clamp first. Absolutely. Do not author or tune three gameplay radii through
+> a blown-out white beam; we need a trustworthy visual baseline before the level
+> system becomes playable."*
+
+1. **Map exposure clamp, and a real PIE lantern pass** (Codex).
+2. **`light.levels` through the importer** (Codex), on Chris's seeds.
+3. **Replicated Hooded / Working / Open state and a cycle key** (Claude).
+   Explicitly Claude's, explicitly not yet - it waits on 1 and 2.
+4. **Play it before building mounting.** Row 79's instrument: does anyone change
+   level unprompted, does hooding get used while looting or while escaping, and
+   does Open ever get chosen on purpose.
+   `ELLKRunEvent::LightLevelChanged` is in place to answer the first two.
+5. **Only then** decide whether mount transitions animate the gameplay radius
+   continuously or resolve at a clear completion point - and the Sweeper
+   coupling, and mounting.
+
+Sections 1 and 2 of this file are both step 5. Neither should be built before
+step 4, because both are tuning on an input whose feel is unmeasured - and the
+whole reason row 79 exists is that this project decided to stop answering that
+kind of question with opinions.
+
+**Nothing here moves `data/lantern.json` or its `_radiusNote`.** Those are
+Chris's and he has not moved them.
