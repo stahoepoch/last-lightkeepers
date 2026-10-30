@@ -97,6 +97,51 @@ logging in sees lamps burning and wants to know whose they are.
 
 Cheap to build, and the strongest "this place is real" device in the hub.
 
+### The recovery crew — who comes for you
+
+**Locked by Chris, 2026-10-30.** Until now the design had a dock, a lift, a
+siren, a flare, a hold and a road out, and nobody who arrives. Extraction was
+the one event in the game with no agent behind it.
+
+**Lanternhold's recovery crew extracts you, in a lit recovery rig.** The people
+watching the Lamp Wall above see your crew still out. When you call, they
+commit a truck and themselves to the dock. It is not a magical extraction
+button and it is not a radio talking to nowhere: somebody drives toward the
+building you are standing in.
+
+**They are not an escort NPC**, which is the guardrail that makes the whole
+thing safe to build:
+
+- The rig stays on the **exterior / service-road side** of the dock.
+- The driver **never enters the playable interior** and never becomes a health
+  bar.
+- Your job is to **open and hold the access route** while the dock's shutters,
+  bay lamps, siren and the rig's own work lights announce activity.
+- Machines converge on that **light-and-motion event** - not because the
+  weather changed, but because the building now sees a full recovery operation
+  underway.
+
+**This is what finally explains the twenty seconds.** `data/loot.json` gives
+`LoadingDock` an `arrivalSeconds` of 20, and that number used to be an
+unexplained defence timer. You are not defending a helpless driver; you are
+keeping the only safe boarding route clear long enough for the rig to load and
+seal.
+
+**The Freight Lift stays self-operated mall infrastructure.** It is not a
+second vehicle. It carries you to the recovery side of the building, and the
+same crew meets you there - which is why its `arrivalSeconds` is 30 and why it
+pays 1.6x: a longer wait on machinery you restored yourself.
+
+**Your lever is when and where you call**, never whether an NPC arbitrarily
+survived. The cost is loudness, visibility, and a route that may already be
+collapsing. That is a cost a player can diagnose and plan around, which is row
+64 line three applied to the climax: an escort you cannot control would have
+been failure the player could not have prevented.
+
+**One thing this does not do**, and it matters under row 73: the call still
+cannot touch the clock. The weather arrives on its own schedule. What the call
+changes is the building's attention, locally and enormously.
+
 ### The Keeping Room — the order's vault
 
 Where relics go. Bring one back and it is **named**: shelved with a plaque

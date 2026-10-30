@@ -329,6 +329,25 @@ to a particular floor tonight because of a particular room at home.**
 
 Chris's call, and it is one field on the crate spawn plus a cost line per room.
 
+## Extraction: a recovery operation, not a door
+
+Row 74. The full fiction lives in `docs/LANTERNHOLD.md` under the recovery
+crew, because the people who come are the hold's people. What the **store**
+owes it is geometry, and it is specific:
+
+- The **loading dock** needs an exterior / service-road side where a rig can
+  stand, visible from inside the bay but never enterable by the driver.
+- The bay needs **shutters that move and lamps that come on**, because
+  `storm-charge.json` gives the call `sirenSeconds: 8` and a deaf player has
+  to see the same event (lesson seven on the floors table).
+- The route from the bay into the store is the thing a crew **holds for twenty
+  seconds**. It should be holdable - a mouth, not a field - and it should be
+  possible to lose.
+
+That last point is the only one that can make the climax fail, and it must
+fail for a reason the crew can see: the route collapsed, or they called from
+somewhere they could not get back from. Never because somebody's escort died.
+
 ## What this does not change
 
 - **Light reveals value and attracts danger.** Untouched, on every floor.
