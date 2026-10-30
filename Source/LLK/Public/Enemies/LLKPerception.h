@@ -45,18 +45,26 @@
 // `docs/THE-STORE.md`'s lesson about the brightest keeper being the one who
 // gets found would become unteachable.
 //
-// **What this function deliberately does NOT do: occlusion.** It takes no
+// **What `SenseReaching` deliberately does NOT do: occlusion.** It takes no
 // `UWorld` and traces nothing, because geometry, navmesh and line of sight are
 // M2.5 and belong to Chris and Codex. So the answer is "this sense reaches
-// that keeper", which is necessary and not sufficient - the caller applies a
-// visibility trace once there is a floor to trace against. Naming it
+// that keeper", which is necessary and not sufficient. Naming it
 // `SenseReaching` rather than `WouldNotice` is that honesty in the signature:
 // a function called `WouldNotice` that ignores walls is a function somebody
 // will trust through a wall.
+//
+// **`Notice` is the sufficient half, added 2026-10-29 as M2.5 support.** It
+// takes an `ILLKVisibilitySource` (`Enemies/LLKVisibility.h`) and returns both
+// halves of the answer, so the wall arrives through an interface rather than
+// through perception learning about `UWorld`. The two stay separable: the
+// sense rules are testable with no level, the visibility rules are testable
+// with no enemy data, and `docs/MAP-READINESS.md` holds the contract the real
+// map has to satisfy for the trace to mean anything.
 
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Enemies/LLKVisibility.h"
 #include "LLKPerception.generated.h"
 
 struct FLLKEnemyDef;
@@ -115,6 +123,63 @@ enum class ELLKNoticeSense : uint8
 	 * Broken data degrades to `None`.
 	 */
 	StormAuthority
+};
+
+/**
+ * The whole answer: which sense reached, what the wall said, and the verdict.
+ *
+ * **Three fields and not one bool, for the same reason `ELLKNoticeSense`
+ * exists.** "Why did it notice me" is the question the player has to be able
+ * to answer (row 5), and "why did it NOT notice me" is the question the person
+ * tuning the map has to be able to answer. A bool answers neither. With this,
+ * a readout can say *a Stocker was looking at you and the shelving stopped
+ * it*, which is a sentence about the floor plan rather than about the code.
+ */
+USTRUCT(BlueprintType)
+struct FLLKNotice
+{
+	GENERATED_BODY()
+
+	/**
+	 * The sense that reached, whether or not it fired.
+	 *
+	 * Deliberately filled in even when a wall stopped the notice. The sense
+	 * is a fact about the enemy and the distance; the wall is a separate
+	 * fact, and collapsing them would throw away the half that explains the
+	 * outcome.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "LLK|Perception")
+	ELLKNoticeSense Sense = ELLKNoticeSense::None;
+
+	/**
+	 * What the visibility source said, or `Unknown` when it was not asked.
+	 *
+	 * Not asked happens in three cases and all three are honest: no sense
+	 * reached, so there was nothing to occlude; the Warden, which walls do
+	 * not stop; or no source was bound, which is an error and logs one.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "LLK|Perception")
+	ELLKVisibility Visibility = ELLKVisibility::Unknown;
+
+	/** The verdict. `Clear` plus a reaching sense, or the Warden. */
+	UPROPERTY(BlueprintReadOnly, Category = "LLK|Perception")
+	bool bNoticed = false;
+
+	/**
+	 * A sense reached and nobody could say whether a wall was in the way.
+	 *
+	 * **This is the state a map problem looks like**, and it is why `Unknown`
+	 * is a value rather than a silent `Blocked`. An enemy that is not
+	 * noticing because the floor has no collision reads exactly like an enemy
+	 * that is not noticing because it is behind a shelf, and the difference
+	 * is a bug in one case and the design working in the other. The debug
+	 * readout should say *unverified*, never *safe*.
+	 */
+	bool IsUnverified() const
+	{
+		return Sense != ELLKNoticeSense::None && Visibility == ELLKVisibility::Unknown
+			&& Sense != ELLKNoticeSense::StormAuthority;
+	}
 };
 
 /** An enemy, reduced to what a sense needs. No actor, so this is testable. */
@@ -192,6 +257,39 @@ namespace LLKPerception
 		const FLLKPerceiver& Perceiver,
 		const FLLKPerceivedKeeper& Keeper,
 		float LitThreshold);
+
+	/**
+	 * Does this enemy notice this keeper right now, walls included.
+	 *
+	 * **The one place the two halves meet.** `SenseReaching` decides whether
+	 * a sense arrives; `Visibility` decides whether anything is in the way;
+	 * this returns both and the verdict, and nothing else in the project is
+	 * allowed to combine them itself.
+	 *
+	 * `Visibility` is NOT optional. Passing `nullptr` logs an error and
+	 * notices nothing - there is deliberately no "assume clear" path, because
+	 * an assume-clear path is the one that ships. The same rule
+	 * `ULLKEnemyRosterSubsystem` follows about fallback rosters: a missing
+	 * input degrades to inert, never to invented.
+	 *
+	 * **Positions are used as given, in centimetres.** This does not raise
+	 * either endpoint to eye height, because a Glimmer's scan origin is not a
+	 * Stocker's eye and a helpful guess here would hide that difference. The
+	 * caller passes the sense's actual origin and the point on the keeper
+	 * that counts as hittable. `docs/MAP-READINESS.md` records the keeper's
+	 * eye at 152cm, which is the number the map's sight breaks beat.
+	 *
+	 * **Walls do not stop the Warden.** A `StormAuthority` result notices
+	 * without consulting the source at all: row 7 and row 54 make its arrival
+	 * storm-driven rather than perceived, and letting a shelf break it would
+	 * turn the one inescapable thing in the game into a hiding puzzle.
+	 */
+	LLK_API FLLKNotice Notice(
+		const FLLKEnemyDef& Enemy,
+		const FLLKPerceiver& Perceiver,
+		const FLLKPerceivedKeeper& Keeper,
+		float LitThreshold,
+		const ILLKVisibilitySource* Visibility);
 
 	/**
 	 * How far this family's noticing reaches a keeper in this light.

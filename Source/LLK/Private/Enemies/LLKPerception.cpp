@@ -192,6 +192,53 @@ namespace LLKPerception
 		return ELLKNoticeSense::None;
 	}
 
+	FLLKNotice Notice(
+		const FLLKEnemyDef& Enemy,
+		const FLLKPerceiver& Perceiver,
+		const FLLKPerceivedKeeper& Keeper,
+		float LitThreshold,
+		const ILLKVisibilitySource* Visibility)
+	{
+		FLLKNotice Result;
+		Result.Sense = SenseReaching(Enemy, Perceiver, Keeper, LitThreshold);
+
+		// Nothing reached, so there is nothing for a wall to interrupt. Not
+		// asking saves a trace per enemy per keeper per tick for the common
+		// case, which is the case that runs most.
+		if (Result.Sense == ELLKNoticeSense::None)
+		{
+			return Result;
+		}
+
+		// The Warden. Row 7 and row 54: its arrival is storm-driven, so no
+		// geometry is consulted and none can stop it. Visibility stays
+		// Unknown because nobody asked, which is the truth.
+		if (Result.Sense == ELLKNoticeSense::StormAuthority)
+		{
+			Result.bNoticed = true;
+			return Result;
+		}
+
+		if (Visibility == nullptr)
+		{
+			// An error rather than a default, and loud rather than silent.
+			// The alternative - assuming a clear line - is an enemy that
+			// hunts through walls in exactly the build where somebody forgot
+			// to wire the source up.
+			UE_LOG(LogTemp, Error,
+				TEXT("LLKPerception::Notice called with no visibility source. ")
+				TEXT("Noticing nothing. See docs/MAP-READINESS.md."));
+			return Result;
+		}
+
+		Result.Visibility = Visibility->VisibilityBetween(Perceiver.Position, Keeper.Position);
+
+		// Clear and only Clear. Unknown does not notice - see FLLKNotice::
+		// IsUnverified for why it is not quietly folded into Blocked.
+		Result.bNoticed = Result.Visibility == ELLKVisibility::Clear;
+		return Result;
+	}
+
 	float NoticeRangeStuds(const FLLKEnemyDef& Enemy, float Brightness, float LitThreshold)
 	{
 		const bool bLit = Brightness > LitThreshold;

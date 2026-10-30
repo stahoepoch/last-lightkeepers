@@ -461,8 +461,20 @@ the escalation contract at once.
 | Row | What | Owner | Done when |
 | --- | --- | --- | --- |
 | M2.5 | **Navigation and placement**: navmesh on the greybox floor, authored patrol routes, spawn points | Chris + Codex | One machine can walk a route without a C++ change, and the routes are authored rather than generated |
+| M2.5s | **The support slice for M2.5**, so the map is not built blind: the readiness contract, the occlusion interface, and a check that names what is missing | Claude, 2026-10-29 - **done** | `docs/MAP-READINESS.md` lists what a map must have; `LLKPerception::Notice` consumes a visibility answer through `ILLKVisibilitySource` rather than tracing itself; `LLK.CheckMap` reports `NavBoundsMissing`, `NoOccludingGeometry`, `NoRouteFromSpawn` and eleven others instead of letting us find them by way of a Sweeper that stands still |
 | M2.6 | **ONE enemy, two night states, and a relief beat.** A readable Routine behaviour; one clear Emergency behaviour unlocked by a Storm threshold; a short withdrawal after pressing the crew; and a decision the crew must actually make | Claude, on M2.5 | **Judged on behaviour, not on report** — see below. The threshold crossing is legible: a player can name what changed. The withdrawal happens before the crew is exhausted, per Valve's Peak Fade. And the emergency leaves an escape that costs something |
 | M2.7 | **Its second channel**, row 16. One enemy's physical tell, not six | Chris (the tell) + Claude (the hook) | The threshold crossing and the approach are both readable with the sound off. One enemy done properly is the template the other five copy |
+
+**M2.5s is support, not the map.** Chris, 2026-10-29: *"take the M2.5 support
+slice, but do not build the actual store map yourself."* So nothing in it
+spawns, moves or repairs anything in a level - it reports. Chris owns the
+`Content/` map (row 41) and the first version of it is allowed to be a
+deliberately ugly playable greybox; the contract exists so that "ugly" and
+"not ready" stay different words. The one thing M2.5s cannot do itself is the
+navmesh path query, because that needs `"NavigationSystem"` in
+`Source/LLK/LLK.Build.cs` and `.Build.cs` files are Codex's lane. Until that
+line lands, `LLK.CheckMap` reports `RouteUnverified` on every clean map, which
+is the honest answer rather than a pass.
 
 **How M2.6 gets judged, which is a finding rather than a preference.** Grizzard
 et al. found that physiological arousal habituates *before players notice it

@@ -37,14 +37,14 @@
 namespace
 {
 	/** `data/lantern.json` `light`: 250 candelas over 30 studs. */
-	constexpr float LanternIntensity = 250.f;
+	constexpr float AuthoredLanternIntensity = 250.f;
 	constexpr float LanternRadiusStuds = 30.f;
 
 	FLLKLightSource LanternAt(const FVector& Position)
 	{
 		FLLKLightSource Source;
 		Source.Position = Position;
-		Source.Intensity = LanternIntensity;
+		Source.Intensity = AuthoredLanternIntensity;
 		Source.RadiusCm = LLKUnits::DistanceFromStuds(LanternRadiusStuds);
 		return Source;
 	}
@@ -89,7 +89,7 @@ bool FLLKPerceptionFailureTest::RunTest(const FString& Parameters)
 {
 	UE_LOG(LogTemp, Log, TEXT("LLK perception failure test reached RunTest."));
 
-	const float Threshold = LLKPerception::LitThresholdFrom(LanternIntensity);
+	const float Threshold = LLKPerception::LitThresholdFrom(AuthoredLanternIntensity);
 
 	// =====================================================================
 	// 1. A LIT TEAMMATE CAN EXPOSE A DARK TEAMMATE
@@ -317,7 +317,7 @@ bool FLLKPerceptionFailureTest::RunTest(const FString& Parameters)
 		// false positive out of a defaulted radius.
 		FLLKPerceivedKeeper PointBlank;
 		PointBlank.Position = FVector::ZeroVector;
-		PointBlank.Brightness = LanternIntensity * 4.f;
+		PointBlank.Brightness = AuthoredLanternIntensity * 4.f;
 
 		struct FMalformed
 		{
@@ -406,7 +406,7 @@ bool FLLKPerceptionFailureTest::RunTest(const FString& Parameters)
 		// which is what "outside perception" means operationally.
 		for (const float Studs : { 1.f, 20.f, 100.f, 500.f })
 		{
-			for (const float Brightness : { 0.f, LanternIntensity })
+			for (const float Brightness : { 0.f, AuthoredLanternIntensity })
 			{
 				FLLKPerceivedKeeper Keeper;
 				Keeper.Position = StudsAlongX(Studs);
@@ -422,7 +422,7 @@ bool FLLKPerceptionFailureTest::RunTest(const FString& Parameters)
 		}
 
 		TestEqual(TEXT("row 7: and it has no notice range at any brightness"),
-			LLKPerception::NoticeRangeStuds(Warden, LanternIntensity, Threshold), 0.f);
+			LLKPerception::NoticeRangeStuds(Warden, AuthoredLanternIntensity, Threshold), 0.f);
 		TestFalse(TEXT("and it still cannot be damaged"), Warden.CanBeDamaged());
 
 		// --- the other half: convergence is the light field's answer ---
@@ -434,7 +434,7 @@ bool FLLKPerceptionFailureTest::RunTest(const FString& Parameters)
 		const FVector Far = StudsAlongX(60.f);
 
 		FLLKLightSource Dim = LanternAt(Near);
-		Dim.Intensity = LanternIntensity * 0.25f;
+		Dim.Intensity = AuthoredLanternIntensity * 0.25f;
 		const FLLKLightSource Bright = LanternAt(Far);
 
 		FVector Target = FVector::ZeroVector;
