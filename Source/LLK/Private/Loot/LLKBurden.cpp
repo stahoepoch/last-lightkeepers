@@ -20,8 +20,6 @@ namespace LLKBurdenDetail
 	}
 }
 
-using namespace LLKBurdenDetail;
-
 namespace LLKBurden
 {
 	float PenaltyFraction(const int32 Points, const FLLKBurdenRules& Rules)
@@ -35,7 +33,7 @@ namespace LLKBurden
 			return 0.f;
 		}
 
-		const float PerPoint = FMath::Max(0.f, Finite(Rules.SpeedPenaltyPerPoint));
+		const float PerPoint = FMath::Max(0.f, LLKBurdenDetail::Finite(Rules.SpeedPenaltyPerPoint));
 		if (PerPoint <= 0.f)
 		{
 			// Unauthored, not free-by-mistake: a per-point penalty of zero is
@@ -49,10 +47,10 @@ namespace LLKBurden
 		// The authored cap, when there is one. A cap of zero means no cap
 		// rather than no movement - the opposite reading would make an
 		// unfilled field the harshest possible setting.
-		const float AuthoredCap = FMath::Max(0.f, Finite(Rules.MaxSpeedPenalty));
+		const float AuthoredCap = FMath::Max(0.f, LLKBurdenDetail::Finite(Rules.MaxSpeedPenalty));
 		const float Capped = AuthoredCap > 0.f ? FMath::Min(Raw, AuthoredCap) : Raw;
 
-		return FMath::Clamp(Capped, 0.f, HardestPenalty);
+		return FMath::Clamp(Capped, 0.f, LLKBurdenDetail::HardestPenalty);
 	}
 
 	float SpeedMultiplier(const int32 Points, const FLLKBurdenRules& Rules)
@@ -62,8 +60,8 @@ namespace LLKBurden
 
 	int32 PointsUntilCapped(const FLLKBurdenRules& Rules)
 	{
-		const float PerPoint = FMath::Max(0.f, Finite(Rules.SpeedPenaltyPerPoint));
-		const float Cap = FMath::Max(0.f, Finite(Rules.MaxSpeedPenalty));
+		const float PerPoint = FMath::Max(0.f, LLKBurdenDetail::Finite(Rules.SpeedPenaltyPerPoint));
+		const float Cap = FMath::Max(0.f, LLKBurdenDetail::Finite(Rules.MaxSpeedPenalty));
 		if (PerPoint <= 0.f || Cap <= 0.f)
 		{
 			return 0;

@@ -224,6 +224,40 @@ its code. Writing the check before there is a dock would mean every greybox
 reports a missing route for the whole of M2.5, which is how a warning stops
 being read.
 
+## The Sweeper, and the four things it refuses to invent
+
+Added 2026-10-30 with the pawn (row 78). Chris's scope: *"Do not invent patrol
+points, route shapes, collision tuning, or spawn spacing. The dock map should
+author those."* So `ALLKSweeper` authors none of them, and here is what it
+expects instead.
+
+| What the pawn needs | Where it comes from | What it does without it |
+| --- | --- | --- |
+| **A route** | Actors tagged `LLK.Patrol`, in the order the map makes them | Stands still, and says so once by name. It will still notice a keeper and chase |
+| **A navmesh** | `NavMeshBoundsVolume` plus built nav data (requirements 2, 3, 3a) | Does not move at all. It never walks in a straight line through shelving - a Sweeper that ignored geometry would teach the floor plan is a lie |
+| **A size** | `ACharacter`'s default capsule | Uses the default. Its real dimensions are a question about doorways and shelf gaps, which is map work |
+| **A place to start** | Wherever the map puts it, or an actor tagged `LLK.EnemySpawn` (requirement 0b) | Exists where it was placed |
+
+**It reads three authored files and converts one number.** `enemies.json` for
+the family - speed 14, telegraph 1.0, aggro 12 dark against 38 lit;
+`lantern.json`'s `sweeperContact` for the three hits, the 1.5s cooldown and the
+6s decay; and the light field for how lit the keeper is. The only conversion is
+speed into centimetres through `LLKUnits` (row 61).
+
+**No `AIController`, deliberately.** `AAIController` and its path following
+live in `AIModule`, which would be a `LLK.Build.cs` change and therefore
+Codex's (`docs/LANES.md`). `NavigationSystem` is already a dependency for the
+checks on this page, so the pawn queries a path itself and steers with
+`AddMovementInput`. If crowd avoidance or real path following is ever wanted,
+that is a one-line handoff and the brain does not change.
+
+**What to expect the first time one stands on the dock floor.** With a navmesh
+and no patrol tags: it holds still until a keeper comes inside 12 studs dark or
+38 lit, logs `TELEGRAPHS`, waits its authored second, and then comes. With no
+navmesh: it notices, telegraphs, and never arrives - which is the one case that
+looks like a bug and is not, so it is worth running `LLK.CheckMap` before
+concluding anything about the brain.
+
 ## Running it
 
 ```

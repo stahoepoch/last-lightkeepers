@@ -223,6 +223,68 @@ for (const [name, family] of families) {
   }
 }
 
+// ---- the pawn authors nothing the map should ---------------------------
+//
+// Chris, 2026-10-30: *"Do not invent patrol points, route shapes, collision
+// tuning, or spawn spacing. The dock map should author those."* Each of those
+// is a thing somebody could add to the pawn in one line and nobody would
+// notice until a real floor disagreed with it.
+{
+  const pawnPath = "Source/LLK/Private/Enemies/LLKSweeper.cpp";
+  const pawnFull = join(root, pawnPath);
+  const pawn = existsSync(pawnFull) ? readFileSync(pawnFull, "utf8") : "";
+  const code = pawn.replace(/\/\*[\s\S]*?\*\//g, "").replace(new RegExp("//[^" + String.fromCharCode(92) + "n]*", "g"), "");
+
+  check("the Sweeper pawn exists", code.length > 0, pawnPath);
+
+  // Collision tuning: the capsule, the gravity, the channels. The defaults
+  // stand until a map asks for something else.
+  for (const forbidden of [
+    "SetCapsuleSize",
+    "SetCollisionResponseToChannel",
+    "GravityScale",
+    "SetCollisionEnabled",
+  ]) {
+    check(
+      `the pawn does not tune collision (${forbidden})`,
+      !code.includes(forbidden),
+      "a Sweeper's real dimensions are a question about doorways and shelf " +
+        "gaps, which is map work",
+    );
+  }
+
+  // Route shape and spacing: no generated points, no spawn offsets.
+  check(
+    "the route is whatever the map tagged",
+    /ActorHasTag\(PatrolPointTag\)/.test(code),
+    "three empty actors in a line is a valid route; the pawn has no opinion " +
+      "about the shape",
+  );
+  check(
+    "and the pawn never spawns its own patrol points",
+    !/SpawnActor/.test(code),
+    "a generated route would look like a working patrol and teach a floor " +
+      "plan that does not exist",
+  );
+
+  // The authored speed, converted at the boundary and nowhere invented.
+  check(
+    "the speed is the authored one",
+    /SpeedFromStuds\(Def\.MoveSpeed\)/.test(code),
+    "moveSpeed 14 is Chris's number (row 55), and row 61 keeps the " +
+      "conversion in LLKUnits",
+  );
+
+  // And the brain stays the only thing that decides: the pawn may not
+  // shortcut a state, which is how row 16 would quietly die.
+  check(
+    "ROW 16: the pawn never sets a state itself",
+    !/Mind\.State\s*=/.test(code),
+    "the brain decides and this acts. A pawn that could set Pursue directly " +
+      "could skip the telegraph without touching the tested rule",
+  );
+}
+
 console.log(`\n${checks - failures}/${checks} passed`);
 if (failures > 0) {
   console.log(`${failures} FAILED\n`);

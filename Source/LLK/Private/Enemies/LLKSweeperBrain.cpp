@@ -23,8 +23,6 @@ namespace LLKSweeperBrainDetail
 	constexpr float FallbackSearchSeconds = 3.f;
 }
 
-using namespace LLKSweeperBrainDetail;
-
 namespace LLKSweeperBrain
 {
 	FLLKSweeperStep Advance(
@@ -36,7 +34,7 @@ namespace LLKSweeperBrain
 		FLLKSweeperStep Step;
 		Step.Mind = Mind;
 
-		const float Delta = FMath::Max(0.f, Finite(Senses.DeltaSeconds));
+		const float Delta = FMath::Max(0.f, LLKSweeperBrainDetail::Finite(Senses.DeltaSeconds));
 
 		// ---- the clocks, which run whatever the state is -----------------
 		//
@@ -49,7 +47,7 @@ namespace LLKSweeperBrain
 		//
 		// Aged forward and expired here, before anything else, so a Sweeper
 		// that broke off and came back does not inherit stale hits.
-		const float DecaySeconds = FMath::Max(0.f, Finite(Contact.HitDecaySeconds));
+		const float DecaySeconds = FMath::Max(0.f, LLKSweeperBrainDetail::Finite(Contact.HitDecaySeconds));
 		for (int32 Index = Step.Mind.HitAgesSeconds.Num() - 1; Index >= 0; --Index)
 		{
 			Step.Mind.HitAgesSeconds[Index] += Delta;
@@ -88,7 +86,7 @@ namespace LLKSweeperBrain
 				// frame would be a fair fight with an unfair presentation.
 				Step.Mind.State = ELLKSweeperState::Telegraph;
 				Step.Mind.TelegraphSecondsRemaining =
-					FMath::Max(0.f, Finite(Def.AudioTelegraphSeconds));
+					FMath::Max(0.f, LLKSweeperBrainDetail::Finite(Def.AudioTelegraphSeconds));
 				Step.bTelegraphStarted = true;
 				Step.Move = ELLKSweeperMove::Hold;
 				break;
@@ -128,7 +126,7 @@ namespace LLKSweeperBrain
 			{
 				Step.Mind.State = ELLKSweeperState::Search;
 				Step.Mind.SearchSecondsRemaining =
-					Def.LosesTargetAfterSeconds.Get(FallbackSearchSeconds);
+					Def.LosesTargetAfterSeconds.Get(LLKSweeperBrainDetail::FallbackSearchSeconds);
 				Step.Move = Step.Mind.bHasLastKnown
 					? ELLKSweeperMove::LastKnown : ELLKSweeperMove::Hold;
 			}
@@ -141,7 +139,7 @@ namespace LLKSweeperBrain
 				// difference between pressure and omniscience.
 				Step.Mind.State = ELLKSweeperState::Search;
 				Step.Mind.SearchSecondsRemaining =
-					Def.LosesTargetAfterSeconds.Get(FallbackSearchSeconds);
+					Def.LosesTargetAfterSeconds.Get(LLKSweeperBrainDetail::FallbackSearchSeconds);
 				Step.Move = Step.Mind.bHasLastKnown
 					? ELLKSweeperMove::LastKnown : ELLKSweeperMove::Hold;
 				break;
@@ -163,7 +161,7 @@ namespace LLKSweeperBrain
 				Step.bContactLanded = true;
 				Step.Mind.HitAgesSeconds.Add(0.f);
 				Step.Mind.ContactCooldownRemaining =
-					FMath::Max(0.f, Finite(Contact.ContactCooldownSeconds));
+					FMath::Max(0.f, LLKSweeperBrainDetail::Finite(Contact.ContactCooldownSeconds));
 
 				const int32 Needed = FMath::Max(1, Contact.HitsToKnockDown);
 				if (Contact.bKnockdownOnContact && Step.Mind.HitsLanded() >= Needed)
