@@ -79,6 +79,17 @@ public:
 	UFUNCTION(BlueprintPure, Category = "LLK|Run")
 	bool HasCrewWiped() const { return bCrewWiped; }
 
+	/**
+	 * The roll, with the dead weak pointers dropped. M3.
+	 *
+	 * Added for extraction, which needs keeper POSITIONS rather than a count -
+	 * somebody has to be standing on the boarding route. Returning the roll is
+	 * better than extraction keeping its own: two registries of the same four
+	 * keepers can disagree about who is in the run, and the one that is wrong
+	 * would be whichever one a future component forgot to register with.
+	 */
+	TArray<ULLKVitalsComponent*> GetKeepers() const;
+
 	/** Fires once. Row 8's haul resolution hangs off this. */
 	UPROPERTY(BlueprintAssignable, Category = "LLK|Run")
 	FLLKCrewWiped OnCrewWiped;

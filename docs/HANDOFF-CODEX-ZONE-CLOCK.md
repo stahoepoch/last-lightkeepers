@@ -1,5 +1,26 @@
 # Handoff to Codex — rename the clock, because it is no longer a storm meter
 
+**RELEASED BY CHRIS, 2026-10-30.** *"In parallel, hand Codex the dead JSON-key /
+importer cleanup from the zone-clock handoff."* Both halves below are yours to
+take now - the rename and the two dead keys - and nothing is waiting on Claude.
+
+**One thing changed under this handoff since it was written, and it constrains
+the rename.** M3's extraction state machine now reads
+`ULLKStormChargeData::ExtractionCall` for two of its three fields -
+`SirenSeconds` and `bConvergeAllPatrols` - from
+`Source/LLK/Private/Run/LLKExtractionSubsystem.cpp`. So:
+
+- Those two fields must survive the rename. Rename the type around them freely;
+  the extraction subsystem is a read-only consumer and will follow.
+- `StormChargeSpike` is the one to delete, and deleting it is now guarded on
+  Claude's side too: `tests/extraction.test.mjs` fails if anything in the
+  extraction code ever reads it, and `FLLKExtractionAnnounce` has no field it
+  could be copied into. Row 75.
+- `data/loot.json`'s `extraction.*` block is read by the same subsystem for
+  `arrivalSeconds`, `payoutModifier` and `requires`. It is not part of this
+  rename; it is named here so that nothing in `loot.json` is treated as dead
+  while the keys beside the clock's are being removed.
+
 Written 2026-10-29 by Claude. One mechanical rename that crosses a lane, which
 is the only reason it is a handoff rather than a commit.
 

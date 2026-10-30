@@ -29,6 +29,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameStateBase.h"
+#include "Run/LLKExtractionSnapshot.h"
 #include "Storm/LLKStormSnapshot.h"
 #include "LLKGameState.generated.h"
 
@@ -69,10 +70,29 @@ public:
 	UFUNCTION(BlueprintPure, Category = "LLK|Run")
 	bool HasCrewWiped() const { return bCrewWiped; }
 
+	/** What every machine may read about the extraction. M3. */
+	UFUNCTION(BlueprintPure, Category = "LLK|Extraction")
+	const FLLKExtractionSnapshot& GetExtractionSnapshot() const { return ExtractionSnapshot; }
+
+	/**
+	 * Server only. Called by `ULLKExtractionSubsystem`, which owns the truth.
+	 *
+	 * A separate struct from the storm's rather than fields added to it,
+	 * because they change at different rates and for different reasons: the
+	 * storm publishes ten times a second all night, and this publishes on a
+	 * transition and then only while an extraction is underway. Merging them
+	 * would put the whole extraction on the wire every tenth of a second of
+	 * every run that never calls one.
+	 */
+	void PublishExtractionSnapshot(const FLLKExtractionSnapshot& InSnapshot);
+
 protected:
 	UPROPERTY(Replicated, VisibleInstanceOnly, Category = "LLK|Storm")
 	FLLKStormSnapshot StormSnapshot;
 
 	UPROPERTY(Replicated, VisibleInstanceOnly, Category = "LLK|Run")
 	bool bCrewWiped = false;
+
+	UPROPERTY(Replicated, VisibleInstanceOnly, Category = "LLK|Extraction")
+	FLLKExtractionSnapshot ExtractionSnapshot;
 };

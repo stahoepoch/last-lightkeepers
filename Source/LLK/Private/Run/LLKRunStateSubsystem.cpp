@@ -65,6 +65,20 @@ int32 ULLKRunStateSubsystem::CountKeepers() const
 	return Count;
 }
 
+TArray<ULLKVitalsComponent*> ULLKRunStateSubsystem::GetKeepers() const
+{
+	TArray<ULLKVitalsComponent*> Alive;
+	Alive.Reserve(Keepers.Num());
+	for (const TWeakObjectPtr<ULLKVitalsComponent>& Weak : Keepers)
+	{
+		if (ULLKVitalsComponent* Keeper = Weak.Get())
+		{
+			Alive.Add(Keeper);
+		}
+	}
+	return Alive;
+}
+
 int32 ULLKRunStateSubsystem::CountKeepersWhoCanAct() const
 {
 	int32 Count = 0;

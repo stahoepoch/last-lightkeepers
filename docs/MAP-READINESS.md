@@ -186,6 +186,32 @@ belong to the enemy, not to this function.
 
 ---
 
+## The boarding route, which is not a check yet
+
+Added 2026-10-30 with M3's extraction rules (row 75), and deliberately NOT a
+fifteenth check.
+
+`ULLKExtractionSubsystem` needs one piece of geometry and only one:
+`RegisterBoardingRoute(PointId, Anchor, RadiusCm)` - a position and a radius
+per exit, which is the part of the dock a crew has to hold. Row 74 keeps the rig
+on the service-road side and the driver out of the interior, so nothing else
+about the dock is a rule.
+
+**What happens today, with no map:** the hold cannot advance, because an
+unmeasured route is not an empty one. The subsystem says so once per call, by
+name:
+
+    EXTRACTION CANNOT COMPLETE: no boarding route registered for LoadingDock,
+    so the hold will never advance.
+
+That is the same discipline as `LLK.CheckMap` - name the missing thing rather
+than let somebody discover it by watching a timer not move - applied at the
+moment it matters rather than as a map-load check. **It becomes a check here
+when the greybox has a dock to check**, and it will want `NoBoardingRoute` as
+its code. Writing the check before there is a dock would mean every greybox
+reports a missing route for the whole of M2.5, which is how a warning stops
+being read.
+
 ## Running it
 
 ```
