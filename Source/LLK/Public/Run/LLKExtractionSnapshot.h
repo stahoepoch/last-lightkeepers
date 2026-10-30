@@ -1,6 +1,6 @@
 // What every machine may know about the extraction. M3.
 //
-// The same reasoning as `FLLKStormSnapshot`, and the same shape for the same
+// The same reasoning as `FLLKZonePressureSnapshot`, and the same shape for the same
 // reason: one struct cannot tear. Phase and hold replicated as separate
 // properties would let a client hold `Secured` beside a hold of nine seconds
 // for a frame, and the one moment a readout must not be confidently wrong is

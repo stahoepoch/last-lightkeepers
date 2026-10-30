@@ -2,7 +2,7 @@
 //
 // Chris, 2026-10-29, finding the constraint before it shipped: the lantern
 // light component is both the visible cone and the position
-// `ULLKStormChargeSubsystem::GetLitLightSources` reports into
+// `ULLKZonePressureSubsystem::GetLitLightSources` reports into
 // `LLKLightField`. That position decides storm accrual, relic legibility, and
 // what the Warden converges on - so once the cone sways for feel, reading the
 // component's transform means the player sees one light position while the
@@ -39,7 +39,7 @@ const check = (name, condition, detail) => {
   }
 };
 
-const storm = read("Source", "LLK", "Private", "Storm", "LLKStormChargeSubsystem.cpp");
+const storm = read("Source", "LLK", "Private", "Storm", "LLKZonePressureSubsystem.cpp");
 const feelHeader = read("Source", "LLK", "Public", "Lantern", "LLKLanternFeel.h");
 const feelImpl = read("Source", "LLK", "Private", "Lantern", "LLKLanternFeel.cpp");
 const lightImpl = read("Source", "LLK", "Private", "Lantern", "LLKLanternLightComponent.cpp");
@@ -127,7 +127,7 @@ check(
 );
 
 // ---- 5. the cosmetic state stays out of gameplay files --------------
-for (const file of ["Storm/LLKStormChargeSubsystem.cpp", "Loot/LLKRelicComponent.cpp"]) {
+for (const file of ["Storm/LLKZonePressureSubsystem.cpp", "Loot/LLKRelicComponent.cpp"]) {
   check(
     `${file} never reads the cosmetic feel state`,
     !read("Source", "LLK", "Private", ...file.split("/")).includes("FeelState"),

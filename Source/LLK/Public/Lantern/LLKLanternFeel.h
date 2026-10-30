@@ -8,7 +8,7 @@
 // another."*
 //
 // He is exactly right, and the coupling is one line:
-// `ULLKStormChargeSubsystem::GetLitLightSources` reads
+// `ULLKZonePressureSubsystem::GetLitLightSources` reads
 // `Light->GetComponentLocation()`. That position feeds `LLKLightField`, which
 // feeds the storm's accrual, `FindBrightestPosition` - which is what the
 // Warden converges on - and relic legibility. Sway the component and all three

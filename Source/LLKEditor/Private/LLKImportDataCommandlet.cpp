@@ -4,7 +4,7 @@
 #include "Data/LLKEnemyDef.h"
 #include "Data/LLKLanternData.h"
 #include "Data/LLKLootRulesData.h"
-#include "Data/LLKStormChargeData.h"
+#include "Data/LLKZonePressureData.h"
 #include "Data/LLKTableRows.h"
 #include "Data/LLKWorkshopRulesData.h"
 #include "Dom/JsonObject.h"
@@ -337,7 +337,7 @@ namespace LLKDataImport
 
 	bool VerifyRuleAssets(const TSharedPtr<FJsonObject>& Storm, const TSharedPtr<FJsonObject>& Lantern, const TSharedPtr<FJsonObject>& Loot, const TSharedPtr<FJsonObject>& Workshop)
 	{
-		ULLKStormChargeData* StormAsset = ::LoadObject<ULLKStormChargeData>(nullptr, TEXT("/Game/Data/DA_StormCharge.DA_StormCharge"));
+		ULLKZonePressureData* StormAsset = ::LoadObject<ULLKZonePressureData>(nullptr, TEXT("/Game/Data/DA_ZonePressure.DA_ZonePressure"));
 		ULLKLanternData* LanternAsset = ::LoadObject<ULLKLanternData>(nullptr, TEXT("/Game/Data/DA_Lantern.DA_Lantern"));
 		ULLKLootRulesData* LootAsset = ::LoadObject<ULLKLootRulesData>(nullptr, TEXT("/Game/Data/DA_LootRules.DA_LootRules"));
 		ULLKWorkshopRulesData* WorkshopAsset = ::LoadObject<ULLKWorkshopRulesData>(nullptr, TEXT("/Game/Data/DA_WorkshopRules.DA_WorkshopRules"));
@@ -416,7 +416,7 @@ namespace LLKDataImport
 
 	bool ImportStorm(const TSharedPtr<FJsonObject>& Root)
 	{
-		ULLKStormChargeData* Asset = GetOrCreateAsset<ULLKStormChargeData>(TEXT("DA_StormCharge"));
+		ULLKZonePressureData* Asset = GetOrCreateAsset<ULLKZonePressureData>(TEXT("DA_ZonePressure"));
 		TSharedPtr<FJsonObject> Lantern, Run, Call, Warden, Anchor;
 		if (!GetNumber(Root, TEXT("baselineRatePerSecond"), Asset->BaselineRatePerSecond)
 			|| !GetObject(Root, TEXT("lantern"), Lantern) || !GetObject(Root, TEXT("run"), Run)
@@ -435,8 +435,7 @@ namespace LLKDataImport
 			|| !ReadBand(Run, TEXT("targetBandSeconds"), Asset->Run.TargetBandSeconds)
 			|| !GetNumber(Run, TEXT("hardCeilingSeconds"), Asset->Run.HardCeilingSeconds)) return false;
 
-		if (!GetNumber(Call, TEXT("stormChargeSpike"), Asset->ExtractionCall.StormChargeSpike)
-			|| !GetBool(Call, TEXT("bConvergeAllPatrols"), Asset->ExtractionCall.bConvergeAllPatrols)
+		if (!GetBool(Call, TEXT("bConvergeAllPatrols"), Asset->ExtractionCall.bConvergeAllPatrols)
 			|| !GetNumber(Call, TEXT("sirenSeconds"), Asset->ExtractionCall.SirenSeconds)) return false;
 
 		const TArray<TSharedPtr<FJsonValue>>* Thresholds = nullptr;
@@ -457,7 +456,7 @@ namespace LLKDataImport
 			Threshold.OneLanternSeconds = Threshold.Value / (Asset->BaselineRatePerSecond * (1.f + Asset->Lantern.PerLanternBonus));
 		}
 
-		if (!GetNumber(Warden, TEXT("chargeValue"), Asset->Warden.ChargeValue)
+		if (!GetNumber(Warden, TEXT("pressureValue"), Asset->Warden.PressureValue)
 			|| !ReadBand(Warden, TEXT("arrivalBandSeconds"), Asset->Warden.ArrivalBandSeconds)
 			|| !GetNumber(Warden, TEXT("lightSensitivity"), Asset->Warden.LightSensitivity)
 			|| !GetString(Warden, TEXT("effect"), Asset->Warden.Effect)) return false;
@@ -465,7 +464,6 @@ namespace LLKDataImport
 		if (!GetInt(Anchor, TEXT("chargesPerRun"), Asset->AnchorRevive.ChargesPerRun)
 			|| !GetNumber(Anchor, TEXT("reviveSeconds"), Asset->AnchorRevive.ReviveSeconds)
 			|| !GetBool(Anchor, TEXT("bConsumesFullLanternCharge"), Asset->AnchorRevive.bConsumesFullLanternCharge)
-			|| !GetNumber(Anchor, TEXT("stormChargeSpike"), Asset->AnchorRevive.StormChargeSpike)
 			|| !GetBool(Anchor, TEXT("bSoloOnly"), Asset->AnchorRevive.bSoloOnly)) return false;
 		return SaveAsset(Asset);
 	}
@@ -585,7 +583,7 @@ int32 ULLKImportDataCommandlet::Main(const FString& Params)
 		|| !LoadObject(FPaths::Combine(UnrealDir, TEXT("relics.json")), Relics)
 		|| !LoadObject(FPaths::Combine(UnrealDir, TEXT("workshop.json")), Workshop)
 		|| !LoadObject(FPaths::Combine(UnrealDir, TEXT("town.json")), Town)
-		|| !LoadObject(FPaths::Combine(UnrealDir, TEXT("storm-charge.json")), Storm)
+		|| !LoadObject(FPaths::Combine(UnrealDir, TEXT("zone-pressure.json")), Storm)
 		|| !LoadObject(FPaths::Combine(UnrealDir, TEXT("lantern.json")), Lantern)) return 1;
 
 	TArray<TSharedPtr<FJsonValue>> Rows;

@@ -14,7 +14,7 @@
 // knockdown that fed the meter would violate his design using his own
 // escalation system.
 //
-// `Storm Charge` may rise from light, theft, depth, alarms, elapsed time and
+// `Storm Pressure` may rise from light, theft, depth, alarms, elapsed time and
 // the extraction call. Every one of those is a thing the crew chose. Being
 // contained is the thing that happens when the crew gets it wrong, and the
 // night does not get to charge them twice for it.
@@ -28,10 +28,10 @@
 // locked rules meeting.
 
 #include "Characters/LLKVitalsComponent.h"
-#include "Data/LLKStormChargeData.h"
+#include "Data/LLKZonePressureData.h"
 #include "Lantern/LLKLanternComponent.h"
 #include "Misc/AutomationTest.h"
-#include "Storm/LLKStormChargeSubsystem.h"
+#include "Storm/LLKZonePressureSubsystem.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -44,8 +44,8 @@ bool FLLKKnockdownEscalationTest::RunTest(const FString& Parameters)
 {
 	UE_LOG(LogTemp, Log, TEXT("LLK knockdown escalation test reached RunTest."));
 
-	ULLKStormChargeSubsystem* Storm = NewObject<ULLKStormChargeSubsystem>(GetTransientPackage());
-	ULLKStormChargeData* Rules = ULLKStormChargeSubsystem::MakeFallbackRules(Storm);
+	ULLKZonePressureSubsystem* Storm = NewObject<ULLKZonePressureSubsystem>(GetTransientPackage());
+	ULLKZonePressureData* Rules = ULLKZonePressureSubsystem::MakeFallbackRules(Storm);
 	Storm->SetRulesForTest(Rules);
 
 	// A keeper with a lantern and a body, registered with the night.
@@ -60,7 +60,7 @@ bool FLLKKnockdownEscalationTest::RunTest(const FString& Parameters)
 
 	// ---- 1. a dark keeper going down changes nothing --------------------
 	Storm->AdvanceForTest(10.f);
-	const float ChargeBefore = Storm->GetCharge();
+	const float ChargeBefore = Storm->GetPressure();
 
 	Vitals->SetDownedForTest(true, ELLKDownedReason::Contained);
 
@@ -68,9 +68,9 @@ bool FLLKKnockdownEscalationTest::RunTest(const FString& Parameters)
 	// clock that light does not touch, the number of ways a knockdown could
 	// accidentally escalate the night went from two to one.
 	TestEqual(TEXT("going down does not move the clock"),
-		Storm->GetCharge(), ChargeBefore);
+		Storm->GetPressure(), ChargeBefore);
 	TestEqual(TEXT("and does not count as a spike of any size"),
-		Storm->GetCharge() - ChargeBefore, 0.f);
+		Storm->GetPressure() - ChargeBefore, 0.f);
 
 	Vitals->SetDownedForTest(false, ELLKDownedReason::Revived);
 
@@ -79,14 +79,14 @@ bool FLLKKnockdownEscalationTest::RunTest(const FString& Parameters)
 	// Time passes at the baseline rate because time passes, not because
 	// somebody is on the floor. A downed keeper is not a tax.
 	Vitals->SetDownedForTest(true, ELLKDownedReason::Contained);
-	const float BeforeWaiting = Storm->GetCharge();
+	const float BeforeWaiting = Storm->GetPressure();
 	Storm->AdvanceForTest(60.f);
-	const float WhileDowned = Storm->GetCharge() - BeforeWaiting;
+	const float WhileDowned = Storm->GetPressure() - BeforeWaiting;
 
 	Vitals->SetDownedForTest(false, ELLKDownedReason::Revived);
-	const float BeforeStanding = Storm->GetCharge();
+	const float BeforeStanding = Storm->GetPressure();
 	Storm->AdvanceForTest(60.f);
-	const float WhileStanding = Storm->GetCharge() - BeforeStanding;
+	const float WhileStanding = Storm->GetPressure() - BeforeStanding;
 
 	TestNearlyEqual(TEXT("sixty seconds on the floor costs exactly what sixty seconds standing costs"),
 		WhileDowned, WhileStanding, 0.01f);
@@ -129,8 +129,7 @@ bool FLLKKnockdownEscalationTest::RunTest(const FString& Parameters)
 	// ---- 4. nothing costs meter any more, which is the stronger rule ----
 	//
 	// **This section used to assert the opposite and was right to.** It
-	// checked that `anchorRevive.stormChargeSpike` was 120 and
-	// `extractionCall.stormChargeSpike` was 180, and argued that neither was
+	// checked two now-removed weather-spike fields, and argued that neither was
 	// a contradiction: the rule was not "nothing costs meter", it was
 	// "failure does not cost meter". Being contained is failure; choosing to
 	// get back up is a decision, and a decision may carry a price.
@@ -142,7 +141,7 @@ bool FLLKKnockdownEscalationTest::RunTest(const FString& Parameters)
 	// costs meter", and failure not costing meter is a special case of it
 	// rather than a carve-out that had to be argued for.
 	//
-	// The two numbers are still in `data/storm-charge.json` because deleting
+	// The two numbers are still in `data/zone-pressure.json` because deleting
 	// values there is Chris's call (row 55) and the key removal is in Codex's
 	// importer handoff. Nothing reads them, and
 	// `tests/escalation.test.mjs` fails if anything starts to.
@@ -156,11 +155,11 @@ bool FLLKKnockdownEscalationTest::RunTest(const FString& Parameters)
 	// a knockdown never escalates the night, and the strongest version of
 	// that is no longer "knockdown is not on the allowlist" - it is that
 	// nothing is, so there is no list for a future author to add it to.
-	const float BeforeIdle = Storm->GetCharge();
+	const float BeforeIdle = Storm->GetPressure();
 	Vitals->SetDownedForTest(true, ELLKDownedReason::Contained);
 	Vitals->SetDownedForTest(false, ELLKDownedReason::Revived);
 	TestEqual(TEXT("ROW 73: going down and getting up moves the clock by nothing at all"),
-		Storm->GetCharge(), BeforeIdle);
+		Storm->GetPressure(), BeforeIdle);
 
 	return true;
 }

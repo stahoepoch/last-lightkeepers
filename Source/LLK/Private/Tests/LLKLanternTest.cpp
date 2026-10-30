@@ -2,7 +2,7 @@
 //
 // This tests the one thing the component is for: that its state changes
 // exactly when it should and tells listeners why. Everything the rest of the
-// game reads about light goes through here - storm charge counts lit
+// game reads about light goes through here - zone pressure counts lit
 // lanterns, enemies converge on the brightest position, row 5 makes light
 // reveal value and attract danger - so a toggle that double-fires or a
 // forced-off that reports the wrong reason is not a cosmetic bug.
@@ -52,7 +52,7 @@ bool FLLKLanternStateTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the broadcast said on"), Listener->LastOn);
 	TestEqual(TEXT("and said why"), Listener->LastReason, ELLKLanternChangeReason::PlayerToggled);
 
-	// 3. Idempotent. The storm charge multiplier is a count of lit lanterns,
+	// 3. Idempotent. The zone-pressure readout is a count of lit lanterns,
 	//    so a no-op that still broadcasts would move the meter for nothing.
 	Lantern->ApplyStateForTest(true, ELLKLanternChangeReason::PlayerToggled);
 	TestEqual(TEXT("setting on again does not broadcast"), Listener->Count, 1);

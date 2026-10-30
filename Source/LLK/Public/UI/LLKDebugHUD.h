@@ -1,4 +1,4 @@
-// Storm Charge, on screen. M1.7.
+// Zone Pressure, on screen. M1.7.
 //
 // **This is not the HUD.** The real one is M3 and Chris's, and it will be a
 // widget with art. This is a debug readout drawn with `DrawText`: no UMG, no
@@ -34,7 +34,7 @@
 // machine running the editor rather than only on the other one.
 //
 // **The projection is computed locally on both sides, not sent.** The rules
-// are static data - a client loads `DA_StormCharge` like the server does - so
+// are static data - a client loads `DA_ZonePressure` like the server does - so
 // only the meters travel, and both machines run the same arithmetic on the
 // same asset. `LLK.Storm.Snapshot` asserts that those two agree.
 //
@@ -48,10 +48,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/HUD.h"
-#include "Storm/LLKStormSnapshot.h"
+#include "Storm/LLKZonePressureSnapshot.h"
 #include "LLKDebugHUD.generated.h"
 
-class ULLKStormChargeSubsystem;
+class ULLKZonePressureSubsystem;
 
 UCLASS()
 class LLK_API ALLKDebugHUD : public AHUD
@@ -85,7 +85,7 @@ protected:
 	/** A dark panel behind the text, because nothing is legible over both a dark floor and a lit pillar. */
 	void DrawBacking(float Height) const;
 
-	void DrawStormPanel(const ULLKStormChargeSubsystem* Storm, const FLLKStormSnapshot& Snapshot, float& CursorY);
+	void DrawStormPanel(const ULLKZonePressureSubsystem* Storm, const FLLKZonePressureSnapshot& Snapshot, float& CursorY);
 
 	/**
 	 * The nearest relic, and what the keeper can currently do about it.

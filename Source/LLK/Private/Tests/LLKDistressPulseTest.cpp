@@ -24,19 +24,19 @@
 // `NewObject` subsystem, which is what made the storm rules testable in the
 // first place.
 
-#include "Data/LLKStormChargeData.h"
+#include "Data/LLKZonePressureData.h"
 #include "Misc/AutomationTest.h"
 #include "Storm/LLKLightField.h"
-#include "Storm/LLKStormChargeSubsystem.h"
+#include "Storm/LLKZonePressureSubsystem.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
 namespace LLKDistressPulseTestFixture
 {
-	ULLKStormChargeSubsystem* MakeClock()
+	ULLKZonePressureSubsystem* MakeClock()
 	{
-		ULLKStormChargeSubsystem* Clock = NewObject<ULLKStormChargeSubsystem>(GetTransientPackage());
-		ULLKStormChargeData* Rules = ULLKStormChargeSubsystem::MakeFallbackRules(Clock);
+		ULLKZonePressureSubsystem* Clock = NewObject<ULLKZonePressureSubsystem>(GetTransientPackage());
+		ULLKZonePressureData* Rules = ULLKZonePressureSubsystem::MakeFallbackRules(Clock);
 		Rules->BaselineRatePerSecond = 1.f;
 		Clock->SetRulesForTest(Rules);
 		return Clock;
@@ -56,7 +56,7 @@ bool FLLKDistressPulseTest::RunTest(const FString& Parameters)
 
 	// ---- 1. a pulse is a light in the field, and then it is not ----------
 	{
-		ULLKStormChargeSubsystem* Clock = MakeClock();
+		ULLKZonePressureSubsystem* Clock = MakeClock();
 		TestEqual(TEXT("no pulses to begin with"), Clock->GetDistressPulseCount(), 0);
 
 		Clock->AddDistressPulse(FVector(100.f, 0.f, 0.f), 1200.f, 900.f, 8.f);
@@ -82,7 +82,7 @@ bool FLLKDistressPulseTest::RunTest(const FString& Parameters)
 
 	// ---- 2. a pulse with nothing to it is refused rather than added ------
 	{
-		ULLKStormChargeSubsystem* Clock = MakeClock();
+		ULLKZonePressureSubsystem* Clock = MakeClock();
 
 		AddExpectedError(TEXT("Distress pulse refused"), EAutomationExpectedErrorFlags::Contains, 0);
 
@@ -97,7 +97,7 @@ bool FLLKDistressPulseTest::RunTest(const FString& Parameters)
 	//
 	// The one new way to be wrong, and the reason this file exists.
 	{
-		ULLKStormChargeSubsystem* Clock = MakeClock();
+		ULLKZonePressureSubsystem* Clock = MakeClock();
 
 		for (int32 Frame = 0; Frame < 600; ++Frame)
 		{
@@ -127,7 +127,7 @@ bool FLLKDistressPulseTest::RunTest(const FString& Parameters)
 
 	// ---- 4. an unnamed refreshable pulse is the stacking bug -------------
 	{
-		ULLKStormChargeSubsystem* Clock = MakeClock();
+		ULLKZonePressureSubsystem* Clock = MakeClock();
 
 		AddExpectedError(TEXT("A refreshable pulse needs a source name"), EAutomationExpectedErrorFlags::Contains, 0);
 
@@ -141,7 +141,7 @@ bool FLLKDistressPulseTest::RunTest(const FString& Parameters)
 	// A keeper reviving at the dock during an extraction is the case: both
 	// lights are real and the building should see both.
 	{
-		ULLKStormChargeSubsystem* Clock = MakeClock();
+		ULLKZonePressureSubsystem* Clock = MakeClock();
 
 		Clock->AddOrRefreshDistressPulse(Rig, FVector(0.f, 0.f, 0.f), 1200.f, 900.f, 1.f);
 		Clock->AddDistressPulse(FVector(500.f, 0.f, 0.f), 1200.f, 900.f, 8.f);
@@ -167,9 +167,9 @@ bool FLLKDistressPulseTest::RunTest(const FString& Parameters)
 	// The whole point of the pulse as a price: it is light, which is local.
 	// Row 72 left light allowed to do exactly this and nothing else.
 	{
-		ULLKStormChargeSubsystem* Clock = MakeClock();
+		ULLKZonePressureSubsystem* Clock = MakeClock();
 		Clock->AdvanceForTest(10.f);
-		const float Before = Clock->GetCharge();
+		const float Before = Clock->GetPressure();
 
 		for (int32 Frame = 0; Frame < 120; ++Frame)
 		{
@@ -177,9 +177,9 @@ bool FLLKDistressPulseTest::RunTest(const FString& Parameters)
 		}
 		Clock->AddDistressPulse(FVector::ZeroVector, 5000.f, 5000.f, 8.f);
 
-		TestEqual(TEXT("ROW 73: no amount of light moves the clock"), Clock->GetCharge(), Before);
+		TestEqual(TEXT("ROW 73: no amount of light moves the clock"), Clock->GetPressure(), Before);
 		TestEqual(TEXT("and the clock is still just elapsed seconds"),
-			Clock->GetCharge(), Clock->GetElapsedSeconds());
+			Clock->GetPressure(), Clock->GetElapsedSeconds());
 	}
 
 	return true;

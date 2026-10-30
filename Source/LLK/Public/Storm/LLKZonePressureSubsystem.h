@@ -3,7 +3,7 @@
 // This is the clock the whole game runs on. It rises on its own and it never
 // falls - row 6, which is not a guideline here but a property of the one
 // function that writes it: `Advance` takes a delta, adds the baseline times
-// that delta, and nothing else in the project writes `Charge` at all.
+// that delta, and nothing else in the project writes `Pressure` at all.
 //
 // **Nothing a player does moves it.** Row 73: *"Clock means weather alone."*
 // Light does not change its rate (row 72), and as of row 73 neither does the
@@ -35,7 +35,7 @@
 // Solar Output - the same mechanic with a true sentence behind each. The
 // stage names and effects are already data-driven (rows 12 and 33), so only
 // the rate's source needs to become per-zone. The class and asset are still
-// named `StormCharge`; renaming them touches Codex's importer, so it is a
+// named `ZonePressure`; renaming them touches Codex's importer, so it is a
 // coordinated commit rather than a drive-by.
 //
 // **It counts lanterns rather than trusting a counter.** Registered lanterns
@@ -48,18 +48,18 @@
 // **Authority only.** The meter is one number the whole crew reads, and a
 // client that accrues its own copy will disagree with the server about when
 // the Warden came. Clients do not accrue. Replicating the value out to them
-// for a HUD needs a GameState and is a later row; until then `GetCharge()` on
+// for a HUD needs a GameState and is a later row; until then `GetPressure()` on
 // a client is honestly zero rather than plausibly wrong.
 
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Data/LLKStormChargeData.h"
+#include "Data/LLKZonePressureData.h"
 #include "Storm/LLKLightField.h"
 #include "Storm/LLKNightStage.h"
-#include "Storm/LLKStormSnapshot.h"
+#include "Storm/LLKZonePressureSnapshot.h"
 #include "Subsystems/WorldSubsystem.h"
-#include "LLKStormChargeSubsystem.generated.h"
+#include "LLKZonePressureSubsystem.generated.h"
 
 class ULLKLanternComponent;
 
@@ -72,10 +72,9 @@ class ULLKLanternComponent;
 // guard. A typed cause made failure-triggered escalation inexpressible, and
 // row 64 line three was enforced by the type system.
 //
-// Chris retired the last entry on 2026-10-29: *"Clock means weather alone.
-// Remove extractionCall.stormChargeSpike too. Calling extraction already has
-// the right price: siren, visible activity, and patrol convergence. A radio
-// call cannot accelerate the weather."*
+// Chris retired the last entry on 2026-10-29: *"Clock means weather alone."*
+// Extraction's former weather-spike fields went with the mechanism. Calling
+// has the right local price: siren, visible activity, and patrol convergence.
 //
 // So the allowlist is not empty - it is absent, which is stronger. There is no
 // public API on this class that adds to the meter, so there is no longer a
@@ -85,7 +84,7 @@ class ULLKLanternComponent;
 
 /** Fires once, on authority, the first time a threshold's value is passed. */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
-	FLLKStormThresholdCrossed, FName, ThresholdId, float, Charge);
+	FLLKStormThresholdCrossed, FName, ThresholdId, float, Pressure);
 
 /** Fires once, on authority, when the clock reaches the Warden's value. Row 7: it is unkillable. */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FLLKWardenConverged);
@@ -129,7 +128,7 @@ struct FLLKDistressPulse
 };
 
 UCLASS()
-class LLK_API ULLKStormChargeSubsystem : public UTickableWorldSubsystem
+class LLK_API ULLKZonePressureSubsystem : public UTickableWorldSubsystem
 {
 	GENERATED_BODY()
 
@@ -183,7 +182,7 @@ public:
 
 	// ---------------------------------------------------------- the meters
 	UFUNCTION(BlueprintPure, Category = "LLK|Storm")
-	float GetCharge() const { return Charge; }
+	float GetPressure() const { return Pressure; }
 
 	UFUNCTION(BlueprintPure, Category = "LLK|Storm")
 	bool HasWardenConverged() const { return bWardenConverged; }
@@ -195,7 +194,7 @@ public:
 	 * **Row 64 line one in one call.** The charge governs what the building
 	 * is authorised to do, and this is that authority in the form an enemy
 	 * can ask about - `Stage.IsAtLeast(1)` rather than
-	 * `GetCharge() >= 270`, which is the version where the escalation point
+	 * `GetPressure() >= 270`, which is the version where the escalation point
 	 * lives in the enemy's file and six families disagree about when the
 	 * night got worse.
 	 */
@@ -205,8 +204,8 @@ public:
 	/**
 	 * The same derivation from arbitrary values, so a client can run it.
 	 *
-	 * Static and pure for the reason `SecondsUntilCharge` is: both machines
-	 * run THIS function on the SAME `ULLKStormChargeData`, so a client
+	 * Static and pure for the reason `SecondsUntilPressure` is: both machines
+	 * run THIS function on the SAME `ULLKZonePressureData`, so a client
 	 * computes the stage from its replicated charge and cannot disagree with
 	 * the server about it. Nothing about the stage goes on the wire.
 	 *
@@ -214,12 +213,12 @@ public:
 	 * apart from a genuinely calm night by checking `GetRulesSource()`.
 	 */
 	static FLLKNightStage StageFrom(
-		const ULLKStormChargeData* InRules, float InCharge, bool bInWardenConverged);
+		const ULLKZonePressureData* InRules, float InPressure, bool bInWardenConverged);
 
 	/**
 	 * What the authored data says a threshold changes, for the readout.
 	 *
-	 * `storm-charge.json` already carries an `effect` sentence per threshold
+	 * `zone-pressure.json` already carries an `effect` sentence per threshold
 	 * - "Patrol routes tighten and Sweepers investigate noise further from
 	 * their spawn" - and M2.6 is judged on whether a player can name what
 	 * changed. Printing the authored sentence is the cheapest honest way to
@@ -256,7 +255,7 @@ public:
 	 * threshold crossed and the Warden already here - which is the one state
 	 * a readout must not render as a countdown to nothing.
 	 */
-	bool GetNextEscalation(FName& OutId, float& OutTargetCharge, float& OutCurrentCharge) const;
+	bool GetNextEscalation(FName& OutId, float& OutTargetPressure, float& OutCurrentPressure) const;
 
 	/**
 	 * Seconds until `TargetCharge` at the clock's one rate.
@@ -272,7 +271,7 @@ public:
 	 * `TNumericLimits<float>::Max()` when the rate is zero - never a division
 	 * by it, and never a plausible-looking zero.
 	 */
-	float SecondsUntilCharge(float FromCharge, float TargetCharge) const;
+	float SecondsUntilPressure(float FromCharge, float TargetCharge) const;
 
 	/** Same projection for the Warden's own dampened meter, from its live value. */
 	float SecondsUntilWarden() const;
@@ -282,7 +281,7 @@ public:
 	 *
 	 * Exists because a client's own `WardenCharge` is zero by design; it
 	 * projects from the replicated snapshot's value instead. Both sides run
-	 * THIS function on the SAME `ULLKStormChargeData`, which is what makes
+	 * THIS function on the SAME `ULLKZonePressureData`, which is what makes
 	 * client and server agree on the countdown without the server having to
 	 * send one - and what makes that agreement testable.
 	 */
@@ -296,16 +295,16 @@ public:
 	 * disagrees with the meter it was built from would make every client
 	 * wrong in a way no server-side check could see.
 	 */
-	FLLKStormSnapshot BuildSnapshot() const;
+	FLLKZonePressureSnapshot BuildSnapshot() const;
 
 	/**
 	 * Seconds to the next escalation described by a snapshot.
 	 *
 	 * The one projection entry point the HUD uses, server and client alike.
-	 * It reads `NextFromCharge` rather than assuming `Charge` so that a
+	 * It reads `NextFromPressure` rather than assuming `Pressure` so that a
 	 * client projects from the value the server actually published.
 	 */
-	float SecondsUntilSnapshotEscalation(const FLLKStormSnapshot& Snapshot) const;
+	float SecondsUntilSnapshotEscalation(const FLLKZonePressureSnapshot& Snapshot) const;
 
 	/**
 	 * True where this subsystem is actually accruing - server or standalone.
@@ -380,7 +379,7 @@ public:
 
 
 	/** The tuning in use, so a test can assert against the same numbers the meter uses. */
-	const ULLKStormChargeData* GetRules() const { return Rules; }
+	const ULLKZonePressureData* GetRules() const { return Rules; }
 
 	/**
 	 * Builds a transient asset carrying the declared fallbacks.
@@ -390,7 +389,7 @@ public:
 	 * must be the same code, or the test is checking a second copy of the
 	 * numbers.
 	 */
-	static ULLKStormChargeData* MakeFallbackRules(UObject* Outer);
+	static ULLKZonePressureData* MakeFallbackRules(UObject* Outer);
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -405,7 +404,7 @@ public:
 	void AdvanceForTest(float DeltaSeconds) { Advance(DeltaSeconds); }
 
 	/** Injects tuning so a test is not at the mercy of whether `Content/Data` was generated. */
-	void SetRulesForTest(ULLKStormChargeData* InRules)
+	void SetRulesForTest(ULLKZonePressureData* InRules)
 	{
 		Rules = InRules;
 		RulesSource = InRules != nullptr ? ELLKDataSource::Asset : ELLKDataSource::Unresolved;
@@ -413,7 +412,7 @@ public:
 #endif
 
 protected:
-	/** Loads `/Game/Data/DA_StormCharge`, or builds the declared fallbacks loudly. */
+	/** Loads `/Game/Data/DA_ZonePressure`, or builds the declared fallbacks loudly. */
 	void ResolveRules();
 
 	/**
@@ -450,7 +449,7 @@ protected:
 
 	/** Non-const because UHT does not reflect a const object pointer; read it through GetRules(). */
 	UPROPERTY()
-	TObjectPtr<ULLKStormChargeData> Rules;
+	TObjectPtr<ULLKZonePressureData> Rules;
 
 	/** Weak: a keeper's actor can be destroyed mid-run and must not be kept alive by this. */
 	TArray<TWeakObjectPtr<ULLKLanternComponent>> Lanterns;
@@ -458,7 +457,7 @@ protected:
 	/** Thresholds already announced, so each fires exactly once. */
 	TSet<FName> CrossedThresholds;
 
-	float Charge = 0.f;
+	float Pressure = 0.f;
 	/**
 	 * Transient light the crew paid for rather than chose.
 	 *

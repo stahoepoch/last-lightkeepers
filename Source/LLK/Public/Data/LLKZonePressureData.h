@@ -1,4 +1,4 @@
-// `storm-charge.json` -> ULLKStormChargeData. The clock the whole game runs on.
+// `zone-pressure.json` -> ULLKZonePressureData. The clock the whole game runs on.
 //
 // Row 6: the meter only ever rises. Nothing here is a rate that can go
 // negative, and no accessor subtracts.
@@ -8,7 +8,7 @@
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
 #include "Data/LLKDataTypes.h"
-#include "LLKStormChargeData.generated.h"
+#include "LLKZonePressureData.generated.h"
 
 /** `lantern` - how crew light multiplies the baseline rate. */
 USTRUCT(BlueprintType)
@@ -58,9 +58,6 @@ USTRUCT(BlueprintType)
 struct FLLKExtractionCallRules
 {
 	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Extraction")
-	float StormChargeSpike = 0.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Extraction")
 	bool bConvergeAllPatrols = false;
@@ -119,7 +116,7 @@ struct FLLKWardenRules
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Warden")
-	float ChargeValue = 0.f;
+	float PressureValue = 0.f;
 
 	/** Row 55: the `normal` 25%-duty profile must land inside this band. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Warden")
@@ -148,14 +145,11 @@ struct FLLKAnchorReviveRules
 	bool bConsumesFullLanternCharge = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Anchor")
-	float StormChargeSpike = 0.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Anchor")
 	bool bSoloOnly = false;
 };
 
 UCLASS(BlueprintType)
-class LLK_API ULLKStormChargeData : public UDataAsset
+class LLK_API ULLKZonePressureData : public UDataAsset
 {
 	GENERATED_BODY()
 

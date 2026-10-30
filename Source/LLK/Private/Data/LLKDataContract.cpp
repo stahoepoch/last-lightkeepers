@@ -10,7 +10,7 @@
 #include "Data/LLKDataTypes.h"
 #include "Data/LLKEnemyDef.h"
 #include "Data/LLKTableRows.h"
-#include "Data/LLKStormChargeData.h"
+#include "Data/LLKZonePressureData.h"
 #include "Data/LLKLanternData.h"
 #include "Data/LLKLootRulesData.h"
 #include "Data/LLKWorkshopRulesData.h"

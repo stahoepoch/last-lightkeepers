@@ -40,7 +40,7 @@
     "scanSeconds": 2,
     "tagSeconds": 20,
     "tagRevealsPositionToAllRobots": true,
-    "tagAddsStormCharge": 0,
+    "tagAddsPressure": 0,
     "tagGivesWardenPermanentWaypoint": false,
     "scanRequiresActiveLantern": true,
     "audioTelegraphSeconds": 0.75
@@ -72,7 +72,7 @@
 
   "Warden": {
     "formerJob": "Mall security",
-    "behaviour": "Converges on the brightest position once the Warden's own arrival meter fills - see storm-charge.json `warden`, which Chris split out of the generic thresholds on 2026-10-28. It is a late-night escalation, not the normal consequence of using a lantern. Brightest position, never nearest player: that is what puts cause and consequence in the same pair of hands.",
+    "behaviour": "Converges on the brightest position once the Warden's own arrival meter fills - see zone-pressure.json `warden`, which Chris split out of the generic thresholds on 2026-10-28. It is a late-night escalation, not the normal consequence of using a lantern. Brightest position, never nearest player: that is what puts cause and consequence in the same pair of hands.",
     "counterplay": "Hide, kite, distract, or extract. Never kill it.",
     "killable": false,
     "dropsLoot": false,
@@ -80,6 +80,6 @@
     "spawnStage": "Rooftop",
     "retargetIntervalSeconds": 5,
     "audioTelegraphSeconds": 3.0,
-    "_comment": "Not a boss. It is Storm Charge's final warning given a body. If it ever becomes killable, the meter stops meaning anything."
+    "_comment": "Not a boss. It is the mall zone's final warning given a body. If it ever becomes killable, the pressure clock stops meaning anything."
   }
 }

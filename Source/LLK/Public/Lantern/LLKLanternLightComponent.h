@@ -106,7 +106,7 @@ public:
 	 * method existing.** Chris, 2026-10-29: *"a cosmetic sway cannot simply
 	 * move that component locally: it would make the player see one light
 	 * position while the server judges another."* This component is both the
-	 * visible cone and the thing `ULLKStormChargeSubsystem::GetLitLightSources`
+	 * visible cone and the thing `ULLKZonePressureSubsystem::GetLitLightSources`
 	 * reports to `LLKLightField` - which decides storm accrual, relic
 	 * legibility, and the position the Warden converges on (row 7, row 54).
 	 *

@@ -7,7 +7,7 @@
 #include "LLK.h"
 #include "LLKUnits.h"
 #include "Lantern/LLKLanternLightComponent.h"
-#include "Storm/LLKStormChargeSubsystem.h"
+#include "Storm/LLKZonePressureSubsystem.h"
 #include "Characters/LLKVitalsComponent.h"
 #include "Loot/LLKRelicComponent.h"
 #include "Net/UnrealNetwork.h"
@@ -292,7 +292,7 @@ void ULLKInteractorComponent::ServerAnchorRevive_Implementation()
 	// own lantern's, and the duration is the revive's own.
 	if (const UWorld* World = GetWorld())
 	{
-		if (ULLKStormChargeSubsystem* Storm = World->GetSubsystem<ULLKStormChargeSubsystem>())
+		if (ULLKZonePressureSubsystem* Storm = World->GetSubsystem<ULLKZonePressureSubsystem>())
 		{
 			float Intensity = 0.f;
 			float RadiusCm = 0.f;

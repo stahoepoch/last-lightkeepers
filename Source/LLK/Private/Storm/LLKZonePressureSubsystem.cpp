@@ -1,4 +1,4 @@
-#include "Storm/LLKStormChargeSubsystem.h"
+#include "Storm/LLKZonePressureSubsystem.h"
 
 #include "Engine/World.h"
 #include "LLK.h"
@@ -9,7 +9,7 @@
 namespace
 {
 	/**
-	 * The declared fallbacks, mirroring `data/storm-charge.json`.
+	 * The declared fallbacks, mirroring `data/zone-pressure.json`.
 	 *
 	 * This is a bigger copy than the character's three speeds and the cost is
 	 * real, so it is in one place, loudly announced by `GetRulesSource()` and
@@ -19,15 +19,15 @@ namespace
 	 * escalating, which is the one failure mode nobody would notice.
 	 */
 	constexpr float FallbackBaselineRate = 1.f;
-	constexpr float FallbackWardenChargeValue = 700.f;
+	constexpr float FallbackWardenPressureValue = 700.f;
 	constexpr float FallbackPatrolsAlertValue = 270.f;
 	constexpr float FallbackPatrolsHuntValue = 480.f;
 	constexpr float FallbackSirenSeconds = 8.f;
 }
 
-ULLKStormChargeData* ULLKStormChargeSubsystem::MakeFallbackRules(UObject* Outer)
+ULLKZonePressureData* ULLKZonePressureSubsystem::MakeFallbackRules(UObject* Outer)
 {
-	ULLKStormChargeData* Fallback = NewObject<ULLKStormChargeData>(
+	ULLKZonePressureData* Fallback = NewObject<ULLKZonePressureData>(
 		Outer != nullptr ? Outer : GetTransientPackage());
 
 	Fallback->BaselineRatePerSecond = FallbackBaselineRate;
@@ -36,7 +36,7 @@ ULLKStormChargeData* ULLKStormChargeSubsystem::MakeFallbackRules(UObject* Outer)
 	// The rate does not read it, so a fallback that filled it in would be
 	// declaring a curve nothing consults - and the next person to find those
 	// four lines would reasonably conclude the curve was still live. The keys
-	// remain in `data/storm-charge.json` because deleting values there is
+	// remain in `data/zone-pressure.json` because deleting values there is
 	// Chris's call (row 55); inventing them here is not.
 
 	// Row 54: the Warden is NOT one of the thresholds. Two entries, as in the data.
@@ -49,7 +49,7 @@ ULLKStormChargeData* ULLKStormChargeSubsystem::MakeFallbackRules(UObject* Outer)
 	// blank consequence line looks like a threshold that changes nothing,
 	// not like data that failed to load.
 	//
-	// Kept verbatim in step with `data/storm-charge.json`, like every other
+	// Kept verbatim in step with `data/zone-pressure.json`, like every other
 	// value in this function.
 	FLLKStormThreshold Alert;
 	Alert.Id = TEXT("PatrolsAlert");
@@ -67,7 +67,7 @@ ULLKStormChargeData* ULLKStormChargeSubsystem::MakeFallbackRules(UObject* Outer)
 	// own meter, so `LightSensitivity` - the dampening that made its second
 	// meter rise more slowly than the first - is no longer set here for the
 	// same reason the lantern block is not.
-	Fallback->Warden.ChargeValue = FallbackWardenChargeValue;
+	Fallback->Warden.PressureValue = FallbackWardenPressureValue;
 
 	// The two spikes, because they are meter values and this class applies
 	// them. Everything else on the asset - loot payouts, the run's band,
@@ -83,7 +83,7 @@ ULLKStormChargeData* ULLKStormChargeSubsystem::MakeFallbackRules(UObject* Outer)
 	return Fallback;
 }
 
-bool ULLKStormChargeSubsystem::ShouldCreateSubsystem(UObject* Outer) const
+bool ULLKZonePressureSubsystem::ShouldCreateSubsystem(UObject* Outer) const
 {
 	if (!Super::ShouldCreateSubsystem(Outer))
 	{
@@ -97,48 +97,48 @@ bool ULLKStormChargeSubsystem::ShouldCreateSubsystem(UObject* Outer) const
 	return World != nullptr && (World->WorldType == EWorldType::Game || World->WorldType == EWorldType::PIE);
 }
 
-void ULLKStormChargeSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+void ULLKZonePressureSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 	ResolveRules();
 }
 
-void ULLKStormChargeSubsystem::ResolveRules()
+void ULLKZonePressureSubsystem::ResolveRules()
 {
 	// The importer's output path. Soft-loaded by name rather than configured,
 	// because a subsystem has no designer-editable default to point at one.
-	Rules = ::LoadObject<ULLKStormChargeData>(nullptr, TEXT("/Game/Data/DA_StormCharge.DA_StormCharge"));
+	Rules = ::LoadObject<ULLKZonePressureData>(nullptr, TEXT("/Game/Data/DA_ZonePressure.DA_ZonePressure"));
 	RulesSource = Rules != nullptr ? ELLKDataSource::Asset : ELLKDataSource::Fallback;
 
 	if (RulesSource == ELLKDataSource::Fallback)
 	{
 		Rules = MakeFallbackRules(this);
 		UE_LOG(LogLLK, Warning,
-			TEXT("ULLKStormChargeSubsystem: no /Game/Data/DA_StormCharge - running on DECLARED FALLBACK tuning ")
+			TEXT("ULLKZonePressureSubsystem: no /Game/Data/DA_ZonePressure - running on DECLARED FALLBACK tuning ")
 			TEXT("(baseline %.2f/s flat, Warden at %.0f). Run Tools/import_data.py."),
-			Rules->BaselineRatePerSecond, Rules->Warden.ChargeValue);
+			Rules->BaselineRatePerSecond, Rules->Warden.PressureValue);
 	}
 	else
 	{
 		UE_LOG(LogLLK, Log,
-			TEXT("ULLKStormChargeSubsystem: tuning from ULLKStormChargeData - baseline %.2f/s, ")
+			TEXT("ULLKZonePressureSubsystem: tuning from ULLKZonePressureData - baseline %.2f/s, ")
 			TEXT("%d thresholds, Warden %.0f."),
-			Rules->BaselineRatePerSecond, Rules->Thresholds.Num(), Rules->Warden.ChargeValue);
+			Rules->BaselineRatePerSecond, Rules->Thresholds.Num(), Rules->Warden.PressureValue);
 	}
 }
 
-TStatId ULLKStormChargeSubsystem::GetStatId() const
+TStatId ULLKZonePressureSubsystem::GetStatId() const
 {
-	RETURN_QUICK_DECLARE_CYCLE_STAT(ULLKStormChargeSubsystem, STATGROUP_Tickables);
+	RETURN_QUICK_DECLARE_CYCLE_STAT(ULLKZonePressureSubsystem, STATGROUP_Tickables);
 }
 
-bool ULLKStormChargeSubsystem::HasStormAuthority() const
+bool ULLKZonePressureSubsystem::HasStormAuthority() const
 {
 	const UWorld* World = GetWorld();
 	return World != nullptr && World->GetNetMode() != NM_Client;
 }
 
-void ULLKStormChargeSubsystem::RegisterLantern(ULLKLanternComponent* Lantern)
+void ULLKZonePressureSubsystem::RegisterLantern(ULLKLanternComponent* Lantern)
 {
 	if (Lantern == nullptr)
 	{
@@ -151,12 +151,12 @@ void ULLKStormChargeSubsystem::RegisterLantern(ULLKLanternComponent* Lantern)
 	Lanterns.AddUnique(Lantern);
 }
 
-void ULLKStormChargeSubsystem::UnregisterLantern(ULLKLanternComponent* Lantern)
+void ULLKZonePressureSubsystem::UnregisterLantern(ULLKLanternComponent* Lantern)
 {
 	Lanterns.Remove(Lantern);
 }
 
-int32 ULLKStormChargeSubsystem::GetLitLanternCount() const
+int32 ULLKZonePressureSubsystem::GetLitLanternCount() const
 {
 	int32 Count = 0;
 	for (const TWeakObjectPtr<ULLKLanternComponent>& Weak : Lanterns)
@@ -170,7 +170,7 @@ int32 ULLKStormChargeSubsystem::GetLitLanternCount() const
 	return Count;
 }
 
-void ULLKStormChargeSubsystem::AddDistressPulse(
+void ULLKZonePressureSubsystem::AddDistressPulse(
 	const FVector& Position, float Intensity, float RadiusCm, float Seconds)
 {
 	// **Row 72's replacement price for the Anchor Revive.** It used to cost a
@@ -214,7 +214,7 @@ void ULLKStormChargeSubsystem::AddDistressPulse(
 	OnDistressPulse.Broadcast(Position, Seconds);
 }
 
-void ULLKStormChargeSubsystem::AddOrRefreshDistressPulse(
+void ULLKZonePressureSubsystem::AddOrRefreshDistressPulse(
 	const FName Source, const FVector& Position, float Intensity, float RadiusCm, float Seconds)
 {
 	// **Why this exists, which is row 75's doing.** The anchor revive's flare
@@ -266,7 +266,7 @@ void ULLKStormChargeSubsystem::AddOrRefreshDistressPulse(
 	}
 }
 
-void ULLKStormChargeSubsystem::ExpireDistressPulses(float DeltaSeconds)
+void ULLKZonePressureSubsystem::ExpireDistressPulses(float DeltaSeconds)
 {
 	for (int32 Index = DistressPulses.Num() - 1; Index >= 0; --Index)
 	{
@@ -278,7 +278,7 @@ void ULLKStormChargeSubsystem::ExpireDistressPulses(float DeltaSeconds)
 	}
 }
 
-TArray<FLLKLightSource> ULLKStormChargeSubsystem::GetLitLightSources() const
+TArray<FLLKLightSource> ULLKZonePressureSubsystem::GetLitLightSources() const
 {
 	TArray<FLLKLightSource> Sources;
 
@@ -350,12 +350,12 @@ TArray<FLLKLightSource> ULLKStormChargeSubsystem::GetLitLightSources() const
 	return Sources;
 }
 
-bool ULLKStormChargeSubsystem::GetBrightestLitPosition(FVector& OutPosition, float& OutBrightness) const
+bool ULLKZonePressureSubsystem::GetBrightestLitPosition(FVector& OutPosition, float& OutBrightness) const
 {
 	return LLKLightField::FindBrightestPosition(GetLitLightSources(), OutPosition, OutBrightness);
 }
 
-float ULLKStormChargeSubsystem::GetCurrentRate() const
+float ULLKZonePressureSubsystem::GetCurrentRate() const
 {
 	// **Flat, and that is the decision.** Row 72: the pressure clock is the
 	// night arriving and nothing a player does changes its rate. There used to
@@ -371,7 +371,7 @@ float ULLKStormChargeSubsystem::GetCurrentRate() const
 	return Rules != nullptr ? Rules->BaselineRatePerSecond : 0.f;
 }
 
-bool ULLKStormChargeSubsystem::GetNextEscalation(FName& OutId, float& OutTargetCharge, float& OutCurrentCharge) const
+bool ULLKZonePressureSubsystem::GetNextEscalation(FName& OutId, float& OutTargetPressure, float& OutCurrentPressure) const
 {
 	if (Rules == nullptr)
 	{
@@ -397,8 +397,8 @@ bool ULLKStormChargeSubsystem::GetNextEscalation(FName& OutId, float& OutTargetC
 	if (Best != nullptr)
 	{
 		OutId = Best->Id;
-		OutTargetCharge = Best->Value;
-		OutCurrentCharge = Charge;
+		OutTargetPressure = Best->Value;
+		OutCurrentPressure = Pressure;
 		return true;
 	}
 
@@ -408,8 +408,8 @@ bool ULLKStormChargeSubsystem::GetNextEscalation(FName& OutId, float& OutTargetC
 	if (!bWardenConverged)
 	{
 		OutId = TEXT("WardenConverges");
-		OutTargetCharge = Rules->Warden.ChargeValue;
-		OutCurrentCharge = Charge;
+		OutTargetPressure = Rules->Warden.PressureValue;
+		OutCurrentPressure = Pressure;
 		return true;
 	}
 
@@ -418,7 +418,7 @@ bool ULLKStormChargeSubsystem::GetNextEscalation(FName& OutId, float& OutTargetC
 	return false;
 }
 
-float ULLKStormChargeSubsystem::SecondsUntilCharge(float FromCharge, float TargetCharge) const
+float ULLKZonePressureSubsystem::SecondsUntilPressure(float FromCharge, float TargetCharge) const
 {
 	if (Rules == nullptr)
 	{
@@ -440,7 +440,7 @@ float ULLKStormChargeSubsystem::SecondsUntilCharge(float FromCharge, float Targe
 	return (TargetCharge - FromCharge) / Rate;
 }
 
-float ULLKStormChargeSubsystem::SecondsUntilWarden() const
+float ULLKZonePressureSubsystem::SecondsUntilWarden() const
 {
 	// **Derived from the one clock, not accumulated beside it.** Row 72 says
 	// one pressure clock per run, never two, and this is where that bites:
@@ -453,15 +453,15 @@ float ULLKStormChargeSubsystem::SecondsUntilWarden() const
 	// 54 still holds: its arrival is its own event with its own value, and
 	// nothing about it is perception.
 	return Rules != nullptr
-		? SecondsUntilCharge(Charge, Rules->Warden.ChargeValue)
+		? SecondsUntilPressure(Pressure, Rules->Warden.PressureValue)
 		: TNumericLimits<float>::Max();
 }
 
-FLLKStormSnapshot ULLKStormChargeSubsystem::BuildSnapshot() const
+FLLKZonePressureSnapshot ULLKZonePressureSubsystem::BuildSnapshot() const
 {
-	FLLKStormSnapshot Snapshot;
+	FLLKZonePressureSnapshot Snapshot;
 	Snapshot.bPublished = true;
-	Snapshot.Charge = Charge;
+	Snapshot.Pressure = Pressure;
 	Snapshot.ElapsedSeconds = ElapsedSeconds;
 	// A crew is at most four; uint8 is not a micro-optimisation so much as a
 	// statement that a count which needed more would be a bug.
@@ -476,17 +476,17 @@ FLLKStormSnapshot ULLKStormChargeSubsystem::BuildSnapshot() const
 	if (Snapshot.bHasNextEscalation)
 	{
 		Snapshot.NextEscalationId = NextId;
-		Snapshot.NextTargetCharge = Target;
+		Snapshot.NextTargetPressure = Target;
 		// Whichever meter GetNextEscalation measured against - the thresholds'
 		// or the Warden's. Carried rather than re-derived on the client.
-		Snapshot.NextFromCharge = From;
+		Snapshot.NextFromPressure = From;
 	}
 
 	return Snapshot;
 }
 
-float ULLKStormChargeSubsystem::SecondsUntilSnapshotEscalation(
-	const FLLKStormSnapshot& Snapshot) const
+float ULLKZonePressureSubsystem::SecondsUntilSnapshotEscalation(
+	const FLLKZonePressureSnapshot& Snapshot) const
 {
 	if (!Snapshot.bHasNextEscalation)
 	{
@@ -498,10 +498,10 @@ float ULLKStormChargeSubsystem::SecondsUntilSnapshotEscalation(
 	// against the clock, like everything else. Which also means a client and
 	// a server can no longer disagree about the Warden by the width of a
 	// multiplier neither of them replicated.
-	return SecondsUntilCharge(Snapshot.NextFromCharge, Snapshot.NextTargetCharge);
+	return SecondsUntilPressure(Snapshot.NextFromPressure, Snapshot.NextTargetPressure);
 }
 
-void ULLKStormChargeSubsystem::PublishSnapshot()
+void ULLKZonePressureSubsystem::PublishSnapshot()
 {
 	UWorld* World = GetWorld();
 	if (World == nullptr)
@@ -519,7 +519,7 @@ void ULLKStormChargeSubsystem::PublishSnapshot()
 			// client HUD showing nothing, which looks exactly like a storm
 			// that never advances - and that is a long evening.
 			UE_LOG(LogLLK, Warning,
-				TEXT("ULLKStormChargeSubsystem: no ALLKGameState in this world, so the storm will not ")
+				TEXT("ULLKZonePressureSubsystem: no ALLKGameState in this world, so the storm will not ")
 				TEXT("replicate to clients. Set GameStateClass to ALLKGameState or a subclass."));
 		}
 		return;
@@ -528,7 +528,7 @@ void ULLKStormChargeSubsystem::PublishSnapshot()
 	GameState->PublishStormSnapshot(BuildSnapshot());
 }
 
-void ULLKStormChargeSubsystem::Tick(float DeltaTime)
+void ULLKZonePressureSubsystem::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
@@ -551,7 +551,7 @@ void ULLKStormChargeSubsystem::Tick(float DeltaTime)
 	}
 }
 
-void ULLKStormChargeSubsystem::Advance(float DeltaSeconds)
+void ULLKZonePressureSubsystem::Advance(float DeltaSeconds)
 {
 	if (Rules == nullptr || DeltaSeconds <= 0.f)
 	{
@@ -559,7 +559,7 @@ void ULLKStormChargeSubsystem::Advance(float DeltaSeconds)
 	}
 
 	ElapsedSeconds += DeltaSeconds;
-	Charge += Rules->BaselineRatePerSecond * DeltaSeconds;
+	Pressure += Rules->BaselineRatePerSecond * DeltaSeconds;
 
 	// Pulses expire on the same tick that advances the clock, so a pulse
 	// cannot outlive the run or be left lit by a missed update.
@@ -568,7 +568,7 @@ void ULLKStormChargeSubsystem::Advance(float DeltaSeconds)
 	AnnounceCrossings();
 }
 
-void ULLKStormChargeSubsystem::AnnounceCrossings()
+void ULLKZonePressureSubsystem::AnnounceCrossings()
 {
 	if (Rules == nullptr)
 	{
@@ -577,31 +577,31 @@ void ULLKStormChargeSubsystem::AnnounceCrossings()
 
 	for (const FLLKStormThreshold& Threshold : Rules->Thresholds)
 	{
-		if (Charge >= Threshold.Value && !CrossedThresholds.Contains(Threshold.Id))
+		if (Pressure >= Threshold.Value && !CrossedThresholds.Contains(Threshold.Id))
 		{
 			CrossedThresholds.Add(Threshold.Id);
-			UE_LOG(LogLLK, Log, TEXT("Storm Charge crossed %s at %.0f (%.0fs elapsed)."),
-				*Threshold.Id.ToString(), Charge, ElapsedSeconds);
-			OnThresholdCrossed.Broadcast(Threshold.Id, Charge);
+			UE_LOG(LogLLK, Log, TEXT("Storm Pressure crossed %s at %.0f (%.0fs elapsed)."),
+				*Threshold.Id.ToString(), Pressure, ElapsedSeconds);
+			OnThresholdCrossed.Broadcast(Threshold.Id, Pressure);
 		}
 	}
 
-	if (!bWardenConverged && Charge >= Rules->Warden.ChargeValue)
+	if (!bWardenConverged && Pressure >= Rules->Warden.PressureValue)
 	{
 		bWardenConverged = true;
 		UE_LOG(LogLLK, Log, TEXT("The Warden converges at %.0fs elapsed (pressure %.0f)."),
-			ElapsedSeconds, Charge);
+			ElapsedSeconds, Pressure);
 		OnWardenConverged.Broadcast();
 	}
 }
 
-FLLKNightStage ULLKStormChargeSubsystem::GetNightStage() const
+FLLKNightStage ULLKZonePressureSubsystem::GetNightStage() const
 {
-	return StageFrom(Rules, Charge, bWardenConverged);
+	return StageFrom(Rules, Pressure, bWardenConverged);
 }
 
-FLLKNightStage ULLKStormChargeSubsystem::StageFrom(
-	const ULLKStormChargeData* InRules, float InCharge, bool bInWardenConverged)
+FLLKNightStage ULLKZonePressureSubsystem::StageFrom(
+	const ULLKZonePressureData* InRules, float InPressure, bool bInWardenConverged)
 {
 	FLLKNightStage Stage;
 	Stage.bWardenConverged = bInWardenConverged;
@@ -629,7 +629,7 @@ FLLKNightStage ULLKStormChargeSubsystem::StageFrom(
 	float HighestCrossedValue = -1.f;
 	for (const FLLKStormThreshold& Threshold : InRules->Thresholds)
 	{
-		if (InCharge < Threshold.Value)
+		if (InPressure < Threshold.Value)
 		{
 			continue;
 		}
@@ -645,7 +645,7 @@ FLLKNightStage ULLKStormChargeSubsystem::StageFrom(
 	return Stage;
 }
 
-FString ULLKStormChargeSubsystem::GetThresholdEffect(FName ThresholdId) const
+FString ULLKZonePressureSubsystem::GetThresholdEffect(FName ThresholdId) const
 {
 	if (Rules == nullptr || ThresholdId.IsNone())
 	{
@@ -667,13 +667,12 @@ FString ULLKStormChargeSubsystem::GetThresholdEffect(FName ThresholdId) const
 
 // **The spike machinery is gone, as of row 73.** There used to be
 // `GetSpikeAmount`, `AddSpike`, `ApplySpike` and `AddSpikeAmountForTest` here,
-// plus an `ELLKStormSpike` allowlist of causes that a crew had chosen and been
-// priced for. Chris closed the last of them on 2026-10-29: *"Clock means
-// weather alone. Remove extractionCall.stormChargeSpike too. Calling
-// extraction already has the right price: siren, visible activity, and patrol
-// convergence. A radio call cannot accelerate the weather."*
+// plus a typed allowlist of causes that a crew had chosen and been priced for.
+// Chris closed the last of them on 2026-10-29: *"Clock means weather alone."*
+// Extraction's former weather-spike fields went with the mechanism; siren,
+// visible activity, and patrol convergence are the local price.
 //
-// So `Advance` is now the only thing in the project that writes `Charge`, and
+// So `Advance` is now the only thing in the project that writes `Pressure`, and
 // `Advance` takes nothing but a delta. Row 6 - the meter only ever rises -
 // stops needing to be enforced against a negative spike, because there is no
 // longer an expression anywhere that adds to the meter at all. Row 64 line

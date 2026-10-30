@@ -1,10 +1,10 @@
 {
-  "_comment": "Storm Charge tuning. Portable balance data - no Roblox types in here. RETUNED 2026-10-26 to Chris's curve, replacing the handoff's 8-minutes-to-first-threshold anchor, which left a dark crew with no escalation inside any run it would actually play. One active lantern still raises the meter 2.5x - that anchor is untouched. One charge unit is one second of darkness.",
+  "_comment": "Mall zone-pressure tuning: Storm Arrival. Portable balance data - no Roblox types in here. One pressure unit is one second at the authored baseline rate. Row 72 retired the lantern multiplier: weather arrives on its own, while lantern light changes local machine awareness.",
 
   "baselineRatePerSecond": 1,
   "lantern": {
     "_comment": "multiplier = 1 + perLanternBonus * (1 - diminishingDecay^activeLanterns) / (1 - diminishingDecay). One lantern = 2.5x, per the handoff, and the diminishing curve preserves that anchor exactly. Each further lantern adds less than the one before it but never nothing, so no keeper's light is free.",
-    "_curveChoice": "Chris, 2026-10-27: 'Switch storm-charge.json to the diminishing curve so no keeper's light is free.' This closes the question docs/VERTICAL-SLICE.md raised - under linearCapped a crew of three at 25% duty met the Warden at 5:31 and a fourth lantern cost nothing, so a four-player run was always the shortest one. Diminishing was already written and tested; only this line moved.",
+    "_curveChoice": "Chris, 2026-10-27: 'Switch zone-pressure.json to the diminishing curve so no keeper's light is free.' This closes the question docs/VERTICAL-SLICE.md raised - under linearCapped a crew of three at 25% duty met the Warden at 5:31 and a fourth lantern cost nothing, so a four-player run was always the shortest one. Diminishing was already written and tested; only this line moved.",
     "perLanternBonus": 1.5,
     "maxMultiplier": 5,
     "_maxMultiplierNote": "INERT while curve is 'diminishing' - that curve self-limits at 4.75x and needs no clamp. Kept because it is the clamp linearCapped would use if the curve were ever switched back, and because the balance test still checks a cap can never sit below the one-lantern anchor.",
@@ -37,9 +37,7 @@
   },
 
   "extractionCall": {
-    "_comment": "Chris, 2026-10-26: 'Calling extraction: a deliberate loud spike - flare, siren, enemies converging - regardless of current Storm Charge.' Extraction is the climax, not a checkbox: the argument the run builds toward is 'we have enough - call the loud extraction now, defend it, or risk one more store?'",
-    "stormChargeSpike": 180,
-    "_spikeNote": "PROPOSED, Chris to set. 180 is three minutes of darkness applied at once, which is deliberately large against thresholds of 270 / 480 / 700 - calling it mid-run should move you a stage, so that calling early and calling late are different decisions. The anchor revive's spike is 120 for comparison.",
+    "_comment": "Row 73: calling extraction does not move the weather. It announces Lanternhold's recovery rig with a siren, work lights, and patrol convergence. Extraction is the climax, not a checkbox: the argument the run builds toward is 'we have enough - call the loud extraction now, defend it, or risk one more store?'",
     "convergeAllPatrols": true,
     "sirenSeconds": 8
   },
@@ -86,8 +84,8 @@
   "warden": {
     "_comment": "SPLIT FROM thresholds, 2026-10-28, on Chris's instruction: 'The Warden is an unkillable, late-night escalation - not the normal consequence of using a lantern. If a reasonably lit crew meets it at 4-8 minutes, the game teaches the wrong lesson: light means activate the unavoidable chase phase early. Players will correctly optimize toward darkness.'",
 
-    "chargeValue": 700,
-    "_chargeValueNote": "Unchanged. A dark crew still meets the Warden at 700s = 11:40, inside the 10-12 minute night, which is exactly where Chris wants it. Raising it would have pushed dark crews past the end of the raid again - which is why he said not to simply raise all thresholds.",
+    "pressureValue": 700,
+    "_pressureValueNote": "Unchanged. A dark crew still meets the Warden at 700s = 11:40, inside the 10-12 minute night, which is exactly where Chris wants it. Raising it would have pushed dark crews past the end of the raid again - which is why he said not to simply raise all thresholds.",
 
     "arrivalBandSeconds": [660, 720],
     "_arrivalBandNote": "RETUNED by Chris, 2026-10-29, row 73: 'Keep Warden at 700; move its arrival band to 660-720 seconds. At the flat rate, it arrives at 11:40 - late in the 10-12 minute run, but still before the 780-second ceiling and with enough time for a last extraction call. The old 540-660 band belonged to the retired lantern multiplier.' The band used to describe a NORMALLY LIT crew (duty 0.25) under the lantern curve, and row 72 abolished the idea of a normally lit crew having a different night from anyone else. There is one arrival now and the band is simply where it is allowed to be. tests/balance.test.mjs reads this rather than keeping a copy, and it failed on exactly this line between rows 72 and 73 rather than being quietly retuned.",
@@ -105,7 +103,6 @@
     "chargesPerRun": 1,
     "reviveSeconds": 8,
     "consumesFullLanternCharge": true,
-    "stormChargeSpike": 120,
     "soloOnly": true,
     "_soloOnlyNote": "LOCKED by the handoff: \"Solo players receive one Anchor Revive per run.\" It exists so a lone Lightkeeper is not hard-wiped on a first knockdown. Granting it to a crew breaks the other half of the same rule - a whole crew down must wipe rather than wait indefinitely for someone to press R. Chris later locked the harsher haul rule: a wipe without extraction loses all run loot. Do not set false without changing the handoff first."
   }

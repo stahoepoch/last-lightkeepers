@@ -2,7 +2,7 @@
 //
 // He found the constraint before anybody made the lantern feel good and behave
 // wrong: the light component is both the visible cone and the position
-// `ULLKStormChargeSubsystem::GetLitLightSources` reports into
+// `ULLKZonePressureSubsystem::GetLitLightSources` reports into
 // `LLKLightField`. Sway the component and the player sees one light position
 // while the server judges another - and that position decides storm accrual,
 // relic legibility, and what the Warden converges on.

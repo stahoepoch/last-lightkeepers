@@ -55,7 +55,7 @@ namespace LLKExtractionTestFixture
 		return Point;
 	}
 
-	/** `storm-charge.json`'s `extractionCall`, minus the field row 73 retired. */
+	/** `zone-pressure.json`'s `extractionCall`, minus the field row 73 retired. */
 	FLLKExtractionAnnounce Announce()
 	{
 		FLLKExtractionAnnounce Call;

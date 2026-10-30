@@ -48,7 +48,7 @@ def main() -> int:
     manifest = json.loads((manifest_dir / "asset-manifest.json").read_text(encoding="utf-8"))
     headers = "\n".join(path.read_text(encoding="utf-8") for path in (ROOT / "Source" / "LLK" / "Public" / "Data").glob("*.h"))
     expected_tables = {"DT_Enemies", "DT_LootTiers", "DT_LedgerRooms", "DT_LedgerRungs", "DT_Relics", "DT_WorkshopUpgrades", "DT_TownLandmarks"}
-    expected_assets = {"DA_StormCharge", "DA_Lantern", "DA_LootRules", "DA_WorkshopRules"}
+    expected_assets = {"DA_ZonePressure", "DA_Lantern", "DA_LootRules", "DA_WorkshopRules"}
     if {item["asset"] for item in manifest["DataTables"]} != expected_tables or {item["asset"] for item in manifest["DataAssets"]} != expected_assets:
         raise AssertionError("asset manifest no longer names the eleven generated outputs")
     for item in manifest["DataTables"]:
@@ -62,7 +62,7 @@ def main() -> int:
     loot_asset = next(item for item in manifest["DataAssets"] if item["asset"] == "DA_LootRules")
     if loot_asset.get("keyedObjectFields", {}).get("extraction") != "key-to-id-array":
         raise AssertionError("loot extraction must promote object keys into FLLKExtractionPoint.Id")
-    storm_asset = next(item for item in manifest["DataAssets"] if item["asset"] == "DA_StormCharge")
+    storm_asset = next(item for item in manifest["DataAssets"] if item["asset"] == "DA_ZonePressure")
     if storm_asset.get("derivedFields", {}).get("thresholds") != ["darkSeconds", "regularUseSeconds", "oneLanternSeconds"]:
         raise AssertionError("storm threshold timing fields must remain writer-derived from value")
     def all_keys(value):
@@ -90,8 +90,8 @@ def main() -> int:
     if result.returncode == 0 or "unrecognised contract file(s): keepers.json" not in result.stderr:
         raise AssertionError(f"unknown data file: stdout={result.stdout!r}, stderr={result.stderr!r}")
     print("PASS unknown data files are errors")
-    must_fail("missing gameplay keys are errors", "storm-charge.json", lambda value: value["warden"].pop("effect"), "missing required key(s): effect")
-    must_fail("unknown enums are errors", "storm-charge.json", lambda value: value["lantern"].__setitem__("curve", "freeLight"), "unknown enum value")
+    must_fail("missing gameplay keys are errors", "zone-pressure.json", lambda value: value["warden"].pop("effect"), "missing required key(s): effect")
+    must_fail("unknown enums are errors", "zone-pressure.json", lambda value: value["lantern"].__setitem__("curve", "freeLight"), "unknown enum value")
     must_fail("enemy family shapes are errors", "enemies.json", lambda value: value["Warden"].__setitem__("health", 1), "unrecognised key(s): health")
     print("All importer contract tests passed.")
     return 0

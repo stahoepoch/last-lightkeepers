@@ -13,8 +13,8 @@
 #include "GameFramework/PlayerStart.h"
 #include "LLK.h"
 #include "LLKGameState.h"
-#include "Storm/LLKStormChargeSubsystem.h"
-#include "Storm/LLKStormChargeSubsystem.h"
+#include "Storm/LLKZonePressureSubsystem.h"
+#include "Storm/LLKZonePressureSubsystem.h"
 #include "LLKUnits.h"
 #include "Harness/LLKStoreFloorBuilder.h"
 #include "UI/LLKDebugHUD.h"
@@ -242,8 +242,8 @@ void ALLKTestGameMode::BeginPlay()
 	// the subsystem exists by then, but binding before the lights have been
 	// spawned means a crossing during startup would drive nothing.
 	UWorld* World = GetWorld();
-	ULLKStormChargeSubsystem* Storm =
-		World != nullptr ? World->GetSubsystem<ULLKStormChargeSubsystem>() : nullptr;
+	ULLKZonePressureSubsystem* Storm =
+		World != nullptr ? World->GetSubsystem<ULLKZonePressureSubsystem>() : nullptr;
 	if (Storm == nullptr)
 	{
 		// No subsystem in this world. Not a warning - ShouldCreateSubsystem
@@ -259,11 +259,11 @@ void ALLKTestGameMode::BeginPlay()
 	ApplyStormStage();
 }
 
-void ALLKTestGameMode::HandleThresholdCrossed(FName ThresholdId, float Charge)
+void ALLKTestGameMode::HandleThresholdCrossed(FName ThresholdId, float Pressure)
 {
 	UE_LOG(LogLLK, Log,
 		TEXT("LLKTestGameMode: the storm answers %s at charge %.0f - the harness sky darkens."),
-		*ThresholdId.ToString(), Charge);
+		*ThresholdId.ToString(), Pressure);
 	ApplyStormStage();
 }
 
@@ -276,8 +276,8 @@ void ALLKTestGameMode::HandleWardenConverged()
 void ALLKTestGameMode::ApplyStormStage()
 {
 	const UWorld* World = GetWorld();
-	const ULLKStormChargeSubsystem* Storm =
-		World != nullptr ? World->GetSubsystem<ULLKStormChargeSubsystem>() : nullptr;
+	const ULLKZonePressureSubsystem* Storm =
+		World != nullptr ? World->GetSubsystem<ULLKZonePressureSubsystem>() : nullptr;
 	if (Storm == nullptr)
 	{
 		return;

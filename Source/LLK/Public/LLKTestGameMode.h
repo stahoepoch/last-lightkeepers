@@ -98,7 +98,7 @@ protected:
 	 * costs.
 	 */
 	UFUNCTION()
-	void HandleThresholdCrossed(FName ThresholdId, float Charge);
+	void HandleThresholdCrossed(FName ThresholdId, float Pressure);
 
 	UFUNCTION()
 	void HandleWardenConverged();

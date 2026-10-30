@@ -2,7 +2,7 @@
 
 #include "Characters/LLKVitalsComponent.h"
 #include "Data/LLKLootRulesData.h"
-#include "Data/LLKStormChargeData.h"
+#include "Data/LLKZonePressureData.h"
 #include "Engine/World.h"
 #include "LLK.h"
 #include "LLKGameState.h"
@@ -10,7 +10,7 @@
 #include "Loot/LLKInteractorComponent.h"
 #include "Run/LLKExtractionZone.h"
 #include "Run/LLKRunStateSubsystem.h"
-#include "Storm/LLKStormChargeSubsystem.h"
+#include "Storm/LLKZonePressureSubsystem.h"
 
 bool ULLKExtractionSubsystem::ShouldCreateSubsystem(UObject* Outer) const
 {
@@ -49,21 +49,21 @@ void ULLKExtractionSubsystem::ResolveRules()
 	// Two of `extractionCall`'s three fields, and the omission is the rule.
 	// Row 73: the call cannot move the clock, so the spike beside these is
 	// never read and `FLLKExtractionAnnounce` has nowhere to put it.
-	if (const ULLKStormChargeData* Storm =
-			::LoadObject<ULLKStormChargeData>(nullptr, TEXT("/Game/Data/DA_StormCharge.DA_StormCharge")))
+	if (const ULLKZonePressureData* Storm =
+			::LoadObject<ULLKZonePressureData>(nullptr, TEXT("/Game/Data/DA_ZonePressure.DA_ZonePressure")))
 	{
 		Announce.SirenSeconds = Storm->ExtractionCall.SirenSeconds;
 		Announce.bConvergeAllPatrols = Storm->ExtractionCall.bConvergeAllPatrols;
 	}
 	else
 	{
-		// Declared fallback, matching `storm-charge.json`'s authored values,
+		// Declared fallback, matching `zone-pressure.json`'s authored values,
 		// so a missing asset gives a run with a real siren rather than an
 		// extraction that completes in silence the instant it is called.
 		Announce.SirenSeconds = 8.f;
 		Announce.bConvergeAllPatrols = true;
 		UE_LOG(LogLLK, Warning,
-			TEXT("ULLKExtractionSubsystem: no DA_StormCharge - DECLARED FALLBACK siren of %.0fs."),
+			TEXT("ULLKExtractionSubsystem: no DA_ZonePressure - DECLARED FALLBACK siren of %.0fs."),
 			Announce.SirenSeconds);
 	}
 }
@@ -461,8 +461,8 @@ void ULLKExtractionSubsystem::RefreshRigLight()
 	}
 
 	UWorld* World = GetWorld();
-	ULLKStormChargeSubsystem* Storm = World != nullptr
-		? World->GetSubsystem<ULLKStormChargeSubsystem>() : nullptr;
+	ULLKZonePressureSubsystem* Storm = World != nullptr
+		? World->GetSubsystem<ULLKZonePressureSubsystem>() : nullptr;
 	if (Storm == nullptr)
 	{
 		return;

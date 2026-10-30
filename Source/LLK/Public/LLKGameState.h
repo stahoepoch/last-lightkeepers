@@ -1,6 +1,6 @@
 // The one thing every machine agrees on. M1.7's replication seam.
 //
-// The storm's meters live in `ULLKStormChargeSubsystem`, which accrues on the
+// The storm's meters live in `ULLKZonePressureSubsystem`, which accrues on the
 // server alone - that is the authority rule and it does not bend. But a world
 // subsystem is not a replicated actor, so a client's copy holds an honest
 // zero and the HUD had nothing to draw. This is where the server publishes
@@ -30,7 +30,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/GameStateBase.h"
 #include "Run/LLKExtractionSnapshot.h"
-#include "Storm/LLKStormSnapshot.h"
+#include "Storm/LLKZonePressureSnapshot.h"
 #include "LLKGameState.generated.h"
 
 UCLASS()
@@ -45,17 +45,17 @@ public:
 
 	/** What every machine may read. Default-constructed and `bPublished` false until the server speaks. */
 	UFUNCTION(BlueprintPure, Category = "LLK|Storm")
-	const FLLKStormSnapshot& GetStormSnapshot() const { return StormSnapshot; }
+	const FLLKZonePressureSnapshot& GetStormSnapshot() const { return StormSnapshot; }
 
 	/**
-	 * Server only. Called by `ULLKStormChargeSubsystem`, which owns the truth.
+	 * Server only. Called by `ULLKZonePressureSubsystem`, which owns the truth.
 	 *
 	 * Public because the subsystem is not a friend and should not be - but
 	 * authority-checked inside, so a client calling it changes nothing. The
 	 * storm is the one piece of state everything else reads; if any of it can
 	 * be set locally, all of it can be lied about.
 	 */
-	void PublishStormSnapshot(const FLLKStormSnapshot& InSnapshot);
+	void PublishStormSnapshot(const FLLKZonePressureSnapshot& InSnapshot);
 
 	/**
 	 * Server only. Called once by `ULLKRunStateSubsystem`. M2.2b.
@@ -88,7 +88,7 @@ public:
 
 protected:
 	UPROPERTY(Replicated, VisibleInstanceOnly, Category = "LLK|Storm")
-	FLLKStormSnapshot StormSnapshot;
+	FLLKZonePressureSnapshot StormSnapshot;
 
 	UPROPERTY(Replicated, VisibleInstanceOnly, Category = "LLK|Run")
 	bool bCrewWiped = false;

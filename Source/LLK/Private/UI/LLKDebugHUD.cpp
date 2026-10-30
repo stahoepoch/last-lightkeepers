@@ -15,7 +15,7 @@
 #include "LLKGameState.h"
 #include "LLKUnits.h"
 #include "Loot/LLKRelicComponent.h"
-#include "Storm/LLKStormChargeSubsystem.h"
+#include "Storm/LLKZonePressureSubsystem.h"
 
 namespace
 {
@@ -30,7 +30,7 @@ namespace
 	static TAutoConsoleVariable<int32> CVarShowStormHUD(
 		TEXT("LLK.ShowStormHUD"),
 		1,
-		TEXT("Draw the M1.7 Storm Charge debug readout. 1 = on (default), 0 = off."),
+		TEXT("Draw the M1.7 Storm Pressure debug readout. 1 = on (default), 0 = off."),
 		ECVF_Default);
 
 	// Warm, matching the lantern, for the things the player controls. Cold for
@@ -155,12 +155,12 @@ void ALLKDebugHUD::DrawHUD()
 
 	// The subsystem, for the ARITHMETIC only - it holds the rules, which are
 	// static data present on every machine. None of its meters are read here.
-	const ULLKStormChargeSubsystem* Storm = World->GetSubsystem<ULLKStormChargeSubsystem>();
+	const ULLKZonePressureSubsystem* Storm = World->GetSubsystem<ULLKZonePressureSubsystem>();
 	if (Storm == nullptr)
 	{
 		// Each missing piece names itself. On screen they all look like "no
 		// HUD", and they have three different fixes.
-		DrawLine(TEXT("STORM  no ULLKStormChargeSubsystem in this world"), ColourUrgent, CursorY);
+		DrawLine(TEXT("STORM  no ULLKZonePressureSubsystem in this world"), ColourUrgent, CursorY);
 		return;
 	}
 
@@ -580,7 +580,7 @@ void ALLKDebugHUD::DrawRelicPanel(float& CursorY)
 }
 
 void ALLKDebugHUD::DrawStormPanel(
-	const ULLKStormChargeSubsystem* Storm, const FLLKStormSnapshot& Snapshot, float& CursorY)
+	const ULLKZonePressureSubsystem* Storm, const FLLKZonePressureSnapshot& Snapshot, float& CursorY)
 {
 	// Nothing has arrived yet. A default snapshot is field-for-field identical
 	// to a genuine all-zero start of night, and those mean opposite things, so
@@ -606,9 +606,9 @@ void ALLKDebugHUD::DrawStormPanel(
 	// the wire, and two copies of one fact is a badge that can contradict the
 	// countdown printed underneath it.
 	const FLLKNightStage Stage =
-		ULLKStormChargeSubsystem::StageFrom(Storm->GetRules(), Snapshot.Charge, Snapshot.bWardenConverged);
+		ULLKZonePressureSubsystem::StageFrom(Storm->GetRules(), Snapshot.Pressure, Snapshot.bWardenConverged);
 
-	// The authored sentence, not a word of ours. `storm-charge.json` carries
+	// The authored sentence, not a word of ours. `zone-pressure.json` carries
 	// an `effect` per threshold and M2.6 is judged on whether a player can
 	// name what changed - so the words they read are the words Chris tunes.
 	const FString Effect = Storm->GetThresholdEffect(Stage.Id);
@@ -648,7 +648,7 @@ void ALLKDebugHUD::DrawStormPanel(
 		const bool bWardenNext = Snapshot.NextEscalationId == TEXT("WardenConverges");
 
 		// Projected here rather than replicated. Both machines run this on
-		// the same ULLKStormChargeData, so the countdown agrees without the
+		// the same ULLKZonePressureData, so the countdown agrees without the
 		// server sending one - and it keeps ticking smoothly between the
 		// 10Hz snapshots instead of stepping.
 		const float Seconds = Storm->SecondsUntilSnapshotEscalation(Snapshot);
@@ -716,9 +716,9 @@ void ALLKDebugHUD::DrawStormPanel(
 	// ---- the two meters, last, because they are the trivia -------------
 	DrawLine(
 		FString::Printf(TEXT("charge  %.0f%s       elapsed  %s"),
-			Snapshot.Charge,
+			Snapshot.Pressure,
 			Snapshot.bHasNextEscalation
-				? *FString::Printf(TEXT(" / %.0f"), Snapshot.NextTargetCharge) : TEXT(""),
+				? *FString::Printf(TEXT(" / %.0f"), Snapshot.NextTargetPressure) : TEXT(""),
 			*FormatSeconds(Snapshot.ElapsedSeconds)),
 		ColourQuiet, CursorY);
 
@@ -742,7 +742,7 @@ void ALLKDebugHUD::DrawStormPanel(
 	DrawLine(
 		FString::Printf(TEXT("source  %s%s"),
 			Snapshot.RulesSource == ELLKDataSource::Asset
-				? TEXT("DA_StormCharge") : TEXT("DECLARED FALLBACKS"),
+				? TEXT("DA_ZonePressure") : TEXT("DECLARED FALLBACKS"),
 			Storm->IsAccruing() ? TEXT("") : TEXT("  (server's, replicated)")),
 		Snapshot.RulesSource == ELLKDataSource::Asset ? ColourQuiet : ColourUrgent, CursorY);
 }

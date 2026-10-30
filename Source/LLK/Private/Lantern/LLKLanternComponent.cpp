@@ -92,7 +92,7 @@ void ULLKLanternComponent::ApplyState(bool bNewOn, ELLKLanternChangeReason Reaso
 	{
 		// Idempotent on purpose. A toggle that fires its delegate on every
 		// call would make listeners count state changes that did not happen,
-		// and the storm charge multiplier is a count of lit lanterns.
+		// and the zone-pressure readout is a count of lit lanterns.
 		return;
 	}
 

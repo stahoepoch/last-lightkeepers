@@ -9,8 +9,8 @@
 // "2:24" flicker to "0:58" and back learns nothing except not to trust the
 // number. One struct cannot tear.
 //
-// **It carries state, never rules.** `ULLKStormChargeData` is static data
-// present on both sides already - a client loads `DA_StormCharge` in
+// **It carries state, never rules.** `ULLKZonePressureData` is static data
+// present on both sides already - a client loads `DA_ZonePressure` in
 // `Initialize` like the server does - so the baseline rate, the curve and the
 // Warden's sensitivity do not belong on the wire. Only what changes does.
 // That is also what lets a client compute its own projection rather than
@@ -27,16 +27,16 @@
 
 #include "CoreMinimal.h"
 #include "Data/LLKDataTypes.h"
-#include "LLKStormSnapshot.generated.h"
+#include "LLKZonePressureSnapshot.generated.h"
 
 USTRUCT(BlueprintType)
-struct FLLKStormSnapshot
+struct FLLKZonePressureSnapshot
 {
 	GENERATED_BODY()
 
 	/** The thresholds' meter. Row 6: this only ever rises. */
 	UPROPERTY(BlueprintReadOnly, Category = "LLK|Storm")
-	float Charge = 0.f;
+	float Pressure = 0.f;
 
 	UPROPERTY(BlueprintReadOnly, Category = "LLK|Storm")
 	float ElapsedSeconds = 0.f;
@@ -72,18 +72,18 @@ struct FLLKStormSnapshot
 	FName NextEscalationId;
 
 	UPROPERTY(BlueprintReadOnly, Category = "LLK|Storm")
-	float NextTargetCharge = 0.f;
+	float NextTargetPressure = 0.f;
 
 	/**
 	 * The meter the next escalation is measured against.
 	 *
-	 * Carried rather than assumed to be `Charge`, because when the Warden is
+	 * Carried rather than assumed to be `Pressure`, because when the Warden is
 	 * next it is measured against `WardenCharge` - and those two differ by the
 	 * whole of row 54's dampening. A client that assumed the wrong one would
 	 * be wrong in the direction that makes a lit crew look safer than it is.
 	 */
 	UPROPERTY(BlueprintReadOnly, Category = "LLK|Storm")
-	float NextFromCharge = 0.f;
+	float NextFromPressure = 0.f;
 
 	/** Which data the SERVER read. A client showing its own source would be guessing. */
 	UPROPERTY(BlueprintReadOnly, Category = "LLK|Storm")

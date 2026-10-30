@@ -4,7 +4,7 @@
 #include "Engine/World.h"
 #include "LLK.h"
 #include "Net/UnrealNetwork.h"
-#include "Storm/LLKStormChargeSubsystem.h"
+#include "Storm/LLKZonePressureSubsystem.h"
 
 #define LOCTEXT_NAMESPACE "LLKRelic"
 
@@ -140,7 +140,7 @@ void ULLKRelicComponent::TickComponent(
 		return;
 	}
 
-	const ULLKStormChargeSubsystem* Storm = World->GetSubsystem<ULLKStormChargeSubsystem>();
+	const ULLKZonePressureSubsystem* Storm = World->GetSubsystem<ULLKZonePressureSubsystem>();
 	if (Storm == nullptr)
 	{
 		return;

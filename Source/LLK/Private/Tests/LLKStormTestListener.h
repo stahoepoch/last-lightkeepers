@@ -1,4 +1,4 @@
-// An event counter for LLKStormChargeTest.
+// An event counter for LLKZonePressureTest.
 //
 // A UCLASS in its own header for the same reason `ULLKLanternTestListener` is:
 // both storm delegates are BlueprintAssignable, which is deliberate - the
@@ -23,10 +23,10 @@ class ULLKStormTestListener : public UObject
 
 public:
 	UFUNCTION()
-	void OnThresholdCrossed(FName ThresholdId, float Charge)
+	void OnThresholdCrossed(FName ThresholdId, float Pressure)
 	{
 		++Counts.FindOrAdd(ThresholdId);
-		LastCharge = Charge;
+		LastCharge = Pressure;
 	}
 
 	UFUNCTION()

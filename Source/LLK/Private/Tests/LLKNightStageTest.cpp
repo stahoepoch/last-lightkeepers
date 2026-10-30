@@ -6,7 +6,7 @@
 //
 //   1. **A client's stage differing from the server's.** The stage is NOT
 //      replicated - it is computed on both sides from the charge and the
-//      shared `ULLKStormChargeData`. That is the right design only if the two
+//      shared `ULLKZonePressureData`. That is the right design only if the two
 //      sides provably land on the same stage, because a badge reading "calm"
 //      over a countdown reading "patrols hunt in 0:00" is worse than no badge.
 //      This is the same property `LLK.Storm.Snapshot` asserts for the
@@ -19,7 +19,7 @@
 //   3. **Naming the wrong threshold.** `StageFrom` counts every threshold the
 //      charge has passed and names the HIGHEST-valued one. Naming the
 //      last-in-array one instead would be correct for the data as written and
-//      silently wrong the day somebody sorts `storm-charge.json` descending -
+//      silently wrong the day somebody sorts `zone-pressure.json` descending -
 //      so the descending case is constructed here rather than hoped about.
 //   4. **A hardcoded stage count.** The index exists so a third threshold
 //      costs no C++ (rows 12 and 33). A test that asserted exactly two
@@ -30,11 +30,11 @@
 //      because a badge with made-up consequence reads as authored design.
 
 #include "Algo/Reverse.h"
-#include "Data/LLKStormChargeData.h"
+#include "Data/LLKZonePressureData.h"
 #include "Misc/AutomationTest.h"
 #include "Storm/LLKNightStage.h"
-#include "Storm/LLKStormChargeSubsystem.h"
-#include "Storm/LLKStormSnapshot.h"
+#include "Storm/LLKZonePressureSubsystem.h"
+#include "Storm/LLKZonePressureSnapshot.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -51,7 +51,7 @@ bool FLLKNightStageTest::RunTest(const FString& Parameters)
 	//
 	// Failure mode: a subsystem whose rules have not resolved reporting a
 	// plausible stage. Count 0 is what tells the two apart.
-	const FLLKNightStage Unresolved = ULLKStormChargeSubsystem::StageFrom(nullptr, 9999.f, false);
+	const FLLKNightStage Unresolved = ULLKZonePressureSubsystem::StageFrom(nullptr, 9999.f, false);
 	TestTrue(TEXT("with no rules the stage is calm, however high the charge"), Unresolved.IsCalm());
 	TestEqual(TEXT("and its count is zero, which is how a readout tells it apart"),
 		static_cast<int32>(Unresolved.Count), 0);
@@ -64,8 +64,8 @@ bool FLLKNightStageTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("and is not final, which would mean the night was over"), Default.IsFinal());
 
 	// ---- the real rules ------------------------------------------------
-	ULLKStormChargeSubsystem* Server = NewObject<ULLKStormChargeSubsystem>(GetTransientPackage());
-	ULLKStormChargeData* Rules = ULLKStormChargeSubsystem::MakeFallbackRules(Server);
+	ULLKZonePressureSubsystem* Server = NewObject<ULLKZonePressureSubsystem>(GetTransientPackage());
+	ULLKZonePressureData* Rules = ULLKZonePressureSubsystem::MakeFallbackRules(Server);
 	Server->SetRulesForTest(Rules);
 
 	// Relationships, never the literal 2. Rows 12 and 33: a third threshold
@@ -89,7 +89,7 @@ bool FLLKNightStageTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("and those two thresholds are at different charges"), Last.Value > First.Value);
 
 	// ---- 1. the stage tracks the charge across every boundary ----------
-	const FLLKNightStage AtZero = ULLKStormChargeSubsystem::StageFrom(Rules, 0.f, false);
+	const FLLKNightStage AtZero = ULLKZonePressureSubsystem::StageFrom(Rules, 0.f, false);
 	TestTrue(TEXT("a night that has not started is calm"), AtZero.IsCalm());
 	TestEqual(TEXT("and knows how many thresholds it has to cross"),
 		static_cast<int32>(AtZero.Count), ThresholdCount);
@@ -99,13 +99,13 @@ bool FLLKNightStageTest::RunTest(const FString& Parameters)
 	// building a tick early, which is the kind of thing nobody notices and
 	// everybody feels.
 	const FLLKNightStage JustUnder =
-		ULLKStormChargeSubsystem::StageFrom(Rules, First.Value - 0.01f, false);
+		ULLKZonePressureSubsystem::StageFrom(Rules, First.Value - 0.01f, false);
 	TestTrue(TEXT("one hundredth below the first threshold is still calm"), JustUnder.IsCalm());
 
-	// Exactly on it. `AnnounceCrossings` fires at `Charge >= Value`, so the
+	// Exactly on it. `AnnounceCrossings` fires at `Pressure >= Value`, so the
 	// stage must agree at exactly the boundary or the badge and the delegate
 	// disagree for one tick.
-	const FLLKNightStage AtFirst = ULLKStormChargeSubsystem::StageFrom(Rules, First.Value, false);
+	const FLLKNightStage AtFirst = ULLKZonePressureSubsystem::StageFrom(Rules, First.Value, false);
 	TestEqual(TEXT("exactly on the first threshold the stage has advanced"),
 		static_cast<int32>(AtFirst.Index), 1);
 	TestEqual(TEXT("and names the threshold that was crossed"), AtFirst.Id, First.Id);
@@ -115,11 +115,11 @@ bool FLLKNightStageTest::RunTest(const FString& Parameters)
 
 	// Between the two.
 	const FLLKNightStage Between =
-		ULLKStormChargeSubsystem::StageFrom(Rules, Last.Value - 0.01f, false);
+		ULLKZonePressureSubsystem::StageFrom(Rules, Last.Value - 0.01f, false);
 	TestEqual(TEXT("below the last threshold the stage is still the earlier one"),
 		Between.Id, First.Id);
 
-	const FLLKNightStage AtLast = ULLKStormChargeSubsystem::StageFrom(Rules, Last.Value, false);
+	const FLLKNightStage AtLast = ULLKZonePressureSubsystem::StageFrom(Rules, Last.Value, false);
 	TestEqual(TEXT("on the last threshold every threshold is crossed"),
 		static_cast<int32>(AtLast.Index), ThresholdCount);
 	TestEqual(TEXT("and the stage names the highest one"), AtLast.Id, Last.Id);
@@ -131,14 +131,14 @@ bool FLLKNightStageTest::RunTest(const FString& Parameters)
 		AtLast.IsFinal());
 
 	const FLLKNightStage Converged =
-		ULLKStormChargeSubsystem::StageFrom(Rules, Last.Value, true);
+		ULLKZonePressureSubsystem::StageFrom(Rules, Last.Value, true);
 	TestTrue(TEXT("the Warden on top of every threshold is the end of the night"),
 		Converged.IsFinal());
 
 	// And the Warden can arrive while thresholds remain uncrossed, because the
 	// two meters are tracked separately. The stage must not claim finality
 	// then - "nothing left to send" would be a lie with a threshold pending.
-	const FLLKNightStage EarlyWarden = ULLKStormChargeSubsystem::StageFrom(Rules, 0.f, true);
+	const FLLKNightStage EarlyWarden = ULLKZonePressureSubsystem::StageFrom(Rules, 0.f, true);
 	TestFalse(TEXT("a Warden with thresholds still pending is not a finished night"),
 		EarlyWarden.IsFinal());
 	TestFalse(TEXT("and such a night is not calm either"), EarlyWarden.IsCalm());
@@ -170,17 +170,17 @@ bool FLLKNightStageTest::RunTest(const FString& Parameters)
 	// Failure mode 1, and the reason nothing about the stage is replicated. A
 	// second subsystem with the same rules and no meters of its own is
 	// exactly a client's situation.
-	ULLKStormChargeSubsystem* Client = NewObject<ULLKStormChargeSubsystem>(GetTransientPackage());
+	ULLKZonePressureSubsystem* Client = NewObject<ULLKZonePressureSubsystem>(GetTransientPackage());
 	Client->SetRulesForTest(Rules);
 
 	TestTrue(TEXT("the client's own meter is empty, as a client's is"),
-		Client->GetCharge() <= 0.f);
+		Client->GetPressure() <= 0.f);
 	TestTrue(TEXT("so its own stage is calm while the server's is not"),
 		Client->GetNightStage().IsCalm() && !Server->GetNightStage().IsCalm());
 
-	const FLLKStormSnapshot Snapshot = Server->BuildSnapshot();
-	const FLLKNightStage FromSnapshot = ULLKStormChargeSubsystem::StageFrom(
-		Client->GetRules(), Snapshot.Charge, Snapshot.bWardenConverged);
+	const FLLKZonePressureSnapshot Snapshot = Server->BuildSnapshot();
+	const FLLKNightStage FromSnapshot = ULLKZonePressureSubsystem::StageFrom(
+		Client->GetRules(), Snapshot.Pressure, Snapshot.bWardenConverged);
 
 	TestEqual(TEXT("but from the SNAPSHOT the client reaches the server's exact stage"),
 		FromSnapshot, Server->GetNightStage());
@@ -192,14 +192,14 @@ bool FLLKNightStageTest::RunTest(const FString& Parameters)
 	// Nothing sorts `Thresholds`, and a data file written highest-first is
 	// perfectly valid. Naming last-in-array would pass against the real data
 	// and fail silently here.
-	ULLKStormChargeData* Reversed = ULLKStormChargeSubsystem::MakeFallbackRules(Server);
+	ULLKZonePressureData* Reversed = ULLKZonePressureSubsystem::MakeFallbackRules(Server);
 	Reversed->Thresholds = Ascending;
 	Algo::Reverse(Reversed->Thresholds);
 	TestEqual(TEXT("the reversed rules really are reversed"),
 		Reversed->Thresholds[0].Id, Last.Id);
 
 	const FLLKNightStage FromReversed =
-		ULLKStormChargeSubsystem::StageFrom(Reversed, First.Value, false);
+		ULLKZonePressureSubsystem::StageFrom(Reversed, First.Value, false);
 	TestEqual(TEXT("with thresholds in descending order the count is still right"),
 		static_cast<int32>(FromReversed.Index), 1);
 	TestEqual(TEXT("and the stage names the highest CROSSED one, not the first listed"),

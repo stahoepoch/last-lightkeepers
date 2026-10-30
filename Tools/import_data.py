@@ -35,7 +35,7 @@ ASSET_MANIFEST = {
         {"asset": "DT_TownLandmarks", "rowStruct": "FLLKLandmarkDef", "source": "town.json", "field": "landmarks", "rows": "id-array"},
     ],
     "DataAssets": [
-        {"asset": "DA_StormCharge", "class": "ULLKStormChargeData", "source": "storm-charge.json", "exclude": [], "derivedFields": {"thresholds": ["darkSeconds", "regularUseSeconds", "oneLanternSeconds"]}},
+        {"asset": "DA_ZonePressure", "class": "ULLKZonePressureData", "source": "zone-pressure.json", "exclude": [], "derivedFields": {"thresholds": ["darkSeconds", "regularUseSeconds", "oneLanternSeconds"]}},
         {"asset": "DA_Lantern", "class": "ULLKLanternData", "source": "lantern.json", "exclude": []},
         {"asset": "DA_LootRules", "class": "ULLKLootRulesData", "source": "loot.json", "exclude": ["tiers"], "keyedObjectFields": {"extraction": "key-to-id-array"}},
         {"asset": "DA_WorkshopRules", "class": "ULLKWorkshopRulesData", "source": "workshop.json", "exclude": ["upgrades"]},
@@ -101,7 +101,7 @@ ENEMY_COMMON = {"formerJob": str, "behaviour": str, "counterplay": str, "moveSpe
 ENEMY_FAMILIES = {
     "Sweepers": {"health": (int, float), "aggroRadiusDark": (int, float), "aggroRadiusLit": (int, float), "swarmCallRadius": (int, float), "attractedToDroppedLoot": bool},
     "Stockers": {"health": (int, float), "sightRange": (int, float), "sightConeDegrees": (int, float), "losesTargetAfterSeconds": (int, float)},
-    "Glimmers": {"health": (int, float), "scanRange": (int, float), "scanSeconds": (int, float), "tagSeconds": (int, float), "tagRevealsPositionToAllRobots": bool, "tagAddsStormCharge": (int, float), "tagGivesWardenPermanentWaypoint": bool, "scanRequiresActiveLantern": bool},
+    "Glimmers": {"health": (int, float), "scanRange": (int, float), "scanSeconds": (int, float), "tagSeconds": (int, float), "tagRevealsPositionToAllRobots": bool, "tagAddsPressure": (int, float), "tagGivesWardenPermanentWaypoint": bool, "scanRequiresActiveLantern": bool},
     "WindowWalkers": {"health": (int, float), "wakeRange": (int, float), "sightRange": (int, float), "wakeRequiresActiveLantern": bool},
     "Ficus": {"health": (int, float), "wakeRange": (int, float), "sightRange": (int, float), "wakeRequiresActiveLantern": bool},
     "Warden": {"killable": bool, "dropsLoot": bool, "spawnStage": str, "retargetIntervalSeconds": (int, float)},
@@ -119,23 +119,23 @@ def pair(value: Any, path: str) -> None:
     for index, item in enumerate(items): scalar(item, (int, float), f"{path}[{index}]")
 
 def validate_storm(data: Any) -> None:
-    root = obj(data, "storm-charge.json")
-    exact(root, {"baselineRatePerSecond", "lantern", "run", "extractionCall", "thresholds", "warden", "anchorRevive"}, "storm-charge.json")
-    scalar(root["baselineRatePerSecond"], (int, float), "storm-charge.json.baselineRatePerSecond")
-    lantern = obj(root["lantern"], "storm-charge.json.lantern"); lantern_spec = {"perLanternBonus": (int, float), "maxMultiplier": (int, float), "curve": str, "diminishingDecay": (int, float)}
-    exact(lantern, set(lantern_spec), "storm-charge.json.lantern"); fields(lantern, lantern_spec, "storm-charge.json.lantern")
-    if lantern["curve"] not in {"linearCapped", "diminishing"}: error("storm-charge.json.lantern.curve", f"unknown enum value {lantern['curve']!r}")
-    run = obj(root["run"], "storm-charge.json.run"); run_spec = {"earlyExitSeconds": (int, float), "targetSeconds": (int, float), "hardCeilingSeconds": (int, float)}
-    exact(run, set(run_spec) | {"targetBandSeconds"}, "storm-charge.json.run"); fields(run, run_spec, "storm-charge.json.run"); pair(run["targetBandSeconds"], "storm-charge.json.run.targetBandSeconds")
-    call = obj(root["extractionCall"], "storm-charge.json.extractionCall"); call_spec = {"stormChargeSpike": (int, float), "convergeAllPatrols": bool, "sirenSeconds": (int, float)}
-    exact(call, set(call_spec), "storm-charge.json.extractionCall"); fields(call, call_spec, "storm-charge.json.extractionCall")
+    root = obj(data, "zone-pressure.json")
+    exact(root, {"baselineRatePerSecond", "lantern", "run", "extractionCall", "thresholds", "warden", "anchorRevive"}, "zone-pressure.json")
+    scalar(root["baselineRatePerSecond"], (int, float), "zone-pressure.json.baselineRatePerSecond")
+    lantern = obj(root["lantern"], "zone-pressure.json.lantern"); lantern_spec = {"perLanternBonus": (int, float), "maxMultiplier": (int, float), "curve": str, "diminishingDecay": (int, float)}
+    exact(lantern, set(lantern_spec), "zone-pressure.json.lantern"); fields(lantern, lantern_spec, "zone-pressure.json.lantern")
+    if lantern["curve"] not in {"linearCapped", "diminishing"}: error("zone-pressure.json.lantern.curve", f"unknown enum value {lantern['curve']!r}")
+    run = obj(root["run"], "zone-pressure.json.run"); run_spec = {"earlyExitSeconds": (int, float), "targetSeconds": (int, float), "hardCeilingSeconds": (int, float)}
+    exact(run, set(run_spec) | {"targetBandSeconds"}, "zone-pressure.json.run"); fields(run, run_spec, "zone-pressure.json.run"); pair(run["targetBandSeconds"], "zone-pressure.json.run.targetBandSeconds")
+    call = obj(root["extractionCall"], "zone-pressure.json.extractionCall"); call_spec = {"convergeAllPatrols": bool, "sirenSeconds": (int, float)}
+    exact(call, set(call_spec), "zone-pressure.json.extractionCall"); fields(call, call_spec, "zone-pressure.json.extractionCall")
     threshold_spec = {"id": str, "value": (int, float), "darkSeconds": (int, float), "regularUseSeconds": (int, float), "oneLanternSeconds": (int, float), "effect": str}
-    for index, row in enumerate(array(root["thresholds"], "storm-charge.json.thresholds")):
-        path = f"storm-charge.json.thresholds[{index}]"; row = obj(row, path); exact(row, set(threshold_spec), path); fields(row, threshold_spec, path)
-    warden = obj(root["warden"], "storm-charge.json.warden"); warden_spec = {"chargeValue": (int, float), "lightSensitivity": (int, float), "effect": str}
-    exact(warden, set(warden_spec) | {"arrivalBandSeconds"}, "storm-charge.json.warden"); fields(warden, warden_spec, "storm-charge.json.warden"); pair(warden["arrivalBandSeconds"], "storm-charge.json.warden.arrivalBandSeconds")
-    revive = obj(root["anchorRevive"], "storm-charge.json.anchorRevive"); revive_spec = {"chargesPerRun": (int, float), "reviveSeconds": (int, float), "consumesFullLanternCharge": bool, "stormChargeSpike": (int, float), "soloOnly": bool}
-    exact(revive, set(revive_spec), "storm-charge.json.anchorRevive"); fields(revive, revive_spec, "storm-charge.json.anchorRevive")
+    for index, row in enumerate(array(root["thresholds"], "zone-pressure.json.thresholds")):
+        path = f"zone-pressure.json.thresholds[{index}]"; row = obj(row, path); exact(row, set(threshold_spec), path); fields(row, threshold_spec, path)
+    warden = obj(root["warden"], "zone-pressure.json.warden"); warden_spec = {"pressureValue": (int, float), "lightSensitivity": (int, float), "effect": str}
+    exact(warden, set(warden_spec) | {"arrivalBandSeconds"}, "zone-pressure.json.warden"); fields(warden, warden_spec, "zone-pressure.json.warden"); pair(warden["arrivalBandSeconds"], "zone-pressure.json.warden.arrivalBandSeconds")
+    revive = obj(root["anchorRevive"], "zone-pressure.json.anchorRevive"); revive_spec = {"chargesPerRun": (int, float), "reviveSeconds": (int, float), "consumesFullLanternCharge": bool, "soloOnly": bool}
+    exact(revive, set(revive_spec), "zone-pressure.json.anchorRevive"); fields(revive, revive_spec, "zone-pressure.json.anchorRevive")
 
 def validate_lantern(data: Any) -> None:
     root = obj(data, "lantern.json")
@@ -244,8 +244,8 @@ def validate_ledger(data: Any) -> None:
         for child_index, child in enumerate(array(restoration["wakesWithoutLantern"], f"{path}.restoration.wakesWithoutLantern")): scalar(child, str, f"{path}.restoration.wakesWithoutLantern[{child_index}]")
         departure = obj(restoration["departure"], f"{path}.restoration.departure"); dep_spec = {"unpoweredSeconds": (int, float), "poweredSeconds": (int, float), "unpoweredFalseStartChance": (int, float)}; exact(departure, set(dep_spec), f"{path}.restoration.departure"); fields(departure, dep_spec, f"{path}.restoration.departure")
 
-VALIDATORS = {"enemies.json": validate_enemies, "storm-charge.json": validate_storm, "lantern.json": validate_lantern, "loot.json": validate_loot, "relics.json": validate_relics, "town.json": validate_town, "ledger.json": validate_ledger}
-CONTRACT_FILES = ("enemies.json", "storm-charge.json", "lantern.json", "loot.json", "relics.json", "workshop.json", "town.json", "ledger.json")
+VALIDATORS = {"enemies.json": validate_enemies, "zone-pressure.json": validate_storm, "lantern.json": validate_lantern, "loot.json": validate_loot, "relics.json": validate_relics, "town.json": validate_town, "ledger.json": validate_ledger}
+CONTRACT_FILES = ("enemies.json", "zone-pressure.json", "lantern.json", "loot.json", "relics.json", "workshop.json", "town.json", "ledger.json")
 
 def load(data_dir: Path) -> tuple[dict[str, Any], dict[str, int]]:
     clean, reports = {}, {}

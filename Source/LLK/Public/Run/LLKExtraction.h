@@ -21,9 +21,8 @@
 // clock. It takes no pressure value, returns no pressure change, and there is
 // deliberately no field it could be handed through - `FLLKExtractionAnnounce`
 // carries the siren and the convergence flag and NOT the
-// `FLLKExtractionCallRules::StormChargeSpike` that still sits beside them in
-// the data asset, waiting for Codex to delete it. Copying two of three fields
-// is the point: a rule that cannot be expressed cannot regress.
+// former weather-spike field that row 73 retired. Copying only the two live
+// fields is the point: a rule that cannot be expressed cannot regress.
 //
 // **What the call actually costs**, since it no longer costs the night: noise,
 // light and a route. The siren runs for `extractionCall.sirenSeconds`, the rig

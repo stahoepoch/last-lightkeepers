@@ -29,7 +29,7 @@
 // a crew has no anchor revive at all (row 9 is solo-only), so a crew with
 // every keeper down wipes. There is no waiting it out.
 //
-// **And it may never touch Storm Charge.** Row 64 line three: escalation
+// **And it may never touch Zone Pressure.** Row 64 line three: escalation
 // comes from choices, never from failing, and a wipe is the purest failure in
 // the game. The anchor revive costs the meter because continuing is a
 // decision; the wipe is what happens when no decision is left.

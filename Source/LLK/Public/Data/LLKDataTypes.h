@@ -20,7 +20,7 @@
 #include "CoreMinimal.h"
 #include "LLKDataTypes.generated.h"
 
-/** `storm-charge.json` -> `lantern.curve`. Row 12 is LOCKED on `Diminishing`. */
+/** `zone-pressure.json` -> `lantern.curve`. Row 12 is LOCKED on `Diminishing`. */
 UENUM(BlueprintType)
 enum class ELLKLanternCurve : uint8
 {

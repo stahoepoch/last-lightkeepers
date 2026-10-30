@@ -63,7 +63,7 @@ better at the call site and that is the whole point of it:
 
 | File | Asset | Holds |
 | --- | --- | --- |
-| `storm-charge.json` | `ULLKStormChargeData` | `baselineRatePerSecond`, the `lantern` block including the **diminishing** curve (row 12), the **`run` block** (`targetSeconds`, `targetBandSeconds`, `earlyExitSeconds`, `hardCeilingSeconds` — added 2026-10-28, see below; `targetBandSeconds` is a two-element `[low, high]` array, not a scalar), `extractionCall`, `thresholds` (an array of **two** since 2026-10-28), the **`warden` block** (`chargeValue`, `arrivalBandSeconds` — a two-element `[low, high]` array — `lightSensitivity`, `effect` — row 54 gave the Warden its own dampened arrival meter, so it is **not** a threshold and must not be imported as one), `anchorRevive` |
+| `zone-pressure.json` | `ULLKZonePressureData` | `baselineRatePerSecond`, the retained legacy `lantern` analysis block, the **`run` block** (`targetSeconds`, `targetBandSeconds`, `earlyExitSeconds`, `hardCeilingSeconds` — added 2026-10-28; `targetBandSeconds` is a two-element `[low, high]` array, not a scalar), `extractionCall`, `thresholds` (an array of **two**), the **`warden` block** (`pressureValue`, `arrivalBandSeconds` — a two-element `[low, high]` array — `effect`), `anchorRevive`. Row 73 removed both weather-spike fields: extraction and Anchor Revive now create local risk rather than moving the zone clock. |
 | `lantern.json` | `ULLKLanternData` | `charge`, `knockdown`, `revive`, `sweeperContact`, `movement` |
 | `loot.json` | `ULLKLootRulesData` | `rules`, `burden`, `banking`, `extraction` — everything in the file except `tiers` |
 | `workshop.json` | `ULLKWorkshopRulesData` | `currency` — a string array, today `["Supplies", "Components"]`. **Added to this contract 2026-10-28**; it was the one top-level key in the eight files with no home here, so the importer would have hard-errored on it per rule 2. Like `loot.json`, this file is **both** shapes: `upgrades` is a DataTable, `currency` is a singleton. Each entry must be a `Tier` name that exists in `loot.json` → `tiers`, so it parses as an enum per rule 4 rather than as free text |
@@ -245,7 +245,7 @@ fill.
 | `LLKDataTypes.h` | `ELLKLanternCurve`, `ELLKLootVisibility`, `ELLKExtractionReliability`, `ELLKEnemyFamily`, `FLLKSecondsBand` |
 | `LLKEnemyDef.h` | `FLLKEnemyDef` - one row type, six rows |
 | `LLKTableRows.h` | `FLLKLootTierDef`, `FLLKRoomDef`, `FLLKRungDef`, `FLLKRelicDef`, `FLLKUpgradeDef`, `FLLKLandmarkDef` |
-| `LLKStormChargeData.h` | `ULLKStormChargeData` and its five blocks |
+| `LLKZonePressureData.h` | `ULLKZonePressureData` and its five blocks |
 | `LLKLanternData.h` | `ULLKLanternData` and its five blocks |
 | `LLKLootRulesData.h` | `ULLKLootRulesData` |
 | `LLKWorkshopRulesData.h` | `ULLKWorkshopRulesData` |
@@ -345,7 +345,7 @@ array-valued properties inside assets declare one:
 
 | Source | Shape in JSON | C++ | What the writer must do |
 | --- | --- | --- | --- |
-| `storm-charge.thresholds` | array, elements carry `id` | `TArray<FLLKStormThreshold>`, has `FName Id` | Copy `id` straight into `Id`. Preserve order - the array is ascending by `value` |
+| `zone-pressure.thresholds` | array, elements carry `id` | `TArray<FLLKStormThreshold>`, has `FName Id` | Copy `id` straight into `Id`. Preserve order - the array is ascending by `value` |
 | `loot.extraction` | **keyed object** (`LoadingDock`, `FreightLift`) | `TArray<FLLKExtractionPoint>`, has `FName Id` | **Promote the key into `Id`.** There is no `id` inside the element to copy |
 
 That last row is the one with no precedent anywhere else in the contract: a
@@ -359,7 +359,7 @@ would still read correctly in the editor, so it would look fine.
 
 Codex closed the gap below the same evening, and went past it: the manifest now
 carries `keyedObjectFields` on `DA_LootRules` and `derivedFields` on
-`DA_StormCharge`, so the two conventions above are machine-readable rather than
+`DA_ZonePressure`, so the two conventions above are machine-readable rather than
 only written here.
 
 **A green suite proves nothing until it has been seen red** - M0.7's rule, and

@@ -1,6 +1,6 @@
 // Escalation-source guard.
 //
-// **The rule.** `Storm Charge` may rise from things the crew CHOSE - light,
+// **The rule.** `Storm Pressure` may rise from things the crew CHOSE - light,
 // theft, depth, alarms, elapsed time, the extraction call, the anchor revive.
 // It must never rise from a knockdown or a containment, which are what happen
 // when the crew gets it wrong.
@@ -82,8 +82,8 @@ const FORBIDDEN_CALLERS = [
 // What "reaching the meter" looks like in this codebase.
 const ESCALATION_SYMBOLS = [
   "AddSpike",
-  "ULLKStormChargeSubsystem",
-  "LLKStormChargeSubsystem.h",
+  "ULLKZonePressureSubsystem",
+  "LLKZonePressureSubsystem.h",
 ];
 
 for (const entry of FORBIDDEN_CALLERS) {
@@ -98,7 +98,7 @@ for (const entry of FORBIDDEN_CALLERS) {
     check(
       `${entry.path} does not reach the storm via ${symbol}`,
       !src.includes(symbol),
-      `${entry.why}. Storm Charge must never rise from a knockdown: escalation ` +
+      `${entry.why}. Storm Pressure must never rise from a knockdown: escalation ` +
         `triggered by failure is punishment the player cannot diagnose. If the ` +
         `night genuinely needs to react to a containment, it must read the state ` +
         `and slow down, not be told to speed up`,
@@ -134,8 +134,8 @@ for (const entry of FORBIDDEN_CALLERS) {
 // player does moves the clock, so failure cannot be a special case of
 // anything.
 {
-  const stormHeader = "Source/LLK/Public/Storm/LLKStormChargeSubsystem.h";
-  const stormImpl = "Source/LLK/Private/Storm/LLKStormChargeSubsystem.cpp";
+  const stormHeader = "Source/LLK/Public/Storm/LLKZonePressureSubsystem.h";
+  const stormImpl = "Source/LLK/Private/Storm/LLKZonePressureSubsystem.cpp";
   const headerFull = join(root, stormHeader);
   const implFull = join(root, stormImpl);
   const src = existsSync(headerFull) ? readFileSync(headerFull, "utf8") : "";
@@ -160,7 +160,7 @@ for (const entry of FORBIDDEN_CALLERS) {
   );
 
   // 2. Exactly one expression writes the meter, and it is time.
-  const writes = (cleanImpl.match(/Charge\s*\+=/g) ?? []).length;
+  const writes = (cleanImpl.match(/Pressure\s*\+=/g) ?? []).length;
   check(
     "ROW 73: exactly one expression adds to the meter",
     writes === 1,
@@ -168,7 +168,7 @@ for (const entry of FORBIDDEN_CALLERS) {
   );
   check(
     "and that expression is the baseline times a delta",
-    /Charge \+= Rules->BaselineRatePerSecond \* DeltaSeconds;/.test(cleanImpl),
+    /Pressure \+= Rules->BaselineRatePerSecond \* DeltaSeconds;/.test(cleanImpl),
     "a second term in the accrual is the regression this whole guard exists for",
   );
 
@@ -216,10 +216,10 @@ for (const entry of FORBIDDEN_CALLERS) {
 
 // ---- M2.3: the stage's words are the authored words ----------------------
 //
-// `storm-charge.json` carries an `effect` sentence per threshold, and the
+// `zone-pressure.json` carries an `effect` sentence per threshold, and the
 // debug readout prints it beside the stage so a player can name what changed
 // - which is what M2.6 is judged on. The fallback rules in
-// `LLKStormChargeSubsystem.cpp` carry the same sentences, because
+// `LLKZonePressureSubsystem.cpp` carry the same sentences, because
 // `LLK.Storm.NightStage` caught them being empty there: a fallback threshold
 // with an id and a value but no consequence text is resolved-but-degenerate,
 // the same shape as the lantern that resolved to a zero radius.
@@ -229,8 +229,8 @@ for (const entry of FORBIDDEN_CALLERS) {
 // a drifted fallback would show the old consequence on exactly the run where
 // the asset failed to load - the run where somebody is already confused.
 {
-  const dataPath = "data/storm-charge.json";
-  const srcPath = "Source/LLK/Private/Storm/LLKStormChargeSubsystem.cpp";
+  const dataPath = "data/zone-pressure.json";
+  const srcPath = "Source/LLK/Private/Storm/LLKZonePressureSubsystem.cpp";
   const data = JSON.parse(readFileSync(join(root, dataPath), "utf8"));
   const src = readFileSync(join(root, srcPath), "utf8");
 

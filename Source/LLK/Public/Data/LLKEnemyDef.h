@@ -114,7 +114,7 @@ struct FLLKEnemyDef : public FTableRowBase
 	TOptional<bool> bTagRevealsPositionToAllRobots;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Glimmers")
-	TOptional<float> TagAddsStormCharge;
+	TOptional<float> TagAddsPressure;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Glimmers")
 	TOptional<bool> bTagGivesWardenPermanentWaypoint;
@@ -123,7 +123,7 @@ struct FLLKEnemyDef : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Glimmers")
 	TOptional<bool> bScanRequiresActiveLantern;
 
-	// Warden. Row 7, and row 54 moved its *arrival* into ULLKStormChargeData.
+	// Warden. Row 7, and row 54 moved its *arrival* into ULLKZonePressureData.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Warden")
 	TOptional<bool> bKillable;
 

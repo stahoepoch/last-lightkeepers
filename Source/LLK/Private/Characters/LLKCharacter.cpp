@@ -16,7 +16,7 @@
 #include "Loot/LLKInteractorComponent.h"
 #include "Run/LLKRunStateSubsystem.h"
 #include "LLKUnits.h"
-#include "Storm/LLKStormChargeSubsystem.h"
+#include "Storm/LLKZonePressureSubsystem.h"
 #include "Net/UnrealNetwork.h"
 
 ALLKCharacter::ALLKCharacter()
@@ -124,7 +124,7 @@ void ALLKCharacter::BeginPlay()
 	{
 		if (UWorld* World = GetWorld())
 		{
-			if (ULLKStormChargeSubsystem* Storm = World->GetSubsystem<ULLKStormChargeSubsystem>())
+			if (ULLKZonePressureSubsystem* Storm = World->GetSubsystem<ULLKZonePressureSubsystem>())
 			{
 				Storm->RegisterLantern(Lantern);
 			}
@@ -141,7 +141,7 @@ void ALLKCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	{
 		if (const UWorld* World = GetWorld())
 		{
-			if (ULLKStormChargeSubsystem* Storm = World->GetSubsystem<ULLKStormChargeSubsystem>())
+			if (ULLKZonePressureSubsystem* Storm = World->GetSubsystem<ULLKZonePressureSubsystem>())
 			{
 				Storm->UnregisterLantern(Lantern);
 			}

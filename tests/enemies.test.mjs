@@ -21,7 +21,7 @@
 //      family ever gets two, the precedence becomes a design decision
 //      somebody has to make rather than one the function already made.
 //   3. **Row 64 line three, reaching into the roster.** Escalation may never
-//      be caused by failure. `Glimmers.tagAddsStormCharge` is 0, and being
+//      be caused by failure. `Glimmers.tagAddsPressure` is 0, and being
 //      tagged is something that HAPPENS to a crew rather than something they
 //      chose - so a non-zero value here would be failure feeding the meter.
 //      It would also need an `ELLKStormSpike` entry, which
@@ -137,8 +137,8 @@ for (const [name, family] of families) {
 {
   const glimmers = data.Glimmers ?? {};
   check(
-    "being tagged does not feed the storm",
-    glimmers.tagAddsStormCharge === 0,
+    "being tagged does not feed zone pressure",
+    glimmers.tagAddsPressure === 0,
     "row 64 line three: escalation comes from choices the crew can identify, " +
       "never from failing. A tag happens TO a crew. A non-zero value here " +
       "would also need an ELLKStormSpike entry, which escalation.test.mjs " +

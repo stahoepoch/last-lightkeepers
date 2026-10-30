@@ -3,7 +3,7 @@
 // **The rule this protects.** Row 73: *"Clock means weather alone... A radio
 // call cannot accelerate the weather."* Extraction is the single most tempting
 // place to break that, because the call used to pay 180 into the meter and the
-// JSON key that paid it is still sitting in `storm-charge.json` waiting for
+// JSON key that paid it is still sitting in `zone-pressure.json` waiting for
 // Codex's importer to move. Somebody wiring the climax up could read
 // `extractionCall`, find three fields, and use all three.
 //
@@ -13,7 +13,7 @@
 // behaviour thoroughly, but it cannot assert that the state machine never
 // learns about the clock: a pure function given no clock will never touch one,
 // so the test would pass just as happily on a version that took a
-// `ULLKStormChargeSubsystem*`. The constraint is architectural - the rule
+// `ULLKZonePressureSubsystem*`. The constraint is architectural - the rule
 // layer must be UNABLE to reach the meter - and architecture is checkable by
 // inspection.
 //
@@ -79,11 +79,11 @@ for (const rel of [PURE_HEADER, PURE_IMPL, SUBSYSTEM_HEADER, SUBSYSTEM_IMPL, TES
   const both = `${header}\n${impl}`;
 
   for (const forbidden of [
-    "LLKStormChargeSubsystem",
-    "ULLKStormChargeData",
+    "LLKZonePressureSubsystem",
+    "ULLKZonePressureData",
     "StormChargeSpike",
     "AddSpike",
-    "GetCharge",
+    "GetPressure",
     "ZonePressure",
   ]) {
     check(
@@ -311,7 +311,7 @@ for (const rel of [PURE_HEADER, PURE_IMPL, SUBSYSTEM_HEADER, SUBSYSTEM_IMPL, TES
     );
   }
 
-  const siren = JSON.parse(readFileSync(join(root, "data/storm-charge.json"), "utf8"))
+  const siren = JSON.parse(readFileSync(join(root, "data/zone-pressure.json"), "utf8"))
     .extractionCall;
   check(
     "the siren is authored and audible",

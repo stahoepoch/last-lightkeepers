@@ -56,6 +56,15 @@ const files = walk(join(root, "src")).map((path) => ({
 
 const all = (re, text) => [...text.matchAll(re)];
 
+// Frozen Luau is evidence, not a runtime dependency.  It still requires the
+// old portable module name, while the Unreal-facing contract renamed it to
+// zone-pressure because the same clock must later describe Solar Output.
+// Resolve that one archived name here rather than changing frozen source.
+const ARCHIVED_DATA_ALIASES = new Map([
+  ["storm-charge", "zone-pressure"],
+]);
+const portableDataName = (name) => ARCHIVED_DATA_ALIASES.get(name) ?? name;
+
 // ---- 1. remote names -------------------------------------------------------
 
 console.log("\nRemotes");
@@ -125,13 +134,14 @@ console.log("\nConfig against data/*.json");
     for (const [section, varName] of sectionToVar) {
       const jsonName = varToJson.get(varName);
       if (!jsonName) continue;
-      const jsonPath = join(root, "data", `${jsonName}.json`);
+      const portableName = portableDataName(jsonName);
+      const jsonPath = join(root, "data", `${portableName}.json`);
       checks += 1;
       if (!existsSync(jsonPath)) {
-        fail(`Config.${section} -> data/${jsonName}.json is missing`);
+        fail(`Config.${section} -> data/${portableName}.json is missing`);
         continue;
       }
-      ok(`Config.${section} -> data/${jsonName}.json exists`);
+      ok(`Config.${section} -> data/${portableName}.json exists`);
       sections.set(section, JSON.parse(readFileSync(jsonPath, "utf8")));
     }
 
@@ -190,7 +200,7 @@ console.log("\nModule resolution");
     for (const m of all(/require[(](?:\w+|script[.]Parent):WaitForChild[(]"([^"]+)"[)][)]/g, f.src)) {
       const target = m[1];
       checks += 1;
-      if (byName.has(target) || dataNames.has(target)) {
+      if (byName.has(target) || dataNames.has(portableDataName(target))) {
         ok(`require "${target}" resolves (${f.rel})`);
       } else {
         fail(`require "${target}" has no matching file — ${f.rel}`);

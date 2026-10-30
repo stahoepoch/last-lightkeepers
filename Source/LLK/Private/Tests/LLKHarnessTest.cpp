@@ -12,7 +12,7 @@
 // below exists purely to be broken on purpose, and the procedure for doing
 // that is written out at the bottom of this file rather than left to folklore.
 //
-// Real gameplay assertions arrive at M1.8 (the storm charge rules, in-engine).
+// Real gameplay assertions arrive at M1.8 (the zone-pressure rules, in-engine).
 // The 151 data invariants in tests/balance.test.mjs keep running on plain Node
 // and need no engine, so they are not duplicated here.
 

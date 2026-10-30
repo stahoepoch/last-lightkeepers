@@ -7,7 +7,7 @@
 // tested and replicated before any art exists.
 //
 // It broadcasts instead. `OnLanternStateChanged` is how the light actor knows
-// to turn on, how `ULLKStormChargeSubsystem` (M1.4) counts lit keepers, and
+// to turn on, how `ULLKZonePressureSubsystem` (M1.4) counts lit keepers, and
 // how enemies will learn where the brightest position is. None of those three
 // are referenced here, deliberately: a component that knows about its
 // listeners cannot be tested without them.
@@ -15,7 +15,7 @@
 // **Server-authoritative with no exception.** The client asks, the server
 // decides, the state replicates. `docs/ROADMAP.md` lists "replication
 // retrofitted late" as a named risk, and the lantern is the one piece of
-// state in this game that everything else reads - storm charge, enemy
+// state in this game that everything else reads - zone pressure, enemy
 // targeting, loot visibility. If any of it can be set locally, all of it can
 // be lied about.
 

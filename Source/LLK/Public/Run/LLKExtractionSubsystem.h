@@ -9,7 +9,7 @@
 // **What it knows about the world, and nothing more:**
 //
 //   - `ULLKLootRulesData` for the exits - their holds, payouts and gates.
-//   - `ULLKStormChargeData::ExtractionCall` for the siren and the convergence
+//   - `ULLKZonePressureData::ExtractionCall` for the siren and the convergence
 //     flag. Two of that block's three fields; the third is the retired spike,
 //     which this class never reads and `FLLKExtractionAnnounce` cannot carry.
 //   - `ULLKRunStateSubsystem` for the wipe and for who is still in the run.
@@ -42,7 +42,7 @@
 #include "LLKExtractionSubsystem.generated.h"
 
 class ULLKLootRulesData;
-class ULLKStormChargeData;
+class ULLKZonePressureData;
 class ULLKRunStateSubsystem;
 class ALLKExtractionZone;
 

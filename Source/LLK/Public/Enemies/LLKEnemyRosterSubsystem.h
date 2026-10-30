@@ -1,7 +1,7 @@
 // The six families, loaded once and queryable. M2.4's first half.
 //
 // **Why this has no fallback, when every other data reader in the project
-// does.** `ULLKStormChargeSubsystem::MakeFallbackRules` and the lantern's
+// does.** `ULLKZonePressureSubsystem::MakeFallbackRules` and the lantern's
 // declared defaults exist because a missing asset must not stop the game
 // being playable, and because a silent fallback is how "gameplay reads
 // `data/`" quietly stops being true. Both of those arguments reverse here.

@@ -9,8 +9,8 @@
 //
 // So this struct is a *view*, computed from three things that already exist:
 // the charge, the Warden's flag, and the authored thresholds. There is no
-// setter, no tick, and nothing to replicate. `FLLKStormSnapshot` carries the
-// charge already and both machines load the same `ULLKStormChargeData`, so a
+// setter, no tick, and nothing to replicate. `FLLKZonePressureSnapshot` carries the
+// charge already and both machines load the same `ULLKZonePressureData`, so a
 // client computes its own stage and cannot drift from the server's by
 // construction. That is the same argument the snapshot header makes for not
 // replicating the countdown, applied one level up.
@@ -19,12 +19,12 @@
 // code.** `docs/DECISIONS.md` row 12 says switching the curve must never need
 // a code change, and row 33 makes `data/` the layer that survives an engine
 // change; a stage enum with `Alert` and `Hunt` baked in would make
-// `storm-charge.json` unable to grow a threshold without a C++ edit. The index
+// `zone-pressure.json` unable to grow a threshold without a C++ edit. The index
 // counts how many authored thresholds the charge has passed and `Id` carries
 // the authored name of the highest one, so a third threshold appears in the
 // readout the moment it appears in the data.
 //
-// **Row 64 is what this is for.** Line one: Storm Charge permanently increases
+// **Row 64 is what this is for.** Line one: Zone Pressure permanently increases
 // what the building is AUTHORIZED to do. The stage *is* that authority, and it
 // is monotonic for the same reason the meter is - `Index` can only rise
 // because `Charge` can only rise, and `IsAtLeast` is the question an enemy
@@ -41,7 +41,7 @@
 /**
  * How far into the night the building is authorised to go.
  *
- * Construct it with `ULLKStormChargeSubsystem::StageFrom`, or read it from
+ * Construct it with `ULLKZonePressureSubsystem::StageFrom`, or read it from
  * `GetNightStage()`. There is deliberately no other way to make one that
  * means anything - a default-constructed stage is calm, which is the honest
  * answer for "the rules have not resolved yet".
@@ -73,7 +73,7 @@ struct FLLKNightStage
 	/**
 	 * The authored id of the highest threshold crossed, or None when calm.
 	 *
-	 * `PatrolsAlert`, `PatrolsHunt`, or whatever `storm-charge.json` is
+	 * `PatrolsAlert`, `PatrolsHunt`, or whatever `zone-pressure.json` is
 	 * holding the day somebody adds a third. This is what the HUD prints and
 	 * what a log line should name, because an index alone is not something a
 	 * player or a bug report can say out loud.

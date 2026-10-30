@@ -9,7 +9,7 @@
 //
 // So the property under test is **agreement**. A client is not shown a
 // countdown the server computed; it computes its own from the replicated
-// meters and its own copy of `DA_StormCharge`. That is cheaper on the wire and
+// meters and its own copy of `DA_ZonePressure`. That is cheaper on the wire and
 // smoother on screen, but it only works if both sides reach the same number -
 // and nothing about the two code paths being "the same function" guarantees
 // that, because the inputs differ. The server projects from `WardenCharge`;
@@ -19,7 +19,7 @@
 // What would go wrong without it, in order of how badly:
 //
 //   1. **The snapshot measuring the wrong meter.** When the Warden is next,
-//      `NextFromCharge` must be the Warden's charge, not the thresholds'.
+//      `NextFromPressure` must be the Warden's charge, not the thresholds'.
 //      They differ by the whole of row 54's dampening, and the error points
 //      the reassuring way - a lit crew would read as safer than it is.
 //   2. **A default snapshot rendering as a real meter.** Field for field, a
@@ -29,21 +29,21 @@
 //      carries the SERVER's `RulesSource`, because which data the night runs
 //      on is not the same question as which data this machine loaded.
 
-#include "Data/LLKStormChargeData.h"
+#include "Data/LLKZonePressureData.h"
 #include "Lantern/LLKLanternComponent.h"
 #include "Misc/AutomationTest.h"
-#include "Storm/LLKStormChargeSubsystem.h"
-#include "Storm/LLKStormSnapshot.h"
+#include "Storm/LLKZonePressureSubsystem.h"
+#include "Storm/LLKZonePressureSnapshot.h"
 #include "UI/LLKDebugHUD.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FLLKStormSnapshotTest,
+	FLLKZonePressureSnapshotTest,
 	"LLK.Storm.Snapshot",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
 
-bool FLLKStormSnapshotTest::RunTest(const FString& Parameters)
+bool FLLKZonePressureSnapshotTest::RunTest(const FString& Parameters)
 {
 	UE_LOG(LogTemp, Log, TEXT("LLK storm snapshot test reached RunTest."));
 
@@ -51,30 +51,30 @@ bool FLLKStormSnapshotTest::RunTest(const FString& Parameters)
 	//
 	// Failure mode 2, and the cheapest one to get wrong. Every field below
 	// is also what a real night starts at.
-	const FLLKStormSnapshot Fresh;
+	const FLLKZonePressureSnapshot Fresh;
 	TestFalse(TEXT("a default snapshot is not published"), Fresh.bPublished);
 	TestFalse(TEXT("and claims nothing is coming"), Fresh.bHasNextEscalation);
-	TestEqual(TEXT("and its charge is zero, like a real start of night"), Fresh.Charge, 0.f);
+	TestEqual(TEXT("and its charge is zero, like a real start of night"), Fresh.Pressure, 0.f);
 	TestEqual(TEXT("so bPublished is the ONLY thing separating the two"),
 		Fresh.RulesSource, ELLKDataSource::Unresolved);
 
 	// ---- the server ----------------------------------------------------
-	ULLKStormChargeSubsystem* Server = NewObject<ULLKStormChargeSubsystem>(GetTransientPackage());
-	ULLKStormChargeData* Rules = ULLKStormChargeSubsystem::MakeFallbackRules(Server);
+	ULLKZonePressureSubsystem* Server = NewObject<ULLKZonePressureSubsystem>(GetTransientPackage());
+	ULLKZonePressureData* Rules = ULLKZonePressureSubsystem::MakeFallbackRules(Server);
 	Server->SetRulesForTest(Rules);
 
 	// A client: a second subsystem with the SAME rules asset and no meters of
 	// its own, which is exactly a client's situation - it loads
-	// DA_StormCharge in Initialize like the server does, and accrues nothing.
-	ULLKStormChargeSubsystem* Client = NewObject<ULLKStormChargeSubsystem>(GetTransientPackage());
+	// DA_ZonePressure in Initialize like the server does, and accrues nothing.
+	ULLKZonePressureSubsystem* Client = NewObject<ULLKZonePressureSubsystem>(GetTransientPackage());
 	Client->SetRulesForTest(Rules);
 
 	// ---- 2. the snapshot agrees with the meter it was built from --------
 	Server->AdvanceForTest(120.f);
-	FLLKStormSnapshot Snapshot = Server->BuildSnapshot();
+	FLLKZonePressureSnapshot Snapshot = Server->BuildSnapshot();
 
 	TestTrue(TEXT("a built snapshot is published"), Snapshot.bPublished);
-	TestEqual(TEXT("charge matches the server"), Snapshot.Charge, Server->GetCharge());
+	TestEqual(TEXT("charge matches the server"), Snapshot.Pressure, Server->GetPressure());
 	TestEqual(TEXT("elapsed matches the server"), Snapshot.ElapsedSeconds, Server->GetElapsedSeconds());
 
 	// Three fields used to be asserted here - WardenCharge, Multiplier and
@@ -91,7 +91,7 @@ bool FLLKStormSnapshotTest::RunTest(const FString& Parameters)
 	// the clock has actually moved - a snapshot of zero would make every
 	// agreement below true and meaningless.
 	TestTrue(TEXT("the clock has moved, so the agreement below is not trivially true"),
-		Snapshot.Charge > 1.f);
+		Snapshot.Pressure > 1.f);
 
 	// ---- 3. THE AGREEMENT. A client reaches the server's answer ---------
 	//
@@ -124,8 +124,8 @@ bool FLLKStormSnapshotTest::RunTest(const FString& Parameters)
 	//
 	// While a threshold is next, it is measured against the thresholds'
 	// charge.
-	TestEqual(TEXT("with a threshold next, NextFromCharge is the thresholds' meter"),
-		Snapshot.NextFromCharge, Snapshot.Charge);
+	TestEqual(TEXT("with a threshold next, NextFromPressure is the thresholds' meter"),
+		Snapshot.NextFromPressure, Snapshot.Pressure);
 
 	// Cross both thresholds so the Warden becomes next, and the measured
 	// meter must switch with it. Getting this wrong is wrong by the whole of
@@ -134,13 +134,13 @@ bool FLLKStormSnapshotTest::RunTest(const FString& Parameters)
 	Snapshot = Server->BuildSnapshot();
 	TestEqual(TEXT("the Warden is now next"),
 		Snapshot.NextEscalationId, FName(TEXT("WardenConverges")));
-	// This used to assert that NextFromCharge switched to the Warden's own
+	// This used to assert that NextFromPressure switched to the Warden's own
 	// meter and was NOT the thresholds' charge. Row 72 inverts it: there is
 	// one clock, so the Warden is measured against the same charge as every
 	// other threshold, and a snapshot that reported anything else would now
 	// be the bug.
-	TestEqual(TEXT("ROW 72: NextFromCharge is the one clock, for the Warden too"),
-		Snapshot.NextFromCharge, Snapshot.Charge);
+	TestEqual(TEXT("ROW 72: NextFromPressure is the one clock, for the Warden too"),
+		Snapshot.NextFromPressure, Snapshot.Pressure);
 
 	// A client projecting the Warden from that snapshot must still match.
 	TestNearlyEqual(TEXT("client and server agree on the Warden's arrival"),

@@ -22,7 +22,7 @@ void ALLKGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 	DOREPLIFETIME(ALLKGameState, ExtractionSnapshot);
 }
 
-void ALLKGameState::PublishStormSnapshot(const FLLKStormSnapshot& InSnapshot)
+void ALLKGameState::PublishStormSnapshot(const FLLKZonePressureSnapshot& InSnapshot)
 {
 	// Authority-checked here rather than trusted to the caller. The subsystem
 	// already checks, so this is the second lock on the same door - and it is

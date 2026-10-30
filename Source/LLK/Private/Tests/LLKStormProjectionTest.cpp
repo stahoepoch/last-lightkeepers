@@ -20,9 +20,9 @@
 //      would be wrong by the whole of the dampening, and wrong in the
 //      direction that makes a lit crew look safer than it is.
 
-#include "Data/LLKStormChargeData.h"
+#include "Data/LLKZonePressureData.h"
 #include "Misc/AutomationTest.h"
-#include "Storm/LLKStormChargeSubsystem.h"
+#include "Storm/LLKZonePressureSubsystem.h"
 #include "UI/LLKDebugHUD.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -36,8 +36,8 @@ bool FLLKStormProjectionTest::RunTest(const FString& Parameters)
 {
 	UE_LOG(LogTemp, Log, TEXT("LLK storm projection test reached RunTest."));
 
-	ULLKStormChargeSubsystem* Storm = NewObject<ULLKStormChargeSubsystem>(GetTransientPackage());
-	ULLKStormChargeData* Rules = ULLKStormChargeSubsystem::MakeFallbackRules(Storm);
+	ULLKZonePressureSubsystem* Storm = NewObject<ULLKZonePressureSubsystem>(GetTransientPackage());
+	ULLKZonePressureData* Rules = ULLKZonePressureSubsystem::MakeFallbackRules(Storm);
 	Storm->SetRulesForTest(Rules);
 
 	// ---- 1. the projection itself -------------------------------------
@@ -45,7 +45,7 @@ bool FLLKStormProjectionTest::RunTest(const FString& Parameters)
 	// One charge unit is one second of darkness, so dark, the seconds to a
 	// threshold are its value. PatrolsAlert is 270.
 	TestNearlyEqual(TEXT("dark, PatrolsAlert is 270 seconds away"),
-		Storm->SecondsUntilCharge(0.f, 270.f), 270.f, 0.01f);
+		Storm->SecondsUntilPressure(0.f, 270.f), 270.f, 0.01f);
 
 	// ---- 2. ROW 72: the projection has no second answer ---------------
 	//
@@ -60,18 +60,18 @@ bool FLLKStormProjectionTest::RunTest(const FString& Parameters)
 	// rate, so there is one projection, and the thing to guard is that no
 	// second answer creeps back in. A projection that varied with anything
 	// but the authored baseline would now be the bug.
-	const float Projected = Storm->SecondsUntilCharge(0.f, 270.f);
+	const float Projected = Storm->SecondsUntilPressure(0.f, 270.f);
 	TestNearlyEqual(TEXT("the projection is the threshold divided by the one rate"),
 		Projected, 270.f / Rules->BaselineRatePerSecond, 0.01f);
 	TestNearlyEqual(TEXT("ROW 72: and asking again gives the same answer, because "
 		"nothing about the crew is an input to it"),
-		Storm->SecondsUntilCharge(0.f, 270.f), Projected, 0.0001f);
+		Storm->SecondsUntilPressure(0.f, 270.f), Projected, 0.0001f);
 
 	// ---- 3. a zero rate is never a division, and never "now" ----------
-	ULLKStormChargeData* Stopped = ULLKStormChargeSubsystem::MakeFallbackRules(Storm);
+	ULLKZonePressureData* Stopped = ULLKZonePressureSubsystem::MakeFallbackRules(Storm);
 	Stopped->BaselineRatePerSecond = 0.f;
 	Storm->SetRulesForTest(Stopped);
-	const float Never = Storm->SecondsUntilCharge(0.f, 270.f);
+	const float Never = Storm->SecondsUntilPressure(0.f, 270.f);
 	TestTrue(TEXT("a zero rate projects as never, not as zero seconds"),
 		Never >= TNumericLimits<float>::Max() * 0.5f);
 	TestEqual(TEXT("and the readout renders it as a dash"),
@@ -90,7 +90,7 @@ bool FLLKStormProjectionTest::RunTest(const FString& Parameters)
 		Storm->SecondsUntilWarden(), 700.f, 0.01f);
 	TestNearlyEqual(TEXT("ROW 72: by exactly the same calculation as any other threshold"),
 		Storm->SecondsUntilWarden(),
-		Storm->SecondsUntilCharge(0.f, Rules->Warden.ChargeValue), 0.0001f);
+		Storm->SecondsUntilPressure(0.f, Rules->Warden.PressureValue), 0.0001f);
 
 	// ---- 5. the next escalation, and the order it is found in ----------
 	FName NextId;
@@ -100,7 +100,7 @@ bool FLLKStormProjectionTest::RunTest(const FString& Parameters)
 		Storm->GetNextEscalation(NextId, Target, Current));
 	TestEqual(TEXT("and it is the lowest threshold, not the first in the array"),
 		NextId, FName(TEXT("PatrolsAlert")));
-	TestEqual(TEXT("reported against the clock"), Current, Storm->GetCharge());
+	TestEqual(TEXT("reported against the clock"), Current, Storm->GetPressure());
 
 	// Cross both thresholds. The Warden must then be what is next. This used
 	// to assert that it was reported against its OWN meter and that mixing
@@ -112,8 +112,8 @@ bool FLLKStormProjectionTest::RunTest(const FString& Parameters)
 		Storm->GetNextEscalation(NextId, Target, Current));
 	TestEqual(TEXT("and it is the Warden"), NextId, FName(TEXT("WardenConverges")));
 	TestEqual(TEXT("reported against the one clock, like every other threshold"),
-		Current, Storm->GetCharge());
-	TestEqual(TEXT("against the Warden's own value"), Target, Rules->Warden.ChargeValue);
+		Current, Storm->GetPressure());
+	TestEqual(TEXT("against the Warden's own value"), Target, Rules->Warden.PressureValue);
 
 	// ---- 6. nothing left to send ---------------------------------------
 	//

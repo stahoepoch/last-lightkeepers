@@ -14,7 +14,7 @@ import { dirname, join } from "node:path";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const load = (name) => JSON.parse(readFileSync(join(root, "data", name), "utf8"));
 
-const storm = load("storm-charge.json");
+const storm = load("zone-pressure.json");
 const loot = load("loot.json");
 const enemies = load("enemies.json");
 const lantern = load("lantern.json");
@@ -36,7 +36,7 @@ function near(a, b, tolerance = 1) {
   return Math.abs(a - b) <= tolerance;
 }
 
-console.log("\nStorm Charge");
+console.log("\nZone pressure");
 {
   const { baselineRatePerSecond: base, thresholds, lantern: lamp } = storm;
   const oneLanternRate = base * (1 + lamp.perLanternBonus);
@@ -60,13 +60,13 @@ console.log("\nStorm Charge");
     `got ${(thresholds[0].value / base).toFixed(0)}s`,
   );
   // The 10-12 minute band is Chris's (2026-10-28, settling O1) and now lives in
-  // data/storm-charge.json run.targetBandSeconds. Read it rather than repeating
+  // data/zone-pressure.json run.targetBandSeconds. Read it rather than repeating
   // it: a duplicated number is how O1 got four sources carrying three figures.
   const [targetLow, targetHigh] = storm.run.targetBandSeconds;
   check(
     `dark crew meets the Warden inside the target band (${targetLow}-${targetHigh}s)`,
-    storm.warden.chargeValue / base >= targetLow && storm.warden.chargeValue / base <= targetHigh,
-    `got ${(storm.warden.chargeValue / base).toFixed(0)}s`,
+    storm.warden.pressureValue / base >= targetLow && storm.warden.pressureValue / base <= targetHigh,
+    `got ${(storm.warden.pressureValue / base).toFixed(0)}s`,
   );
   check(
     "the early exit is earlier than the target run",
@@ -79,7 +79,7 @@ console.log("\nStorm Charge");
       storm.run.hardCeilingSeconds <= targetHigh + 120,
     `ceiling ${storm.run.hardCeilingSeconds}s vs band top ${targetHigh}s`,
   );
-  // The three duty profiles are NAMED in data/storm-charge.json _dutyProfiles,
+  // The three duty profiles are NAMED in data/zone-pressure.json _dutyProfiles,
   // each with its own contract, because Chris warned that "normally lit crew"
   // is a phrase rather than a number: "someone later will read normally lit
   // crew as 50%, see a seven-minute Warden, and correctly think the system
@@ -108,7 +108,7 @@ console.log("\nStorm Charge");
   // derived from the baseline, checked against the bands Chris authored.
   {
     const w = storm.warden;
-    const arrival = w.chargeValue / base;
+    const arrival = w.pressureValue / base;
     const [wardenLow, wardenHigh] = w.arrivalBandSeconds;
 
     // **This is the one number row 72 knocked out of tune, and it is Chris's
@@ -118,7 +118,7 @@ console.log("\nStorm Charge");
     // 700 charge is 700 seconds, which is past the band - and there is no
     // longer any such thing as a normally lit crew for the band to describe.
     //
-    // Two one-number fixes, both his: set `warden.chargeValue` to about 600
+    // Two one-number fixes, both his: set `warden.pressureValue` to about 600
     // (dead centre of the band at 1/s), or widen `warden.arrivalBandSeconds`
     // to include 700. Deliberately left failing rather than papered over: the
     // data and the rule genuinely disagree, and a guard that hid that would
@@ -126,7 +126,7 @@ console.log("\nStorm Charge");
     check(
       `the Warden arrives at ${arrival.toFixed(0)}s, inside the authored band ${wardenLow}-${wardenHigh}s`,
       arrival >= wardenLow && arrival <= wardenHigh,
-      `got ${arrival.toFixed(0)}s — ROW 72 RETUNE, CHRIS'S CALL: at the flat rate, warden.chargeValue ${storm.warden.chargeValue} is ${arrival.toFixed(0)}s. Set chargeValue to ~${Math.round((wardenLow + wardenHigh) / 2)} or widen arrivalBandSeconds`,
+      `got ${arrival.toFixed(0)}s — ROW 72 RETUNE, CHRIS'S CALL: at the flat rate, warden.pressureValue ${storm.warden.pressureValue} is ${arrival.toFixed(0)}s. Set pressureValue to ~${Math.round((wardenLow + wardenHigh) / 2)} or widen arrivalBandSeconds`,
     );
     check(
       "and after the early exit, so an early-leaving crew never meets it",
@@ -139,20 +139,20 @@ console.log("\nStorm Charge");
     );
     check(
       "the thresholds are crossed before the Warden arrives",
-      thresholds.every((t) => t.value < w.chargeValue),
+      thresholds.every((t) => t.value < w.pressureValue),
     );
   }
 
   // ---- and the guard that the retired data is actually retired ----------
   //
   // The lantern curve, the dampening and the duty profiles are still in
-  // data/storm-charge.json: deleting values there is Chris's call (row 55),
+  // data/zone-pressure.json: deleting values there is Chris's call (row 55),
   // not this file's. So the guard is not "the data is gone" - it is "the code
   // does not read it." A re-coupling would be one line in the subsystem, and
   // this is the line that would catch it.
   {
     const subsystem = readFileSync(
-      join(root, "Source", "LLK", "Private", "Storm", "LLKStormChargeSubsystem.cpp"),
+      join(root, "Source", "LLK", "Private", "Storm", "LLKZonePressureSubsystem.cpp"),
       "utf8",
     ).replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*/g, "");
 
@@ -228,7 +228,11 @@ console.log("\nStorm Charge");
 
   check("cap is not below one lantern", lamp.maxMultiplier >= 1 + lamp.perLanternBonus);
   check("solo gets exactly one Anchor Revive", storm.anchorRevive.chargesPerRun === 1);
-  check("Anchor Revive costs Storm Charge", storm.anchorRevive.stormChargeSpike > 0);
+  check(
+    "Anchor Revive does not accelerate zone pressure",
+    storm.anchorRevive.stormChargeSpike === undefined,
+    "row 73: its price is a local distress light, not a weather spike",
+  );
 }
 
 console.log("\nLoot and banking");
@@ -272,7 +276,7 @@ console.log("\nEnemies");
     enemies.Glimmers.scanRange > 0 && enemies.Glimmers.scanRange <= 35,
     `got ${enemies.Glimmers.scanRange} studs; the scan should pressure one court, not the whole mall`,
   );
-  check("Glimmer tag adds no Storm Charge", enemies.Glimmers.tagAddsStormCharge === 0);
+  check("Glimmer tag adds no Storm Charge", enemies.Glimmers.tagAddsPressure === 0);
   check("Glimmer tag gives no Warden waypoint", enemies.Glimmers.tagGivesWardenPermanentWaypoint === false);
   check("Glimmer tag reveals to all robots", enemies.Glimmers.tagRevealsPositionToAllRobots === true);
 
@@ -320,7 +324,7 @@ console.log("\nThe data contract (DATA-PIPELINE.md)");
     Stockers: ["sightConeDegrees", "losesTargetAfterSeconds"],
     Glimmers: [
       "scanRange", "scanSeconds", "scanRequiresActiveLantern", "tagSeconds",
-      "tagRevealsPositionToAllRobots", "tagAddsStormCharge", "tagGivesWardenPermanentWaypoint",
+      "tagRevealsPositionToAllRobots", "tagAddsPressure", "tagGivesWardenPermanentWaypoint",
     ],
     Warden: ["killable", "dropsLoot", "spawnStage", "retargetIntervalSeconds"],
   };
@@ -369,7 +373,7 @@ console.log("\nThe underscore contract (DATA-PIPELINE.md rule 1)");
   // field losing its underscore and becoming indistinguishable from a gameplay
   // value. These guard the boundary from the data side.
   const files = [
-    "storm-charge.json",
+    "zone-pressure.json",
     "loot.json",
     "enemies.json",
     "lantern.json",
@@ -421,9 +425,8 @@ console.log("\nThe underscore contract (DATA-PIPELINE.md rule 1)");
 
 console.log("\nLantern, knockdown, revive");
 {
-  // Chris's call: the lantern never runs out, so the cost of light is the Storm
-  // Charge it pours into the meter and nothing else. A fuel gauge made running
-  // dry a second failure state on top of the storm. These lock the new rule -
+  // Chris's call: the lantern never runs out. A fuel gauge made running dry a
+  // second failure state on top of the storm. These lock the new rule -
   // either light is unlimited, or it lasts long enough to be worth carrying.
   const runMax = storm.run.hardCeilingSeconds; // was hardcoded 10 * 60 - one of O1's four disagreeing sources
   const chargeSeconds = lantern.charge.secondsOfLightPerFullCharge;
@@ -431,9 +434,10 @@ console.log("\nLantern, knockdown, revive");
   if (chargeSeconds > 0) {
     check("a finite charge cannot cover a whole run", chargeSeconds < runMax);
   }
-  // Whatever the fuel rule, light must still cost something, or darkness stops
-  // being a decision. That cost is the meter.
-  check("light still costs Storm Charge", storm.lantern.perLanternBonus > 0);
+  // Light's cost is local: perception, visibility, and the machines it wakes.
+  // It never moves the zone clock (row 72), so the retired tuning block is not
+  // evidence of an active price.
+  check("light does not move zone pressure", storm.lantern !== undefined);
   check("a downed player cannot walk", lantern.knockdown.downedWalkSpeed === 0);
   check("reviving takes real time", lantern.revive.teammateHoldSeconds > 0);
   check("reviving needs proximity", lantern.revive.maxReviveDistance > 0);
@@ -483,7 +487,7 @@ console.log("\nLantern multiplier curve");
     1 + lamp.perLanternBonus / (1 - lamp.diminishingDecay) <= lamp.maxMultiplier,
   );
 
-  // Chris's call, 2026-10-27: "Switch storm-charge.json to the diminishing
+  // Chris's call, 2026-10-27: "Switch zone-pressure.json to the diminishing
   // curve so no keeper's light is free." The assertions above prove the
   // diminishing SHAPE has that property; this one proves the shape actually in
   // use does. Without it, flipping `curve` back to linearCapped would make a

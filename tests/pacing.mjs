@@ -12,12 +12,12 @@
 // and the multiplier falls back on its own - is the kind of second-order
 // effect worth remembering we looked for. It is history, not a tool.
 //
-// `data/storm-charge.json`'s `_derivation` note still says "verify with: node
+// `data/zone-pressure.json`'s `_derivation` note still says "verify with: node
 // tests/pacing.mjs". That instruction is also retired. The live guard is
 // `tests/balance.test.mjs`, which now asserts one arrival time and fails if
 // the subsystem ever reads the lantern block again.
 //
-// It existed to interrogate one number: maxMultiplier in storm-charge.json.
+// It existed to interrogate one number: maxMultiplier in zone-pressure.json.
 // Chris retired that number on 2026-10-27 by switching the curve to
 // diminishing, which self-limits and needs no clamp. The harness still runs
 // both shapes side by side at the bottom, which is the evidence he decided on.
@@ -39,7 +39,7 @@ import { dirname, join } from "node:path";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const load = (n) => JSON.parse(readFileSync(join(root, "data", n), "utf8"));
 
-const storm = load("storm-charge.json");
+const storm = load("zone-pressure.json");
 const lanternCfg = load("lantern.json");
 
 const DT = 0.1;
@@ -49,7 +49,7 @@ const CHARGE_SECONDS = lanternCfg.charge.secondsOfLightPerFullCharge;
 // every duty cycle produce an identical row, because each lantern died on the
 // first tick and nobody ever accelerated the storm.
 const DRAIN = CHARGE_SECONDS > 0 ? 1 / CHARGE_SECONDS : 0;
-// Read the real run shape out of data/storm-charge.json. A number that lives in
+// Read the real run shape out of data/zone-pressure.json. A number that lives in
 // two places is a number that lies in one of them - this report's headline
 // conclusion once inverted silently because the value was hardcoded at 10
 // minutes while Chris had moved the ceiling to 20.
@@ -62,7 +62,7 @@ const DRAIN = CHARGE_SECONDS > 0 ? 1 / CHARGE_SECONDS : 0;
 // that distinguish a ceiling from a target, and there is deliberately no
 // fallback: if the key is missing this should stop rather than guess.
 if (!storm.run?.hardCeilingSeconds || !storm.run?.targetSeconds) {
-  throw new Error("data/storm-charge.json run block is missing hardCeilingSeconds or targetSeconds");
+  throw new Error("data/zone-pressure.json run block is missing hardCeilingSeconds or targetSeconds");
 }
 const RUN_MAX = storm.run.hardCeilingSeconds;
 const RUN_TARGET = storm.run.targetSeconds;
@@ -127,7 +127,7 @@ function simulate(crew, duty) {
     const fullMult = multiplier(active);
     const wardenMult = 1 + storm.warden.lightSensitivity * (fullMult - 1);
     wardenValue += storm.baselineRatePerSecond * wardenMult * DT;
-    if (hits.WardenConverges === undefined && wardenValue >= storm.warden.chargeValue) {
+    if (hits.WardenConverges === undefined && wardenValue >= storm.warden.pressureValue) {
       hits.WardenConverges = t;
     }
 
@@ -148,7 +148,7 @@ const ceilingLabel = DIMINISHING
   ? `self-limits at ${(1 + storm.lantern.perLanternBonus / (1 - storm.lantern.diminishingDecay)).toFixed(2)}x`
   : `cap ${storm.lantern.maxMultiplier}x`;
 console.log(`baseline ${storm.baselineRatePerSecond}/s · per-lantern +${storm.lantern.perLanternBonus} · ${storm.lantern.curve}, ${ceilingLabel} · charge ${CHARGE_SECONDS > 0 ? CHARGE_SECONDS + "s" : "unlimited"}\n`);
-// Rows are labelled with the NAMED duty profiles from data/storm-charge.json
+// Rows are labelled with the NAMED duty profiles from data/zone-pressure.json
 // _dutyProfiles. Chris, 2026-10-28: without the names "someone later will read
 // normally lit crew as 50%, see a seven-minute Warden, and correctly think the
 // system drifted again." Only `normal` is held to the Warden band.
