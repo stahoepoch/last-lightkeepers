@@ -122,4 +122,14 @@ if ($DryRun) {
 
 # Visible is intentional: this is a human playtest, not background tooling.
 Start-Process -FilePath $editor -ArgumentList $arguments -WorkingDirectory $root
-Write-Host "Started $Mode. When the test is over, run Tools\inspect_lan_smoke.ps1 -RequireConnected on the host, then Tools\collect_playtest_diagnostics.ps1 on each machine."
+Write-Host "Started $Mode."
+if ($LocalLoopback) {
+    Write-Host 'After both windows close, run: .\Tools\inspect_lan_smoke.ps1 -Role Both -RequireConnected'
+} elseif ($Mode -eq 'Host') {
+    Write-Host 'After a client joins and both windows close:'
+    Write-Host '  On this host: .\Tools\inspect_lan_smoke.ps1 -Role Host -RequireConnected'
+    Write-Host '  On the client: .\Tools\inspect_lan_smoke.ps1 -Role Client -RequireConnected'
+} else {
+    Write-Host 'After this client closes, run: .\Tools\inspect_lan_smoke.ps1 -Role Client -RequireConnected'
+}
+Write-Host 'Then run Tools\collect_playtest_diagnostics.ps1 on each machine.'
