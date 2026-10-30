@@ -3,6 +3,15 @@
 Written 2026-10-29 by Claude, on Chris's instruction. One task, two files, and
 a deliberate ceiling on what it is allowed to become.
 
+**Status, 2026-10-29, both prerequisites done.** Codex linked the module in
+`7d811f3` and declined to fake the route checker without the contract, which
+was the right call. The contract has now landed: `NavigationBuilt`,
+`SpawnOnNavmesh` and the `NavmeshNotBuilt` and `SpawnOffNavmesh` codes all
+exist, `Evaluate` reports all four navigation states as a chain, and
+`LLK.Harness.MapReadiness` asserts the suppression rules. **What is left is the
+one function body**, and the seam comment in the source now names the three
+assignments line by line. Nothing below is waiting on anybody.
+
 Read `docs/MAP-READINESS.md` first — it is the contract this completes, and it
 already lists every check code and the reason each one is on the list. Read
 `docs/LANES.md` for why this is a handoff at all rather than something I did.
@@ -92,12 +101,11 @@ not false" below.
 | `Obs.SpawnOnNavmesh` | whether the keeper spawn projects onto navigable space |
 | `Obs.RouteFromSpawnReaches` | whether a complete path reaches **every** enemy spawn (see the designated-position note) |
 
-`NavigationBuilt` and `SpawnOnNavmesh` do not exist yet, and neither does the
-`SpawnOffNavmesh` check code. **Those are mine** — tell me and I will land the
-contract side (the two fields, the enum value, the `Evaluate` branches and the
-pure tests) in a commit of its own that touches no nav API, so that when you
-start, the struct you are filling in already has the right shape. That commit
-is one short step and is not blocked on anything.
+All three fields exist and all three are `TOptional`. Leave a field unset when
+the question could not be asked - see "unset is not false" below. The
+`Evaluate` branches, the two new check codes and the pure tests for them are
+landed, so the struct you are filling in already has the right shape and the
+findings already read correctly once the values arrive.
 
 ---
 
@@ -107,10 +115,19 @@ Chris's list, mapped to the codes in `docs/MAP-READINESS.md`:
 
 | What is wrong | Code it reports | Status |
 | --- | --- | --- |
-| No bounds volume | `NavBoundsMissing` | **works today** |
-| Navmesh not built | `NavDataMissing` today; `NavigationBuilt` makes it exact | the field is new |
-| Start off-navmesh | `SpawnOffNavmesh` | the code is new |
-| Route blocked | `NoRouteFromSpawn` | the branch exists, the query does not |
+| No bounds volume | `NavBoundsMissing` | works today, no query needed |
+| Navmesh not built | `NavmeshNotBuilt` | code and branch landed; needs `NavigationBuilt` |
+| Start off-navmesh | `SpawnOffNavmesh` | code and branch landed; needs `SpawnOnNavmesh` |
+| Route blocked | `NoRouteFromSpawn` | branch landed; needs `RouteFromSpawnReaches` |
+
+**They are reported as a chain, and the chain is already built.** Each answer
+makes the ones below it meaningless, so `Evaluate` reports the first real
+failure and suppresses the rest: an unbuilt navmesh says one thing, not three.
+So you do not have to decide what to leave out - set every value you can
+honestly determine, including the falses, and the judgement half says the
+single useful sentence. `LLK.Harness.MapReadiness` asserts that with an
+observation set where all three are false and exactly one finding comes back,
+and a planted bug that broke the chain into independent checks tripped it.
 
 The distinction between the second and third is worth keeping sharp, because
 they look identical in the viewport and have different fixes. *Not built* is a

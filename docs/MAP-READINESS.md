@@ -14,7 +14,7 @@ still, which is a bug that looks like six other bugs.
 
 ---
 
-## The eleven things, and what breaks without each
+## The thirteen things, and what breaks without each
 
 Each row names the check code `LLK.CheckMap` reports, so a failure message and
 this table are searchable by the same word.
@@ -26,12 +26,23 @@ this table are searchable by the same word.
 | 1 | **A floor with blocking collision** under the whole playable area | `FloorHasNoCollision` | Keepers fall through on spawn, or stand on nothing and every trace misses |
 | 2 | **A `NavMeshBoundsVolume`** enclosing the playable area | `NavBoundsMissing` | No navmesh is ever built. An enemy with a perfect brain never takes a step |
 | 3 | **Built nav data** (a `RecastNavMesh` actor in the level) | `NavDataMissing` | The volume exists but nothing was generated — the usual cause is that the level was never saved after the volume was added |
+| 3a | **Nav data that has finished generating** | `NavmeshNotBuilt` | An enemy that is inert for one specific second and fine afterwards, or inert forever if the check that reported it ran at load. Generation is asynchronous |
 | 4 | **Nav bounds that enclose** the keeper spawn and every enemy spawn point | `NavBoundsDoesNotCoverSpawn` | Enemies spawn off-mesh and are inert in a way that reads exactly like a broken behaviour tree. The usual version of this is a volume that covers the shop floor and stops short of the back of house, which is where the spawn points are |
+| 4a | **A keeper spawn that projects onto the navmesh** | `SpawnOffNavmesh` | Every route query fails from a start point that is not on the mesh, which reads as the whole floor being unreachable rather than as one actor being 30cm too low |
 | 5 | **A walkable route** from the keeper spawn to every enemy spawn point | `NoRouteFromSpawn` / `RouteUnverified` | The first Sweeper is placed somewhere it can see you and never reach you. `RouteUnverified` is not a pass — see *The route check is honest about not knowing* below |
 | 6 | **Sight-blocking geometry above eye height** — shelving, gondola runs, the internal wall | `NoOccludingGeometry` | Perception degenerates to raw distance. The whole floor becomes one room and light stops being a trade |
 | 7 | **No unbroken sightline longer than `MaxSightlineStuds` (34)** from the keeper spawn | `SightlineTooLong` | A lit keeper is hunted from 38 studs by something they had no way of seeing. `FLLKStoreFloorPlan` already carries this rule; this is it checked against real geometry instead of against arithmetic |
 | 8 | **One open test lane**, tagged `LLK.TestLane.Open` | `TestLaneOpenMissing` / `TestLaneOpenBlocked` | Nothing proves the visibility source can return `Clear`. A trace that always reports blocked makes every enemy blind and passes every "is it safe" test |
 | 9 | **One blocked test lane**, tagged `LLK.TestLane.Blocked` | `TestLaneBlockedMissing` / `TestLaneBlockedClear` | Nothing proves the visibility source can return `Blocked`. A trace that always reports clear makes every enemy see through walls |
+
+**The four navigation answers are a chain, not four questions.** No bounds
+volume, navmesh not built, spawn off the mesh, route blocked: each one makes
+the ones after it meaningless, so `LLK.CheckMap` reports the first real failure
+and stops. A route query against an unbuilt navmesh returns false, and
+reporting that false alongside the real problem is how a check with four
+findings sends somebody to fix the wrong one. The acceptance criteria in
+`docs/HANDOFF-CODEX-NAVIGATION.md` pin this: a `PlayerStart` raised three
+metres reports `SpawnOffNavmesh` **and nothing about the route**.
 
 **Requirement 4 is necessary and not sufficient, and says so in its name.** It
 checks that the spawn points fall inside the *bounds of the volumes*, which is

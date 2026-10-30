@@ -161,7 +161,31 @@ namespace LLKMapReadiness
 					*Obs.FirstSpawnPointOutsideNavBounds.ToCompactString()));
 		}
 
-		if (!Obs.RouteFromSpawnReaches.IsSet())
+		// The nav query half, as a chain rather than as four independent
+		// questions. **Each answer invalidates the ones below it**, and
+		// reporting them anyway is the "one failure as five" mistake: a route
+		// query against an unbuilt navmesh and a projection of a spawn onto a
+		// mesh that does not exist yet both produce a false that means
+		// nothing. So the first real failure is the only one said.
+		if (Obs.NavigationBuilt.IsSet() && !Obs.NavigationBuilt.GetValue())
+		{
+			if (Obs.NavDataActors > 0)
+			{
+				Add(ELLKMapCheck::NavmeshNotBuilt,
+					TEXT("nav data exists and has not finished generating - "
+						"navmesh generation is asynchronous, so a check run too early sees this"));
+			}
+			// With no nav data actor at all, NavDataMissing above already
+			// said it. Either way, nothing below could have been asked
+			// meaningfully.
+		}
+		else if (Obs.SpawnOnNavmesh.IsSet() && !Obs.SpawnOnNavmesh.GetValue())
+		{
+			Add(ELLKMapCheck::SpawnOffNavmesh,
+				TEXT("the keeper spawn does not project onto navigable space - "
+					"usually a PlayerStart sunk into the floor, floating above it, or on a counter"));
+		}
+		else if (!Obs.RouteFromSpawnReaches.IsSet())
 		{
 			Add(ELLKMapCheck::RouteUnverified,
 				TEXT("no navmesh path query ran - see the handoff in docs/MAP-READINESS.md"));
@@ -308,12 +332,25 @@ namespace LLKMapReadiness
 			}
 		}
 
-		// HANDOFF(Codex): NavigationSystem. With "NavigationSystem" in
-		// Source/LLK/LLK.Build.cs this is where
-		// UNavigationSystemV1::FindPathToLocationSynchronously goes, once per
-		// enemy spawn, and RouteFromSpawnReaches stops being unset. Left unset
-		// deliberately rather than defaulted - Evaluate reports
-		// RouteUnverified, which is the honest answer and the annoying one.
+		// HANDOFF(Codex): NavigationSystem. The module is linked as of 7d811f3
+		// and the contract below is complete, so this is the one piece left -
+		// three queries filling three TOptionals, and nothing else in this
+		// file. docs/HANDOFF-CODEX-NAVIGATION.md has the API with header line
+		// numbers and the three traps that each produce a check that always
+		// says yes.
+		//
+		//   Obs.NavigationBuilt       <- NavSys->IsNavigationBuilt(...)
+		//   Obs.SpawnOnNavmesh        <- NavSys->ProjectPointToNavigation(KeeperSpawn, ...)
+		//   Obs.RouteFromSpawnReaches <- FindPathToLocationSynchronously per
+		//                                enemy spawn; reaches means a path that
+		//                                is valid AND NOT partial, because a
+		//                                blocked route comes back partial
+		//                                rather than null.
+		//
+		// All three stay unset when the nav system is null or the question
+		// could not be asked. Unset is not false: Evaluate reports
+		// RouteUnverified for "nobody asked" and NoRouteFromSpawn for "asked
+		// and got no", and those are different sentences.
 
 		// ---- requirements 6 and 7: the sightline sweep --------------------
 		const float ReachCm = LLKUnits::DistanceFromStuds(SweepReachStuds);
@@ -380,6 +417,8 @@ namespace LLKMapReadiness
 		case ELLKMapCheck::FloorHasNoCollision:        return TEXT("FloorHasNoCollision");
 		case ELLKMapCheck::NavBoundsMissing:           return TEXT("NavBoundsMissing");
 		case ELLKMapCheck::NavDataMissing:             return TEXT("NavDataMissing");
+		case ELLKMapCheck::NavmeshNotBuilt:            return TEXT("NavmeshNotBuilt");
+		case ELLKMapCheck::SpawnOffNavmesh:            return TEXT("SpawnOffNavmesh");
 		case ELLKMapCheck::NavBoundsDoesNotCoverSpawn: return TEXT("NavBoundsDoesNotCoverSpawn");
 		case ELLKMapCheck::NoRouteFromSpawn:           return TEXT("NoRouteFromSpawn");
 		case ELLKMapCheck::RouteUnverified:            return TEXT("RouteUnverified");

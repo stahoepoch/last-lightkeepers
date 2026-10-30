@@ -53,6 +53,8 @@ namespace LLKMapReadinessTestFixture
 		Obs.NavBoundsVolumes = 1;
 		Obs.NavDataActors = 1;
 		Obs.SpawnPointsOutsideNavBounds = 0;
+		Obs.NavigationBuilt = true;
+		Obs.SpawnOnNavmesh = true;
 		Obs.RouteFromSpawnReaches = true;
 		Obs.ProbedDirections = 32;
 		Obs.BlockedDirections = 11;
@@ -155,6 +157,94 @@ bool FLLKMapReadinessTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("a route that was looked for and missing says so"),
 			Report.Has(ELLKMapCheck::NoRouteFromSpawn));
 		TestFalse(TEXT("and is not also reported as unverified"),
+			Report.Has(ELLKMapCheck::RouteUnverified));
+	}
+
+	// ---- the navigation chain, which is four answers and one finding -----
+	{
+		// An unbuilt navmesh, with the two questions below it answered
+		// falsely as well. **Both of those falses are meaningless** - you
+		// cannot project onto a mesh that has not generated and you cannot
+		// path across it - and a check that reported all three would send
+		// Chris to move a PlayerStart that is in exactly the right place.
+		FLLKMapObservations Obs = ReadyMap();
+		Obs.NavigationBuilt = false;
+		Obs.SpawnOnNavmesh = false;
+		Obs.RouteFromSpawnReaches = false;
+
+		const FLLKMapReport Report = LLKMapReadiness::Evaluate(Obs);
+
+		TestTrue(TEXT("an unbuilt navmesh is reported"),
+			Report.Has(ELLKMapCheck::NavmeshNotBuilt));
+		TestFalse(TEXT("and the spawn projection below it is suppressed, because it "
+			"could not have meant anything"), Report.Has(ELLKMapCheck::SpawnOffNavmesh));
+		TestFalse(TEXT("and so is the route"), Report.Has(ELLKMapCheck::NoRouteFromSpawn));
+		TestFalse(TEXT("which is not the same as calling the route unverified"),
+			Report.Has(ELLKMapCheck::RouteUnverified));
+		TestEqual(TEXT("one finding, so there is one thing to go and fix"),
+			Report.Findings.Num(), 1);
+	}
+
+	{
+		// No nav data actor at all AND not built. NavDataMissing already says
+		// it; NavmeshNotBuilt would be the same failure in different words.
+		FLLKMapObservations Obs = ReadyMap();
+		Obs.NavDataActors = 0;
+		Obs.NavigationBuilt = false;
+
+		const FLLKMapReport Report = LLKMapReadiness::Evaluate(Obs);
+		TestTrue(TEXT("missing nav data is reported"),
+			Report.Has(ELLKMapCheck::NavDataMissing));
+		TestFalse(TEXT("and is not also reported as unbuilt"),
+			Report.Has(ELLKMapCheck::NavmeshNotBuilt));
+	}
+
+	{
+		// The handoff's acceptance criterion 4, asserted rather than trusted:
+		// a PlayerStart raised into the air reports the spawn and says nothing
+		// about the route.
+		FLLKMapObservations Obs = ReadyMap();
+		Obs.SpawnOnNavmesh = false;
+		Obs.RouteFromSpawnReaches = false;
+
+		const FLLKMapReport Report = LLKMapReadiness::Evaluate(Obs);
+		TestTrue(TEXT("a spawn off the navmesh is reported"),
+			Report.Has(ELLKMapCheck::SpawnOffNavmesh));
+		TestFalse(TEXT("and nothing is said about the route, which every query "
+			"from an off-mesh start would have failed"),
+			Report.Has(ELLKMapCheck::NoRouteFromSpawn));
+		TestEqual(TEXT("one finding again"), Report.Findings.Num(), 1);
+	}
+
+	{
+		// The box test and the projection are independent, and a map can fail
+		// one while passing the other. This is the case that proves keeping
+		// both was not duplication: the spawn is inside the volume's bounds
+		// and still not on the mesh, which is a counter or a 30cm sink.
+		FLLKMapObservations Obs = ReadyMap();
+		Obs.SpawnPointsOutsideNavBounds = 0;
+		Obs.SpawnOnNavmesh = false;
+
+		const FLLKMapReport Report = LLKMapReadiness::Evaluate(Obs);
+		TestTrue(TEXT("a spawn inside the bounds box can still be off the mesh"),
+			Report.Has(ELLKMapCheck::SpawnOffNavmesh));
+		TestFalse(TEXT("and the box test correctly says nothing"),
+			Report.Has(ELLKMapCheck::NavBoundsDoesNotCoverSpawn));
+	}
+
+	{
+		// The state the real build is in right now: the module is linked, the
+		// contract is complete, and the three queries are not written yet. All
+		// three unset, one finding, and it is the honest one.
+		FLLKMapObservations Obs = ReadyMap();
+		Obs.NavigationBuilt.Reset();
+		Obs.SpawnOnNavmesh.Reset();
+		Obs.RouteFromSpawnReaches.Reset();
+
+		const FLLKMapReport Report = LLKMapReadiness::Evaluate(Obs);
+		TestEqual(TEXT("three unanswered nav questions produce one finding, not three"),
+			Report.Findings.Num(), 1);
+		TestTrue(TEXT("and it is RouteUnverified"),
 			Report.Has(ELLKMapCheck::RouteUnverified));
 	}
 

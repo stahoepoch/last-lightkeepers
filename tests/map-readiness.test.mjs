@@ -53,8 +53,8 @@ const codes = [
 
 check(
   "the check enum was found at all",
-  codes.length >= 14,
-  `found ${codes.length} codes, expected at least 14 — the parse above may have broken`,
+  codes.length >= 16,
+  `found ${codes.length} codes, expected at least 16 — the parse above may have broken`,
 );
 
 for (const code of codes) {
@@ -82,7 +82,7 @@ for (const line of doc.split("\n")) {
 
 check(
   "the requirements table was parsed",
-  tableCodes.size >= 14,
+  tableCodes.size >= 16,
   `found ${tableCodes.size} codes in the table's third column`,
 );
 

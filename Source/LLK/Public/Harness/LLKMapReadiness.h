@@ -56,8 +56,36 @@ enum class ELLKMapCheck : uint8
 	/** A volume but no built nav data. Usually a level that was not saved. */
 	NavDataMissing,
 
+	/**
+	 * Nav data exists and has not finished generating. Requirement 3a.
+	 *
+	 * Distinct from `NavDataMissing`, and the distinction is the fix: missing
+	 * means no nav data actor at all, usually a level saved before the volume
+	 * was added. Not built means the actor is there and generation has not
+	 * completed - which also happens to a check that runs too early, since
+	 * navmesh generation is asynchronous and "the level is loaded" is not
+	 * "the navmesh is ready".
+	 *
+	 * Only reported when a nav data actor exists. On a map with none, this
+	 * and `NavDataMissing` would be the same failure said twice.
+	 */
+	NavmeshNotBuilt,
+
 	/** A spawn point outside every nav bounds volume. Requirement 4. */
 	NavBoundsDoesNotCoverSpawn,
+
+	/**
+	 * The keeper spawn does not project onto navigable space. Requirement 4a.
+	 *
+	 * **Different from `NavBoundsDoesNotCoverSpawn`, and they look identical
+	 * in the viewport.** That one is a box test against the volumes' bounds
+	 * and answers even when the navmesh is not built. This one is a
+	 * projection onto the generated mesh, and it catches what a box cannot: a
+	 * `PlayerStart` sunk into the floor, floating above it, or standing on a
+	 * counter. Both are kept because they fail on different days and are
+	 * fixed by different moves.
+	 */
+	SpawnOffNavmesh,
 
 	/** Somebody asked for a route and the answer was no. */
 	NoRouteFromSpawn,
@@ -176,6 +204,26 @@ struct FLLKMapObservations
 
 	UPROPERTY(BlueprintReadOnly, Category = "LLK|Map")
 	FVector FirstSpawnPointOutsideNavBounds = FVector::ZeroVector;
+
+	/**
+	 * Whether the navmesh has finished generating.
+	 *
+	 * Unset means nobody asked. All three of these fields are filled by the
+	 * same seam in `Observe`, so unset on one is normally unset on all three,
+	 * and `RouteUnverified` is the single finding that covers that - rather
+	 * than three codes all saying the same thing about the same missing
+	 * query.
+	 */
+	TOptional<bool> NavigationBuilt;
+
+	/**
+	 * Whether the keeper spawn projects onto navigable space.
+	 *
+	 * Unset means nobody asked. **Not inferable from the box test**: a point
+	 * inside a nav bounds volume can still be off-mesh, which is the whole
+	 * reason this is a separate question.
+	 */
+	TOptional<bool> SpawnOnNavmesh;
 
 	/**
 	 * Whether a walkable route reaches every enemy spawn from the keeper
