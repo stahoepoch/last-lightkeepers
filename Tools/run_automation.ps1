@@ -32,24 +32,31 @@ function Save-FailureEvidence {
     return $destination
 }
 
-function Clear-GeneratedAndroidFileServerToken {
-    $engineConfig = Join-Path (Split-Path $projectPath) "Config\DefaultEngine.ini"
-    if (-not (Test-Path -LiteralPath $engineConfig)) { return }
+function Restore-ConfigAfterGeneratedAndroidFileServerToken {
+    param(
+        [Parameter(Mandatory)][string]$EngineConfig,
+        [Parameter(Mandatory)][byte[]]$BeforeAutomation
+    )
 
-    # This file is deliberately source-controlled.  Removing an editor-made
-    # Android File Server token must not also rewrite its line endings, remove
-    # its final newline, or flip its UTF-8 BOM; any of those makes an
-    # automation run look like a project-config change.
-    $rawBytes = [System.IO.File]::ReadAllBytes($engineConfig)
-    $hasUtf8Bom = $rawBytes.Length -ge 3 -and
-        $rawBytes[0] -eq 0xEF -and $rawBytes[1] -eq 0xBB -and $rawBytes[2] -eq 0xBF
-    $contents = [System.IO.File]::ReadAllText($engineConfig)
-    $clean = $contents -replace '(?m)^SecurityToken=.*\r?\n?', ''
-    if ($clean -ne $contents) {
-        $encoding = New-Object System.Text.UTF8Encoding($hasUtf8Bom)
-        [System.IO.File]::WriteAllText($engineConfig, $clean, $encoding)
-        Write-Host "Removed a generated Android File Server token from tracked project config."
+    # UnrealEditor-Cmd itself rewrites DefaultEngine.ini before this cleanup
+    # runs: it removes the UTF-8 BOM and leaves a blank line when its Android
+    # File Server token is removed. Snapshotting the exact bytes before launch
+    # is the only way to leave a successful automation run truly clean.
+    $after = [System.IO.File]::ReadAllText($EngineConfig)
+    if ($after -match '(?m)^SecurityToken=') {
+        [System.IO.File]::WriteAllBytes($EngineConfig, $BeforeAutomation)
+        Write-Host "Restored tracked project config after removing a generated Android File Server token."
     }
+}
+
+$engineConfig = Join-Path (Split-Path $projectPath) "Config\DefaultEngine.ini"
+$configBeforeAutomation = $null
+if (Test-Path -LiteralPath $engineConfig) {
+    $configBeforeText = [System.IO.File]::ReadAllText($engineConfig)
+    if ($configBeforeText -match '(?m)^SecurityToken=') {
+        throw 'DefaultEngine.ini already contains a machine-generated Android File Server token. Remove it before running automation.'
+    }
+    $configBeforeAutomation = [System.IO.File]::ReadAllBytes($engineConfig)
 }
 
 Remove-Item -LiteralPath $report -Recurse -Force -ErrorAction SilentlyContinue
@@ -61,7 +68,9 @@ Remove-Item -LiteralPath $log -Force -ErrorAction SilentlyContinue
 # not reliably express individual automation failures on every UE minor.
 & $editor "-project=$projectPath" "-ExecCmds=Automation RunTests $TestFilter; Quit" "-TestExit=Automation Test Queue Empty" "-ReportExportPath=$report" "-abslog=$log" -unattended -nopause -nosplash -nullrhi -nosound
 $editorExit = $LASTEXITCODE
-Clear-GeneratedAndroidFileServerToken
+if ($null -ne $configBeforeAutomation) {
+    Restore-ConfigAfterGeneratedAndroidFileServerToken -EngineConfig $engineConfig -BeforeAutomation $configBeforeAutomation
+}
 
 if (-not (Test-Path -LiteralPath $log)) {
     $evidence = Save-FailureEvidence @("Automation produced no log at '$log'.", "UnrealEditor-Cmd exited with code $editorExit.")
