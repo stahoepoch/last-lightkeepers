@@ -33,6 +33,19 @@ if ($runningEditor) {
     throw "Close Unreal before packaging. Running editor process(es): $processes. Packaging against an open editor can cook stale modules."
 }
 
+# Content/Data is deliberately ignored generated output, not source. A clean
+# clone therefore has no DataTables or DataAssets until the same importer that
+# validates data/*.json writes them. Cooking first would silently package
+# declared fallbacks (or a stale local asset) instead of the authored tuning.
+# Keep this here, at the build boundary, rather than asking every packager to
+# remember a separate preflight command.
+$dataImport = Join-Path $PSScriptRoot 'import_unreal_data.ps1'
+if (-not (Test-Path -LiteralPath $dataImport)) {
+    throw "Missing generated-data importer: $dataImport"
+}
+Write-Host 'Regenerating ignored Content/Data assets from data/*.json...'
+& $dataImport -EngineRoot $EngineRoot
+
 New-Item -ItemType Directory -Force -Path $ArchiveDirectory | Out-Null
 
 # This is intentionally local-only: no Steam credentials, depot upload, or
