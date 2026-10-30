@@ -172,14 +172,19 @@ for (const tag of ["LLK.EnemySpawn", "LLK.TestLane.Open", "LLK.TestLane.Blocked"
   check(`the tag ${tag} matches between document and code`, doc.includes(tag) && impl.includes(`TEXT("${tag}")`));
 }
 
-// ---- 5. the handoff stays findable ------------------------------------
+// ---- 5. enemy spawns are validated before route diagnostics -----------
 check(
-  "the NavigationSystem handoff is marked in the code",
-  impl.includes("HANDOFF(Codex): NavigationSystem"),
-  "the one line that turns RouteUnverified into a real answer",
+  "enemy spawns are projected onto the navmesh before pathing",
+  impl.includes("ProjectPointToNavigation(") && impl.includes("ProjectedEnemySpawn.Location"),
+  "an off-mesh spawn must not masquerade as a blocked route",
 );
 check(
-  "and written out in the document",
+  "off-mesh enemy spawns are counted before route diagnostics",
+  impl.includes("Obs.EnemySpawnsOffNavmesh = OffNavmeshCount"),
+  "the map check needs a specific spawn-placement finding",
+);
+check(
+  "the NavigationSystem requirements remain written out in the document",
   doc.includes("NavigationSystem") && doc.includes("LLK.Build.cs"),
 );
 

@@ -333,16 +333,6 @@ namespace LLKMapReadiness
 			}
 		}
 
-		// HANDOFF(Codex): NavigationSystem, one query left - the marker stays
-		// spelled this way because tests/map-readiness.test.mjs greps for it.
-		// Project each enemy spawn and set
-		// Obs.EnemySpawnsOffNavmesh (and FirstEnemySpawnOffNavmesh), with the
-		// same extent used for the keeper spawn. Set it to 0 when they are all
-		// on the mesh and leave it unset when it could not be asked. The code
-		// and the chain link for it exist as of this commit, so the finding is
-		// truthful the moment the count arrives. Path only to spawns that
-		// projected, or the route answer inherits the same partial path.
-		//
 		// NavigationSystem complete. The typed queries below
 		// replace the former class-name workaround and leave unanswered checks
 		// unset rather than calling them passes.
@@ -364,17 +354,31 @@ namespace LLKMapReadiness
 
 				if (Obs.SpawnOnNavmesh.Get(false) && !EnemySpawns.IsEmpty())
 				{
+					int32 OffNavmeshCount = 0;
 					bool bEverySpawnReaches = true;
 					for (const AActor* Spawn : EnemySpawns)
 					{
+						FNavLocation ProjectedEnemySpawn;
+						if (!NavSys->ProjectPointToNavigation(
+							Spawn->GetActorLocation(), ProjectedEnemySpawn, ProjectionExtent))
+						{
+							if (OffNavmeshCount == 0)
+							{
+								Obs.FirstEnemySpawnOffNavmesh = Spawn->GetActorLocation();
+							}
+							++OffNavmeshCount;
+							bEverySpawnReaches = false;
+							continue;
+						}
+
 						UNavigationPath* Path = UNavigationSystemV1::FindPathToLocationSynchronously(
-							World, ProjectedKeeperSpawn.Location, Spawn->GetActorLocation());
+							World, ProjectedKeeperSpawn.Location, ProjectedEnemySpawn.Location);
 						if (Path == nullptr || !Path->IsValid() || Path->IsPartial())
 						{
 							bEverySpawnReaches = false;
-							break;
 						}
 					}
+					Obs.EnemySpawnsOffNavmesh = OffNavmeshCount;
 					Obs.RouteFromSpawnReaches = bEverySpawnReaches;
 				}
 			}
