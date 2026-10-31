@@ -250,3 +250,49 @@ measurements predates it. Those measurements were taken with placed
 `APointLight`/`ASpotLight` actors and `trace_world`, neither of which touches
 the lantern component, so they stand — but any earlier observation that relied
 on `ULLKLanternLightComponent` behaviour was made against a stale binary.
+
+---
+
+## 6. Resolved: the lantern stays a spot light, 2026-10-31
+
+Section 1 left the spot-to-point swap open and called it *"a decision for Chris
+with the importer landing in front of it."* **It is now decided, and the
+decision is to keep the spot.**
+
+Codex placed a temporary **spot light at 6 candelas** in the bay under the
+exposure clamp and reports it warm, readable, not clipping, and still
+directional while the rest of the room stays dark. Temporary actor deleted,
+DockBay reloaded without saving, `Content/` clean.
+
+That settles section 1's open question in the direction section 1's
+measurements pointed. The order the two halves came in is worth keeping,
+because it is the only reason the answer is trustworthy:
+
+1. A point source at the authored **250 cd** was *worse* than the spot — both
+   clipped; **6 cd** was the first setting that read as a lantern at all. So
+   the cone was never what was blowing out.
+2. With the intensity right, the spot's directionality turns out to be an
+   asset rather than the problem it was taken for.
+
+Had the swap been made first, the point source would have been tuned to 6 cd,
+it would have looked fine, and three authored cone angles would have become
+dead data for no reason anybody could reconstruct later.
+
+**What this un-blocks.** `FLLKLanternLightLevel::coneAngleDegrees` stays live
+data, so `docs/HANDOFF-CODEX-LANTERN-LEVELS.md`'s key can land as written with
+no base-class question hanging over it. `ULLKLanternLightComponent` keeps
+deriving from `USpotLightComponent`.
+
+**What is still Chris's and still unmoved.** The intensity itself. 6 cd is a
+measured reading of what does not clip, not an authored value — `intensity` in
+`data/lantern.json` is 250 and neither this file nor anyone in this thread has
+changed it. The gap between those two numbers is the whole of what the clamp
+pass found, and closing it is a one-line data edit in Chris's lane.
+
+**The gameplay/visual mismatch section 1 described is unchanged and is now
+permanent by choice.** `FLLKLightSource` still carries no direction or cone, so
+the gameplay field is a sphere while the screen shows a wedge. Keeping the spot
+means accepting that a keeper can be refused a relic the beam appears to be
+lighting, and granted one just outside it. That is a real seam and it is now a
+deliberate one — worth watching in the first playtest rather than re-arguing
+here.
