@@ -139,7 +139,14 @@ agent — reads a failed build as a success.
 
 **Automation results taken while the editor is open can come from a stale
 binary.** With the build silently refused, the test run that followed used the
-DLL already on disk and reported **33 tests, all passing**, against a source
-tree whose suite was 44 earlier today. It did not run the new assertions and
-did not say so. Any automation pass claimed while the editor was open should be
-re-taken with it closed before it is relied on.
+DLL already on disk, did not run the new assertions, and did not say so. Any
+automation pass claimed while the editor was open should be re-taken with it
+closed before it is relied on.
+
+**Corrected 2026-10-31, same day:** the first version of this paragraph read
+the stale binary off a test *count* — 33 reported against a suite said to be
+44. That was wrong. The suite is 33, at every commit of the day and at `HEAD`,
+and 44 was never a test-case count. The reliable signal is the red proof: in
+that run `LLK.Enemies.PerceptionFailures` reported `Success` while
+`HasReachingSense` was mutated to `return true;`, which a current binary cannot
+do. `docs/TOOLING-TRAPS.md` carries the retraction and the receipts.

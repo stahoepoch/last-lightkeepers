@@ -1,0 +1,244 @@
+diff --git a/Source/LLK/Private/Enemies/LLKEnemyRosterSubsystem.cpp b/Source/LLK/Private/Enemies/LLKEnemyRosterSubsystem.cpp
+index c1e36d7..e4baebd 100644
+--- a/Source/LLK/Private/Enemies/LLKEnemyRosterSubsystem.cpp
++++ b/Source/LLK/Private/Enemies/LLKEnemyRosterSubsystem.cpp
+@@ -51,6 +51,55 @@ void ULLKEnemyRosterSubsystem::ResolveRoster()
+ 	UE_LOG(LogLLK, Log,
+ 		TEXT("ULLKEnemyRosterSubsystem: DT_Enemies loaded, %d famil%s."),
+ 		Table->GetRowMap().Num(), Table->GetRowMap().Num() == 1 ? TEXT("y") : TEXT("ies"));
++
++	AuditSenses();
++}
++
++void ULLKEnemyRosterSubsystem::AuditSenses() const
++{
++	// The third failure the warning above did not anticipate. That comment
++	// names two states that look identical from inside the game - the enemies
++	// did nothing, and the enemies never loaded - and this is the one between
++	// them: the table loaded, all six rows are here, and every sense is empty.
++	// It happened on 2026-10-31 and survived six playtests, because a loud
++	// "loaded, 6 families" is exactly what a broken roster prints.
++	//
++	// Loud, per family, and once at load rather than per tick. It cannot fix
++	// anything - the numbers are not here to recover - but an enemy that
++	// stands still should say why rather than read as unfinished AI.
++	TArray<FString> Senseless;
++	for (const FLLKEnemyDef* Def : GetAllFamilies())
++	{
++		if (Def == nullptr || LLKPerception::HasReachingSense(*Def))
++		{
++			continue;
++		}
++
++		// Row 7: the Warden is the one family whose senselessness is authored.
++		// `LLKPerception::SenseReaching` names it for the same reason.
++		if (Def->Family == ELLKEnemyFamily::Warden)
++		{
++			continue;
++		}
++
++		Senseless.Add(StaticEnum<ELLKEnemyFamily>()->GetNameStringByValue(
++			static_cast<int64>(Def->Family)));
++	}
++
++	if (Senseless.IsEmpty())
++	{
++		return;
++	}
++
++	UE_LOG(LogLLK, Error,
++		TEXT("ULLKEnemyRosterSubsystem: %s %s no sense that can reach anybody, so %s notice "
++			 "nothing at any distance. The row loaded and its universal fields are fine, so this "
++			 "is the family-specific half of DT_Enemies arriving empty rather than a missing row. "
++			 "Check the generated asset against data/enemies.json; tests/enemies.test.mjs "
++			 "compares them."),
++		*FString::Join(Senseless, TEXT(", ")),
++		Senseless.Num() == 1 ? TEXT("has") : TEXT("have"),
++		Senseless.Num() == 1 ? TEXT("it will") : TEXT("they will"));
+ }
+ 
+ const FLLKEnemyDef* ULLKEnemyRosterSubsystem::FindFamily(ELLKEnemyFamily Family) const
+diff --git a/Source/LLK/Private/Enemies/LLKPerception.cpp b/Source/LLK/Private/Enemies/LLKPerception.cpp
+index 73bf8dd..1a76ee9 100644
+--- a/Source/LLK/Private/Enemies/LLKPerception.cpp
++++ b/Source/LLK/Private/Enemies/LLKPerception.cpp
+@@ -65,6 +65,21 @@ namespace LLKPerception
+ 		return FMath::Lerp(Dark, Lit, FMath::Clamp(Detectability, 0.f, 1.f));
+ 	}
+ 
++	bool HasReachingSense(const FLLKEnemyDef& Enemy)
++	{
++		// The SET of fields a sense needs, not any one of them - which is why
++		// the two Sweeper radii and the two Stocker fields are paired here.
++		// Lifted out of `SenseReaching` rather than written beside it: the
++		// roster asks this at load so a family whose senses never imported
++		// says so once, out loud, instead of being discovered as an enemy
++		// that stands still. Two copies of this expression would drift, and
++		// the audit would then be reporting on a rule nobody runs.
++		return (Enemy.AggroRadiusDark.IsSet() && Enemy.AggroRadiusLit.IsSet())
++			|| (Enemy.SightRange.IsSet() && Enemy.SightConeDegrees.IsSet())
++			|| Enemy.ScanRange.IsSet()
++			|| Enemy.WakeRange.IsSet();
++	}
++
+ 	ELLKNoticeSense SenseReaching(
+ 		const FLLKEnemyDef& Enemy,
+ 		const FLLKPerceiver& Perceiver,
+@@ -190,13 +205,7 @@ namespace LLKPerception
+ 		// So the Warden is named. It is the one family whose senselessness is
+ 		// authored rather than accidental, and `tests/enemies.test.mjs`
+ 		// asserts that it stays that way.
+-		const bool bHasAnySense =
+-			(Enemy.AggroRadiusDark.IsSet() && Enemy.AggroRadiusLit.IsSet())
+-			|| (Enemy.SightRange.IsSet() && Enemy.SightConeDegrees.IsSet())
+-			|| Enemy.ScanRange.IsSet()
+-			|| Enemy.WakeRange.IsSet();
+-
+-		if (!bHasAnySense && Enemy.Family == ELLKEnemyFamily::Warden)
++		if (!HasReachingSense(Enemy) && Enemy.Family == ELLKEnemyFamily::Warden)
+ 		{
+ 			return ELLKNoticeSense::StormAuthority;
+ 		}
+diff --git a/Source/LLK/Private/Tests/LLKPerceptionFailureTest.cpp b/Source/LLK/Private/Tests/LLKPerceptionFailureTest.cpp
+index 9133304..c7d8167 100644
+--- a/Source/LLK/Private/Tests/LLKPerceptionFailureTest.cpp
++++ b/Source/LLK/Private/Tests/LLKPerceptionFailureTest.cpp
+@@ -497,6 +497,87 @@ bool FLLKPerceptionFailureTest::RunTest(const FString& Parameters)
+ 			ELLKNoticeSense::StormAuthority);
+ 	}
+ 
++	// =====================================================================
++	// 7. HasReachingSense: THE AUDIT THE ROSTER RUNS AT LOAD
++	// =====================================================================
++	//
++	// Lifted out of `SenseReaching` on 2026-10-31 so the roster can ask the
++	// rule whether a family could reach anybody at all, with no keeper and no
++	// distance in the question. It exists because every `TOptional` field in
++	// `DT_Enemies` arrived unset and six playtests looked fine: the table
++	// logged "loaded, 6 families" while the Sweeper noticed nobody.
++	//
++	// It answers a question about PRESENCE, not validity, and the last block
++	// here pins that distinction rather than leaving it to be rediscovered.
++	{
++		// The healthy rows. If these ever answer false the audit becomes a
++		// warning on every launch, which is the fastest way to teach somebody
++		// to ignore it.
++		TestTrue(TEXT("a Sweeper with both radii has a reaching sense"),
++			LLKPerception::HasReachingSense(MakeSweeper()));
++		TestTrue(TEXT("a Stocker with its range and cone has a reaching sense"),
++			LLKPerception::HasReachingSense(MakeStocker()));
++		TestTrue(TEXT("a Window Walker with its wake range has a reaching sense"),
++			LLKPerception::HasReachingSense(MakeWalker()));
++
++		FLLKEnemyDef Glimmer;
++		Glimmer.Family = ELLKEnemyFamily::Glimmers;
++		Glimmer.ScanRange = 30.f;
++		TestTrue(TEXT("a Glimmer with its scan range has a reaching sense"),
++			LLKPerception::HasReachingSense(Glimmer));
++
++		// The failure that actually happened: the row is there, the universal
++		// fields are fine, the family-specific half is empty.
++		for (const ELLKEnemyFamily Family : {
++				 ELLKEnemyFamily::Sweepers, ELLKEnemyFamily::Stockers,
++				 ELLKEnemyFamily::Glimmers, ELLKEnemyFamily::WindowWalkers,
++				 ELLKEnemyFamily::Ficus })
++		{
++			FLLKEnemyDef Unimported;
++			Unimported.Family = Family;
++			Unimported.MoveSpeed = 14.f;
++			Unimported.AudioTelegraphSeconds = 1.f;
++			TestFalse(
++				TEXT("a row whose optional fields never imported has no reaching sense"),
++				LLKPerception::HasReachingSense(Unimported));
++		}
++
++		// Half a sense is no sense, which is the rule the paired fields exist
++		// to express.
++		FLLKEnemyDef LitRadiusOnly = MakeSweeper();
++		LitRadiusOnly.AggroRadiusDark.Reset();
++		TestFalse(TEXT("a Sweeper with only its lit radius has no reaching sense"),
++			LLKPerception::HasReachingSense(LitRadiusOnly));
++
++		FLLKEnemyDef ConeWithoutRange = MakeStocker();
++		ConeWithoutRange.SightRange.Reset();
++		TestFalse(TEXT("a Stocker with a cone and no range has no reaching sense"),
++			LLKPerception::HasReachingSense(ConeWithoutRange));
++
++		// Row 7. The one family that answers false by authorship, which is why
++		// every caller has to name it instead of treating false as a fault.
++		FLLKEnemyDef Warden;
++		Warden.Family = ELLKEnemyFamily::Warden;
++		TestFalse(TEXT("the Warden has no reaching sense, and that is authored"),
++			LLKPerception::HasReachingSense(Warden));
++
++		// **The limit, stated as a test so nobody reads more into the audit
++		// than it can carry.** Zeroed radii are PRESENT, so this answers true
++		// while `SenseReaching` still correctly refuses to act on them. The
++		// audit catches a field that never arrived; it cannot catch one that
++		// arrived wrong. `tests/enemies.test.mjs` is what forbids the zero in
++		// the authored file.
++		FLLKEnemyDef ZeroedButPresent = MakeSweeper();
++		ZeroedButPresent.AggroRadiusDark = 0.f;
++		ZeroedButPresent.AggroRadiusLit = 0.f;
++		TestTrue(TEXT("zeroed radii still count as present to the audit"),
++			LLKPerception::HasReachingSense(ZeroedButPresent));
++		TestEqual(TEXT("while the rule itself still notices nothing with them"),
++			LLKPerception::SenseReaching(ZeroedButPresent, FLLKPerceiver(), FLLKPerceivedKeeper()),
++			ELLKNoticeSense::None);
++	}
++
++
+ 	return true;
+ }
+ 
+diff --git a/Source/LLK/Public/Enemies/LLKEnemyRosterSubsystem.h b/Source/LLK/Public/Enemies/LLKEnemyRosterSubsystem.h
+index 89e5a57..ebdb4e4 100644
+--- a/Source/LLK/Public/Enemies/LLKEnemyRosterSubsystem.h
++++ b/Source/LLK/Public/Enemies/LLKEnemyRosterSubsystem.h
+@@ -90,6 +90,16 @@ protected:
+ 	/** Loads `/Game/Data/DT_Enemies`, or stays Unresolved and says so once. */
+ 	void ResolveRoster();
+ 
++	/**
++	 * Logs an error for every family that loaded with no reaching sense.
++	 *
++	 * Reports; changes nothing. A roster whose optional fields did not import
++	 * cannot be repaired from here, and inventing radii would be worse than
++	 * noticing nothing - but it must not pass for a finished roster, which is
++	 * what it did for a day on 2026-10-31.
++	 */
++	void AuditSenses() const;
++
+ 	UPROPERTY()
+ 	TObjectPtr<UDataTable> Table;
+ 
+diff --git a/Source/LLK/Public/Enemies/LLKPerception.h b/Source/LLK/Public/Enemies/LLKPerception.h
+index f09b59d..3748253 100644
+--- a/Source/LLK/Public/Enemies/LLKPerception.h
++++ b/Source/LLK/Public/Enemies/LLKPerception.h
+@@ -274,6 +274,25 @@ namespace LLKPerception
+ 		const FLLKPerceiver& Perceiver,
+ 		const FLLKPerceivedKeeper& Keeper);
+ 
++	/**
++	 * Does this family have a sense that could reach anybody at all, with no
++	 * keeper and no distance involved?
++	 *
++	 * **A data question, not a perception one**, and it exists because of a
++	 * real failure: on 2026-10-31 every `TOptional` field in `DT_Enemies`
++	 * arrived unset, so the Sweeper noticed nobody for a day while the table
++	 * loaded six families without complaint. `SenseReaching` already degrades
++	 * correctly in that case - it returns `None`, and the comment beside it
++	 * says a family whose senses failed to import is a family that does not
++	 * act - but nothing announced it, and "the enemies did nothing" looks
++	 * exactly like "the enemies have no radii".
++	 *
++	 * The Warden answers false here and that is correct: its senselessness is
++	 * authored (row 7). A caller auditing imported data has to name it,
++	 * exactly as `SenseReaching` does.
++	 */
++	LLK_API bool HasReachingSense(const FLLKEnemyDef& Enemy);
++
+ 	/**
+ 	 * Does this enemy notice this keeper right now, walls included.
+ 	 *

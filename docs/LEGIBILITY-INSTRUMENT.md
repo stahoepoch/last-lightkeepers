@@ -145,7 +145,7 @@ What they cover beyond the happy path:
   counting, or every successful pickup would also read as a relic the player
   failed to understand.
 
-Full suite: all 44 `LLK.*` automation tests pass, and 907 checks across the
+Full suite: all 33 `LLK.*` automation tests pass, and 907 checks across the
 thirteen node suites. `Tools/test_startup_config.py` fails on a
 machine-generated Android File Server token in the uncommitted
 `Config/DefaultEngine.ini`, which predates this work and belongs to another

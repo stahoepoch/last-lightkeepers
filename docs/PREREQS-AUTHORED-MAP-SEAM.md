@@ -111,7 +111,9 @@ files for `UWorld`, `GetWorld`, `SpawnActor`, `LoadMap` and
 `AutomationOpenMap`: the only hit is a *comment* in `LLKStormChargeTest.cpp`.
 
 So the honest answer to "which would silently pass while covering nothing" is
-that **all 44 would pass, and none of them covered the harness world either.**
+that **all of them would pass, and none of them covered the harness world
+either.** (Said as "all 44" when this was written; the suite is 33 — see
+`docs/TOOLING-TRAPS.md`. The count was wrong; the blind spot was not.)
 The seam cannot break them because they were never looking. What changes is
 that three of them currently *read* as map coverage and will read that way more
 strongly once a real map is the thing being played:
