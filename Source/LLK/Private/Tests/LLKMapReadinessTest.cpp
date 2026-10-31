@@ -50,6 +50,7 @@ namespace LLKMapReadinessTestFixture
 		Obs.bHasPlayerSpawn = true;
 		Obs.EnemySpawnPoints = 3;
 		Obs.bFloorUnderSpawn = true;
+		Obs.VisualEnvironmentReachesClients = true;
 		Obs.NavBoundsVolumes = 1;
 		Obs.NavDataActors = 1;
 		Obs.SpawnPointsOutsideNavBounds = 0;
@@ -186,6 +187,27 @@ bool FLLKMapReadinessTest::RunTest(const FString& Parameters)
 			Report.Has(ELLKMapCheck::NoRouteFromSpawn));
 		TestEqual(TEXT("one finding, and it is the one with a fix attached"),
 			Report.Findings.Num(), 1);
+	}
+
+	// ---- requirement 15: a server-only world is never client-ready -------
+	{
+		FLLKMapObservations Obs = ReadyMap();
+		Obs.VisualEnvironmentReachesClients = false;
+
+		const FLLKMapReport Report = LLKMapReadiness::Evaluate(Obs);
+		TestTrue(TEXT("FAILURE MODE 15: runtime-only non-replicated visuals are named"),
+			Report.Has(ELLKMapCheck::GeometryServerOnly));
+		TestEqual(TEXT("and the otherwise-ready map has exactly that one finding"),
+			Report.Findings.Num(), 1);
+	}
+
+	{
+		FLLKMapObservations Obs = ReadyMap();
+		Obs.VisualEnvironmentReachesClients.Reset();
+
+		const FLLKMapReport Report = LLKMapReadiness::Evaluate(Obs);
+		TestFalse(TEXT("an unmeasured client-visual boundary is not invented as a failure"),
+			Report.Has(ELLKMapCheck::GeometryServerOnly));
 	}
 
 	{

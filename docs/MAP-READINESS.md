@@ -14,7 +14,7 @@ still, which is a bug that looks like six other bugs.
 
 ---
 
-## The fourteen things, and what breaks without each
+## The fifteen things, and what breaks without each
 
 Each row names the check code `LLK.CheckMap` reports, so a failure message and
 this table are searchable by the same word.
@@ -24,6 +24,7 @@ this table are searchable by the same word.
 | 0a | **An `APlayerStart`** | `NoPlayerSpawn` | Nothing. Every other requirement below is measured from the keeper spawn, so this one failing suppresses the rest rather than being reported alongside them |
 | 0b | **At least one actor tagged `LLK.EnemySpawn`** | `NoEnemySpawnPoints` | Requirements 4 and 5 silently pass, because a route to nowhere is a route nobody needs |
 | 1 | **A floor with blocking collision** under the whole playable area | `FloorHasNoCollision` | Keepers fall through on spawn, or stand on nothing and every trace misses |
+| 15 | **Playable geometry and lighting that reach clients**, not only the server | `GeometryServerOnly` | The host can play while a client renders black; it reads as a renderer or GPU fault rather than a replication boundary |
 | 2 | **A `NavMeshBoundsVolume`** enclosing the playable area | `NavBoundsMissing` | No navmesh is ever built. An enemy with a perfect brain never takes a step |
 | 3 | **Built nav data** (a `RecastNavMesh` actor in the level) | `NavDataMissing` | The volume exists but nothing was generated — the usual cause is that the level was never saved after the volume was added |
 | 3a | **Nav data that has finished generating** | `NavmeshNotBuilt` | An enemy that is inert for one specific second and fine afterwards, or inert forever if the check that reported it ran at load. Generation is asynchronous |
@@ -272,6 +273,15 @@ The same report is returned by `LLKMapReadiness::Observe` + `Evaluate`, so a
 commandlet or an automation test can assert on it instead of reading log text.
 `Evaluate` takes an observations struct and no world at all, which is what lets
 `LLK.Harness.MapReadiness` test the judgement separately from the gathering.
+
+### Requirement 15 is deliberately narrow
+
+The server cannot inspect a client's viewport. `LLK.CheckMap` therefore flags
+only the known, diagnosable failure shape: runtime-spawned collision geometry
+or lights with no placed equivalent, where at least one supplying actor is not
+replicated. That is how the old GameMode harness left a client with a black
+world. Placed level actors load locally on every client and satisfy the check;
+an unset observation is not treated as evidence that a client rendered fine.
 
 ---
 

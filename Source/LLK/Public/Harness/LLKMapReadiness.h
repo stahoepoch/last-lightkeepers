@@ -50,6 +50,9 @@ enum class ELLKMapCheck : uint8
 	/** Nothing solid under the keeper spawn. Requirement 1. */
 	FloorHasNoCollision,
 
+	/** The world is built from non-replicated runtime visuals, so clients render no playable space. Requirement 15. */
+	GeometryServerOnly,
+
 	/** No `NavMeshBoundsVolume`. Requirement 2: no volume, no navmesh, ever. */
 	NavBoundsMissing,
 
@@ -199,6 +202,19 @@ struct FLLKMapObservations
 	/** A downward trace from above the keeper spawn hit something solid. */
 	UPROPERTY(BlueprintReadOnly, Category = "LLK|Map")
 	bool bFloorUnderSpawn = false;
+
+	/**
+	 * Whether the world visuals that make this map playable reach clients.
+	 *
+	 * This is deliberately a narrow inspection, not a claim that the server
+	 * has rendered a client viewport. `false` means the check found runtime-
+	 * spawned world geometry or lights, no placed equivalent, and at least one
+	 * of those runtime actors does not replicate: the exact harness shape that
+	 * produced a black client. `true` means placed visuals exist, or every
+	 * runtime visual found replicates. Unset means there was no runtime visual
+	 * environment to inspect.
+	 */
+	TOptional<bool> VisualEnvironmentReachesClients;
 
 	// ---- navigation -------------------------------------------------------
 

@@ -2,7 +2,10 @@
 
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "Components/LightComponent.h"
+#include "Components/PrimitiveComponent.h"
 #include "GameFramework/Actor.h"
+#include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerStart.h"
 #include "HAL/IConsoleManager.h"
 #include "Harness/LLKStoreFloorPlan.h"
@@ -111,6 +114,14 @@ namespace LLKMapReadiness
 		{
 			Add(ELLKMapCheck::FloorHasNoCollision,
 				TEXT("a downward trace from above the keeper spawn hit nothing solid"));
+		}
+
+		if (Obs.VisualEnvironmentReachesClients.IsSet()
+			&& !Obs.VisualEnvironmentReachesClients.GetValue())
+		{
+			Add(ELLKMapCheck::GeometryServerOnly,
+				TEXT("playable geometry or lighting is runtime-spawned and non-replicated, "
+					"with no placed equivalent - clients can render black"));
 		}
 
 		// ---- navigation ---------------------------------------------------
@@ -296,6 +307,68 @@ namespace LLKMapReadiness
 			ECC_WorldStatic, Params);
 
 		// ---- requirements 2, 3, 4: navigation -----------------------------
+		// ---- requirement 15: the visual world reaches clients --------------
+		//
+		// A server cannot truthfully ask whether a client rendered this level.
+		// This is consequently an intentionally narrow detector for the one
+		// known bad shape: the harness created its floor, walls, sun and sky at
+		// runtime from GameMode; none were replicated and clients saw black.
+		// Placed actors carry RF_WasLoaded and load independently on every
+		// client. Pawns are excluded so a keeper's replicated lantern cannot
+		// make an otherwise empty world look valid.
+		bool bFoundRuntimeVisual = false;
+		bool bFoundPlacedVisual = false;
+		bool bAllRuntimeVisualsReplicate = true;
+
+		for (TActorIterator<AActor> It(World); It; ++It)
+		{
+			AActor* Actor = *It;
+			if (Actor == nullptr || Actor->IsA<APawn>())
+			{
+				continue;
+			}
+
+			bool bIsWorldVisual = false;
+			for (UActorComponent* Component : Actor->GetComponents())
+			{
+				if (const ULightComponent* Light = Cast<ULightComponent>(Component))
+				{
+					bIsWorldVisual = Light->IsRegistered();
+				}
+				else if (const UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Component))
+				{
+					bIsWorldVisual = Primitive->IsRegistered()
+						&& Primitive->GetCollisionObjectType() == ECC_WorldStatic
+						&& Primitive->GetCollisionEnabled() != ECollisionEnabled::NoCollision;
+				}
+
+				if (bIsWorldVisual)
+				{
+					break;
+				}
+			}
+
+			if (!bIsWorldVisual)
+			{
+				continue;
+			}
+
+			if (Actor->HasAnyFlags(RF_WasLoaded))
+			{
+				bFoundPlacedVisual = true;
+			}
+			else
+			{
+				bFoundRuntimeVisual = true;
+				bAllRuntimeVisualsReplicate &= Actor->GetIsReplicated();
+			}
+		}
+
+		if (bFoundRuntimeVisual)
+		{
+			Obs.VisualEnvironmentReachesClients = bFoundPlacedVisual || bAllRuntimeVisualsReplicate;
+		}
+
 		TArray<FBox> NavBounds;
 		for (TActorIterator<ANavMeshBoundsVolume> It(World); It; ++It)
 		{
@@ -447,6 +520,7 @@ namespace LLKMapReadiness
 		case ELLKMapCheck::NoPlayerSpawn:              return TEXT("NoPlayerSpawn");
 		case ELLKMapCheck::NoEnemySpawnPoints:         return TEXT("NoEnemySpawnPoints");
 		case ELLKMapCheck::FloorHasNoCollision:        return TEXT("FloorHasNoCollision");
+		case ELLKMapCheck::GeometryServerOnly:         return TEXT("GeometryServerOnly");
 		case ELLKMapCheck::NavBoundsMissing:           return TEXT("NavBoundsMissing");
 		case ELLKMapCheck::NavDataMissing:             return TEXT("NavDataMissing");
 		case ELLKMapCheck::NavmeshNotBuilt:            return TEXT("NavmeshNotBuilt");
