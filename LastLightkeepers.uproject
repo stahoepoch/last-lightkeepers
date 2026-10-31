@@ -1,28 +1,36 @@
 {
-  "FileVersion": 3,
-  "EngineAssociation": "5.8",
-  "Category": "Games",
-  "Description": "Last Lightkeepers — PC-first cooperative recovery game.",
-  "Modules": [
-    {
-      "Name": "LLK",
-      "Type": "Runtime",
-      "LoadingPhase": "Default"
-    },
-    {
-      "Name": "LLKEditor",
-      "Type": "Editor",
-      "LoadingPhase": "Default"
-    }
-  ],
-  "Plugins": [
-    {
-      "Name": "EnhancedInput",
-      "Enabled": true
-    },
-    {
-      "Name": "Fab",
-      "Enabled": false
-    }
-  ]
+	"FileVersion": 3,
+	"EngineAssociation": "5.8",
+	"Category": "Games",
+	"Description": "Last Lightkeepers — PC-first cooperative recovery game.",
+	"Modules": [
+		{
+			"Name": "LLK",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "LLKEditor",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "EnhancedInput",
+			"Enabled": true
+		},
+		{
+			"Name": "Fab",
+			"Enabled": false
+		},
+		{
+			"Name": "ModelContextProtocol",
+			"Enabled": true
+		},
+		{
+			"Name": "AllToolsets",
+			"Enabled": true
+		}
+	]
 }

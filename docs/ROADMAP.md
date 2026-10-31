@@ -7,6 +7,10 @@ Read `docs/LANES.md` first for who owns what. Read `docs/PLATFORM.md` for why
 we are here. `docs/DECISIONS.md` is the authority if anything below contradicts
 it.
 
+**Read `docs/PRODUCTION-CONTROL.md` before scheduling work.** It is the
+canonical current sequence, WIP limit, integration cadence, and M4 test plan.
+This roadmap remains the authority for milestone acceptance criteria.
+
 ---
 
 ## The shape of it
@@ -162,8 +166,8 @@ The first milestone with the game in it. One room, one mechanic, two players.
 | M1.2 | `ULLKLanternComponent` — toggle, replicated state, owns the light's on/off only | Claude | Client presses the key, server decides, both clients see the same state. No client-side authority anywhere |
 | M1.3 | The lantern actor: light, mesh, the sound of it striking | Chris | It looks and sounds like a lantern. The C++ class is complete and works with a placeholder before this exists |
 | M1.4 | `ULLKStormChargeSubsystem` — the meter, rate and multiplier from `data/storm-charge.json`, the **diminishing** curve (row 12) | Claude | Four lanterns cost more than one and no keeper's light is free. The existing 98 data assertions still pass |
-| M1.5 | Grey-box store floor: **the ground floor**, blockout only, no art | Chris | It **teaches**. `DECISIONS.md` row 43 makes the store the tutorial, so navigable is no longer the bar: someone who has never seen it loots with the lantern off, then turns it on for the first relic, is noticed, and gets away - without being told to. Not pretty, just legible and big enough to be dark. Curriculum in `docs/THE-STORE.md` |
-| M1.6 | Enhanced Input: move, look, sprint, crouch, lantern, interact | Codex | Every action is an Input Action asset, rebindable, with gamepad bindings. Nothing hardcoded to a key |
+| M1.5 | Grey-box store floor: **the ground floor**, blockout only, no art | Codex via Unreal MCP, with Chris as creative director | It **teaches**. `DECISIONS.md` row 43 makes the store the tutorial, so navigable is no longer the bar: someone who has never seen it loots with the lantern off, then turns it on for the first relic, is noticed, and gets away - without being told to. Not pretty, just legible and big enough to be dark. Curriculum in `docs/THE-STORE.md`. Row 41 assigns one active writer per `.umap`; Codex owns the first greybox map until handoff. |
+| M1.6 | Enhanced Input: move, look, sprint, crouch, **jump**, lantern, interact | Codex (contract/validator) + Chris (binary Input assets) + Claude (runtime consumption) | Every action is an Input Action asset, rebindable, with gamepad bindings. Nothing hardcoded to a key. The split preserves Chris's exclusive ownership of `Content/**`; see `PRODUCTION-CONTROL.md`. |
 | M1.7 | Debug HUD: storm charge as a number on screen | Claude | Readable while playing. Not the real HUD — the real one is M3 |
 | M1.8 | Automation tests for the storm charge rules | Claude | The curve, the multiplier and "only ever rises" (row 6) are asserted in-engine, not just in `tests/` |
 | M1.9 | Two-player test over Steam or LAN | Chris + Codex | Two machines, one host, lantern state agrees. This is where networking mistakes surface, so it happens in M1 and not M4 |
@@ -562,7 +566,11 @@ Written down so nobody has to ask, and so nobody quietly starts:
 
 ---
 
-## Status, 2026-10-28
+## Historical status, 2026-10-28
+
+This snapshot is retained as evidence, not a live dispatch board. Use
+`docs/PRODUCTION-CONTROL.md` for the current sequence and re-verify each
+milestone against its acceptance criteria before calling it green.
 
 - **Current milestone: M0.** Done: M0.1 (engine pinned), M0.2 (skeleton builds
   from a clean clone), M0.3 (git hygiene), M0.4 (`DATA-PIPELINE.md`), M0.6

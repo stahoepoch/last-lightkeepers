@@ -22,10 +22,12 @@ the loss is invisible until someone opens the level and their work is gone.
 
 Three consequences, and they shape every lane below:
 
-1. **Chris owns `Content/` exclusively.** Every asset, every level, every
-   material, every Blueprint. Not because agents shouldn't be trusted with it,
-   but because we cannot read it, cannot diff it, and cannot merge it. An agent
-   touching a `.uasset` is a coin flip on somebody's work.
+1. **One active writer owns each authored `Content/` asset.** Binary assets do
+   not merge. Chris may author any asset; agents may create and revise a
+   code-greybox map through Unreal MCP when they are explicitly assigned that
+   `.umap`. Never let two people or agents edit the same `.umap`, Blueprint,
+   material, or other authored binary asset at once. Hand the asset over
+   explicitly before another writer touches it.
 2. **Gameplay logic lives in C++, not Blueprint.** This is the decision that
    determines whether agents can contribute at all. A Blueprint is a binary
    asset; a rule written in one is a rule no agent can read, review, test or
@@ -34,10 +36,10 @@ Three consequences, and they shape every lane below:
    control, diffable and testable. Blueprints are allowed as thin glue: an
    actor that inherits a C++ class and sets which mesh and which sound. Logic
    in a Blueprint is a bug report.
-3. **Both agents stay in text, permanently.** Which makes agent-vs-agent
-   conflict in `Content/` structurally impossible rather than merely
-   discouraged. The remaining risk is two agents in one C++ module, and the
-   table below splits modules so that cannot happen either.
+3. **Agents keep gameplay rules in text, permanently.** An MCP-authored map is
+   greybox geometry and actor placement, never a place to hide Blueprint logic.
+   The remaining risks are two writers in one binary asset or one C++ module;
+   the table below assigns both explicitly.
 
 ---
 
@@ -45,7 +47,7 @@ Three consequences, and they shape every lane below:
 
 | Path | Owner | Notes |
 | --- | --- | --- |
-| `Content/**` — all of it | **Chris** | Levels, meshes, materials, lighting setups, Blueprints, animation, audio, UI assets. Agents never open these |
+| `Content/**` — authored assets | **Assigned single writer** | Chris owns art direction and may author any asset. An agent may own one explicitly assigned greybox `.umap` through MCP; never two writers on one binary asset at once. Gameplay logic stays in C++ |
 | `Source/LLK/**` — runtime module | **Claude** | Gameplay systems in C++: storm charge, lantern, loot, burden, extraction, enemies, the ladder, save data |
 | `Source/LLKEditor/**` — editor module | **Codex** | Importers, commandlets, editor tooling, graybox generation, validation |
 | `Source/*.Target.cs`, `Source/**/*.Build.cs` | **Codex** | Build configuration, module dependencies, plugin enables |

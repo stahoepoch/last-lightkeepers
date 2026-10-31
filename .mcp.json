@@ -1,12 +1,19 @@
 {
-  "mcpServers": {
-    "Roblox_Studio": {
-      "type": "stdio",
-      "command": "cmd.exe",
-      "args": [
-        "/c",
-        "cd /d %LOCALAPPDATA%\\Roblox && .\\mcp.bat"
-      ]
-    }
-  }
+	"mcpServers":
+	{
+		"Roblox_Studio":
+		{
+			"type": "stdio",
+			"command": "cmd.exe",
+			"args": [
+				"/c",
+				"cd /d %LOCALAPPDATA%\\Roblox && .\\mcp.bat"
+			]
+		},
+		"unreal-mcp":
+		{
+			"type": "http",
+			"url": "http://127.0.0.1:8000/mcp"
+		}
+	}
 }
