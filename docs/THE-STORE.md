@@ -26,6 +26,58 @@ founder behind it. Chris's call; the rest of this page holds whichever it is.
 Four floors, a basement, and a roof that is not an exit (`data/loot.json`
 already says so).
 
+## Visual signature — reflected retail after the lights should have died
+
+**LOCKED, Chris, 2026-10-31.** The reference is not a generic abandoned mall
+or an industrial horror set. It is a once-bright, densely stocked regional
+department store: retail fixtures, sale signage, tiled promenades, glass
+cases, fluorescent grids and coloured department identity still visible under
+the damage.
+
+Three elements are non-negotiable:
+
+1. **Mirrored ceiling islands and glass soffits.** Large, dark-framed panels
+   reflect aisles, fixtures, emergency lights and the keeper's lantern. They
+   are ceiling landmarks rather than a literal glass roof across every floor:
+   a player should periodically look up and see the store doubled above them.
+2. **Neon as a broken retail memory.** Blue, violet, magenta and occasional
+   red tube/sign light belongs to department thresholds, optical counters,
+   toy/furniture signage and ceiling islands. It is never nightclub dressing:
+   it is old visual merchandising, partly alive, reflected in mirror and
+   polished tile, and therefore capable of making distance ambiguous.
+3. **Glass as navigation and risk.** Jewellery, optical and toy display cases
+   make pools of visibility, reflections and silhouettes. They establish
+   place before they become a mechanic. Future collision, sight and relic-light
+   rules must agree with what a player can see through a given piece of glass.
+
+The store is not uniformly pitch black. Emergency exit signs, occasional
+fluorescent islands, storefront spill and storm flashes give the player a weak
+spatial map. Darkness is deliberate and local: restrooms, fitting rooms,
+service passages, collapsed stock areas and the basement earn true black.
+That contrast is what makes the carried lantern feel necessary instead of
+making the whole building visually flat.
+
+### First art-passed encounter language
+
+The first playable department should read as a real retail place before it
+reads as a horror level: a toy department or furniture concourse is the best
+starting pair. Toys give dense low islands, glass cabinets and colourful
+silhouettes; furniture gives broad exposed lanes and staged domestic rooms.
+Between them, they teach cover, exposure and the value of the lantern without
+needing a UI explanation.
+
+For the first art pass, build one memorable ceiling island above the central
+aisle: dark trim, segmented mirror, one weak cool tube and one unstable
+violet/magenta retail accent. Put a functioning exit sign at a distant edge,
+then let the lantern and storm flashes own the intervening dark. The target is
+not "neon everywhere"; it is a believable department store whose old colour
+system becomes uncanny when only fragments of it still work.
+
+Mirrors may later support encounters and misdirection, but they must not be
+used as a source of unearned information. A reflection can reveal a light,
+machine or keeper that is physically visible in that reflection; it must not
+invent a threat the world does not contain.
+
 ## The ruin is vertical, and that is the whole art direction
 
 The flood came up and the roof came down. So the building rots in a gradient,
