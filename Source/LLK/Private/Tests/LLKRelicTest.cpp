@@ -33,8 +33,10 @@
 
 #include "Data/LLKLanternData.h"
 #include "Data/LLKLootRulesData.h"
+#include "Enemies/LLKVisibility.h"
 #include "LLKRelicTestListener.h"
 #include "Loot/LLKRelicComponent.h"
+#include "Loot/LLKRelicIllumination.h"
 #include "Misc/AutomationTest.h"
 #include "Storm/LLKLightField.h"
 
@@ -276,6 +278,39 @@ bool FLLKRelicTest::RunTest(const FString& Parameters)
 	const float JustOutside = LLKLightField::BrightnessAt({Lantern}, FVector(850.f, 0.f, 0.f));
 	TestTrue(TEXT("a relic just inside the lantern's reach is readable"), JustInside > 125.f);
 	TestTrue(TEXT("and one just outside it is not"), JustOutside < 125.f);
+
+	// ---- A shelf blocks illumination, not just enemy sight ----------------
+	//
+	// The field is radial by design. Without this visibility pass, Open light
+	// lets a keeper stand hidden behind a gondola and read every relic on the
+	// far side. That defeats the hooded-at-arm's-length loop before the player
+	// can learn it. Exercise the pure seam: no map is needed to prove that a
+	// blocked (or unanswerable) line contributes zero brightness.
+	FLLKFixedVisibility ClearSight(ELLKVisibility::Clear);
+	FLLKFixedVisibility BlockedSight(ELLKVisibility::Blocked);
+	FLLKFixedVisibility UnknownSight(ELLKVisibility::Unknown);
+	const FVector RelicPosition(840.f, 0.f, 0.f);
+	TestNearlyEqual(TEXT("a clear lantern still reads at its own reach"),
+		LLKRelicIllumination::BrightnessAtVisible({Lantern}, RelicPosition, ClearSight),
+		125.f, 0.01f);
+	TestEqual(TEXT("a gondola blocks a lantern behind it"),
+		LLKRelicIllumination::BrightnessAtVisible({Lantern}, RelicPosition, BlockedSight), 0.f);
+	TestEqual(TEXT("an unanswerable sightline is never treated as clear"),
+		LLKRelicIllumination::BrightnessAtVisible({Lantern}, RelicPosition, UnknownSight), 0.f);
+
+	FLLKLightSource SecondLantern = Lantern;
+	SecondLantern.Position = FVector(0.f, 100.f, 0.f);
+	TestNearlyEqual(TEXT("one clear source still contributes when another is blocked"),
+		LLKRelicIllumination::BrightnessAtVisible({Lantern, SecondLantern}, RelicPosition, ClearSight),
+		LLKLightField::BrightnessAt({Lantern, SecondLantern}, RelicPosition), 0.01f);
+
+	ULLKRelicComponent* Occluded = NewObject<ULLKRelicComponent>(GetTransientPackage());
+	Occluded->SetThresholdForTest(125.f);
+	Occluded->SetRelicIdentity(TEXT("OccludedWatch"), FText::FromString(TEXT("Occluded watch")), 450);
+	Occluded->SampleLightForTest(LLKRelicIllumination::BrightnessAtVisible({Lantern}, RelicPosition, BlockedSight));
+	TestFalse(TEXT("a blocked lantern cannot identify the relic"), Occluded->IsLegible());
+	TestEqual(TEXT("and it remains visibly unidentified rather than silently readable"),
+		Occluded->GetInteractBlock(), ELLKRelicInteractBlock::Unidentified);
 
 	return true;
 }

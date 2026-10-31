@@ -112,7 +112,10 @@ bool FLLKSweeperBrainTest::RunTest(const FString& Parameters)
 {
 	using namespace LLKSweeperBrainTestFixture;
 
-	const FLLKEnemyDef Def = Sweeper();
+	// Qualify this even though the fixture namespace is imported below. Unity
+	// builds share anonymous namespaces across their combined source chunk, and
+	// LLKLanternLevelTest also has a private Sweeper() helper.
+	const FLLKEnemyDef Def = LLKSweeperBrainTestFixture::Sweeper();
 	const FLLKSweeperContactRules Rules = Contact();
 
 	// ---- 1. patrolling, and a map with no route --------------------------

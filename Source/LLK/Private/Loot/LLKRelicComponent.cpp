@@ -1,8 +1,10 @@
 #include "Loot/LLKRelicComponent.h"
 
 #include "Components/PrimitiveComponent.h"
+#include "Enemies/LLKVisibility.h"
 #include "Engine/World.h"
 #include "LLK.h"
+#include "Loot/LLKRelicIllumination.h"
 #include "Net/UnrealNetwork.h"
 #include "Storm/LLKZonePressureSubsystem.h"
 
@@ -146,11 +148,15 @@ void ULLKRelicComponent::TickComponent(
 		return;
 	}
 
-	// The same summed field the brightest-position rule uses, evaluated at the
-	// relic instead of at a keeper. One definition of "how lit is this spot",
-	// so what the enemies converge on and what the player can read cannot
-	// drift apart.
-	const float Brightness = LLKLightField::BrightnessAt(Storm->GetLitLightSources(), Owner->GetActorLocation());
+	// The field is radial; the world is not. A source behind a solid gondola
+	// does not make its way through the steel just because its radius reaches
+	// this actor. Use the same Visibility channel perception uses, so a shelf
+	// that hides a keeper from a Sweeper also prevents that keeper from reading
+	// relics through it. The relic is ignored so its own collision never
+	// blocks the final millimetre of the trace.
+	const FLLKWorldVisibility VisibilityQuery(World, Owner);
+	const float Brightness = LLKRelicIllumination::BrightnessAtVisible(
+		Storm->GetLitLightSources(), Owner->GetActorLocation(), VisibilityQuery);
 
 	// Clients evaluate too, but only to keep `bCurrentlyLit` honest for
 	// `CanBeTaken` - which has to answer on the frame the player presses the
