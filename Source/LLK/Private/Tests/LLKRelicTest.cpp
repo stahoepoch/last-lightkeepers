@@ -124,8 +124,13 @@ bool FLLKRelicTest::RunTest(const FString& Parameters)
 		Shelf->GetInteractBlock(), ELLKRelicInteractBlock::Unidentified);
 	TestEqual(TEXT("nothing has changed, so nothing announced it"), Prompt->InteractCount, 0);
 
-	// Light arrives. Legibility AND the affordance both turn on, and the
-	// affordance announces itself - that is the channel.
+	// Light arrives. One sample is deliberately not enough: shelf-edge traces
+	// must not make the prompt flash between frames. The second stable sample
+	// makes both legibility and the affordance turn on.
+	Shelf->SampleLightForTest(400.f);
+	TestFalse(TEXT("one bright sample does not flicker the affordance on"), Shelf->CanBeTaken());
+	TestEqual(TEXT("and it does not permanently identify on a trace flicker"),
+		Shelf->GetInteractBlock(), ELLKRelicInteractBlock::Unidentified);
 	Shelf->SampleLightForTest(400.f);
 	TestTrue(TEXT("lit, it is legible"), Shelf->IsLegible());
 	TestTrue(TEXT("and interactable"), Shelf->CanBeTaken());
@@ -142,6 +147,8 @@ bool FLLKRelicTest::RunTest(const FString& Parameters)
 	// **The keeper walks away with the lantern.** Identity is knowledge and
 	// stays; the affordance goes out, and it says why. This is the moment the
 	// interface teaches row 5 without a tooltip.
+	Shelf->SampleLightForTest(0.f);
+	TestTrue(TEXT("one dark sample does not flicker the affordance off"), Shelf->CanBeTaken());
 	Shelf->SampleLightForTest(0.f);
 	TestTrue(TEXT("it is still legible - identity is knowledge, not a light switch"),
 		Shelf->IsLegible());
@@ -160,6 +167,7 @@ bool FLLKRelicTest::RunTest(const FString& Parameters)
 		ELLKRelicInteractBlock::Unidentified, ELLKRelicInteractBlock::NeedsLight);
 
 	// Light again: back on, and announced again.
+	Shelf->SampleLightForTest(400.f);
 	Shelf->SampleLightForTest(400.f);
 	TestTrue(TEXT("light restores the affordance"), Shelf->CanBeTaken());
 	TestEqual(TEXT("and announced it"), Prompt->InteractCount, 3);
@@ -251,12 +259,37 @@ bool FLLKRelicTest::RunTest(const FString& Parameters)
 	Stencil->SampleLightForTest(0.f);
 	TestEqual(TEXT("unread: stencil 1, there but unreadable"), Stencil->GetOutlineStencil(), 1);
 	Stencil->SampleLightForTest(400.f);
+	Stencil->SampleLightForTest(400.f);
 	TestEqual(TEXT("lit and takeable: stencil 3"), Stencil->GetOutlineStencil(), 3);
+	Stencil->SampleLightForTest(0.f);
 	Stencil->SampleLightForTest(0.f);
 	TestEqual(TEXT("read but dark: stencil 2, known and out of reach"),
 		Stencil->GetOutlineStencil(), 2);
 	// Three distinct values, which is what lets one material say three things.
 	TestNotEqual(TEXT("the three states are distinguishable"), 1, 2);
+
+	// ---- shelf-edge stability -------------------------------------------
+	//
+	// Alternating trace answers are the exact failure case: a lantern held at
+	// a gondola edge must not flash its prompt or permanently identify loot.
+	ULLKRelicComponent* Edge = NewObject<ULLKRelicComponent>(GetTransientPackage());
+	ULLKRelicTestListener* EdgePrompt = NewObject<ULLKRelicTestListener>(GetTransientPackage());
+	Edge->OnInteractableChanged.AddDynamic(EdgePrompt, &ULLKRelicTestListener::OnInteractable);
+	Edge->SetThresholdForTest(125.f);
+	Edge->SetRelicIdentity(TEXT("EdgeWatch"), FText::FromString(TEXT("Edge watch")), 450);
+	for (int32 Sample = 0; Sample < 6; ++Sample)
+	{
+		Edge->SampleLightForTest((Sample % 2 == 0) ? 400.f : 0.f);
+	}
+	TestFalse(TEXT("alternating edge traces do not identify the relic"), Edge->IsLegible());
+	TestFalse(TEXT("or flash its affordance on"), Edge->CanBeTaken());
+	TestEqual(TEXT("and emit no affordance events"), EdgePrompt->InteractCount, 0);
+	Edge->SampleLightForTest(400.f);
+	Edge->SampleLightForTest(400.f);
+	TestTrue(TEXT("two stable clear samples still make the relic usable"), Edge->CanBeTaken());
+	Edge->SampleLightForTest(0.f);
+	Edge->SampleLightForTest(0.f);
+	TestFalse(TEXT("two stable blocked samples turn it back off"), Edge->CanBeTaken());
 
 	// ---- the threshold agrees with the light field ---------------------
 	//

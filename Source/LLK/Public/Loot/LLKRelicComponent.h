@@ -236,8 +236,8 @@ public:
 	 */
 	void SampleLightForTest(float BrightnessAtRelic)
 	{
-		bCurrentlyLit = BrightnessAtRelic >= IdentifyThreshold;
-		EvaluateLegibility(BrightnessAtRelic);
+		ApplyLightSample(BrightnessAtRelic >= IdentifyThreshold);
+		EvaluateLegibility(bCurrentlyLit ? BrightnessAtRelic : 0.f);
 		RefreshInteractable();
 	}
 
@@ -253,6 +253,17 @@ protected:
 
 	/** Recomputes the affordance and broadcasts only when it actually changed. */
 	void RefreshInteractable();
+
+	/**
+	 * Accepts a raw light answer only after two matching samples.
+	 *
+	 * A shelf edge is the normal place a keeper uses Hooded light. A trace that
+	 * lands on alternating sides of that edge must not make the prompt and
+	 * outline flash on every 0.1 second sample. This is deliberately not a
+	 * long "light linger" timer: two stable observations are enough to reject
+	 * trace jitter while keeping the rule physically immediate in play.
+	 */
+	void ApplyLightSample(bool bRawLit);
 
 	UFUNCTION()
 	void OnRep_Legible();
@@ -296,6 +307,15 @@ protected:
 
 	/** Live and NOT replicated: every machine reads the light field locally. */
 	bool bCurrentlyLit = false;
+
+	/** Candidate live-light state waiting for a second matching sample. */
+	bool bPendingLitState = false;
+
+	/** Samples matching bPendingLitState while it differs from bCurrentlyLit. */
+	uint8 PendingLitSamples = 0;
+
+	/** At the 10 Hz sampling rate, this is a 0.1-second stability check. */
+	static constexpr uint8 StableSamplesRequired = 2;
 
 	/**
 	 * Last broadcast affordance, so the delegate fires on change rather than

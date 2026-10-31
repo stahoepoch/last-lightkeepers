@@ -160,17 +160,48 @@ void ULLKRelicComponent::TickComponent(
 
 	// Clients evaluate too, but only to keep `bCurrentlyLit` honest for
 	// `CanBeTaken` - which has to answer on the frame the player presses the
-	// key, with no round trip. The legibility decision below is the server's.
-	bCurrentlyLit = Brightness >= IdentifyThreshold;
+	// key, with no round trip. Two equal samples reject a shelf edge flipping
+	// the prompt on every tenth of a second. The legibility decision below is
+	// still the server's.
+	ApplyLightSample(Brightness >= IdentifyThreshold);
 
 	if (Owner->HasAuthority())
 	{
-		EvaluateLegibility(Brightness);
+		// Identity is sticky, so a one-frame trace flicker must not be enough
+		// to grant it permanently. Only a stable live-light state may read it.
+		EvaluateLegibility(bCurrentlyLit ? Brightness : 0.f);
 	}
 
 	// Every machine, authority or not. This is the affordance channel, and it
 	// belongs where the prompt is.
 	RefreshInteractable();
+}
+
+void ULLKRelicComponent::ApplyLightSample(bool bRawLit)
+{
+	if (bRawLit == bCurrentlyLit)
+	{
+		// The world agrees with the committed state. Any interrupted attempt to
+		// change it has ended, so the next transition needs two fresh samples.
+		bPendingLitState = bRawLit;
+		PendingLitSamples = 0;
+		return;
+	}
+
+	if (bRawLit != bPendingLitState)
+	{
+		bPendingLitState = bRawLit;
+		PendingLitSamples = 1;
+	}
+	else
+	{
+		++PendingLitSamples;
+	}
+	if (PendingLitSamples >= StableSamplesRequired)
+	{
+		bCurrentlyLit = bRawLit;
+		PendingLitSamples = 0;
+	}
 }
 
 void ULLKRelicComponent::RefreshInteractable()
