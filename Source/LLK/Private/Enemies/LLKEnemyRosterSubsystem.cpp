@@ -51,6 +51,55 @@ void ULLKEnemyRosterSubsystem::ResolveRoster()
 	UE_LOG(LogLLK, Log,
 		TEXT("ULLKEnemyRosterSubsystem: DT_Enemies loaded, %d famil%s."),
 		Table->GetRowMap().Num(), Table->GetRowMap().Num() == 1 ? TEXT("y") : TEXT("ies"));
+
+	AuditSenses();
+}
+
+void ULLKEnemyRosterSubsystem::AuditSenses() const
+{
+	// The third failure the warning above did not anticipate. That comment
+	// names two states that look identical from inside the game - the enemies
+	// did nothing, and the enemies never loaded - and this is the one between
+	// them: the table loaded, all six rows are here, and every sense is empty.
+	// It happened on 2026-10-31 and survived six playtests, because a loud
+	// "loaded, 6 families" is exactly what a broken roster prints.
+	//
+	// Loud, per family, and once at load rather than per tick. It cannot fix
+	// anything - the numbers are not here to recover - but an enemy that
+	// stands still should say why rather than read as unfinished AI.
+	TArray<FString> Senseless;
+	for (const FLLKEnemyDef* Def : GetAllFamilies())
+	{
+		if (Def == nullptr || LLKPerception::HasReachingSense(*Def))
+		{
+			continue;
+		}
+
+		// Row 7: the Warden is the one family whose senselessness is authored.
+		// `LLKPerception::SenseReaching` names it for the same reason.
+		if (Def->Family == ELLKEnemyFamily::Warden)
+		{
+			continue;
+		}
+
+		Senseless.Add(StaticEnum<ELLKEnemyFamily>()->GetNameStringByValue(
+			static_cast<int64>(Def->Family)));
+	}
+
+	if (Senseless.IsEmpty())
+	{
+		return;
+	}
+
+	UE_LOG(LogLLK, Error,
+		TEXT("ULLKEnemyRosterSubsystem: %s %s no sense that can reach anybody, so %s notice "
+			 "nothing at any distance. The row loaded and its universal fields are fine, so this "
+			 "is the family-specific half of DT_Enemies arriving empty rather than a missing row. "
+			 "Check the generated asset against data/enemies.json; tests/enemies.test.mjs "
+			 "compares them."),
+		*FString::Join(Senseless, TEXT(", ")),
+		Senseless.Num() == 1 ? TEXT("has") : TEXT("have"),
+		Senseless.Num() == 1 ? TEXT("it will") : TEXT("they will"));
 }
 
 const FLLKEnemyDef* ULLKEnemyRosterSubsystem::FindFamily(ELLKEnemyFamily Family) const

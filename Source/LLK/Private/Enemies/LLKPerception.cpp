@@ -65,6 +65,21 @@ namespace LLKPerception
 		return FMath::Lerp(Dark, Lit, FMath::Clamp(Detectability, 0.f, 1.f));
 	}
 
+	bool HasReachingSense(const FLLKEnemyDef& Enemy)
+	{
+		// The SET of fields a sense needs, not any one of them - which is why
+		// the two Sweeper radii and the two Stocker fields are paired here.
+		// Lifted out of `SenseReaching` rather than written beside it: the
+		// roster asks this at load so a family whose senses never imported
+		// says so once, out loud, instead of being discovered as an enemy
+		// that stands still. Two copies of this expression would drift, and
+		// the audit would then be reporting on a rule nobody runs.
+		return (Enemy.AggroRadiusDark.IsSet() && Enemy.AggroRadiusLit.IsSet())
+			|| (Enemy.SightRange.IsSet() && Enemy.SightConeDegrees.IsSet())
+			|| Enemy.ScanRange.IsSet()
+			|| Enemy.WakeRange.IsSet();
+	}
+
 	ELLKNoticeSense SenseReaching(
 		const FLLKEnemyDef& Enemy,
 		const FLLKPerceiver& Perceiver,
@@ -190,13 +205,7 @@ namespace LLKPerception
 		// So the Warden is named. It is the one family whose senselessness is
 		// authored rather than accidental, and `tests/enemies.test.mjs`
 		// asserts that it stays that way.
-		const bool bHasAnySense =
-			(Enemy.AggroRadiusDark.IsSet() && Enemy.AggroRadiusLit.IsSet())
-			|| (Enemy.SightRange.IsSet() && Enemy.SightConeDegrees.IsSet())
-			|| Enemy.ScanRange.IsSet()
-			|| Enemy.WakeRange.IsSet();
-
-		if (!bHasAnySense && Enemy.Family == ELLKEnemyFamily::Warden)
+		if (!HasReachingSense(Enemy) && Enemy.Family == ELLKEnemyFamily::Warden)
 		{
 			return ELLKNoticeSense::StormAuthority;
 		}

@@ -90,6 +90,16 @@ protected:
 	/** Loads `/Game/Data/DT_Enemies`, or stays Unresolved and says so once. */
 	void ResolveRoster();
 
+	/**
+	 * Logs an error for every family that loaded with no reaching sense.
+	 *
+	 * Reports; changes nothing. A roster whose optional fields did not import
+	 * cannot be repaired from here, and inventing radii would be worse than
+	 * noticing nothing - but it must not pass for a finished roster, which is
+	 * what it did for a day on 2026-10-31.
+	 */
+	void AuditSenses() const;
+
 	UPROPERTY()
 	TObjectPtr<UDataTable> Table;
 

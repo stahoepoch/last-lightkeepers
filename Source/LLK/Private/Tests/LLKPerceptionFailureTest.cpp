@@ -497,6 +497,87 @@ bool FLLKPerceptionFailureTest::RunTest(const FString& Parameters)
 			ELLKNoticeSense::StormAuthority);
 	}
 
+	// =====================================================================
+	// 7. HasReachingSense: THE AUDIT THE ROSTER RUNS AT LOAD
+	// =====================================================================
+	//
+	// Lifted out of `SenseReaching` on 2026-10-31 so the roster can ask the
+	// rule whether a family could reach anybody at all, with no keeper and no
+	// distance in the question. It exists because every `TOptional` field in
+	// `DT_Enemies` arrived unset and six playtests looked fine: the table
+	// logged "loaded, 6 families" while the Sweeper noticed nobody.
+	//
+	// It answers a question about PRESENCE, not validity, and the last block
+	// here pins that distinction rather than leaving it to be rediscovered.
+	{
+		// The healthy rows. If these ever answer false the audit becomes a
+		// warning on every launch, which is the fastest way to teach somebody
+		// to ignore it.
+		TestTrue(TEXT("a Sweeper with both radii has a reaching sense"),
+			LLKPerception::HasReachingSense(MakeSweeper()));
+		TestTrue(TEXT("a Stocker with its range and cone has a reaching sense"),
+			LLKPerception::HasReachingSense(MakeStocker()));
+		TestTrue(TEXT("a Window Walker with its wake range has a reaching sense"),
+			LLKPerception::HasReachingSense(MakeWalker()));
+
+		FLLKEnemyDef Glimmer;
+		Glimmer.Family = ELLKEnemyFamily::Glimmers;
+		Glimmer.ScanRange = 30.f;
+		TestTrue(TEXT("a Glimmer with its scan range has a reaching sense"),
+			LLKPerception::HasReachingSense(Glimmer));
+
+		// The failure that actually happened: the row is there, the universal
+		// fields are fine, the family-specific half is empty.
+		for (const ELLKEnemyFamily Family : {
+				 ELLKEnemyFamily::Sweepers, ELLKEnemyFamily::Stockers,
+				 ELLKEnemyFamily::Glimmers, ELLKEnemyFamily::WindowWalkers,
+				 ELLKEnemyFamily::Ficus })
+		{
+			FLLKEnemyDef Unimported;
+			Unimported.Family = Family;
+			Unimported.MoveSpeed = 14.f;
+			Unimported.AudioTelegraphSeconds = 1.f;
+			TestFalse(
+				TEXT("a row whose optional fields never imported has no reaching sense"),
+				LLKPerception::HasReachingSense(Unimported));
+		}
+
+		// Half a sense is no sense, which is the rule the paired fields exist
+		// to express.
+		FLLKEnemyDef LitRadiusOnly = MakeSweeper();
+		LitRadiusOnly.AggroRadiusDark.Reset();
+		TestFalse(TEXT("a Sweeper with only its lit radius has no reaching sense"),
+			LLKPerception::HasReachingSense(LitRadiusOnly));
+
+		FLLKEnemyDef ConeWithoutRange = MakeStocker();
+		ConeWithoutRange.SightRange.Reset();
+		TestFalse(TEXT("a Stocker with a cone and no range has no reaching sense"),
+			LLKPerception::HasReachingSense(ConeWithoutRange));
+
+		// Row 7. The one family that answers false by authorship, which is why
+		// every caller has to name it instead of treating false as a fault.
+		FLLKEnemyDef Warden;
+		Warden.Family = ELLKEnemyFamily::Warden;
+		TestFalse(TEXT("the Warden has no reaching sense, and that is authored"),
+			LLKPerception::HasReachingSense(Warden));
+
+		// **The limit, stated as a test so nobody reads more into the audit
+		// than it can carry.** Zeroed radii are PRESENT, so this answers true
+		// while `SenseReaching` still correctly refuses to act on them. The
+		// audit catches a field that never arrived; it cannot catch one that
+		// arrived wrong. `tests/enemies.test.mjs` is what forbids the zero in
+		// the authored file.
+		FLLKEnemyDef ZeroedButPresent = MakeSweeper();
+		ZeroedButPresent.AggroRadiusDark = 0.f;
+		ZeroedButPresent.AggroRadiusLit = 0.f;
+		TestTrue(TEXT("zeroed radii still count as present to the audit"),
+			LLKPerception::HasReachingSense(ZeroedButPresent));
+		TestEqual(TEXT("while the rule itself still notices nothing with them"),
+			LLKPerception::SenseReaching(ZeroedButPresent, FLLKPerceiver(), FLLKPerceivedKeeper()),
+			ELLKNoticeSense::None);
+	}
+
+
 	return true;
 }
 

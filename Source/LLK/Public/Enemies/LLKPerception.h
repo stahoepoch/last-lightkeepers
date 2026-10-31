@@ -275,6 +275,25 @@ namespace LLKPerception
 		const FLLKPerceivedKeeper& Keeper);
 
 	/**
+	 * Does this family have a sense that could reach anybody at all, with no
+	 * keeper and no distance involved?
+	 *
+	 * **A data question, not a perception one**, and it exists because of a
+	 * real failure: on 2026-10-31 every `TOptional` field in `DT_Enemies`
+	 * arrived unset, so the Sweeper noticed nobody for a day while the table
+	 * loaded six families without complaint. `SenseReaching` already degrades
+	 * correctly in that case - it returns `None`, and the comment beside it
+	 * says a family whose senses failed to import is a family that does not
+	 * act - but nothing announced it, and "the enemies did nothing" looks
+	 * exactly like "the enemies have no radii".
+	 *
+	 * The Warden answers false here and that is correct: its senselessness is
+	 * authored (row 7). A caller auditing imported data has to name it,
+	 * exactly as `SenseReaching` does.
+	 */
+	LLK_API bool HasReachingSense(const FLLKEnemyDef& Enemy);
+
+	/**
 	 * Does this enemy notice this keeper right now, walls included.
 	 *
 	 * **The one place the two halves meet.** `SenseReaching` decides whether
