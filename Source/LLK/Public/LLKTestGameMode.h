@@ -163,7 +163,12 @@ protected:
 	UPROPERTY()
 	TArray<FVector> EnemySpawnPoints;
 
-	/** Spawns the floor, the store, a light and a start, skipping whatever the map already has. */
+	/**
+	 * Spawns the disposable floor, store, light and start only when the map's
+	 * WorldSettings carries the `LLK.Harness` actor tag.  The opt-in is checked
+	 * before World Partition actors stream, so authored maps can never be
+	 * mistaken for empty maps by a content query during InitGame.
+	 */
 	void BuildHarnessWorld();
 
 	/** True when the open map already provides one, so the harness adds nothing. */

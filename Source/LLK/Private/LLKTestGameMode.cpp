@@ -13,6 +13,7 @@
 #include "Components/BoxComponent.h"
 #include "Enemies/LLKSweeper.h"
 #include "GameFramework/PlayerStart.h"
+#include "GameFramework/WorldSettings.h"
 #include "Run/LLKExtractionZone.h"
 #include "LLK.h"
 #include "LLKGameState.h"
@@ -25,6 +26,13 @@
 
 namespace
 {
+	// A WorldSettings actor is part of the map package, not a World Partition
+	// external actor.  It is therefore available during InitGame, before any
+	// streamed actor can answer a content-based question.  The harness is
+	// deliberately opt-in: a map must carry this tag to receive runtime
+	// scaffolding.
+	const FName HarnessMapTag(TEXT("LLK.Harness"));
+
 	/**
 	 * Pass two, as one line in the console.
 	 *
@@ -146,6 +154,19 @@ void ALLKTestGameMode::BuildHarnessWorld()
 		return;
 	}
 
+	// Do not ask whether an authored map already has a floor, zone, patrol, or
+	// relic here.  On a World Partition map those actors may not have streamed
+	// during InitGame yet, which makes every one of those questions answer
+	// false and produces a second, server-only store.  Map intent is stable at
+	// this point: only an explicit WorldSettings tag enables the harness.
+	const AWorldSettings* WorldSettings = World->GetWorldSettings();
+	if (WorldSettings == nullptr || !WorldSettings->ActorHasTag(HarnessMapTag))
+	{
+		UE_LOG(LogLLK, Log,
+			TEXT("LLKTestGameMode: no LLK.Harness tag on WorldSettings; skipping runtime harness."));
+		return;
+	}
+
 	FVector HarnessOrigin = FVector::ZeroVector;
 	bool bHasExistingGround = false;
 	for (TActorIterator<APlayerStart> It(World); It; ++It)
@@ -158,17 +179,6 @@ void ALLKTestGameMode::BuildHarnessWorld()
 		bHasExistingGround = World->LineTraceSingleByChannel(
 			GroundHit, TraceStart, TraceEnd, ECC_WorldStatic);
 		break;
-	}
-
-	// An authored map carries its own floor, fixtures, lights, extraction
-	// zone and patrol route. They are level actors, so every client loads them
-	// natively. Building the harness over that map makes a server-only second
-	// store, and can silently mix its patrol markers with authored ones.
-	if (bHasExistingGround)
-	{
-		UE_LOG(LogLLK, Log,
-			TEXT("LLKTestGameMode: authored ground detected; skipping disposable runtime harness."));
-		return;
 	}
 
 	UStaticMesh* Cube = LoadEngineCube();
