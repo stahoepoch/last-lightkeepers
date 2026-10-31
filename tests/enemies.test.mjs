@@ -284,6 +284,101 @@ for (const [name, family] of families) {
       "could skip the telegraph without touching the tested rule",
   );
 }
+// ---- what the generated asset actually received --------------------------
+//
+// THE GAP THIS FILE HAD. Everything above reads `data/enemies.json`, and the
+// automation tests assign `AggroRadiusDark = 12.f` by hand. Both sides stayed
+// green while the number authored here never reached the runtime at all: six
+// PIE runs on 2026-10-31 logged `notices a dark keeper at 0 studs and a lit
+// one at 0`, and nothing anywhere compared the authored value against the
+// generated one. Row 5's whole trade - a lit keeper noticed from 8 studs
+// beyond the edge of their own light - was absent from the build for a day.
+//
+// Why, so this is not left looking like a mystery.
+// `UDataTable::CreateTableFromJSONString` sends property types it does not
+// recognise through `DataTableUtils::AssignStringToProperty`, which opens with
+// `if (InProp && IsSupportedTableProperty(InProp))` - and that predicate
+// (`DataTableUtils.cpp:407`, 5.8.4) does not list `FOptionalProperty`. So the
+// field is skipped, NO import problem is recorded, and the commandlet's
+// error check - which is correct, and does fail on problems - is told nothing.
+// Reflection and serialisation are not the issue: `FJsonObjectConverter`
+// handles optionals in both directions. It is this one import path, and the
+// struct's `TOptional` design is sound.
+//
+// The method here is a byte scan for the IEEE-754 float32 of each authored
+// number. Crude on purpose: it needs no editor, no engine and no commandlet
+// run, which is the only reason it can run from this side at all. Two things
+// keep it honest.
+//
+//   - **A control group.** The universal fields are plain `float` and DO
+//     import. If one of THOSE is missing, the scan is wrong - the asset format
+//     changed under it - and that is reported as a different failure from a
+//     field the importer dropped. A check that cannot fail for its own reasons
+//     is a check nobody can trust.
+//   - **Presence only, one direction.** A hit does not prove the value sits on
+//     the right row, and a small integer can appear by coincidence - 0.0
+//     occurs thousands of times in the file, and 32.0 and 2.0 both appear
+//     while being dropped. So this can catch a value that is ABSENT and can
+//     never confirm one is correctly placed. With all seventeen optionals
+//     dropped, absence is exactly the signal, and a value restored by a fix
+//     cannot hide in the noise because the check fails if ANY is missing.
+//
+// `Content/Data/` is gitignored, so a fresh checkout has no asset to read and
+// this section says it compared nothing rather than quietly passing. That skip
+// is the honest shape of the remaining hole: what would close it in CI is
+// value verification at import time, beside the existing `VerifyTable`
+// row-name check. That is the import commandlet's job and not this lane's.
+const UNIVERSAL_FIELDS = new Set(["moveSpeed", "audioTelegraphSeconds"]);
+
+const float32 = (value) => {
+  const bytes = Buffer.alloc(4);
+  bytes.writeFloatLE(value);
+  return bytes;
+};
+
+const assetPath = join(root, "Content/Data/DT_Enemies.uasset");
+if (!existsSync(assetPath)) {
+  console.log(
+    "  --   DT_Enemies.uasset is not in this checkout (Content/Data is " +
+      "gitignored), so no authored number was compared against a generated one",
+  );
+} else {
+  const asset = readFileSync(assetPath);
+  const droppedUniversal = [];
+  const droppedOptional = [];
+
+  for (const [family, row] of families) {
+    for (const [field, value] of Object.entries(row)) {
+      if (typeof value !== "number") continue;
+      if (asset.includes(float32(value))) continue;
+      const where = `${family}.${field} = ${value}`;
+      if (UNIVERSAL_FIELDS.has(field)) droppedUniversal.push(where);
+      else droppedOptional.push(where);
+    }
+  }
+
+  // The control group first, because it decides how to read the next one.
+  check(
+    "the scan can still see the fields that are known to import",
+    droppedUniversal.length === 0,
+    `${droppedUniversal.join(", ")} should be in the asset as plain floats. ` +
+      "If these are missing the scan is broken, not the data - the asset " +
+      "format or the import changed and this check needs rewriting before " +
+      "its other result means anything",
+  );
+
+  check(
+    "every authored enemy number reached the generated DataTable",
+    droppedOptional.length === 0,
+    `absent from DT_Enemies.uasset: ${droppedOptional.join(", ")}. ` +
+      "These are the TOptional fields, which DataTableUtils.cpp:407 does not " +
+      "list as a supported table property, so CreateTableFromJSONString " +
+      "skips them without reporting a problem. Re-importing will not help " +
+      "until the import path stops using that call for this struct",
+  );
+}
+
+
 
 console.log(`\n${checks - failures}/${checks} passed`);
 if (failures > 0) {
