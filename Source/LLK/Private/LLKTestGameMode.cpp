@@ -10,7 +10,10 @@
 #include "Engine/StaticMeshActor.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "Components/BoxComponent.h"
+#include "Enemies/LLKSweeper.h"
 #include "GameFramework/PlayerStart.h"
+#include "Run/LLKExtractionZone.h"
 #include "LLK.h"
 #include "LLKGameState.h"
 #include "Storm/LLKZonePressureSubsystem.h"
@@ -22,6 +25,20 @@
 
 namespace
 {
+	/**
+	 * Pass two, as one line in the console.
+	 *
+	 * Off by default because Chris's test order depends on it: pass one reads
+	 * the zone and readout with nothing hunting, and an idle Sweeper would
+	 * still chase a keeper inside 12 studs. `LLK.Harness.Sweeper 1` then makes
+	 * the same harness pass two without a second map.
+	 */
+	static TAutoConsoleVariable<int32> CVarHarnessSweeper(
+		TEXT("LLK.Harness.Sweeper"),
+		0,
+		TEXT("Spawn one Sweeper and a patrol route in the harness world. 0 = off (default)."),
+		ECVF_Default);
+
 	/**
 	 * Engine primitives only. These live in the engine install, not in
 	 * `Content/`, so using them adds nothing to the project and leaves
@@ -61,6 +78,23 @@ namespace
 			MeshComponent->SetCollisionProfileName(TEXT("BlockAll"));
 		}
 		return Actor;
+	}
+
+	bool WorldAlreadyHasTag(const UWorld* World, const FName& Tag)
+	{
+		if (World == nullptr)
+		{
+			return false;
+		}
+
+		for (TActorIterator<AActor> It(World); It; ++It)
+		{
+			if (It->ActorHasTag(Tag))
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 }
 
@@ -124,6 +158,17 @@ void ALLKTestGameMode::BuildHarnessWorld()
 		bHasExistingGround = World->LineTraceSingleByChannel(
 			GroundHit, TraceStart, TraceEnd, ECC_WorldStatic);
 		break;
+	}
+
+	// An authored map carries its own floor, fixtures, lights, extraction
+	// zone and patrol route. They are level actors, so every client loads them
+	// natively. Building the harness over that map makes a server-only second
+	// store, and can silently mix its patrol markers with authored ones.
+	if (bHasExistingGround)
+	{
+		UE_LOG(LogLLK, Log,
+			TEXT("LLKTestGameMode: authored ground detected; skipping disposable runtime harness."));
+		return;
 	}
 
 	UStaticMesh* Cube = LoadEngineCube();
@@ -223,6 +268,99 @@ void ALLKTestGameMode::BuildHarnessWorld()
 		// where the builder put it. Spawning at the origin would drop the
 		// keeper in the middle of the cosmetics counters.
 		World->SpawnActor<APlayerStart>(Floor.SpawnPoint, FRotator::ZeroRotator, Params);
+	}
+
+	// --- the dock, so the loop can be played rather than only tested -----
+	//
+	// **Added 2026-10-30 because the alternative was Chris placing cubes.**
+	// Everything in M3 - the zone, the hold, the five readout lines,
+	// hold-to-call, burden - had never run, and the only thing standing in the
+	// way was one actor with one FName typed into it. The harness already
+	// builds a floor, a spawn and a light rig at runtime; this is the same
+	// trick applied to the one piece of geometry extraction needs.
+	//
+	// `Floor.ExtractionPoint` is where the builder already decided the way out
+	// is - *"the way you came in is the way out"* - so the dock is at the
+	// sealed street doors rather than somewhere this function invented. Nothing
+	// is written to `Content/`: a spawned actor in a running world, deleted
+	// with the rest of the harness the day the authored store arrives.
+	if (!WorldAlreadyHas(ALLKExtractionZone::StaticClass()))
+	{
+		FActorSpawnParameters Params;
+		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		// Raised by the box's own half-height so the volume sits ON the floor
+		// rather than half inside it, which is the first thing anybody placing
+		// one by hand gets wrong.
+		const float LiftCm = LLKUnits::DistanceFromStuds(4.f);
+		if (ALLKExtractionZone* Dock = World->SpawnActor<ALLKExtractionZone>(
+				Floor.ExtractionPoint + FVector(0.f, 0.f, LiftCm), FRotator::ZeroRotator, Params))
+		{
+			// `LoadingDock` because that is what `data/loot.json` authors, and
+			// the zone reports an id nothing authored by name at BeginPlay.
+			// The reliable exit, 20-second hold, payout 1.0.
+			Dock->ExtractionPointId = TEXT("LoadingDock");
+
+			// A bay mouth rather than a room: wide enough to stand in with a
+			// crewmate, shallow enough that stepping out of it is a decision.
+			// The real extents come with the authored dock.
+			if (UBoxComponent* Trigger = Dock->GetTrigger())
+			{
+				Trigger->SetBoxExtent(FVector(
+					LLKUnits::DistanceFromStuds(7.f),
+					LLKUnits::DistanceFromStuds(7.f),
+					LiftCm));
+			}
+
+			UE_LOG(LogLLK, Log,
+				TEXT("LLKTestGameMode: extraction zone for LoadingDock at the street doors. ")
+				TEXT("Walk in and hold the interact key."));
+		}
+	}
+
+	// --- pass two, behind one console variable ---------------------------
+	//
+	// Chris's test order, 2026-10-30: *"Bare extraction first - one clean
+	// call, pause, return, and secure. Then add the Sweeper to that exact same
+	// dock bay immediately."* So the Sweeper is OFF by default and the same
+	// harness becomes pass two with `LLK.Harness.Sweeper 1` - no second map,
+	// which was the other half of his instruction: *"Don't make separate test
+	// maps."*
+	//
+	// **It needs a navmesh to walk**, and this floor is spawned at runtime, so
+	// a built navmesh cannot exist for it. Until `RuntimeGeneration=Dynamic`
+	// is set - `Config/DefaultEngine.ini`, Codex's lane - a harness Sweeper
+	// will notice, telegraph and stand still. That is still pass two's first
+	// half: the announcement is the thing row 16 exists for.
+	if (CVarHarnessSweeper.GetValueOnGameThread() != 0 && !EnemySpawnPoints.IsEmpty())
+	{
+		FActorSpawnParameters Params;
+		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		if (World->SpawnActor<ALLKSweeper>(
+				EnemySpawnPoints[0] + FVector(0.f, 0.f, LLKUnits::DistanceFromStuds(4.f)),
+				FRotator::ZeroRotator, Params) != nullptr)
+		{
+			UE_LOG(LogLLK, Log,
+				TEXT("LLKTestGameMode: one Sweeper at the service route. It notices a dark keeper ")
+				TEXT("at 12 studs and a lit one at 38."));
+		}
+
+		// Patrol points at the builder's own enemy spawns, tagged for the pawn
+		// to find. The pawn invents no route (row 78), so this is the harness
+		// authoring one - and it is the authored positions rather than
+		// generated ones, which is row 63's rule about machines appearing
+		// somewhere a player can learn.
+		if (!WorldAlreadyHasTag(World, ALLKSweeper::PatrolPointTag))
+		{
+			for (const FVector& Point : EnemySpawnPoints)
+			{
+				if (AActor* Marker = World->SpawnActor<AActor>(Point, FRotator::ZeroRotator, Params))
+				{
+					Marker->Tags.Add(ALLKSweeper::PatrolPointTag);
+				}
+			}
+		}
 	}
 
 	UE_LOG(LogLLK, Log,
