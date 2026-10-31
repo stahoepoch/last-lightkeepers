@@ -114,12 +114,6 @@ namespace LLKDataImport
 		return Result;
 	}
 
-	bool WriteJsonArray(const TArray<TSharedPtr<FJsonValue>>& Rows, FString& OutJson)
-	{
-		const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutJson);
-		return FJsonSerializer::Serialize(Rows, Writer);
-	}
-
 	bool BuildObjectRows(const TSharedPtr<FJsonObject>& Source, TArray<TSharedPtr<FJsonValue>>& OutRows, const bool bEnemyRows = false)
 	{
 		for (const TPair<FString, TSharedPtr<FJsonValue>>& Pair : Source->Values)
@@ -238,15 +232,26 @@ namespace LLKDataImport
 	template <typename RowType>
 	bool ImportTable(const FString& AssetName, const TArray<TSharedPtr<FJsonValue>>& Rows)
 	{
-		FString Json;
-		if (!WriteJsonArray(Rows, Json)) return Fail(FString::Printf(TEXT("Could not serialise %s rows."), *AssetName));
-
 		UDataTable* Table = GetOrCreateTable<RowType>(AssetName);
-		const TArray<FString> Problems = Table->CreateTableFromJSONString(Json);
-		if (!Problems.IsEmpty())
+		Table->EmptyTable();
+		for (const TSharedPtr<FJsonValue>& Value : Rows)
 		{
-			for (const FString& Problem : Problems) UE_LOG(LogLLKDataImport, Error, TEXT("%s: %s"), *AssetName, *Problem);
-			return false;
+			const TSharedPtr<FJsonObject> Source = Value->AsObject();
+			if (!Source.IsValid()) return Fail(FString::Printf(TEXT("%s contains a non-object row."), *AssetName));
+
+			FString Name;
+			if (!GetString(Source, TEXT("Name"), Name) || Name.IsEmpty())
+			{
+				return Fail(FString::Printf(TEXT("%s row is missing its generated Name."), *AssetName));
+			}
+
+			RowType Row;
+			FText FailureReason;
+			if (!FJsonObjectConverter::JsonObjectToUStruct(Source.ToSharedRef(), RowType::StaticStruct(), &Row, 0, 0, false, &FailureReason))
+			{
+				return Fail(FString::Printf(TEXT("Could not convert %s row %s: %s"), *AssetName, *Name, *FailureReason.ToString()));
+			}
+			Table->AddRow(FName(Name), Row);
 		}
 		return SaveAsset(Table);
 	}
