@@ -21,6 +21,10 @@
 			"Enabled": true
 		},
 		{
+			"Name": "AndroidFileServer",
+			"Enabled": false
+		},
+		{
 			"Name": "Fab",
 			"Enabled": false
 		},
