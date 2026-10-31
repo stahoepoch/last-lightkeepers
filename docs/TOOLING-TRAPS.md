@@ -85,6 +85,35 @@ check at init runs before the authored external actors have streamed in. On
 authored `LLK_LoadingDock` was rejected as the duplicate — the exact reverse of
 the guard's intent, with a warning that read as if the guard had worked.
 
+## 6. An empty answer is not an empty editor
+
+`SceneTools.get_current_level` returned `""` on 2026-10-31 while
+`LLK_DockBay` was open and fully loaded. The reason is in the log one line
+later:
+
+```
+LogUtils: Error: The Editor is currently in a play mode.
+LevelEditorSubsystem: Error: GetCurrentLevel. Can't Get the current level
+because there is no world.
+```
+
+Chris was in PIE. The editor world was exactly what it should have been; the
+*editor* world simply is not what the tool can see from inside a play session.
+
+This one is worse than it looks, because the standing rule for the day was
+"confirm which world is open, and if it is anything other than what you expect,
+stop and report." An empty string reads as **no map loaded**, which would have
+produced a confident report of the wrong state — and the plausible second guess,
+that World Partition hides the persistent level's path, is also wrong. Neither
+error is visible from the return value alone.
+
+**Enumerate the world, don't ask it its name.** `find_actors` answered
+correctly through the same bridge seconds later, because actor paths carry the
+package name (`/Game/LLK_DockBay.LLK_DockBay:PersistentLevel.…`). Where a
+one-field query can be empty for several unrelated reasons, prefer the call
+whose answer contains its own evidence — and check `IsPIERunning` before
+believing any editor-state reading.
+
 ---
 
 ## The pattern, stated once
@@ -92,7 +121,9 @@ the guard's intent, with a warning that read as if the guard had worked.
 Each of these is a true answer to the wrong question. The build tool answered
 "did I exit", the import script answered "were there any errors logged
 anywhere", the test runner answered "did the binary on disk pass", the port
-answered "is a server up", the guard answered "what is in the world right now".
+answered "is a server up", the guard answered "what is in the world right now",
+and the level query answered "which world can I see from inside this play
+session".
 
 So the question to ask of any green signal is not whether it is true. It is
 **what would this have said if the thing I care about were broken?** Where the
