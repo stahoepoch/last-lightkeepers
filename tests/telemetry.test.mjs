@@ -181,6 +181,47 @@ for (const rel of [METRICS_HEADER, METRICS_IMPL, TELEMETRY_IMPL]) {
     );
   }
 
+  // ROW 43's question, which had no instrument until 2026-10-31. The store is
+  // the tutorial and it is judged on whether it teaches, so a summary that
+  // cannot say whether anybody understood what they could do is measuring the
+  // other three questions and calling it a playtest.
+  for (const field of [
+    "InteractAttempts",
+    "BlockedNeedsLight",
+    "BlockedUnidentified",
+    "SecondsToFirstRelicTaken",
+    "AbandonedWhileTakeable",
+  ]) {
+    check(
+      `ROW 43: the summary carries ${field}`,
+      header.includes(field),
+      "did they understand what they could do - the reasons the game refused " +
+        "an interact are the only record of WHICH rule a player missed",
+    );
+  }
+
+  // The denominator, asserted as arithmetic. A run nobody interacted in and a
+  // run where everything worked both produce a refused fraction of zero, and
+  // only one of them is good news - so the fraction must be guarded on
+  // attempts rather than on the run's length.
+  check(
+    "the refused fraction is guarded on attempts, not on run length",
+    /InteractAttempts > 0[\s\S]{0,300}?RefusedFraction = /.test(metrics),
+    "dividing by a run that nobody played would report the most interesting " +
+      "failure in the file as a clean zero",
+  );
+
+  // The proxy framing, in the header, where the next reader finds it. These
+  // numbers are what a player DID; whether it felt confusing needs the person
+  // who was there, and a file that forgets that becomes evidence for a claim
+  // it cannot support.
+  check(
+    "ROW 43: the header says these are proxies rather than measurements",
+    /proxies/i.test(read(METRICS_HEADER) ?? ""),
+    "self-report needs a human who was there. The instrument answers what " +
+      "they did, not what they understood",
+  );
+
   // Row 8, as arithmetic rather than as a caller's promise.
   check(
     "ROW 8: a wipe keeps nothing, enforced in the summary",

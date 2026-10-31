@@ -26,6 +26,11 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+
+// For `ELLKRelicInteractBlock` in `FLLKInteractAttempted`. A forward
+// declaration will not do: the delegate macro needs the enum's size.
+#include "Loot/LLKRelicComponent.h"
+
 #include "LLKInteractorComponent.generated.h"
 
 class ALLKExtractionZone;
@@ -43,6 +48,25 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FLLKFocusChanged, ULLKRelicComponent
  * be a per-frame read of a value that changes a handful of times a run.
  */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FLLKCarriedCountChanged, int32, CarriedCount);
+
+/**
+ * A keeper asked to take a relic, and this is the answer the SERVER gave.
+ *
+ * **Why this exists: the answer was already computed and then discarded.**
+ * `ServerTake` asks `CanBeTaken` and logs a line at Verbose about why it
+ * refused. That line is the single most useful thing a playtest could tell us
+ * about row 43 - whether the store teaches - and it was going into a log
+ * nobody reads, in a form nothing can count.
+ *
+ * Fires on the server only, after the decision, whether or not it went
+ * through. `Block` is `None` for a take that succeeded, so a listener can
+ * count successes and refusals against the same denominator.
+ *
+ * **It changes nothing.** The take path does not consult it and does not wait
+ * for it; a listener that threw would not stop a relic leaving a shelf.
+ */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
+	FLLKInteractAttempted, ULLKRelicComponent*, Relic, ELLKRelicInteractBlock, Block);
 
 UCLASS(ClassGroup = (LLK), meta = (BlueprintSpawnableComponent))
 class LLK_API ULLKInteractorComponent : public UActorComponent
@@ -65,6 +89,10 @@ public:
 	/** Fires when the carried count changes, on the server and on every client. */
 	UPROPERTY(BlueprintAssignable, Category = "LLK|Interact")
 	FLLKCarriedCountChanged OnCarriedCountChanged;
+
+	/** Server only: an interact was attempted, and why it was or was not allowed. */
+	UPROPERTY(BlueprintAssignable, Category = "LLK|Interact")
+	FLLKInteractAttempted OnInteractAttempted;
 
 	/**
 	 * Asks to take whatever has focus.

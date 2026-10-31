@@ -6,7 +6,9 @@
 #include "LLK.h"
 #include "LLKGameState.h"
 #include "Lantern/LLKLanternComponent.h"
+#include "EngineUtils.h"
 #include "Loot/LLKInteractorComponent.h"
+#include "Loot/LLKRelicComponent.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 #include "Run/LLKExtractionSubsystem.h"
@@ -165,8 +167,30 @@ void ULLKRunTelemetrySubsystem::BindToWhatExists()
 				LastCarried.Add(Interactor, Interactor->GetCarriedCount());
 				Interactor->OnCarriedCountChanged.AddDynamic(
 					this, &ULLKRunTelemetrySubsystem::OnCarriedCountChanged);
+				Interactor->OnInteractAttempted.AddDynamic(
+					this, &ULLKRunTelemetrySubsystem::OnInteractAttempted);
 			}
 		}
+	}
+
+	// **The relics, found on this same sweep rather than at Initialize.** The
+	// harness spawns the store floor during BeginPlay and the authored map's
+	// loot will stream in with World Partition, so a one-shot search at
+	// startup would find an empty room. Discovered here and polled in Tick;
+	// the iteration is the discovery, never the measurement.
+	for (TActorIterator<AActor> It(World); It; ++It)
+	{
+		ULLKRelicComponent* Relic = It->FindComponentByClass<ULLKRelicComponent>();
+		if (Relic == nullptr || TakeableSince.Contains(Relic))
+		{
+			continue;
+		}
+
+		// Negative means "not takeable as far as this instrument knows", which
+		// is the right starting assumption: a relic already lit when the
+		// instrument found it has a dwell nobody observed the beginning of,
+		// and inventing one would be a measurement of when this code ran.
+		TakeableSince.Add(Relic, -1.f);
 	}
 }
 
@@ -188,7 +212,11 @@ void ULLKRunTelemetrySubsystem::Tick(float DeltaTime)
 		return;
 	}
 
-	// **The one thing polled rather than listened to.** A stall is a condition
+	// Before the game state is fetched, because this needs no game state and a
+	// run in a world without one must still answer row 43's question.
+	PollAbandonedRelics(DeltaTime);
+
+	// **The other thing polled rather than listened to.** A stall is a condition
 	// - the hold is running and not advancing - and nothing broadcasts it,
 	// because the extraction subsystem publishes it in the snapshot for a
 	// readout to draw. Polling the edges turns row 75's pause into two
@@ -374,3 +402,94 @@ static FAutoConsoleCommandWithWorld GLLKTelemetryWrite(
 					Path.IsEmpty() ? TEXT("Nothing written.") : *Path);
 			}
 		}));
+
+FName ULLKRunTelemetrySubsystem::NameOfBlock(const ELLKRelicInteractBlock Block)
+{
+	// Spelled out rather than taken from the reflected enum, and the reason is
+	// that these strings end up in a run file that `tests/` reads: a rename of
+	// the enumerator must not silently change the shape of last month's data.
+	switch (Block)
+	{
+	case ELLKRelicInteractBlock::None:         return TEXT("None");
+	case ELLKRelicInteractBlock::Unidentified: return TEXT("Unidentified");
+	case ELLKRelicInteractBlock::NeedsLight:   return TEXT("NeedsLight");
+	}
+
+	// Not NAME_None: the arithmetic counts an unrecognised reason as a refusal
+	// rather than a success, and "Unrecognised" says so in the file where
+	// NAME_None would read as a missing field.
+	return TEXT("Unrecognised");
+}
+
+void ULLKRunTelemetrySubsystem::OnInteractAttempted(
+	ULLKRelicComponent* Relic, const ELLKRelicInteractBlock Block)
+{
+	// The relic is in the signature because a later question will want to know
+	// WHICH relic kept being refused, not only how often. Unused here, and
+	// deliberately not recorded: the id of a relic a player failed to read is
+	// the one piece of this event that is about the object rather than the
+	// rule, and the rule is what row 43 is judged on.
+	(void)Relic;
+
+	Record(ELLKRunEvent::InteractAttempted, NameOfBlock(Block));
+}
+
+void ULLKRunTelemetrySubsystem::PollAbandonedRelics(const float DeltaSeconds)
+{
+	SecondsSinceAbandonPoll += DeltaSeconds;
+	if (SecondsSinceAbandonPoll < AbandonPollSeconds)
+	{
+		return;
+	}
+	SecondsSinceAbandonPoll = 0.f;
+
+	for (TPair<TWeakObjectPtr<ULLKRelicComponent>, float>& Pair : TakeableSince)
+	{
+		ULLKRelicComponent* Relic = Pair.Key.Get();
+		if (Relic == nullptr)
+		{
+			continue;
+		}
+
+		// `CanBeTaken` rather than a raw light sample: it is the same answer
+		// the prompt and the outline are drawn from, and since `ab9818f` its
+		// light half is debounced over two samples. An instrument timing a
+		// raw trace would manufacture an abandonment every time a keeper stood
+		// at a shelf edge, which is exactly where the hooded reading loop
+		// happens.
+		const bool bTakeableNow = Relic->CanBeTaken();
+		const float Since = Pair.Value;
+
+		if (bTakeableNow)
+		{
+			if (Since < 0.f)
+			{
+				Pair.Value = RunSeconds;
+			}
+			continue;
+		}
+
+		if (Since < 0.f)
+		{
+			// Was not available and still is not. Nothing happened.
+			continue;
+		}
+
+		Pair.Value = -1.f;
+
+		if (Relic->IsTaken())
+		{
+			// It stopped being takeable because somebody took it. That is a
+			// `RelicTaken`, already recorded by the carried count, and
+			// counting it here as well would make every successful pickup
+			// read as a relic the player failed to understand.
+			continue;
+		}
+
+		const float Dwell = RunSeconds - Since;
+		if (Dwell >= AbandonDwellSeconds)
+		{
+			Record(ELLKRunEvent::RelicAbandoned, Relic->GetRelicId(), Dwell);
+		}
+	}
+}

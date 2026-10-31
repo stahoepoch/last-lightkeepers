@@ -36,9 +36,11 @@
 
 class ULLKInteractorComponent;
 class ULLKLanternComponent;
+class ULLKRelicComponent;
 class ULLKVitalsComponent;
 enum class ELLKDownedReason : uint8;
 enum class ELLKLanternChangeReason : uint8;
+enum class ELLKRelicInteractBlock : uint8;
 
 UCLASS()
 class LLK_API ULLKRunTelemetrySubsystem : public UTickableWorldSubsystem
@@ -125,6 +127,25 @@ protected:
 	UFUNCTION()
 	void OnCarriedCountChanged(int32 CarriedCount);
 
+	/** Server: a keeper reached for a relic, and the reason they were or were not allowed. */
+	UFUNCTION()
+	void OnInteractAttempted(ULLKRelicComponent* Relic, ELLKRelicInteractBlock Block);
+
+	/**
+	 * Walks the relics being watched and records the ones left behind.
+	 *
+	 * **Polled rather than bound, for the same reason the stall is: there is
+	 * nobody to ask.** `OnInteractableChanged` fires on the relic and carries
+	 * no sender, so a listener cannot tell which relic went dark - and the
+	 * abandonment signal is useless without the relic's id. A bool getter per
+	 * watched relic a few times a second is cheaper than making the gameplay
+	 * delegate carry a payload it has no other use for.
+	 */
+	void PollAbandonedRelics(float DeltaSeconds);
+
+	/** The block reason as the event list spells it. One place, so counts stay comparable. */
+	static FName NameOfBlock(ELLKRelicInteractBlock Block);
+
 	TArray<FLLKRunEvent> Events;
 
 	/** Seconds since the first event. The run is its own timeline, not the level's. */
@@ -142,6 +163,21 @@ protected:
 	/** Carried counts, per keeper, so a drop is not recorded as a take. */
 	TMap<TWeakObjectPtr<ULLKInteractorComponent>, int32> LastCarried;
 
+	/**
+	 * Relics being watched, and when each became takeable - or a negative
+	 * number for one that is not takeable now.
+	 *
+	 * Tracked by the relic rather than by the keeper looking at it, and that
+	 * is a limitation worth naming: focus is a client-local question, so a
+	 * remote client's aim is not visible here. What this measures is a relic
+	 * the LIGHT FIELD made available and nobody took, which is the signal on a
+	 * solo run and an over-count on a crowded one.
+	 */
+	TMap<TWeakObjectPtr<ULLKRelicComponent>, float> TakeableSince;
+
+	/** Seconds of accumulated poll debt, so the sweep runs on an interval. */
+	float SecondsSinceAbandonPoll = 0.f;
+
 	TArray<TWeakObjectPtr<ULLKVitalsComponent>> BoundKeepers;
 	TArray<TWeakObjectPtr<ULLKLanternComponent>> BoundLanterns;
 	TArray<TWeakObjectPtr<ULLKInteractorComponent>> BoundInteractors;
@@ -153,4 +189,20 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Metrics", meta = (ClampMin = "0.25"))
 	float BindIntervalSeconds = 1.f;
+
+	/** How often the abandonment sweep runs. Dwell is measured in seconds, so this is plenty. */
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Metrics", meta = (ClampMin = "0.05"))
+	float AbandonPollSeconds = 0.25f;
+
+	/**
+	 * How long a relic must stay takeable before leaving it counts as leaving it.
+	 *
+	 * **The floor that keeps this from counting the wrong thing.** A lantern
+	 * swung past a shelf makes every relic on it takeable for a moment, and
+	 * none of those is an offer anybody refused. Three seconds is long enough
+	 * that the player had time to see the outline and the prompt and decide,
+	 * and short enough that a genuine pause still registers.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Metrics", meta = (ClampMin = "0.1"))
+	float AbandonDwellSeconds = 3.f;
 };

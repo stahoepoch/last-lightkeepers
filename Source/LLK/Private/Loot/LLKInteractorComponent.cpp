@@ -528,6 +528,19 @@ void ULLKInteractorComponent::ServerTake_Implementation(ULLKRelicComponent* Reli
 		return;
 	}
 
+	// The attempt, and the reason, recorded before anything acts on either.
+	//
+	// **Here rather than in `TryTakeFocused` because the client's prompt is a
+	// courtesy and this machine's answer is the one that happened.** Broadcast
+	// for successes too, with `Block` as `None`, so a listener counting
+	// refusals has the same denominator the player experienced.
+	//
+	// Announced ahead of the range check deliberately: a take refused for
+	// range is not a legibility failure, and recording `None` here with no
+	// `RelicTaken` after it leaves that visible in the event list rather than
+	// filing a reach from across the room as a rule the player misunderstood.
+	OnInteractAttempted.Broadcast(Relic, Relic->GetInteractBlock());
+
 	// Re-checked here rather than trusted from the call. The client decided
 	// to ask based on what its own prompt said; whether it may is this
 	// machine's question, and the answer includes the live-light gate.

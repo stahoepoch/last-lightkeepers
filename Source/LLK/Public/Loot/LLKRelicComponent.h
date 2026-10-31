@@ -159,6 +159,17 @@ public:
 	int32 GetReadableValue() const { return bLegible ? Value : -1; }
 
 	/**
+	 * The authored id, readable whether or not the relic is legible.
+	 *
+	 * Unlike `GetDisplayName` and `GetReadableValue`, this is NOT gated on
+	 * legibility, and that is the point: it exists for the run instrument,
+	 * which has to be able to say which relic was abandoned in the dark - the
+	 * exact case where the player was never allowed to know its name. Nothing
+	 * a player sees should call this.
+	 */
+	FName GetRelicId() const { return RelicId; }
+
+	/**
 	 * Server only. Removes the relic from the world and reports whether it went.
 	 *
 	 * Returns false when it was already taken, which is the double-take race:

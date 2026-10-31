@@ -26,6 +26,11 @@ namespace LLKRunMetrics
 		bool bStalled = false;
 		float StalledSince = 0.f;
 
+		// Refusals are counted separately from the two named buckets so an
+		// unrecognised block reason raises the fraction without landing in a
+		// bucket it does not belong to. See `InteractAttempted` below.
+		int32 Refusals = 0;
+
 		for (const FLLKRunEvent& Event : Events)
 		{
 			switch (Event.Kind)
@@ -48,6 +53,43 @@ namespace LLKRunMetrics
 
 			case ELLKRunEvent::RelicTaken:
 				++Summary.RelicsTaken;
+
+				// The FIRST one, kept, for the same reason the first call is:
+				// how long it took to get going is the legibility question,
+				// and every take after it is a player who already knows how.
+				if (Summary.SecondsToFirstRelicTaken < 0.f)
+				{
+					Summary.SecondsToFirstRelicTaken = FMath::Max(0.f, Event.AtSeconds);
+				}
+				break;
+
+			case ELLKRunEvent::InteractAttempted:
+				++Summary.InteractAttempts;
+
+				// `None` is the one reason that means it worked, so anything
+				// else is a refusal - INCLUDING a reason this arithmetic has
+				// never heard of. A later rule that adds a block reason must
+				// not quietly improve the refused fraction by being unknown
+				// here, which is what filing unknowns as successes would do.
+				// The named buckets stay named, so an unrecognised reason is
+				// visibly uncategorised rather than misattributed.
+				if (Event.Detail == TEXT("NeedsLight"))
+				{
+					++Summary.BlockedNeedsLight;
+				}
+				else if (Event.Detail == TEXT("Unidentified"))
+				{
+					++Summary.BlockedUnidentified;
+				}
+
+				if (Event.Detail != TEXT("None"))
+				{
+					++Refusals;
+				}
+				break;
+
+			case ELLKRunEvent::RelicAbandoned:
+				++Summary.AbandonedWhileTakeable;
 				break;
 
 			case ELLKRunEvent::ThresholdCrossed:
@@ -148,6 +190,16 @@ namespace LLKRunMetrics
 			}
 		}
 
+		// Guarded on attempts rather than on run length: a run can be long and
+		// have nobody touch anything, and dividing by zero attempts would make
+		// the most interesting failure in the file read as a clean zero.
+		if (Summary.InteractAttempts > 0)
+		{
+			Summary.RefusedFraction = FMath::Clamp(
+				static_cast<float>(Refusals) / static_cast<float>(Summary.InteractAttempts),
+				0.f, 1.f);
+		}
+
 		return Summary;
 	}
 
@@ -188,6 +240,43 @@ namespace LLKRunMetrics
 
 		Lines.Add(FString::Printf(TEXT("  keepers    %d knockdown(s)"), Summary.KnockdownCount));
 
+		// ---- legibility, row 43 -------------------------------------------
+		//
+		// Said as sentences rather than as a ratio, because the reader is
+		// Chris after a run and the useful form of this is "you reached for a
+		// relic in the dark four times", not "0.36".
+		if (Summary.InteractAttempts <= 0)
+		{
+			// The loudest line in the file, and the reason it is a sentence
+			// rather than a zero: a run nobody interacted in must not read as
+			// a run in which everything worked.
+			Lines.Add(TEXT("  legibility NOBODY REACHED FOR ANYTHING. No interact was attempted."));
+		}
+		else
+		{
+			Lines.Add(FString::Printf(
+				TEXT("  legibility %d interact(s), %.0f%% refused  (%d needed light, %d never read)"),
+				Summary.InteractAttempts, Summary.RefusedFraction * 100.f,
+				Summary.BlockedNeedsLight, Summary.BlockedUnidentified));
+		}
+
+		if (Summary.SecondsToFirstRelicTaken >= 0.f)
+		{
+			Lines.Add(FString::Printf(TEXT("  first take at %.0fs"),
+				Summary.SecondsToFirstRelicTaken));
+		}
+		else
+		{
+			Lines.Add(TEXT("  first take NEVER. Nothing left a shelf."));
+		}
+
+		if (Summary.AbandonedWhileTakeable > 0)
+		{
+			Lines.Add(FString::Printf(
+				TEXT("  left behind %d relic(s) that were lit and takeable"),
+				Summary.AbandonedWhileTakeable));
+		}
+
 		return FString::Join(Lines, TEXT("\n"));
 	}
 
@@ -202,6 +291,15 @@ namespace LLKRunMetrics
 		Json += FString::Printf(TEXT("    \"litFraction\": %.4f,\n"), Summary.LitFraction);
 		Json += FString::Printf(TEXT("    \"relicsTaken\": %d,\n"), Summary.RelicsTaken);
 		Json += FString::Printf(TEXT("    \"relicsSecured\": %d,\n"), Summary.RelicsSecured);
+		Json += FString::Printf(TEXT("    \"secondsToFirstRelicTaken\": %.2f,\n"),
+			Summary.SecondsToFirstRelicTaken);
+		Json += FString::Printf(TEXT("    \"interactAttempts\": %d,\n"), Summary.InteractAttempts);
+		Json += FString::Printf(TEXT("    \"blockedNeedsLight\": %d,\n"), Summary.BlockedNeedsLight);
+		Json += FString::Printf(TEXT("    \"blockedUnidentified\": %d,\n"),
+			Summary.BlockedUnidentified);
+		Json += FString::Printf(TEXT("    \"abandonedWhileTakeable\": %d,\n"),
+			Summary.AbandonedWhileTakeable);
+		Json += FString::Printf(TEXT("    \"refusedFraction\": %.4f,\n"), Summary.RefusedFraction);
 		Json += FString::Printf(TEXT("    \"extractionCalledSeconds\": %.2f,\n"),
 			Summary.ExtractionCalledSeconds);
 		Json += FString::Printf(TEXT("    \"climaxFraction\": %.4f,\n"), Summary.ClimaxFraction);
@@ -240,6 +338,8 @@ namespace LLKRunMetrics
 		case ELLKRunEvent::LanternOff:          return TEXT("LanternOff");
 		case ELLKRunEvent::LightLevelChanged:   return TEXT("LightLevelChanged");
 		case ELLKRunEvent::RelicTaken:          return TEXT("RelicTaken");
+		case ELLKRunEvent::InteractAttempted:   return TEXT("InteractAttempted");
+		case ELLKRunEvent::RelicAbandoned:      return TEXT("RelicAbandoned");
 		case ELLKRunEvent::ThresholdCrossed:    return TEXT("ThresholdCrossed");
 		case ELLKRunEvent::WardenConverged:     return TEXT("WardenConverged");
 		case ELLKRunEvent::ExtractionCalled:    return TEXT("ExtractionCalled");

@@ -251,6 +251,123 @@ bool FLLKRunMetricsTest::RunTest(const FString& Parameters)
 			Json.Contains(TEXT("Player")) || Json.Contains(TEXT("user")));
 	}
 
+	// ---- 12. legibility, row 43's question ------------------------------
+	//
+	// **What these assertions are for.** The instrument exists because nothing
+	// measured whether the store teaches, and the way a legibility metric goes
+	// quietly wrong is by counting the wrong denominator: a run where every
+	// interact succeeded and a run where nobody pressed the key both produce a
+	// refused fraction of zero, and only one of them is good news. So the
+	// no-attempts case is asserted explicitly rather than left to arithmetic.
+	{
+		TArray<FLLKRunEvent> Events;
+		Events.Add(At(0.f, ELLKRunEvent::RunStarted));
+
+		// Reaching for something never lit: the player has understood that
+		// relics are takeable and not that reading one comes first.
+		Events.Add(At(8.f, ELLKRunEvent::InteractAttempted, TEXT("Unidentified")));
+		Events.Add(At(9.f, ELLKRunEvent::InteractAttempted, TEXT("Unidentified")));
+
+		// Then the same relic read, and reached for in the dark. Row 5's rule,
+		// hit by somebody who has learned half of it.
+		Events.Add(At(30.f, ELLKRunEvent::InteractAttempted, TEXT("NeedsLight")));
+
+		// And one that went through.
+		Events.Add(At(41.f, ELLKRunEvent::InteractAttempted, TEXT("None")));
+		Events.Add(At(41.f, ELLKRunEvent::RelicTaken));
+
+		// A second take, later. The first is the one the metric reports.
+		Events.Add(At(95.f, ELLKRunEvent::RelicTaken));
+
+		Events.Add(At(120.f, ELLKRunEvent::RelicAbandoned, TEXT("Relic_3"), 6.5f));
+		Events.Add(At(200.f, ELLKRunEvent::ExtractionSecured, TEXT("LoadingDock"), 2.f));
+
+		const FLLKRunSummary Summary = LLKRunMetrics::Summarise(Events);
+
+		TestEqual(TEXT("every interact that reached the server is counted"),
+			Summary.InteractAttempts, 4);
+		TestEqual(TEXT("reaching for an unread relic is counted as its own failure"),
+			Summary.BlockedUnidentified, 2);
+		TestEqual(TEXT("and reaching for a read one in the dark as a different failure"),
+			Summary.BlockedNeedsLight, 1);
+		TestEqual(TEXT("a successful interact is not a refusal"),
+			Summary.BlockedUnidentified + Summary.BlockedNeedsLight, 3);
+		TestNearlyEqual(TEXT("the refused fraction is refusals over attempts"),
+			Summary.RefusedFraction, 0.75f, 0.001f);
+
+		TestNearlyEqual(TEXT("time to first take is the FIRST one, not the last"),
+			Summary.SecondsToFirstRelicTaken, 41.f, 0.001f);
+
+		TestEqual(TEXT("a relic left while takeable is counted"),
+			Summary.AbandonedWhileTakeable, 1);
+
+		const FString Json = LLKRunMetrics::ToJson(Events, Summary);
+		TestTrue(TEXT("the file carries the legibility numbers"),
+			Json.Contains(TEXT("\"blockedNeedsLight\"")));
+		TestTrue(TEXT("and the block reason behind them, so the count is checkable"),
+			Json.Contains(TEXT("\"kind\": \"InteractAttempted\"")));
+		TestTrue(TEXT("and names the reason rather than a number"),
+			Json.Contains(TEXT("NeedsLight")));
+
+		// Plain language, because the first reader is Chris after a playtest.
+		const FString Text = LLKRunMetrics::Describe(Summary);
+		TestTrue(TEXT("the readout says something about legibility"),
+			Text.Contains(TEXT("refused")) || Text.Contains(TEXT("interact")));
+	}
+
+	// ---- 13. the zero that is not good news -----------------------------
+	//
+	// A run where nobody pressed the take key at all. Every legibility number
+	// here is zero or absent, and the ONE thing the summary must not do is
+	// report a clean refused fraction as though the rules had been understood.
+	// `InteractAttempts` is the field that tells those apart, so a reader who
+	// sees `refusedFraction: 0` has the denominator beside it.
+	{
+		TArray<FLLKRunEvent> Events;
+		Events.Add(At(0.f, ELLKRunEvent::RunStarted));
+		Events.Add(At(60.f, ELLKRunEvent::LanternOn));
+		Events.Add(At(300.f, ELLKRunEvent::CrewWiped));
+
+		const FLLKRunSummary Summary = LLKRunMetrics::Summarise(Events);
+		TestEqual(TEXT("no attempts is zero attempts"), Summary.InteractAttempts, 0);
+		TestEqual(TEXT("and an untaken run reports no first take rather than zero seconds"),
+			Summary.SecondsToFirstRelicTaken, -1.f);
+		TestEqual(TEXT("and a refused fraction of zero, which is why attempts is reported too"),
+			Summary.RefusedFraction, 0.f);
+		// Not a search for the word "never": the existing readout already says
+		// NEVER CALLED about the extraction, so that would pass without the
+		// legibility line existing at all. This asserts the specific sentence.
+		TestTrue(TEXT("the readout must not let that read as success"),
+			LLKRunMetrics::Describe(Summary).Contains(TEXT("NOBODY REACHED FOR ANYTHING")));
+	}
+
+	// ---- 14. an unknown block reason is counted, not dropped -------------
+	//
+	// `Detail` is an `FName` rather than an enum because the event list is read
+	// as a whole, which means a reason this arithmetic has never heard of can
+	// arrive - from a later rule, or from a typo at the recording site. It must
+	// still raise `InteractAttempts`, because an attempt happened; what it must
+	// NOT do is land in one of the named buckets and misattribute a failure.
+	{
+		TArray<FLLKRunEvent> Events;
+		Events.Add(At(0.f, ELLKRunEvent::RunStarted));
+		Events.Add(At(5.f, ELLKRunEvent::InteractAttempted, TEXT("SomethingLater")));
+		Events.Add(At(10.f, ELLKRunEvent::InteractAttempted, TEXT("None")));
+
+		const FLLKRunSummary Summary = LLKRunMetrics::Summarise(Events);
+		TestEqual(TEXT("an unrecognised reason still counts as an attempt"),
+			Summary.InteractAttempts, 2);
+		TestEqual(TEXT("and is not filed under needing light"), Summary.BlockedNeedsLight, 0);
+		TestEqual(TEXT("nor under being unidentified"), Summary.BlockedUnidentified, 0);
+
+		// The choice this pins down: an unrecognised reason is a REFUSAL, not
+		// a success. `None` is the one reason that means it worked, so a block
+		// reason added by a later rule must not quietly improve this number by
+		// being unknown to the arithmetic. One of two refused: 0.5.
+		TestNearlyEqual(TEXT("an unrecognised reason still counts against the refused fraction"),
+			Summary.RefusedFraction, 0.5f, 0.001f);
+	}
+
 	return true;
 }
 
