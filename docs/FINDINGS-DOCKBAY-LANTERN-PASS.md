@@ -149,3 +149,104 @@ earlier. **The M1 gate — two keepers, one lights a lantern, both see the storm
 charge move — was on screen and nobody confirmed the meter actually moved.**
 That observation has not been made. It is not blocked by anything; it just
 needs the two-client setup back and somebody watching.
+
+---
+
+## 5. Review of the occlusion fix (`370aa52`), 2026-10-31
+
+Codex landed the fix the same day, and asked for it to be verified by standing
+behind a gondola in the dock bay with a relic on the far side. **That test
+cannot be performed as described, and the reason is worth knowing.** The editor
+was closed when this review ran (`ECONNREFUSED` on the MCP port), so this is a
+source review plus a placement audit, not a PIE observation.
+
+### The fix is correct, and it answers section 3's channel question better than section 3 did
+
+`LLKRelicIllumination::BrightnessAtVisible` filters sources through
+`ILLKVisibilitySource` *before* summing, so a blocked source contributes zero
+rather than a reduced amount. That is the right shape: partial occlusion of a
+radial field has no honest meaning, and the alternative (attenuating by hit
+distance) would invent a physics the rules do not have.
+
+`Unknown` is treated as dark, matching `LLKPerception::Notice`. Correct and
+consistent: an unanswerable line must not read as clear.
+
+**Section 3 above recommended declaring a custom light-blocking channel. That
+recommendation is withdrawn.** `FLLKWorldVisibility` traces `ECC_Visibility`,
+which is a built-in channel that is already authored *per primitive* — a glass
+case can be set to block `WorldStatic` and not `Visibility`, which is exactly
+the per-piece control section 3 asked for. No `DefaultEngine.ini` edit is
+needed, and the coupling it buys is a feature rather than an accident: a shelf
+that hides a keeper from a Sweeper now also stops that keeper reading through
+it. One channel, one meaning.
+
+**What does not change: the greybox still validates nothing.** Section 2's
+measurement stands — every obstruction in the bay blocks at every height from
+152 to 800 cm. The fix will look perfect here and the half-height gondolas and
+wire racks that art will land are precisely the cases `ECC_Visibility` has to
+be authored for, piece by piece. That is now an art-time checklist item rather
+than a code gap.
+
+### The strobe risk from section 3 is now live, and the fix did not address it
+
+Section 3 established that `bLegible` latches but **`bCurrentlyLit` does not**,
+and that the prompt and the outline stencil hang off `bCurrentlyLit`. The trace
+now sits inside that 10 Hz sample, which is the exact placement section 3
+warned about:
+
+> *legibility is free, the affordance still needs hysteresis.*
+
+Nothing in `370aa52` adds hysteresis. `RefreshInteractable` still debounces only
+the broadcast, so a trace that flips on alternate samples flips the prompt and
+the stencil with it. At a shelf edge — hood up at arm's length, which is the
+loop row 53 is built around — the affordance will chatter at 10 Hz. **This is
+not a reason to revert anything**: the fix is right and the hysteresis is a
+separate, small change on the occlusion result. It is a reason not to record
+the occlusion work as finished.
+
+Worth noting it is now a *correctness* issue as well as a feel one:
+`ULLKInteractorComponent::ServerTake` re-checks the gate server-side, so a
+player pressing take on a frame the client showed a prompt can have it refused
+on a frame the server sampled blocked. Previously the two could only disagree
+about distance, which is stable; they can now disagree about a trace, which is
+not.
+
+### Why the asked-for test cannot be run, and what can be run instead
+
+**There are no relics in `LLK_DockBay`.** Zero of the 168 external actors carry
+a relic, and nothing in the authored map spawns one — the only place
+`ULLKRelicComponent` is ever constructed outside tests is
+`LLKStoreFloorBuilder.cpp`, the harness.
+
+And the harness runs anyway. `ALLKTestGameMode` calls
+`LLKStoreFloor::BuildGroundFloor` **unconditionally**, at `HarnessOrigin`,
+which it resolves to the first `APlayerStart` it finds. The `bHasExistingGround`
+trace suppresses only the floor cube. So PIE in the dock bay gives the harness
+store floor — counters, cases, sightline shelving and relics — spawned on top
+of the authored bay, centred on the bay's own PlayerStart.
+
+**So the fix is testable, on harness shelving rather than on dock bay gondolas:**
+
+- Harness `ShelfHeightStuds` is 6 = **168 cm**, above the 152 cm gameplay
+  anchor, so a shelf blocks the lantern-to-relic line. Section 4 of the builder
+  is called *"the sightline breaks"* and exists for this.
+- Harness relics sit at `CounterHeightStuds` 3.2 = 89.6 cm plus 14 cm =
+  **103.6 cm**, on top of a counter spanning 0–89.6 cm. The line from a lantern
+  at 152 cm descends to 103.6 cm and clears the counter's own top edge, so a
+  relic does not occlude itself. Relics are also spawned `NoCollision`, so
+  Codex's `AddIgnoredActor` is belt-and-braces rather than load-bearing.
+
+The honest statement of what was tested is therefore: **the rule is covered by
+automation** (four new assertions in `LLK.Loot.Relic`, including `Unknown`
+treated as dark and one-blocked-one-clear summing correctly), **and the
+behaviour has not been seen by anyone.** Whoever opens the editor next should
+walk behind a harness shelf, not a bay gondola.
+
+### One consequence of the build repair
+
+Codex also fixed a unity-build test-name collision that stopped the editor
+target compiling. That means the editor binary used for section 1's A/B
+measurements predates it. Those measurements were taken with placed
+`APointLight`/`ASpotLight` actors and `trace_world`, neither of which touches
+the lantern component, so they stand — but any earlier observation that relied
+on `ULLKLanternLightComponent` behaviour was made against a stale binary.
