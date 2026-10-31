@@ -32,8 +32,8 @@ namespace
 	 */
 	static TAutoConsoleVariable<int32> CVarShowStormHUD(
 		TEXT("LLK.ShowStormHUD"),
-		1,
-		TEXT("Draw the M1.7 Storm Pressure debug readout. 1 = on (default), 0 = off."),
+		0,
+		TEXT("Draw the M1.7 Storm Pressure debug readout. 1 = on, 0 = off (default). World prompts remain visible."),
 		ECVF_Default);
 
 	// Warm, matching the lantern, for the things the player controls. Cold for
@@ -137,13 +137,19 @@ void ALLKDebugHUD::DrawHUD()
 {
 	Super::DrawHUD();
 
-	if (CVarShowStormHUD.GetValueOnGameThread() == 0)
+	const UWorld* World = GetWorld();
+	if (World == nullptr || Canvas == nullptr)
 	{
 		return;
 	}
 
-	const UWorld* World = GetWorld();
-	if (World == nullptr || Canvas == nullptr)
+	// These are the playable world's language, not the top-left diagnostic
+	// panel. A player still needs an object prompt, a rescue prompt and the
+	// extraction state with LLK.ShowStormHUD disabled.
+	DrawWorldPrompt();
+	DrawExtraction();
+
+	if (CVarShowStormHUD.GetValueOnGameThread() == 0)
 	{
 		return;
 	}
@@ -184,14 +190,6 @@ void ALLKDebugHUD::DrawHUD()
 	DrawBurdenLine(CursorY);
 	DrawRelicPanel(CursorY);
 
-	// Drawn last so it sits over everything, and outside the panel entirely:
-	// this one belongs to the object, not to the readout.
-	DrawWorldPrompt();
-
-	// And last of all, the climax. Nothing of it is in the panel above - not
-	// a line, not a phase name - because a permanent line about extraction is
-	// the top-left paragraph by another route.
-	DrawExtraction();
 }
 
 void ALLKDebugHUD::DrawExtraction()
