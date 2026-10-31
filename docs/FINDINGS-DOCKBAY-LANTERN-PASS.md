@@ -296,3 +296,73 @@ means accepting that a keeper can be refused a relic the beam appears to be
 lighting, and granted one just outside it. That is a real seam and it is now a
 deliberate one — worth watching in the first playtest rather than re-arguing
 here.
+
+---
+
+## 7. The relic curriculum and a second exposure volume (`10f45d9`, `be52f3f`)
+
+Read-only check of what landed, 2026-10-31. Both commits are real and both
+write tracked files under `Content/__ExternalActors__/LLK_DockBay` — the first
+DockBay actors to be committed rather than left loose.
+
+### The bay now has relics, and section B of the prereq doc is retired
+
+Four `ALLKRelicActor`s, each with a `ULLKRelicComponent`. So the run JSON will
+carry a real `interactAttempts` and a real `secondsToFirstRelicTaken` instead
+of the `NOBODY REACHED FOR ANYTHING` readout an empty bay would have produced.
+
+Their labels are the interesting part: **`LLK_Relic_Hooded`,
+`LLK_Relic_Working`, `LLK_Relic_Open`, `LLK_Relic_Occluded`.** This is a
+curriculum keyed to the three lantern levels plus one occlusion case, not four
+interchangeable pickups.
+
+**Which makes the unwired-state limitation bigger than it reads.** Three of
+those four exist specifically to be *compared*, and the comparison needs a
+lantern that can be hooded. It cannot: `ULLKLanternData` logs `level Working
+(1 of 1)` on every run, and the replicated state plus cycle key still waits on
+the importer. So three of the four relics are currently **the same test**, and
+the only one measuring something distinct is `_Occluded`, which exercises the
+`370aa52` sight-blocking fix and is live.
+
+Worth saying out loud before the playtest: walking all four and finding
+identical reach is the dial being absent, not the relics being broken. That is
+the shape of mistake the first authored-map run is most likely to produce.
+
+Their ids are ad-hoc — `Relic_Open` and siblings, none of the twenty in
+`data/relics.json` — and `RelicName` is authored on the component rather than
+resolved from `DT_Relics`, so nothing is being looked up and nothing is
+missing. For a curriculum probe that is the right choice, and it happens to
+suit the run instrument: `RelicAbandoned` will record the *condition* that was
+abandoned rather than an authored relic's name. The only consequence is that
+`tests/balance.test.mjs` does not know these four exist, which is correct —
+they are fixtures, not content.
+
+### There are now two unbounded exposure volumes doing the same job
+
+`be52f3f` added `LLK_ExposureClamp`. `LLK_ExposureLock` was already there from
+`35831f6`. Both are `PostProcessVolume`s, both carry `bUnbound`, and both
+override exactly two properties and no others:
+`bOverride_AutoExposureMinBrightness` and
+`bOverride_AutoExposureMaxBrightness`. Neither overrides `Priority`.
+
+Scanning both packages for the same set of candidate float values returns the
+same answer for each, which is consistent with identical settings — though a
+presence scan can only say a value is absent, never that two volumes agree, so
+that is a likelihood and not a measurement.
+
+**Not a brightness bug today, and specifically not the one the playtest is
+looking for.** Both volumes are unbound, so there is no boundary to walk
+across and no view direction that enters or leaves one. Pinning min and max
+also fixes exposure regardless of `AutoExposureMethod`, which neither volume
+overrides and neither needs to. If brightness does move while looking around,
+these are not the cause and the lantern is the place to look — a spot light
+still authored at intensity 250 against a clamp that measured readable near
+6 cd.
+
+**It is a trap worth removing while it is cheap.** Two equal-priority unbound
+volumes overriding the same fields are resolved by gathering order, which for
+World Partition external actors is streaming order. Identical values make that
+invisible; the first time somebody retunes one and not the other, the scene's
+exposure depends on which actor streamed in first, and that is a bug nobody
+will find by reading either volume. One of the two should go, and the survivor
+should probably be the one with the clearer name.
