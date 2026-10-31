@@ -413,10 +413,12 @@ somewhere they could not get back from. Never because somebody's escort died.
 
 ## For the map lane
 
-Geometry is **Chris's alone** now — `docs/LANES.md`, and `DECISIONS.md` row 41:
-no agent opens a `.uasset`, because binary does not merge. The `COORDINATION.md`
-tag-and-`src/map/` arrangement this section used to name governs only the frozen
-Roblox archive (row 39). Everything on this page is a spec, not an instruction.
-The two pieces that belong to systems rather than map: the crate's department
-stamp, and the per-room cost at home (`HubService`, and the rooms that open —
-`docs/VERTICAL-SLICE.md` element 5).
+Geometry has **one active writer per authored asset** — `docs/LANES.md` and
+`DECISIONS.md` row 41. Chris may assign a greybox `.umap` to an agent through
+Unreal MCP; that agent owns the map until it is explicitly handed back. Binary
+does not merge, so no second writer may enter the same asset during that pass.
+The `COORDINATION.md` tag-and-`src/map/` arrangement this section used to name
+governs only the frozen Roblox archive (row 39). Everything on this page is a
+spec, not an instruction. The two pieces that belong to systems rather than
+map: the crate's department stamp, and the per-room cost at home (`HubService`,
+and the rooms that open — `docs/VERTICAL-SLICE.md` element 5).
