@@ -58,7 +58,31 @@ try {
 
     & $editor $project '-run=LLKImportData' ("-InputDir=`"$payloadDir`"") `
         '-unattended' '-nop4' '-nosplash' ("-abslog=$log")
-    if ($LASTEXITCODE -ne 0) { throw "Unreal data import failed ($LASTEXITCODE). See $log" }
+    $editorExit = $LASTEXITCODE
+    if ($editorExit -ne 0) {
+        # The experimental MCP toolset registers GameFeatureData without an
+        # Asset Manager rule in commandlet mode. UE therefore returns 1 after
+        # this commandlet has successfully written every generated asset. Do
+        # not broadly ignore a non-zero editor exit: accept only that known
+        # pair, only after the commandlet's own completion line, and still
+        # refuse any importer error or unexpected engine error.
+        $logText = if (Test-Path -LiteralPath $log) { Get-Content -LiteralPath $log -Raw } else { '' }
+        $knownPluginErrors = @(
+            'LogGameFeatures: Error: Asset manager settings do not include a rule for assets of type GameFeatureData',
+            'LoadErrors: Error: Asset Manager settings do not include an entry for assets of type GameFeatureData'
+        )
+        $errorLines = @($logText -split "`r?`n" | Where-Object { $_ -match ': Error:' })
+        $unexpectedErrors = @($errorLines | Where-Object {
+            $line = $_
+            -not ($knownPluginErrors | Where-Object { $line -like "*$_*" })
+        })
+        $completed = $logText -match 'LogLLKDataImport: Display: LLK data import completed: 7 DataTables and 4 DataAssets\.'
+        $importerErrored = $logText -match 'LogLLKDataImport: Error:'
+        if (-not $completed -or $importerErrored -or $unexpectedErrors.Count -gt 0) {
+            throw "Unreal data import failed ($editorExit). See $log"
+        }
+        Write-Warning 'Unreal returned 1 only for the known MCP GameFeatureData registration noise; LLK data import completed successfully.'
+    }
 
     $outputs = Get-ChildItem -LiteralPath $dataDirectory -Filter '*.uasset' -File
     $missingAssets = @($expectedAssetNames | Where-Object { $_ -notin $outputs.Name })
