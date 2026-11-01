@@ -17,6 +17,13 @@ decision reversible without asking them to hold a key while reading. Movement
 and danger continue while it is open; the Fieldboard must therefore be useful
 at a glance and never become a backpack-animation tax.
 
+During a run the Fieldboard is **read-only and non-modal**: it does not capture
+the mouse, move a focus cursor, consume movement or require navigating a grid.
+Its facts update in place. If it later gains an interactive page, that page
+must use the same clear close action and predictable keyboard/controller focus
+order as every other menu; it does not get to turn the emergency status screen
+into a surprise inventory interface.
+
 World-space prompts remain outside it: relic brackets, `[E] Take`, revive
 progress, the downed panel and extraction prompts are all immediate action
 language. The existing `LLK.ShowStormHUD` panel remains a developer-only
@@ -37,13 +44,22 @@ their lantern and their crew presently know.
 interpreter hardware projects a dim amber route image just ahead of the keeper
 or inside the raised lantern's hood. It is a cosmetic, screen-space display:
 it is not a second `LLKLightField` source, never makes relics legible, never
-changes enemy detection, and does not illuminate the room.
+changes enemy detection, and does not illuminate the room. A settings option
+must offer toggle/auto-hold behaviour for players for whom a sustained hold is
+a barrier; that alternative has the same information and closes with M or
+Escape.
 
 The map is not GPS and cannot reveal a building the crew has not surveyed. It
 shows the current floor's discovered outline, known exits, route markers and
 objectives the crew has actually received. It may show teammate positions only
 when a later explicit radio/ping system communicates them; it never becomes a
 free radar.
+
+Every mapped marker also appears in a short text list: name, floor and known
+relation (for example, *Loading Dock — ground floor — west service route*).
+Icons need labels and shapes, not colour alone. This is the way a player can
+use the route record without relying on fine mirror-neon contrast or precise
+map panning.
 
 Holding M is intentionally a smaller commitment than Tab: it lets a keeper
 check their bearings, but their view is occupied by the projection and the
@@ -111,7 +127,8 @@ in one change.
 The same screen supplies a readable counterpart to radio and voice chat:
 crew downed state, active extraction state and the night’s direction are visual
 facts. It must not require hearing a radio cue or a threat sound to understand
-what the crew is currently doing.
+what the crew is currently doing. Radio captions and pings are part of radio's
+first implementation, not a later accessibility retrofit.
 
 ## Acceptance questions
 
@@ -123,7 +140,9 @@ what the crew is currently doing.
 4. Does it expose no hidden enemy, map or teammate information?
 5. Does the route projection communicate only discovered space and deliberately
    shared information, while remaining a cosmetic lantern display?
-6. With all UI hidden, do the world prompts still teach taking, reviving and
+6. Can every route marker be understood from its text/shape label without
+   relying on colour or a precise cursor position?
+7. With all UI hidden, do the world prompts still teach taking, reviving and
    extracting on their own?
 
 ## Build order
@@ -137,3 +156,14 @@ what the crew is currently doing.
 4. Add the named relic ledger only once its server-owned data model exists.
 5. Art-pass the widget after the first lantern-in-hand and ambient-light pass,
    so its contrast is judged against the real scene rather than a debug floor.
+
+## Research basis
+
+The interaction constraints above follow Microsoft's current Xbox
+Accessibility Guidelines: UI actions should be remappable and not require a
+sustained hold where an equivalent toggle can remove that barrier; in-game UI
+must support digital and analog navigation; map content benefits from a text
+alternative to spatial panning; and gameplay-critical information needs more
+than colour alone. See [XAG 107: Input](https://learn.microsoft.com/en-us/xbox/accessibility/xbox-accessibility-guidelines/107),
+[XAG 112: UI navigation](https://learn.microsoft.com/en-us/xbox/accessibility/xbox-accessibility-guidelines/112),
+and [XAG 103: additional channels](https://learn.microsoft.com/en-us/xbox/accessibility/xbox-accessibility-guidelines/103).
