@@ -230,15 +230,16 @@ cone.
 
 ### Why, and what it means
 
-**Under Lumen, a downlight that washes the floor turns the floor into a
-secondary source pointed straight up at every vertical face above it.** The
-card faces that lit pool from 90 cm up. Barn doors control what the fixture
-emits; they cannot control what the floor re-emits.
+**Why — corrected 2026-11-01 by the albedo sweep below.** This section first
+claimed the card was being lit by bounce off the floor pool it faces, reasoning
+that 34.6° sits outside a 15° cone so the light could not be direct. **That was
+wrong.** Darkening the floor sixfold changes the card by 0.7%, which rules
+bounce out as its source.
 
-So the remedy fails for *precisely the mechanism that made it work in the run*.
-Bounce off the floor plane is what dropped the orientation floor from 6 cd to
-2 cd, and it is what keeps the price card readable. One mechanism, both
-results. Aiming light downward cannot darken a label that faces a lit floor.
+The simpler explanation survives: **`BarnDoorAngle` is not a cone half-angle**,
+and at 15° the fixture still emits directly at 34.6°. The card is directly lit
+in every configuration that leaves the room usable. That is consistent with the
+2° row, where the card finally goes dark — and so does everything else.
 
 **The fixture is the wrong lever; the next ones to try are not lighting at
 all.** Untested, in order of cheapness:
@@ -256,6 +257,66 @@ A caveat on the Bay A rows: the editor window was resized between the 15° and
 2° captures, so that last row's sampling boxes sit slightly differently. The
 42x drop is far larger than that can account for, but the row is indicative
 rather than exact.
+
+## Floor albedo, swept — it does nothing, and that settles it
+
+Plain troffer at its Lumen orientation floor of 2 cd, Bay A and Bay B floors
+swept through three linear albedos against the `DefaultMaterial` baseline.
+Every frame verified at a matched 1014x611 crop, because the editor window
+resized mid-sweep and one rung had to be recaptured — at the wrong size its
+sampling boxes land on different world content and the row is meaningless.
+
+| floor albedo | Bay B floor | Bay B blocker face | Bay B blocker contrast | Bay A card contrast |
+| --- | --- | --- | --- | --- |
+| baseline (`DefaultMaterial`) | 8.33 | 4.19 | 67.2 | 102.7 |
+| 0.18 | 19.55 | 4.73 | 68.1 | 103.2 |
+| 0.08 | 11.42 | 3.98 | 67.2 | 101.9 |
+| 0.03 | 7.25 | 3.67 | 67.1 | 100.6 |
+
+**Darkening the floor sixfold costs 63% of the floor read and buys 2.5% of card
+contrast.** The test fails its own success criterion by a wide margin: it harms
+orientation far more than it helps inspection. The blocker face and its
+contrast barely move either — those surfaces are directly lit too.
+
+### And it fails in the barn-doored case as well
+
+The sweep above uses a plain troffer, which lights the card directly, so bounce
+was never the card's main source there. The cell where albedo *should* matter
+is the barn-doored one, where the card was believed to be bounce-lit:
+
+| Bay A, 6 cd | card contrast |
+| --- | --- |
+| plain troffer, baseline floor | 172.7 |
+| barn doors 15°, baseline floor | 153.1 |
+| barn doors 15°, floor albedo 0.03 | **152.1** |
+
+**0.7%.** The dark floor does nothing there either, which is what falsified the
+bounce explanation recorded above.
+
+### The conclusion: there is no lighting-only solution
+
+Three levers have now been tried against the inspection half of the contract
+and all three fail:
+
+| lever | effect on card | effect on orientation |
+| --- | --- | --- |
+| lower candela | card still reads at 0.5 cd, the bottom of the ladder | run goes dark first |
+| barn doors 15° | −11% | fine, walls improve |
+| barn doors 2° | card dark | run dark too, ratio *worse* than plain |
+| floor albedo 0.18 → 0.03 | −2.5% | floor read −63% |
+
+The card is **directly lit by any fixture broad enough to light the aisle**, and
+nothing about the fixture's optics or the room's materials changes that without
+taking the aisle with it. This refines rather than repeats the original
+inverse-square argument: the problem is not that the card is close to its
+fixture, it is that *direct* light is what reaches it, so every lever that acts
+on indirect light misses.
+
+**So legible detail has to be moved out of direct light paths** — recessed under
+a shelf lip, angled away from the ceiling plane, or placed on faces the
+fixtures do not see — rather than dimmed into illegibility. Combined with
+self-luminous signage for landmarks, that is the whole remedy, and none of it
+is a candela value.
 
 ## Why there is no band, and what to do instead
 
