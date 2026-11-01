@@ -375,6 +375,29 @@ ordering is verified before any value is recorded.** This has already worked
 once before it had a name: the 25 cd lantern row was discarded for breaking the
 monotonic trend, which is how its wrong window size was noticed.
 
+### Two rules that cover today's errors, including both of mine
+
+**A check must be run where the measurement is sensitive, not where it is
+convenient.** The capture-geometry error moves a structured region by 1.76x and
+a uniform one by 5%. So a calibration patch on a flat swatch would have read
+27-28 throughout and certified a broken instrument — the same shape as
+byte-identical frames certifying a frozen one. Validating on the easy region
+proves nothing about the region you are reading.
+
+**A number read from the engine carries a frame of reference, and the frame has
+to be read rather than assumed.** Three separate errors in one day were one
+error:
+
+| the number | the frame assumed | the frame it was in |
+| --- | --- | --- |
+| `18:18:44` in the log | local time | **UTC** — the restart preceded both runs |
+| `bMegaLights = true` in DockBay | in effect | **dormant**, its override was off |
+| a pixel inset in the crop | a known window size | **three different sizes**, silently |
+
+Each produced a confident wrong claim, two of which reached commit messages.
+"Do not assert causes" is the wrong lesson, because it does not say what to
+check. **Read the frame** does.
+
 ### Why this is worth an extra capture every time
 
 The two failure classes do not cost the same. **A silent failure wastes a run.

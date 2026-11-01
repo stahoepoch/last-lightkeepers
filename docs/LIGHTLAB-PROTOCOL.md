@@ -470,6 +470,39 @@ re-checked** — its "inspection ceiling below 0.5 cd, orientation floor 6 cd, n
 band" is load-bearing for the whole fixture design, and the instrument that
 produced it has since been shown wrong about occlusion.
 
+### Define sampling regions in world space, not in pixels
+
+**This is the fix for the capture-geometry error, and it deletes the degree of
+freedom rather than detecting it.** Name the region by the thing being measured
+— the card face — and project it through the actual camera and the actual
+capture dimensions at capture time.
+
+**Fractional insets do not fix this.** Scaling the box with the frame still
+samples different world content, because changing the viewport changes which
+world the frame contains. Only a world-space region is invariant.
+
+A calibration target is the second-best fix and still worth having, but it must
+be a **known step edge at a known world position**, not a flat swatch — so the
+measured value maps monotonically to box offset and a miss reads as "the box is
+seven pixels low" rather than merely "wrong". A uniform patch certifies the one
+thing that never breaks: the geometry error moves a structured region by 1.76x
+and a uniform one by 5%.
+
+### Geometry is recoverable retroactively
+
+Every PNG records its own dimensions in its IHDR, so the capture size of any
+past reading can be audited without re-shooting it:
+
+    find docs -iname '*.png' | sort | while read -r f; do
+      od -An -tu1 -j16 -N8 "$f" | awk -v n="$f" '{printf "%5d x %-5d  %s
+",         $1*16777216+$2*65536+$3*256+$4, $5*16777216+$6*65536+$7*256+$8, n}'
+    done
+
+Capture size is the editor window minus the crop insets, currently (266, 161):
+window 773 gives 612, 772 gives 611, 693 gives 532. **Record the capture size
+with every reading**, and when auditing an old one, compare it against the rest
+of its own set rather than against an absolute.
+
 ### Add to step zero (section 5a): trace your measurement regions
 
 Before trusting any per-region number, run `ScreenCoordsToWorld` on the centre

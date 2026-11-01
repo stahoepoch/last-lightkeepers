@@ -471,25 +471,62 @@ tested directly and **not supported**: a 2 cd frame captured immediately after
 500 cd reads the wall at 27.11, essentially settled. One frame, cause unknown,
 recorded as an anomaly rather than reasoned from.
 
-### The hazard that is demonstrated: window height silently rescales everything
+### The hazard that is demonstrated: capture geometry silently rescales everything
 
-Chasing the above produced one solid result. The **identical scene** measures:
+Chasing the retraction above produced one solid result. The **identical scene**
+measures:
 
-| editor window height | card mean | bay wall |
+| capture size | card mean | bay wall |
 | --- | --- | --- |
-| 773 px | 246.83 | 28.56 |
-| 693 px | 140.22 | 27.11 |
+| 1014 x 612 | 246.83 | 28.56 |
+| 1014 x 532 | 140.22 | 27.11 |
 
-**A 76% change in the card from a window resize**, because the crop is taken at
-fixed insets and the sampling boxes land on different world content. The wall
-barely moves, because that region is uniform — so the error is large exactly
-where the measurement matters and invisible exactly where it would be noticed.
+**The card moves by a factor of 1.76 with no change to the scene**, because the
+crop uses fixed pixel insets, so the sampling boxes land on different world
+content. The wall barely moves, because that region is uniform — **the error is
+largest exactly where the measurement matters and invisible exactly where it
+would be noticed.**
 
-The window has arrived at 772, 773 and 693 px during this project, changing
-without anyone resizing it. **This is the largest measurement error source
-found so far, and it is completely silent.** Every frame must have its size
-recorded and mismatches discarded; `docs/LIGHTLAB-PROTOCOL.md` §9 requires it
-and this is the measurement that justifies the requirement.
+**The mapping, since two different numbers get quoted.** The capture is the
+editor window minus the crop insets: capture = window - (266, 161) for the
+current rect. So window 773 gives 612, 772 gives 611, 693 gives 532. The window
+has arrived at all three during this project without anyone resizing it, and
+the inset rect itself changed between sessions, which is why older frames are
+1020 wide rather than 1014.
+
+### Audit of every committed frame, and what survives
+
+PNG files record their own dimensions, so the geometry nobody wrote down is
+recoverable for every reading ever taken. The audit reads the IHDR of every
+committed frame; see the regeneration command in `docs/LIGHTLAB-PROTOCOL.md`.
+
+**The load-bearing sets are internally consistent, which is the result that
+matters.** Each held its geometry within its own run: the lantern ladder
+`LNT_006/015/040` all 1014x612; `TA_*` and `TB_*` uniformly 1014x611; `LIP_*`
+likewise; the core ladder `N_e*` uniformly 1014x611; the offscreen `v_e*` set
+uniformly 1669x1012. Today's re-measurement
+(`reproducibility_after_restart.png`) is 1014x612, matching the lantern set
+exactly, so the retraction above stands on its own geometry.
+
+**Five frames do not match the set they belong to:**
+
+| frame | is | its set is |
+| --- | --- | --- |
+| `trofA_100cd.png` | 1020x671 | 1020x612 |
+| `GATE2_00cd_A2.png` | 1020x671 | — |
+| the five ambient controls | 1020x606 | the ladders they gate are 1020x612 / 1014x611 |
+| `spotC_250cd.png` | 1020x612 | the LNT set is 1014x612 |
+| **`DA_06_tight.png`** | **1014x532** | **the barn-door set is 1014x611** |
+
+The controls are the worst of these, because a control exists to be compared
+against a reading. `DA_06_tight` is the 2 degree barn-door row, already
+caveated in this document as indicative rather than exact — the caveat was
+right, and the magnitude is now known rather than guessed: a geometry change of
+this kind moves the card by about 1.76x, and that row reports a 42x drop, so
+the conclusion survives comfortably.
+
+**Nothing needs re-shooting.** The dimensions are recoverable for every frame,
+so the repair is an annotation pass over the existing tables, not a re-run.
 
 ### A 6 cd lamp should not light a room
 
