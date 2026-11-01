@@ -396,3 +396,45 @@ ladders in section 5 from step 1. Nothing needs rebuilding.
 Codex owns `LLK_DockBay` for an art pass (row 41, one owner per `.umap`). It was
 opened read-only to take the exposure values in section 1, was never modified,
 and was verified clean (`is_dirty` false) at the end of the session.
+
+## 9. Capture method, superseded 2026-11-01
+
+Sections 7 and 8 describe a pipeline built around `CaptureEditorImage` —
+screenshot the whole editor window, crop the viewport out of it — because
+`CaptureViewport` hung to the 300 s timeout every time. **That is no longer
+true.** The MCP plugin changed (its Python sandbox now requires scripts to
+define `run()` returning a dict, where a bare script body worked before), and
+`CaptureViewport` works.
+
+Use `CaptureViewport`. It is better than the old path in three ways that matter:
+
+- **It takes the pose as an argument** (`captureTransform`), so a capture no
+  longer depends on `SetCameraTransform` having taken effect.
+- **It returns the pose it used** alongside the image — `cameraLocation`,
+  `cameraRotation`, `cameraFOV`. Every frame carries proof of its own framing,
+  which is what finally retired the stale-camera problem.
+- **No cropping.** It returns the viewport, so the editor window's size is
+  irrelevant. The edge-relative crop rect in `grab.py` exists only because the
+  window silently changed size twice; nothing needs it now.
+
+Two things still bite:
+
+- **It still hangs, intermittently**, for the same reason as before: the level
+  viewport is hidden behind another tab and draws under 1 fps, so the capture
+  waits on a frame that is not coming. **Calling `FocusOnActors` immediately
+  before each capture forces the redraw** and cleared every hang met this
+  session. It costs nothing, because the capture's own `captureTransform`
+  overrides whatever the camera does. On a hang, re-issue the focus and retry.
+  A hang is a 300 s stall, so pair them by default rather than on failure.
+- **`annotations` is required**, not optional. Pass
+  `{"gridSpacing": 0, "gridExtent": 0, "gridHeight": 0, "maxLabelDistance": 0,
+  "classFilter": null, "maxLabels": 0}` for a clean frame. Set
+  `maxLabelDistance` and `maxLabels` non-zero to overlay actor names and
+  crosshairs — which is how you show *which* surfaces are in frame when they
+  are too dark to see.
+
+**Add to step zero (section 5a): trace your measurement regions.** Before
+trusting any per-region number, run `ScreenCoordsToWorld` on the centre of each
+sampling box and record what it hits and at what distance. A region is a guess
+about geometry until something resolves it to a surface — see
+`docs/TOOLING-TRAPS.md` 10.

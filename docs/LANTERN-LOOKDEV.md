@@ -128,6 +128,13 @@ not cone.
   to move further than 170 → 110 to be felt down a corridor.
 - No IES profile was tried (optional item D). It shapes distribution only and
   costs nothing at runtime, so it is still worth a later pass.
+- **The visible chamber contributes no light to any of these frames.** This
+  project renders with global illumination set to None, so an emissive material
+  lights its own pixels and nothing else — measured in
+  `docs/FINDINGS-EMISSIVE-LIGHTS-NOTHING.md`. Everything lit in the rigs above
+  comes from the spot and the fill. That does not change which rig to pick, but
+  it does mean the glowing chamber and the beam are two independent channels
+  that will not track each other unless something drives both.
 
 ## What this does not touch
 

@@ -177,6 +177,66 @@ plausible*. Brighter candela did give brighter frames. Nothing about the series
 looked wrong — it would simply have had a floor baked into every rung, and the
 thresholds derived from it would have been confidently, consistently false.
 
+## 9. A capture succeeded, of the wrong window
+
+Driving `LLK_LightLab` on 2026-11-01, `CaptureEditorImage` returned a clean,
+well-formed, correctly-sized image **of the Material Editor**. Chris had left
+`M_LLK_LanternCore` open, and its tab — not the level viewport — was frontmost.
+The capture did exactly what it says: an image of the editor as the user sees it.
+
+The trap is what the next step would have been. The task was a `CoreEmissive`
+ladder, and the Material Editor shows **a preview sphere of the same material**.
+Every rung would have brightened, monotonically and plausibly, and the ladder
+would have measured the preview thumbnail while claiming to measure bounce in a
+room. Camera moves would have had no effect and nothing would have said so.
+
+**Prefer the capture that names what it captured.** `CaptureViewport` returns
+`cameraLocation`, `cameraRotation` and `cameraFOV` **with the image**, so each
+frame carries proof of the pose it was taken from. That killed the long-standing
+"`SetCameraTransform` succeeds and `GetCameraTransform` agrees while the capture
+keeps the old pose" problem outright — not by fixing it, but by making the answer
+contain its own evidence. Same lesson as entry 6.
+
+## 10. A black frame is not a dark room
+
+With every light at 0 cd and the lantern core's emissive at an absurd 500, the
+lab rendered a blazing sphere surrounded by black. Read as "the emissive lights
+nothing", which was in fact the right answer — but **not yet an earned one**, as
+a camera pointing into empty space, out of the sealed box, or into the back of a
+wall produces the identical picture.
+
+A negative control proves the floor is dark (entry 8). A positive control proves
+the instrument is wired (entry 8's follow-up). Neither proves **there was
+anything in front of the lens**.
+
+`GetVisibleActors` answered it: 16 actors in the frustum, ten of them static
+meshes. `ScreenCoordsToWorld` answered it better, because it answers per
+measurement region — every sampling box used in the ladder was traced and
+returned a solid hit at 116–316 cm, naming the wall, ceiling and floor it landed
+on. One box believed to be "far background" turned out to be a wall **116 cm
+from the camera**, which made its flat zero far stronger evidence than assumed.
+
+**Trace what your measurement region is actually pointed at.** A region named in
+screen coordinates is a guess about geometry until something resolves it to a
+surface.
+
+## 11. Bloom looks exactly like bounce
+
+The same 500-emissive frame shows a broad warm glow filling much of the screen.
+It reads, instantly and convincingly, as a lantern lighting a room. It is
+post-process bloom, and no surface in the image receives a single photon.
+
+What separates them is not brightness but **what the brightness is a function
+of**. Two patches of one flat wall, 86 cm and 261 cm from the source, read 153
+and 2.2 — a 70x difference where inverse-square predicts about 9x. The value
+tracks distance from the source **on screen**, not in the world. The other tell
+is negative: a lit room has edges, corners and a cast shadow, and the frame had
+none — just a smooth radial gradient.
+
+This one is dangerous because it fails in the flattering direction. A lighting
+result that looks warm and plausible invites you to stop measuring, and the
+author who set the value is the least likely person to doubt it.
+
 ---
 
 ## The pattern, stated once
@@ -186,7 +246,8 @@ Each of these is a true answer to the wrong question. The build tool answered
 anywhere", the test runner answered "did the binary on disk pass", the port
 answered "is a server up", the guard answered "what is in the world right now",
 and the level query answered "which world can I see from inside this play
-session", and the capture tool answered "what was drawn last".
+session", the capture tool answered "what was drawn last", and the screenshot tool
+answered "what is the user looking at".
 
 So the question to ask of any green signal is not whether it is true. It is
 **what would this have said if the thing I care about were broken?** Where the
