@@ -643,6 +643,45 @@ findings docs moves with the lock point, so re-checking the fixture contract
 first would mean measuring it twice and holding two contradictory documents in
 the repo in between.
 
+## 10b. End every restore by enumerating, not by remembering
+
+**"The lab is at rest" has been asserted several times tonight and was never
+once read.** The restore scripts set the lights they had changed, which is a
+claim about intent rather than about the map. A second session then reported
+`RectLight_1` at 2 cd with the package dirty, and there was no way to tell from
+anything written down whether that was true.
+
+It was not — enumeration found all four lights at 0 and the package clean —
+but *being right by luck is the failure*, because the claim and the check were
+the same act.
+
+**So a restore ends with a read of every light in the map, logged:**
+
+```
+find_actors -> for each actor -> get_components
+  -> keep components whose name contains "LightComponent"
+  -> get_properties(Intensity, bAffectsWorld, bVisible)
+```
+
+Verified at rest, 2026-11-01, 51 actors:
+
+| component | intensity | affects world | visible |
+| --- | --- | --- | --- |
+| `RectLight_0.LightComponent0` | 0 | true | true |
+| `RectLight_1.LightComponent0` | 0 | true | true |
+| `SpotLight_0.LightComponent0` | 0 | true | true |
+| `PointLight_0.LightComponent0` | 0 | true | true |
+
+Enumerating finds lights nobody remembered adding, which tracking-what-you-set
+cannot. It also lets the next session verify a handover **without asking the
+previous one**, which is the actual point: a handover note that says "at rest"
+is worth nothing, and one that lists four components with their intensities is
+worth not having to ask.
+
+This is the day's error class one final time — *a claim and its check must not
+be the same act* — and the repair is the same shape as all the others: make
+the assertion a measurement.
+
 ## 11. Making the exposure units self-describing — procedure, not yet approved
 
 A proposal from the peer session, recorded so it can be done correctly if
