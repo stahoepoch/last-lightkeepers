@@ -71,8 +71,8 @@ bool FLLKLanternLightTest::RunTest(const FString& Parameters)
 	//    already-found bug of this exact shape in this project was a default
 	//    that quietly disagreed with `lantern.json`.
 	TestEqual(TEXT("the declared fallback radius matches lantern.json"), Fallback.RadiusStuds, 30.f);
-	TestEqual(TEXT("the declared fallback cone matches lantern.json"), Fallback.ConeAngleDegrees, 72.f);
-	TestEqual(TEXT("the declared fallback intensity matches lantern.json"), Fallback.Intensity, 250.f);
+	TestEqual(TEXT("the declared fallback cone matches lantern.json"), Fallback.ConeAngleDegrees, 110.f);
+	TestEqual(TEXT("the declared fallback intensity matches lantern.json"), Fallback.Intensity, 25.f);
 	TestTrue(TEXT("the declared fallback casts shadows, as lantern.json does"), Fallback.bCastsShadows);
 	TestEqual(TEXT("the declared fallback colour is warm, as lantern.json is"), Fallback.WarmColor.R, 1.f);
 	TestTrue(TEXT("and warm means r > g > b"),
@@ -87,11 +87,11 @@ bool FLLKLanternLightTest::RunTest(const FString& Parameters)
 
 	// 5. The authored angle is the OUTER cone. Applied to the inner one the
 	//    lit area would be wrong while every number in the asset was right.
-	TestEqual(TEXT("the authored angle is the outer cone"), Light->OuterConeAngle, 72.f);
+	TestEqual(TEXT("the authored angle is the outer cone"), Light->OuterConeAngle, 110.f);
 	TestTrue(TEXT("and the inner cone is strictly inside it"),
 		Light->InnerConeAngle < Light->OuterConeAngle && Light->InnerConeAngle > 0.f);
 
-	TestEqual(TEXT("intensity reached the light"), Light->Intensity, 250.f);
+	TestEqual(TEXT("intensity reached the light"), Light->Intensity, 25.f);
 
 	// THE BUG OF 2026-10-29, now asserted. The unit is what makes the number
 	// mean anything: ULocalLightComponent defaults to Unitless with Intensity
@@ -101,7 +101,7 @@ bool FLLKLanternLightTest::RunTest(const FString& Parameters)
 	// what stops a project setting from quietly undoing the fix.
 	TestEqual(TEXT("the intensity unit is pinned to candelas"),
 		Light->IntensityUnits, ELightUnits::Candelas);
-	TestTrue(TEXT("and the lantern is bright enough to see at all"), Light->Intensity > 50.f);
+	TestTrue(TEXT("and the lantern is bright enough to see at all"), Light->Intensity >= 20.f);
 	TestTrue(TEXT("shadows reached the light"), Light->CastShadows);
 	TestEqual(TEXT("the colour reached the light"), Light->LightColor.R, uint8(255));
 
@@ -155,7 +155,7 @@ bool FLLKLanternLightTest::RunTest(const FString& Parameters)
 		Light->GetLightSource(), ELLKDataSource::Fallback);
 	TestEqual(TEXT("so the radius is the declared 30 studs, not the asset's zero"),
 		Light->GetRadiusStuds(), 30.f);
-	TestTrue(TEXT("and the lantern still shines"), Light->Intensity > 50.f);
+	TestTrue(TEXT("and the lantern still shines"), Light->Intensity >= 20.f);
 	TestTrue(TEXT("with a real attenuation radius rather than none"),
 		Light->AttenuationRadius > 1.f);
 

@@ -43,8 +43,8 @@ ULLKLanternLightComponent::ULLKLanternLightComponent()
 	// Set here rather than as member initialisers so there is exactly one
 	// place to compare against the JSON when either moves.
 	FallbackRules.RadiusStuds = 30.f;
-	FallbackRules.ConeAngleDegrees = 72.f;
-	FallbackRules.Intensity = 250.f;
+	FallbackRules.ConeAngleDegrees = 110.f;
+	FallbackRules.Intensity = 25.f;
 	FallbackRules.WarmColor.R = 1.f;
 	FallbackRules.WarmColor.G = 0.82f;
 	FallbackRules.WarmColor.B = 0.56f;

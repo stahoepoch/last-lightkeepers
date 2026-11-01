@@ -42,11 +42,11 @@
     "radiusStuds": 30,
     "_radiusNote": "THE NUMBER THIS BLOCK EXISTS FOR. Read against data/enemies.json: aggroRadiusDark is 12 and aggroRadiusLit is 38, so at 30 a lit keeper is noticed from 8 studs BEYOND the edge of their own light. That asymmetry is row 5's trade made physical - light reveals value and attracts danger, and the danger arrives from the dark you just announced yourself to. Raising this above 38 inverts it: you would see patrols before they aggro, and light would become pure advantage. 30 was the placeholder's value and is kept as the initial data value rather than retuned in the same change that moved it.",
 
-    "coneAngleDegrees": 72,
-    "_coneNote": "The OUTER cone - the edge of what is lit, which is the half enemy and visibility logic will read. Wide because the keeper holds a lantern, not a torch: narrow enough to aim is a flashlight game, and row 43 makes the store teach by being legible. The inner cone is deliberately NOT here - it only softens the falloff and changes nothing about reach.",
+    "coneAngleDegrees": 110,
+    "_coneNote": "The OUTER cone of the electric lantern's working aperture. It is deliberately broad enough to read as a hooded carried source rather than a flashlight beam, while still leaving darkness outside the keeper's chosen direction. The inner cone is deliberately NOT here - it only softens the falloff and changes nothing about reach.",
 
-    "intensity": 250,
-    "_intensityNote": "Unreal candelas, and the one key here that is honestly engine-flavoured - it has no portable meaning the way studs and degrees do. It lives here anyway because a radius without a brightness describes a reach nobody can see to the edge of. The component pins the unit to Candelas in code so this number cannot silently change meaning with a project setting; tune it by eye, since no amount of arithmetic settles what a lantern should feel like.",
+    "intensity": 25,
+    "_intensityNote": "Unreal candelas. Tuned in the enclosed walk lab under the current Lumen baseline: 250cd read as a flashlight and overexposed nearby relics; 25cd gives a carried electric lantern a readable pool without whitening the room. Intensity is visual-only: detectability and gameplay reach are authored separately, so this can be tuned by eye without changing enemy balance.",
     "_intensityWas6": "FIXED 2026-10-29, Chris's report: 'i don't see the lantern turning on or off, i tried in shadows to see'. The light WAS toggling - 6 was simply invisible. ULocalLightComponent defaults to Unitless with Intensity 5000, so an unpinned 6 was 6 on a scale whose normal value is five thousand, roughly 800x too dim, and the only reason it looked like a broken toggle is that nothing logged the toggle. Both halves of that are fixed: the unit is pinned and every state change now logs.",
 
     "warmColor": { "r": 1.0, "g": 0.82, "b": 0.56 },

@@ -693,7 +693,7 @@ console.log("\nRung one, the departure generator");
 
   check(
     "the cone is wide enough to be a lantern rather than a torch",
-    light.coneAngleDegrees >= 45 && light.coneAngleDegrees <= 150,
+    light.coneAngleDegrees >= 90 && light.coneAngleDegrees <= 150,
     `${light.coneAngleDegrees} degrees: narrow enough to aim makes this a flashlight game, ` +
       `and row 43 needs the store legible enough to teach`,
   );
@@ -718,8 +718,9 @@ console.log("\nRung one, the departure generator");
 
   check(
     "the lantern is bright enough to actually see",
-    light.intensity >= 50,
-    `${light.intensity} candelas. This check exists because 6 shipped once: the component ` +
+    light.intensity >= 20 && light.intensity <= 40,
+    `${light.intensity} candelas. The enclosed walk-lab pass found 250 to be a flashlight and ` +
+      `25 to read as a carried electric lantern. The component ` +
       `pins the unit to Candelas, but ULocalLightComponent's own default is Unitless with ` +
       `Intensity 5000, so a small number here is indistinguishable from a lantern that never ` +
       `turned on. Chris found it by eye, which is the expensive way.`,
