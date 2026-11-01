@@ -863,7 +863,71 @@ an impossible ordering.
 
 **So a statistical detector may raise the question and must never answer it.**
 
-### The liveness assertion: use the frame counter
+### Difference against a fixed baseline, not the previous frame
+
+**This is the whole of the detector's sensitivity problem, and it costs nothing
+to fix.** Adjacent differencing throws away accumulation. Compare each frame to
+the ladder's *first* rung instead: the signal accumulates and climbs out of the
+noise floor, while a stale rung still shows plainly as a **flat spot** - it
+sits at the same distance from the reference as the frame before it.
+
+Demonstrated on committed data. The offscreen core ladder, adjacent versus
+cumulative:
+
+| rung | adjacent MAD | cumulative from v_e000 |
+| --- | --- | --- |
+| v_e0125 | 0.7037 | 0.7037 |
+| v_e025 | 0.4241 | 1.1260 |
+| v_e05 | 0.4657 | 1.5897 |
+| v_e1 | 0.3623 | 1.9469 |
+| v_e2 | **0.2582 - refused** | 2.2017 |
+| v_e5 | **0.3313 - refused** | 2.5307 |
+| v_e20 | 1.2459 | 3.7741 |
+
+**Cumulative is strictly increasing, so every rung moved.** The two adjacent
+refusals are false rejections, and they land in the offscreen ladder precisely
+because its per-step signal is tiny - it has no GI, so raising the emissive
+changes the glowing object and almost nothing else. The same emissive step
+reads 3.95 MAD offscreen and **27.61 in the viewport**.
+
+A full pairwise audit of the archived viewport ladders found **no pair below
+the floor** in TA, TB, FA, FB, DB, NB, LNT, the N_e core ladder, trofA, trofB,
+spotC or any of the four lantern poses. Staleness is not a standing condition
+of the viewport path; it was specific to the Bay B run.
+
+So **the offscreen path is now suspect on two independent grounds** - no GI,
+and dimension drift (1671x1015 against the ladder's uniform 1669x1012) with no
+viewport to blame. "Offscreen is the trustworthy instrument" is retired.
+
+### Retracted: the frame-counter check tests the wrong proposition
+
+An earlier version of this section proposed comparing the engine frame index at
+the state change against the index at the capture. **That check would come back
+clean and mean nothing**, and my own measurement refutes it: dispatches read
+frames 10, 409, 461, so hundreds of engine frames elapse between MCP calls.
+Frames were never scarce.
+
+**Engine tick and viewport redraw are different clocks.** The log counter
+advances with the engine loop; a viewport redraws when something invalidates
+it. The counter can advance by fifty while the rendered content sits still and
+the capture reads the last render. So the check tests whether *time passed*,
+not whether the capture *incorporated the change* - and a clean result would
+have been wired to the false conclusion that the staleness comes from
+somewhere a settle cannot reach.
+
+**The settle, as first written, is wrong for the same reason.** Waiting k
+frames is useless against a viewport that is not redrawing; fifty already went
+by. What is needed is k *forced redraws*, which is a different operation.
+
+**The realtime flag was checked and does not explain it.** In
+`Saved/Config/WindowsEditor/EditorPerProjectUserSettings.ini` the perspective
+viewport carries `bIsRealtime=True`; only the three orthographic panes are
+False. The obvious cause is ruled out, leaving the one observed directly during
+the resize work: **the window must be visible.** The editor ran at roughly
+0.2 fps with another tab in front and about 100 fps with the level viewport
+foreground, and `CaptureEditorImage` photographs the window.
+
+### Superseded: the frame counter as a liveness assertion
 
 Unreal stamps every log line with its frame number (modulo 1000, as
 `[... ][ 461]`), and `LogsToolset.GetLogEntries` can read it. Each MCP tool
