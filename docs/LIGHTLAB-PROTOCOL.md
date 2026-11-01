@@ -592,13 +592,44 @@ This fixes the class of error rather than labelling it.
   `MinBrightness`, `MaxBrightness`, `EV100` or `ExtendDefaultLuminance`.
 - **Nothing exposure-related in `Config/`**, which is why the flag sits at its
   engine default.
-- **Exactly two maps**, so exactly two volumes to convert.
 
-**The second volume is not in a `.umap`.** `LLK_DockBay` is World Partition, so
-its `PostProcessVolume` is an external actor:
-`Content/__ExternalActors__/LLK_DockBay/1/54/RVCGAGWU3BP95V6ADJDK28.uasset`.
-Anyone grepping for `*.umap` to find the volumes will convert the lab, miss
-DockBay, and silently re-expose it.
+**Do not find the volumes by listing maps.** `LLK_DockBay` is World Partition,
+so its `PostProcessVolume` is not in the `.umap` at all — it is an external
+actor. A `Content/*.umap` search converts the lab, misses DockBay and silently
+re-exposes it.
+
+Unreal serializes property names into the package, so search for the property
+instead and let it find the files wherever they live:
+
+```
+grep -rl --binary-files=text "AutoExposureMinBrightness" Content/
+```
+
+Which returns exactly two, the second of which no map listing would have found:
+
+```
+Content/LLK_LightLab.umap
+Content/__ExternalActors__/LLK_DockBay/1/54/RVCGAGWU3BP95V6ADJDK28.uasset
+```
+
+Both also contain `bOverride_AutoExposure`, so both are genuine overrides
+rather than incidental mentions.
+
+**That search has the same failure shape as the test above, so guard it too.**
+Both files are Git LFS objects (`git check-attr filter` reports `lfs`). In a
+clone without git-lfs installed they are **131-byte pointer texts**, the grep
+matches nothing, and it exits successfully with an empty list. An empty result
+means either "no exposure overrides exist" or "the content was never checked
+out", and the output cannot tell you which.
+
+**Before trusting a short or empty list, confirm the content is real.** Do not
+use a size threshold — the lab's map is 126,432 bytes but DockBay's external
+actor is only 10,941, so any "should be six figures" rule rejects a valid file.
+Test for the pointer itself, which is exact and size-independent:
+
+```
+head -c 40 <file> | grep -q "^version https://git-lfs" && echo "POINTER - not checked out"
+```
 
 **Read DockBay's current values; do not assume they match the lab's.** §1 of
 this document says the lab's exposure was copied field-for-field from DockBay,
