@@ -1,4 +1,4 @@
-# Held status screen — the screen you consult, not the screen you live in
+# Fieldboard and route projection — information without a backpack ritual
 
 Status: **proposed implementation brief**, 2026-10-31. This follows Chris's
 playtest reaction to the always-on debug panel: the ordinary screen should
@@ -7,19 +7,50 @@ while the world continues around them.
 
 ## Interaction rule
 
-**Hold Tab to inspect; release Tab to return. It never pauses the run.**
+**Tab toggles the Fieldboard. Tab again or Escape closes it. It never pauses
+the run.**
 
-This is a private 1–4 player game. A toggle would leave an interface over the
-world while a player tries to flee; a pause would desynchronise a co-op night.
-The screen therefore has to be readable in a few seconds and must close on the
-same gesture that opened it. Its job is a decision check, not menu management.
+This is a private 1–4 player game. A pause would desynchronise a co-op night,
+but a toggle is not inherently a problem: a player needs time to read their
+crew, haul and objective state. Closing on the same key or Escape makes that
+decision reversible without asking them to hold a key while reading. Movement
+and danger continue while it is open; the Fieldboard must therefore be useful
+at a glance and never become a backpack-animation tax.
 
 World-space prompts remain outside it: relic brackets, `[E] Take`, revive
 progress, the downed panel and extraction prompts are all immediate action
 language. The existing `LLK.ShowStormHUD` panel remains a developer-only
 diagnostic, off by default.
 
-## First-pass layout
+## The two surfaces
+
+### Fieldboard — Tab
+
+The Fieldboard is a clean, toggleable status surface. It is an abstraction for
+clarity, not a literal backpack the keeper removes in the middle of an aisle.
+The fiction is the order's field record: a compact ledger of what the keeper,
+their lantern and their crew presently know.
+
+### Route projection — M
+
+**Hold M to inspect a map; release it to return to the world.** The lantern's
+interpreter hardware projects a dim amber route image just ahead of the keeper
+or inside the raised lantern's hood. It is a cosmetic, screen-space display:
+it is not a second `LLKLightField` source, never makes relics legible, never
+changes enemy detection, and does not illuminate the room.
+
+The map is not GPS and cannot reveal a building the crew has not surveyed. It
+shows the current floor's discovered outline, known exits, route markers and
+objectives the crew has actually received. It may show teammate positions only
+when a later explicit radio/ping system communicates them; it never becomes a
+free radar.
+
+Holding M is intentionally a smaller commitment than Tab: it lets a keeper
+check their bearings, but their view is occupied by the projection and the
+world keeps moving around them. The tension is informational, not a hidden
+movement penalty.
+
+## Fieldboard first-pass layout
 
 ```
  ┌───────────────────────────────────────────────────────────────────┐
@@ -35,12 +66,19 @@ diagnostic, off by default.
  │ relics carried: 2    │ recovery holding — return to the dock       │
  │ burden: 8% slower    │ hold / stall state                          │
  ├──────────────────────┴────────────────────────────────────────────┤
+ │ OBJECTIVE — one current job and the next visible action            │
  │ IDENTIFIED RELICS — a short, named ledger; no grid inventory      │
  └───────────────────────────────────────────────────────────────────┘
 ```
 
+There is no all-purpose quest list. The objective region has one active job,
+its immediate next action and, when relevant, a named place the crew already
+knows. Examples: *restore the sub-basement breaker*, *return to Loading Dock*,
+or *find the fitting-room service door*. An objective must never describe an
+unseen answer, enemy placement or a route the player has not earned.
+
 The visual implementation is a future authored UI asset. This document fixes
-information hierarchy, not fonts, colours or final layout.
+information hierarchy and interaction, not fonts, colours or final layout.
 
 ## What each region may say
 
@@ -52,6 +90,8 @@ information hierarchy, not fonts, colours or final layout.
 | Crew | Replicated player/vitals state; downed and revive state are authoritative | A crew member's private focus target or an enemy's target choice |
 | Extraction | `ALLKGameState::GetExtractionSnapshot()` | A countdown projected through a hold stall; only the server knows whether it is stalled |
 | Identified relics | Future per-keeper record of the server-latched relic identity | A list reconstructed from nearby objects or from someone else's discoveries |
+| Objective | Future server-owned objective state and its known location | A route, objective or explanation the crew has not discovered |
+| Route projection | Future discovered-map record plus explicitly communicated markers | GPS, a minimap, hidden rooms, or enemy radar |
 
 The last row is intentionally a dependency. Today the game carries only a
 replicated `CarriedCount`, not a per-keeper list of named carried relics. The
@@ -61,11 +101,12 @@ it must not be faked from client focus or from a DataTable lookup.
 
 ## Input and accessibility contract
 
-The screen needs a real **eighth Input Action**, `IA_LLK_Status`, Digital
-(bool), mapped to Tab and the appropriate gamepad menu/view button. It cannot
-be a one-off raw Tab binding: all input stays in `IMC_LLK`, player-mappable and
-validated together. Adding it means updating the input validator, soft asset
-contract and authored mapping context in one change.
+The two surfaces need real input actions: **`IA_LLK_Status`** (Tab and the
+appropriate gamepad menu/view button) and **`IA_LLK_Map`** (M and a gamepad
+equivalent), both Digital (bool). They cannot be raw key bindings: all input
+stays in `IMC_LLK`, player-mappable and validated together. Adding them means
+updating the input validator, soft asset contract and authored mapping context
+in one change.
 
 The same screen supplies a readable counterpart to radio and voice chat:
 crew downed state, active extraction state and the night’s direction are visual
@@ -74,21 +115,24 @@ what the crew is currently doing.
 
 ## Acceptance questions
 
-1. Can a keeper open, understand and release the screen while moving through
+1. Can a keeper open, understand and close the Fieldboard while moving through
    a dangerous aisle without losing control?
 2. Does it answer the only immediate choices: *how bad is the night, what am I
    carrying, who needs help, and is extraction live?*
 3. Does it remain truthful when data is unknown or pending replication?
 4. Does it expose no hidden enemy, map or teammate information?
-5. With all UI hidden, do the world prompts still teach taking, reviving and
+5. Does the route projection communicate only discovered space and deliberately
+   shared information, while remaining a cosmetic lantern display?
+6. With all UI hidden, do the world prompts still teach taking, reviving and
    extracting on their own?
 
 ## Build order
 
-1. Add the complete authored input action and mapping through the input
+1. Add the complete authored input actions and mappings through the input
    contract.
-2. Add a C++ held-state seam and tests; no gameplay state changes because a
-   menu is open.
+2. Add a C++ toggle-state seam for the Fieldboard and a held-state seam for
+   the route projection; no gameplay state changes because either surface is
+   open.
 3. Add the minimal count-based screen against existing replicated snapshots.
 4. Add the named relic ledger only once its server-owned data model exists.
 5. Art-pass the widget after the first lantern-in-hand and ambient-light pass,
