@@ -288,3 +288,52 @@ So the question to ask of any green signal is not whether it is true. It is
 **what would this have said if the thing I care about were broken?** Where the
 answer is "the same thing", the signal is decoration. That is what a red proof
 buys and a count does not.
+
+### Most of these are one mechanism: the instrument's absence looks like a reading
+
+Say it precisely, because the precise form is checkable and "be careful" is not.
+**When the instrument is not there, it returns a value that is indistinguishable
+from a measurement.** The failure mode is silence, and silence looks like an
+answer:
+
+| the instrument is absent | and it returns | which reads as |
+| --- | --- | --- |
+| build did not run (1) | exit 0 | success |
+| binary was not rebuilt (3) | 33 tests pass | your code passed |
+| wrong world queried (6) | empty list | no such actors |
+| viewport not redrawing (7) | the previous frame | unchanged |
+| nothing in front of the lens (10) | a black frame | a dark room |
+| LFS content not fetched (§11 search) | no grep matches | no overrides exist |
+
+**So the step-zero question is: what does this test return when the instrument
+is not there at all?** If the answer is anything but an error, the test is
+unfinished.
+
+And the fix is always the same construction rather than more care: **carry a
+control through the same path in the same run**, so absence produces a visible
+failure instead of a null. The 0 cd versus 5000 cd gate, the capture-liveness
+proof, and the LFS pointer-header check are all that one move.
+
+**The rule, which is checkable in a procedure rather than left to the reader:
+no measurement may record an empty or unchanged result as data. Any null
+becomes an explicit failure before it reaches a table.**
+
+### The exception, which needs a different guard
+
+Three entries here are *not* silence, and the rule above will not catch them.
+**2** is the inverse — a correct import reporting failure. **11** and **12** are
+worse: a signal that is present, confident and wrong. Bloom is really there and
+really brightens the wall; the offscreen capture really renders a lit, exposed,
+plausible room. No null appears anywhere, so no null-check fires.
+
+Those were caught a different way, and both times by the same move: **check one
+quantity against something outside the instrument.** Bloom was caught against
+inverse-square — two patches of one flat wall differing by 70x where physics
+allows 9x. The offscreen capture was caught against the on-screen viewport — the
+same scene reading 11.2 where the other instrument read 70.3, and 99.06 where
+it read 10.33.
+
+So there are two questions, not one. *What does this return when the instrument
+is absent?* catches the silent majority. *What does this read on a quantity I
+already know the answer to?* catches the confident minority, and it is the only
+thing that has ever caught the confident ones.

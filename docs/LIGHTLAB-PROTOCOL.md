@@ -206,6 +206,15 @@ A ladder whose shots are all the same frame, or all the same ambient floor,
 produces a beautifully consistent dataset that means nothing, and it reads as a
 clean result.
 
+**And the standing question before any of it: what does this test return when
+the instrument is not there at all?** If the answer is anything but an error,
+the test is unfinished — every control in this section exists because the
+answer was "a plausible number". **No measurement may record an empty or
+unchanged result as data; any null becomes an explicit failure before it
+reaches a table.** For the minority of failures that are confident rather than
+silent, the second question is *what does this read on a quantity I already
+know?* — see `docs/TOOLING-TRAPS.md`, closing section.
+
 ## 6. The three answers — still blank
 
 1. **Inspection ceiling.** Highest candela at which the Bay A price card is
