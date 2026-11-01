@@ -334,6 +334,51 @@ same scene reading 11.2 where the other instrument read 70.3, and 99.06 where
 it read 10.33.
 
 So there are two questions, not one. *What does this return when the instrument
-is absent?* catches the silent majority. *What does this read on a quantity I
-already know the answer to?* catches the confident minority, and it is the only
-thing that has ever caught the confident ones.
+is absent?* catches the silent majority. The second catches the confident
+minority, and it is the only thing that ever has — but it has to be put
+precisely, because the obvious version is weaker than it looks.
+
+### Forced, not merely known
+
+**A second instrument raises the question. Only something that cannot be
+otherwise answers it.** The offscreen capture was first suspected because it
+disagreed with the on-screen viewport, 11.2 against 70.3 — but a disagreement
+tells you one of them is lying and not which. The on-screen viewport had no
+more authority than the offscreen one; it was simply the other reading.
+
+What actually settled it was an impossibility. With the shelf lip shading the
+card, the offscreen capture read **99.06**. The *unshaded* card at the same
+ambient reads **92.29**. Adding an occluder cannot make a surface brighter, so
+the offscreen value was refutable **without reference to the other instrument
+at all**. That argument was available at the time and was not the one used.
+
+So the question is: **what does this read on a quantity whose answer is
+forced?**
+
+### Orderings are the cheap forced quantity
+
+In practice the forced quantities here are not absolute values — nobody has a
+correct absolute model of what the card *should* read at 6 cd. They are
+orderings, and those are free:
+
+- a card at 6 cd must read brighter than the same card at 3
+- a shaded card must read darker than an unshaded one at the same intensity
+- a surface at twice the distance must fall by roughly four
+
+An ordering check costs **one extra capture**, needs no correct model, and
+catches a confident failure as cleanly as a law does — because a wrong result
+that happens to respect every ordering is far rarer than one that merely looks
+plausible.
+
+**So: every ladder includes at least one pair whose ordering is forced, and the
+ordering is verified before any value is recorded.** This has already worked
+once before it had a name: the 25 cd lantern row was discarded for breaking the
+monotonic trend, which is how its wrong window size was noticed.
+
+### Why this is worth an extra capture every time
+
+The two failure classes do not cost the same. **A silent failure wastes a run.
+A confident failure gets written into a findings table and becomes the basis
+for a design decision** — which is what the fixture band, the shelf lip and the
+contract remedy all are. Entry 2, a correct import reporting failure, is the
+cheap direction of the same axis: it costs a run and nothing else.

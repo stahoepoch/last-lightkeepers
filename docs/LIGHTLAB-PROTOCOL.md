@@ -212,8 +212,15 @@ the test is unfinished — every control in this section exists because the
 answer was "a plausible number". **No measurement may record an empty or
 unchanged result as data; any null becomes an explicit failure before it
 reaches a table.** For the minority of failures that are confident rather than
-silent, the second question is *what does this read on a quantity I already
-know?* — see `docs/TOOLING-TRAPS.md`, closing section.
+silent, the second question is *what does this read on a quantity whose answer
+is **forced**?* — forced, not merely known: a second instrument gives a
+disagreement, only an impossibility gives a verdict.
+
+**In practice that means an ordering, and it is one extra capture.** Every
+ladder must include at least one pair whose ordering is forced — brighter at
+higher intensity, darker when shaded, a quarter at twice the distance — and
+**the ordering is verified before any value is recorded**. See
+`docs/TOOLING-TRAPS.md`, closing section.
 
 ## 6. The three answers — still blank
 
