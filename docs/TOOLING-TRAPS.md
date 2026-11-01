@@ -141,6 +141,29 @@ afterwards is evidence. This is the red proof from entry 3 applied to pixels —
 and it is the only reason the lab's ladders were reported as *not taken* rather
 than reported as data.
 
+## 8. A reading is not a reading until the zero reads zero
+
+`LLK_LightLab` is a sealed box with no sky, no directional light, no skylight
+and no fog — the only light in it is the fixture under test. On 2026-10-31 its
+price card was readable at 2 candela, which looked like a finding: an
+inspection threshold below the bottom of the ladder.
+
+Then the negative control was run. **With every light set to 0 cd the room is
+still plainly visible** — walls, floor and both gondola blockers
+(`docs/lightlab/control-00cd-all-lights-off.png`). The card reads with the
+lights off. The "2 cd" result was a measurement of an ambient floor nobody had
+looked for, wearing a candela value as a label.
+
+**Zero your instrument before you trust it.** Every measuring rig needs a
+reading where the thing being measured is absent, and that reading has to come
+out as nothing. This costs one capture and it is the difference between a
+threshold and a number with a unit stapled to it.
+
+The sharpest part: the contaminated ladder would have been *monotonic and
+plausible*. Brighter candela did give brighter frames. Nothing about the series
+looked wrong — it would simply have had a floor baked into every rung, and the
+thresholds derived from it would have been confidently, consistently false.
+
 ---
 
 ## The pattern, stated once

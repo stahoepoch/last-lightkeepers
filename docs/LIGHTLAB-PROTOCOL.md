@@ -180,6 +180,27 @@ Ladders 1–2: 4 camera positions per step (A near/mid/far, B far end) × 5 step
 **Record per shot: fixture, candela, attenuation radius, camera distance.**
 A shot without its parameters recorded is not data — it is a picture.
 
+## 5a. Step zero, every run
+
+Before stepping a single candela:
+
+1. **Negative control.** All lights to 0 cd, capture. **It must be black.** If
+   the room is visible, stop — the box has an ambient floor and the ladder can
+   only measure that. See section 7.
+2. **Capture-liveness proof.** Capture, make a change that alters most of the
+   frame (a light from 0 to 100 cd), capture again, and compare the two by hash
+   or byte size. Identical means the capture path is dead; see
+   `docs/TOOLING-TRAPS.md` entry 7.
+3. **Camera-liveness proof.** Move the camera a long way, capture, and require
+   the image to change. On 2026-10-31 the rendered viewport ignored
+   `SetCameraTransform` for many calls at a time while `GetCameraTransform`
+   cheerfully reported the new pose — so a shot can carry the right recorded
+   distance and the wrong actual one.
+
+A ladder whose shots are all the same frame, or all the same ambient floor,
+produces a beautifully consistent dataset that means nothing, and it reads as a
+clean result.
+
 ## 6. The three answers — still blank
 
 1. **Inspection ceiling.** Highest candela at which the Bay A price card is
@@ -237,15 +258,51 @@ a paper card should be. Both are engine assets, so **nothing beyond the lab map
 was written to `Content/`**. Their absolute albedo was not measured — the asset
 paths are recorded instead, and any future reading has to cite them.
 
-### The one measurement that was taken
+### Step zero: the negative control, and it FAILED
 
-| fixture | candela | attenuation | bay | camera | result |
+**Run this before every ladder. It is not optional and it is not a formality.**
+
+Set every light in the lab to **0 cd** and capture. A sealed box with no sky,
+no directional light, no skylight and no fog must render **black**. If anything
+is visible, the box has an ambient floor, and every candela reading taken in it
+is a measurement of that floor rather than of the fixture.
+
+`docs/lightlab/control-00cd-all-lights-off.png`, 2026-10-31: **the room is
+plainly visible with all three fixtures at zero.** Walls, floor, ceiling and
+both of Bay B's gondola blockers are legible. The box is not dark.
+
+So the readings below are **void**, and they are recorded only to show what the
+contamination looks like:
+
+| fixture | candela | attenuation | bay | camera | apparent result |
 | --- | --- | --- | --- | --- | --- |
-| fluorescent troffer, RectLight 120×60 cm, cool white | **100 cd** | 2000 cm | A | 2 studs (56 cm) | **price card plainly readable** |
+| troffer, RectLight 120×60, cool white | 100 cd | 2000 cm | A | 2 studs | card readable |
+| troffer, RectLight 120×60, cool white | 2 cd | 2000 cm | A | 2 studs | card readable |
+| **none — all lights 0 cd** | **0** | — | B | 40 studs | **run and blockers legible** |
 
-So the **inspection ceiling is below 100 cd** — the only bound the day produced.
-It is one cell of a forty-eight cell matrix and it is not an answer to any of
-the three questions.
+"Readable at 2 cd" looked like a finding — an inspection ceiling below the
+bottom of the ladder — and it is not one. **The card is readable with the
+lights off.** Reporting that 2 cd reads the card would have been reporting the
+ambient floor and calling it a fixture threshold.
+
+### Where the leak might be, untested
+
+Not diagnosed, and listed in order of suspicion so whoever picks this up starts
+in the right place rather than from mine:
+
+1. **The viewport may not be applying the PostProcessVolume at all.** An editor
+   viewport honours post-process volumes only with its **Game Settings** show
+   flag on. With it off the viewport uses its own auto-exposure, which adapts
+   to a near-black room and lifts it to mid-grey — which is exactly what the
+   control image looks like. If this is the cause then **the exposure lock in
+   section 1 was never in force**, and the whole point of copying DockBay's
+   values was defeated silently. Check this first.
+2. Lumen ambient or surface-cache fallback with no light sources present.
+3. A residual emissive or ambient term in the engine materials chosen in
+   section 7.
+
+Until the control renders black, **no ladder in section 5 can produce a number
+that means anything**, however consistent the numbers look.
 
 ## 8. What stopped it — the editor stopped drawing
 
