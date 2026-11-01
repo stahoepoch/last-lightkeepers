@@ -145,32 +145,23 @@ bool FLLKRelicTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("staying lit does not re-announce"), Prompt->InteractCount, 1);
 
 	// **The keeper walks away with the lantern.** Identity is knowledge and
-	// stays; the affordance goes out, and it says why. This is the moment the
-	// interface teaches row 5 without a tooltip.
+	// taking remains possible, but the interactor now makes its held inspection
+	// much slower. The affordance must not flicker or disappear at a shelf edge.
 	Shelf->SampleLightForTest(0.f);
 	TestTrue(TEXT("one dark sample does not flicker the affordance off"), Shelf->CanBeTaken());
 	Shelf->SampleLightForTest(0.f);
 	TestTrue(TEXT("it is still legible - identity is knowledge, not a light switch"),
 		Shelf->IsLegible());
-	TestFalse(TEXT("but it can no longer be taken"), Shelf->CanBeTaken());
-	TestEqual(TEXT("and the affordance channel announced the loss"), Prompt->InteractCount, 2);
-	TestFalse(TEXT("saying it is no longer interactable"), Prompt->LastInteractable);
-	TestEqual(TEXT("because it needs light - the reason a prompt should say out loud"),
-		Prompt->LastBlock, ELLKRelicInteractBlock::NeedsLight);
-	TestEqual(TEXT("and the block reads the same when asked directly"),
-		Shelf->GetInteractBlock(), ELLKRelicInteractBlock::NeedsLight);
+	TestTrue(TEXT("and is still eligible for a slow dark hold"), Shelf->CanBeTaken());
+	TestEqual(TEXT("without re-announcing a permission that did not change"), Prompt->InteractCount, 1);
+	TestFalse(TEXT("the debounced state now reports dark to the hold rate"), Shelf->IsCurrentlyLit());
 
-	// Confirmable without audio, which is the whole of his correction: two
-	// distinct machine-readable states, neither of them a sound, and the
-	// difference between them is legible to a prompt.
-	TestNotEqual(TEXT("unidentified and needs-light are distinguishable states"),
-		ELLKRelicInteractBlock::Unidentified, ELLKRelicInteractBlock::NeedsLight);
-
-	// Light again: back on, and announced again.
+	// Light again: the prompt is still valid, but the held action can accelerate.
 	Shelf->SampleLightForTest(400.f);
 	Shelf->SampleLightForTest(400.f);
-	TestTrue(TEXT("light restores the affordance"), Shelf->CanBeTaken());
-	TestEqual(TEXT("and announced it"), Prompt->InteractCount, 3);
+	TestTrue(TEXT("light keeps the affordance valid"), Shelf->CanBeTaken());
+	TestTrue(TEXT("the debounced state now reports lit to the hold rate"), Shelf->IsCurrentlyLit());
+	TestEqual(TEXT("and does not rebuild the prompt"), Prompt->InteractCount, 1);
 	TestEqual(TEXT("legibility itself only ever fired once"), Prompt->Count, 0);
 
 	// ---- the design call, asserted so reversing it is one flag ---------
@@ -263,10 +254,11 @@ bool FLLKRelicTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("lit and takeable: stencil 3"), Stencil->GetOutlineStencil(), 3);
 	Stencil->SampleLightForTest(0.f);
 	Stencil->SampleLightForTest(0.f);
-	TestEqual(TEXT("read but dark: stencil 2, known and out of reach"),
-		Stencil->GetOutlineStencil(), 2);
-	// Three distinct values, which is what lets one material say three things.
-	TestNotEqual(TEXT("the three states are distinguishable"), 1, 2);
+	TestEqual(TEXT("read but dark: stencil stays actionable while the hold slows"),
+		Stencil->GetOutlineStencil(), 3);
+	// Two distinct values remain: unknown and known/actionable. The light is
+	// now communicated by the hold rate rather than a third permission state.
+	TestNotEqual(TEXT("unknown and known remain distinguishable"), 1, 3);
 
 	// ---- shelf-edge stability -------------------------------------------
 	//
@@ -289,7 +281,8 @@ bool FLLKRelicTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("two stable clear samples still make the relic usable"), Edge->CanBeTaken());
 	Edge->SampleLightForTest(0.f);
 	Edge->SampleLightForTest(0.f);
-	TestFalse(TEXT("two stable blocked samples turn it back off"), Edge->CanBeTaken());
+	TestTrue(TEXT("two stable blocked samples keep known loot actionable for a slow hold"), Edge->CanBeTaken());
+	TestFalse(TEXT("but report darkness to the hold rate"), Edge->IsCurrentlyLit());
 
 	// ---- the threshold agrees with the light field ---------------------
 	//

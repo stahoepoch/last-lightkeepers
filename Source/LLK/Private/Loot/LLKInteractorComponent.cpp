@@ -41,6 +41,7 @@ void ULLKInteractorComponent::TickComponent(
 	// advanced on those frames would take as long as the interval made it -
 	// the hold is a duration the player feels, so it gets every frame.
 	TickExtractionCall(DeltaTime);
+	TickRelicTake(DeltaTime);
 
 	SecondsSinceSearch += DeltaTime;
 	if (SecondsSinceSearch < SearchIntervalSeconds)
@@ -248,6 +249,7 @@ void ULLKInteractorComponent::EndInteract()
 	// and a client tracking that separately is a second copy of the same fact
 	// that can disagree with the first.
 	ServerCancelExtractionCall();
+	ServerCancelRelicTake();
 }
 
 void ULLKInteractorComponent::ServerBeginExtractionCall_Implementation(ALLKExtractionZone* Zone)
@@ -508,11 +510,77 @@ void ULLKInteractorComponent::TryTakeFocused()
 		return;
 	}
 
-	// Asked, never done. The client has already been told by the prompt
-	// whether this will work, but the prompt is a courtesy and the server is
-	// the authority - row 62's light gate on taking is only a rule if the
-	// machine that owns the shelf enforces it.
-	ServerTake(Focused);
+	// Asked, never done. The client has already been told by the prompt what
+	// it is looking at, but the server owns both the hold and the shelf.
+	ServerBeginRelicTake(Focused);
+}
+
+float ULLKInteractorComponent::AdvanceRelicTakeProgress(
+	float CurrentProgress, float DeltaSeconds, bool bLit, float LitSeconds, float DarkSeconds)
+{
+	const float RequiredSeconds = bLit ? LitSeconds : DarkSeconds;
+	return CurrentProgress + FMath::Max(0.f, DeltaSeconds) / FMath::Max(RequiredSeconds, KINDA_SMALL_NUMBER);
+}
+
+bool ULLKInteractorComponent::IsRelicInServerReach(const ULLKRelicComponent* Relic) const
+{
+	const AActor* Keeper = GetOwner();
+	const AActor* RelicActor = Relic != nullptr ? Relic->GetOwner() : nullptr;
+	const float Reach = LLKUnits::DistanceFromStuds(ReachStuds) * 1.5f;
+	return Keeper != nullptr && RelicActor != nullptr
+		&& FVector::DistSquared(Keeper->GetActorLocation(), RelicActor->GetActorLocation()) <= Reach * Reach;
+}
+
+void ULLKInteractorComponent::ServerBeginRelicTake_Implementation(ULLKRelicComponent* Relic)
+{
+	const AActor* Keeper = GetOwner();
+	if (Keeper == nullptr || !Keeper->HasAuthority() || Relic == nullptr || !Relic->CanBeTaken()
+		|| !IsRelicInServerReach(Relic))
+	{
+		return;
+	}
+
+	// A different relic is a different action. Starting it replaces the old
+	// hold; temporary loss of light does not, which is the deliberate rule.
+	if (TakingRelic != Relic)
+	{
+		TakingRelic = Relic;
+		RelicTakeProgressSeconds = 0.f;
+	}
+}
+
+void ULLKInteractorComponent::ServerCancelRelicTake_Implementation()
+{
+	TakingRelic = nullptr;
+	RelicTakeProgressSeconds = 0.f;
+}
+
+void ULLKInteractorComponent::TickRelicTake(float DeltaSeconds)
+{
+	if (TakingRelic == nullptr)
+	{
+		return;
+	}
+
+	const AActor* Keeper = GetOwner();
+	if (Keeper == nullptr || !Keeper->HasAuthority() || !TakingRelic->CanBeTaken()
+		|| !IsRelicInServerReach(TakingRelic))
+	{
+		ServerCancelRelicTake_Implementation();
+		return;
+	}
+
+	RelicTakeProgressSeconds = AdvanceRelicTakeProgress(
+		RelicTakeProgressSeconds, DeltaSeconds, TakingRelic->IsCurrentlyLit(),
+		RelicTakeSecondsLit, RelicTakeSecondsDark);
+	if (RelicTakeProgressSeconds < 1.f)
+	{
+		return;
+	}
+
+	ULLKRelicComponent* Completed = TakingRelic;
+	ServerCancelRelicTake_Implementation();
+	ServerTake_Implementation(Completed);
 }
 
 void ULLKInteractorComponent::ServerTake_Implementation(ULLKRelicComponent* Relic)
@@ -554,10 +622,7 @@ void ULLKInteractorComponent::ServerTake_Implementation(ULLKRelicComponent* Reli
 
 	// Range re-checked too, against the server's own view of where the keeper
 	// is. Without it a client could ask for a relic on another floor.
-	const float Reach = LLKUnits::DistanceFromStuds(ReachStuds) * 1.5f;
-	const AActor* RelicActor = Relic->GetOwner();
-	if (RelicActor == nullptr
-		|| FVector::DistSquared(Keeper->GetActorLocation(), RelicActor->GetActorLocation()) > Reach * Reach)
+	if (!IsRelicInServerReach(Relic))
 	{
 		return;
 	}

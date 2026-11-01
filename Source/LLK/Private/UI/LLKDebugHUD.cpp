@@ -559,7 +559,9 @@ void ALLKDebugHUD::DrawWorldPrompt()
 	{
 	case ELLKRelicInteractBlock::None:
 		Colour = ColourCause;
-		Label = FString::Printf(TEXT("[E]  Take  -  %s"), *Relic->GetDisplayName().ToString());
+		Label = FString::Printf(TEXT("[Hold E]  Inspect%s  -  %s"),
+			Relic->IsCurrentlyLit() ? TEXT("") : TEXT(" slowly"),
+			*Relic->GetDisplayName().ToString());
 		break;
 	case ELLKRelicInteractBlock::NeedsLight:
 		Colour = ColourUrgent;
@@ -699,15 +701,15 @@ void ALLKDebugHUD::DrawRelicPanel(float& CursorY)
 		FString::Printf(TEXT("%s"), *Nearest->GetDisplayName().ToString()),
 		Nearest->IsLegible() ? ColourCause : ColourQuiet, CursorY, 1.25f);
 
-	// And the affordance, which is the second channel. "needs light" is the
-	// line that teaches: a keeper reaching for a relic they already read, and
-	// being told why they cannot have it yet.
+	// And the affordance. Illumination changes the speed of a held inspection,
+	// rather than making an identified object abruptly untakeable.
 	FString Affordance;
 	FLinearColor AffordanceColour = ColourQuiet;
 	switch (Nearest->GetInteractBlock())
 	{
 	case ELLKRelicInteractBlock::None:
-		Affordance = FString::Printf(TEXT("  can take it%s"),
+		Affordance = FString::Printf(TEXT("  hold to inspect%s%s"),
+			Nearest->IsCurrentlyLit() ? TEXT("") : TEXT(" slowly in dark"),
 			Nearest->GetReadableValue() >= 0
 				? *FString::Printf(TEXT("  -  worth %d"), Nearest->GetReadableValue()) : TEXT(""));
 		AffordanceColour = ColourCause;

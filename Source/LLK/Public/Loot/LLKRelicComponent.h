@@ -119,7 +119,8 @@ public:
 	 * **Sticky on purpose.** Identity is knowledge: the player paid amber to
 	 * learn what this is, and charging them again for the same relic would
 	 * make the lesson a tax instead of a trade. Taking it is the part that
-	 * still costs - see `CanBeTaken`.
+	 * The pickup is still a commitment - see `CanBeTaken` and the interactor's
+	 * held-inspection timer.
 	 */
 	UFUNCTION(BlueprintPure, Category = "LLK|Loot")
 	bool IsLegible() const { return bLegible; }
@@ -127,18 +128,17 @@ public:
 	/**
 	 * Whether the relic can be picked up right now.
 	 *
-	 * **A PROPOSAL and the one design call in this file - Chris's to settle.**
-	 * Identity is sticky but taking is gated on live light, so lifting a relic
-	 * is a deliberate, exposed act rather than something a crew does in the
-	 * dark after one scouting sweep. Without this, a crew lights up once, reads
-	 * the whole floor, goes dark and loots at no cost - which is the trade of
-	 * row 5 defeated by a single sweep. With it, light is what the taking
-	 * costs, every time.
-	 *
-	 * Set `bRequiresLightToTake` false to make identification the only gate.
+	 * Identity remains the gate. Once a relic is known it can be inspected in
+	 * darkness, but the interactor resolves it much more slowly there. This is
+	 * deliberately a yes/no answer rather than a brightness query: light is a
+	 * rate on the held action, not a second hidden pickup rule.
 	 */
 	UFUNCTION(BlueprintPure, Category = "LLK|Loot")
 	bool CanBeTaken() const;
+
+	/** The debounced gameplay-light answer used by the held inspection rate. */
+	UFUNCTION(BlueprintPure, Category = "LLK|Loot")
+	bool IsCurrentlyLit() const { return bCurrentlyLit; }
 
 	/**
 	 * What a player sees when they look at it.
@@ -220,7 +220,7 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "LLK|Loot")
 	FLLKRelicInteractableChanged OnInteractableChanged;
 
-	/** What is in the way, for a prompt to say. `NeedsLight` is the one that teaches. */
+	/** What is in the way, for a prompt to say. Light affects hold speed, not permission. */
 	UFUNCTION(BlueprintPure, Category = "LLK|Loot")
 	ELLKRelicInteractBlock GetInteractBlock() const;
 
@@ -292,10 +292,6 @@ protected:
 	 */
 	UPROPERTY(EditAnywhere, Category = "LLK|Loot", meta = (ClampMin = "0.01"))
 	float CheckIntervalSeconds = 0.1f;
-
-	/** See `CanBeTaken`. A proposal, declared rather than hidden. */
-	UPROPERTY(EditAnywhere, Category = "LLK|Loot")
-	bool bRequiresLightToTake = true;
 
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Data")
 	TSoftObjectPtr<ULLKLootRulesData> LootRules =

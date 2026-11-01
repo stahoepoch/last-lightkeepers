@@ -8,6 +8,9 @@
 #include "InputMappingContext.h"
 #include "InputModifiers.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/SceneComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "LLK.h"
 #include "Lantern/LLKLanternComponent.h"
@@ -31,6 +34,14 @@ ALLKCharacter::ALLKCharacter()
 	FirstPersonCamera->SetRelativeLocation(FVector(0.f, 0.f, 64.f));
 	FirstPersonCamera->bUsePawnControlRotation = true;
 
+	// One honest carried anchor: the mesh and the rendered cone live here, and
+	// the light component reports this transform to gameplay. Cosmetic sway is
+	// applied below this component, so a hand-feel pass cannot quietly move a
+	// relic-read or enemy-perception source.
+	LanternAnchor = CreateDefaultSubobject<USceneComponent>(TEXT("LanternAnchor"));
+	LanternAnchor->SetupAttachment(FirstPersonCamera);
+	LanternAnchor->SetRelativeLocation(FVector(30.f, 18.f, -28.f));
+
 	Lantern = CreateDefaultSubobject<ULLKLanternComponent>(TEXT("Lantern"));
 
 	// M1.3's placeholder, attached to the camera rather than the capsule: a
@@ -39,8 +50,19 @@ ALLKCharacter::ALLKCharacter()
 	// cone is not perfectly centred on the crosshair, which reads as a held
 	// object rather than as a headlamp.
 	LanternLight = CreateDefaultSubobject<ULLKLanternLightComponent>(TEXT("LanternLight"));
-	LanternLight->SetupAttachment(FirstPersonCamera);
-	LanternLight->SetRelativeLocation(FVector(20.f, 14.f, -18.f));
+	LanternLight->SetupAttachment(LanternAnchor);
+
+	LanternBody = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LanternBody_Temporary"));
+	LanternBody->SetupAttachment(LanternAnchor);
+	LanternBody->SetRelativeLocation(FVector(0.f, 0.f, -8.f));
+	LanternBody->SetRelativeScale3D(FVector(0.12f, 0.12f, 0.22f));
+	LanternBody->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	LanternBody->SetCastShadow(false);
+	if (const ConstructorHelpers::FObjectFinder<UStaticMesh> TemporaryLantern(
+		TEXT("/Engine/BasicShapes/Cylinder.Cylinder")); TemporaryLantern.Succeeded())
+	{
+		LanternBody->SetStaticMesh(TemporaryLantern.Object);
+	}
 
 	Interactor = CreateDefaultSubobject<ULLKInteractorComponent>(TEXT("Interactor"));
 	Vitals = CreateDefaultSubobject<ULLKVitalsComponent>(TEXT("Vitals"));

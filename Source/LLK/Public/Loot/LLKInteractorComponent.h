@@ -105,6 +105,17 @@ public:
 	void TryTakeFocused();
 
 	/**
+	 * One deterministic step of a relic inspection hold.
+	 *
+	 * Kept pure so the timing rule can be asserted without a world: lit time
+	 * fills 1 / LitSeconds per second, dark time fills 1 / DarkSeconds. It
+	 * only adds; losing light can slow the next step but never erase work.
+	 */
+	static float AdvanceRelicTakeProgress(
+		float CurrentProgress, float DeltaSeconds, bool bLit,
+		float LitSeconds, float DarkSeconds);
+
+	/**
 	 * The downed teammate in reach, or null. M2.2.
 	 *
 	 * Resolved beside the relic focus and in the same pass, because a keeper
@@ -166,6 +177,19 @@ public:
 protected:
 	UFUNCTION(Server, Reliable)
 	void ServerTake(ULLKRelicComponent* Relic);
+
+	/** Server-authoritative start/cancel pair for an inspection hold. */
+	UFUNCTION(Server, Reliable)
+	void ServerBeginRelicTake(ULLKRelicComponent* Relic);
+
+	UFUNCTION(Server, Reliable)
+	void ServerCancelRelicTake();
+
+	/** Advances a relic hold every frame; darkness slows it but never clears it. */
+	void TickRelicTake(float DeltaSeconds);
+
+	/** Shared range validation for the opening request and every held frame. */
+	bool IsRelicInServerReach(const ULLKRelicComponent* Relic) const;
 
 	UFUNCTION(Server, Reliable)
 	void ServerBeginRevive(ULLKVitalsComponent* Target);
@@ -229,6 +253,20 @@ protected:
 	TObjectPtr<ALLKExtractionZone> CallingZone;
 
 	float CallHeldSeconds = 0.f;
+
+	/** Server only: an identified relic being inspected and the work already done. */
+	UPROPERTY()
+	TObjectPtr<ULLKRelicComponent> TakingRelic;
+
+	float RelicTakeProgressSeconds = 0.f;
+
+	/** A dark inspection is possible, but is intentionally a long exposed commitment. */
+	UPROPERTY(EditAnywhere, Category = "LLK|Interact", meta = (ClampMin = "0.1"))
+	float RelicTakeSecondsDark = 4.f;
+
+	/** Existing debounced gameplay light makes inspection materially faster. */
+	UPROPERTY(EditAnywhere, Category = "LLK|Interact", meta = (ClampMin = "0.1"))
+	float RelicTakeSecondsLit = 1.5f;
 
 	/**
 	 * Replicated WITH a notify, which it did not have until burden read it.

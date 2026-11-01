@@ -28,6 +28,8 @@
 #include "LLKCharacter.generated.h"
 
 class UCameraComponent;
+class USceneComponent;
+class UStaticMeshComponent;
 class ULLKLanternComponent;
 class ULLKLanternLightComponent;
 class ULLKInteractorComponent;
@@ -318,6 +320,14 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "LLK|Camera")
 	TObjectPtr<UCameraComponent> FirstPersonCamera;
+
+	/** Stable hand-space origin shared by the rendered lantern and game light field. */
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Lantern")
+	TObjectPtr<USceneComponent> LanternAnchor;
+
+	/** Deliberately obvious first-person proxy until the authored lantern arrives. */
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Lantern")
+	TObjectPtr<UStaticMeshComponent> LanternBody;
 
 	/**
 	 * The keeper's lantern state. M1.2 owns on/off and owns no light.

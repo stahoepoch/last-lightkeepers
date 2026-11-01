@@ -232,15 +232,7 @@ ELLKRelicInteractBlock ULLKRelicComponent::GetInteractBlock() const
 		return ELLKRelicInteractBlock::Unidentified;
 	}
 
-	if (!bRequiresLightToTake || Visibility == ELLKLootVisibility::Always)
-	{
-		return ELLKRelicInteractBlock::None;
-	}
-
-	// Read, but dark. The one a prompt should say out loud: a player reaching
-	// for a relic they already identified and being told "needs light" is row
-	// 5 explaining itself in the exact moment the rule applies to them.
-	return bCurrentlyLit ? ELLKRelicInteractBlock::None : ELLKRelicInteractBlock::NeedsLight;
+	return ELLKRelicInteractBlock::None;
 }
 
 void ULLKRelicComponent::EvaluateLegibility(float BrightnessAtRelic)
@@ -367,12 +359,12 @@ bool ULLKRelicComponent::CanBeTaken() const
 		return false;
 	}
 
-	if (!bRequiresLightToTake || Visibility == ELLKLootVisibility::Always)
-	{
-		return true;
-	}
-
-	return bCurrentlyLit;
+	// Light was formerly a binary permission here. That made a shelf-edge
+	// sample erase a valid attempt and forced the renderer to define a hard
+	// line between "readable" and "not readable". Held inspection owns the
+	// cost now: it reads IsCurrentlyLit() as a rate, after this component's
+	// existing two-sample debounce, and never resets accumulated work.
+	return true;
 }
 
 FText ULLKRelicComponent::GetDisplayName() const

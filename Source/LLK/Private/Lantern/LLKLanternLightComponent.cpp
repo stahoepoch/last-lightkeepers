@@ -53,6 +53,13 @@ ULLKLanternLightComponent::ULLKLanternLightComponent()
 
 FVector ULLKLanternLightComponent::GetGameplayLightLocation() const
 {
+	if (const USceneComponent* Anchor = GetAttachParent())
+	{
+		// The parent is the keeper's stable hand-space anchor. Feel writes this
+		// component's relative offset only, so it cannot leak into gameplay.
+		return Anchor->GetComponentLocation();
+	}
+
 	const AActor* Owner = GetOwner();
 	if (Owner == nullptr)
 	{
