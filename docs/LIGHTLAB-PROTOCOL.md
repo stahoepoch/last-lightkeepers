@@ -927,6 +927,80 @@ the resize work: **the window must be visible.** The editor ran at roughly
 0.2 fps with another tab in front and about 100 fps with the level viewport
 foreground, and `CaptureEditorImage` photographs the window.
 
+### The frame counter works as a *rate*, and it confirms the mechanism
+
+A frame-index **gap** tests whether time passed and always comes back clean. A
+frame **rate** tests the editor's throttle directly, and the difference it has
+to resolve is five hundredfold. The log carries both the counter and
+timestamps, so **frames per second around any past capture is recoverable** —
+the whole Bay B run was audited from the log alone, with no new captures.
+
+| rung | local | fps | outcome |
+| --- | --- | --- | --- |
+| EXP_A_025 | 16:20:38 | **118.3** | good, 99.6% of pixels moved |
+| EXP_A_100 | 16:20:56 | 26.1 | good |
+| EXP_A_400 | 16:31:48 | 2.9 | good despite low fps |
+| EXP_A_1600 | 16:32:05 | 58.3 | good |
+| EXP_A_6400 | 16:32:21 | 40.3 | good |
+| EXP_B_025 | 16:33:17 | 68.1 | good |
+| **EXP_B_100** | 16:33:35 | **3.0** | **stale** — MAD 0.131 |
+| EXP_B_400 | 16:39:07 | 1.7 | accepted |
+| **EXP_B_1600** | 16:39:26 | **3.0** | **stale** — MAD 0.129 |
+| EXP_B_100b | 16:50:40 | 3.0 | retake, violated forced ordering |
+
+**Every stale rung sits in a sub-5 fps window, and nothing above 25 fps went
+stale.** The implication runs one way only: low fps means *at risk*, not
+*wrong* — EXP_A_400 was captured at 2.9 fps and is fine. So frame rate is a
+screen, not a verdict, and it belongs beside the frames rather than in place of
+the other checks.
+
+**Record the fps with every capture.** It is free, it is recoverable
+retrospectively, and it certifies the operating condition rather than the
+pixels.
+
+### The cause is a checkbox
+
+0.2 fps backgrounded against 100 fps foreground is the signature of the
+editor's background CPU throttle — **Editor Preferences, Performance, "Use Less
+CPU when in Background"**, `bThrottleCPUWhenNotForeground` under
+`[/Script/UnrealEd.EditorPerformanceSettings]`. It is **written nowhere** in
+this project's `Config/` or `Saved/Config/`, so it sits at the engine default,
+which is on. **It has therefore been active for every capture this project has
+ever taken.**
+
+Turning it off removes the dominant term. It does not make the instrument
+sound: `CaptureEditorImage` photographs the window, so occlusion, a tooltip, a
+lock screen and whatever the compositor does to a minimised window all remain.
+**The deeper defect is that the measurement depends on what happened to be in
+front of the screen, which is a human variable that appears in no log and no
+commit.**
+
+### Which instrument deserves the engineering
+
+Corrected from an earlier claim here that the offscreen path was suspect on two
+grounds. **Only one survives.** Its "smallest signal in the corpus" was a
+property of the no-GI scene in that run, not of the instrument — an emissive
+change moves little when nothing bounces. The dimension drift is real, and it
+is one bug.
+
+That asymmetry decides where to invest. **The offscreen path's defect is
+fixable engineering; photographing a window has a defect no engineering
+removes.** If an instrument is going to be built, build the offscreen one.
+
+### A pattern worth more than either fix
+
+Both broken detectors were repaired the same way, and neither needed a new
+mechanism:
+
+| detector | wrong operand | right operand |
+| --- | --- | --- |
+| MAD | difference from the **predecessor** | difference from a **fixed baseline** |
+| frame counter | the **gap** between indices | the **rate** |
+
+**Check for the right operand before reaching for a build.** It is a much
+cheaper class of repair than the ones this project keeps reaching for, and
+twice today it was the whole fix.
+
 ### Superseded: the frame counter as a liveness assertion
 
 Unreal stamps every log line with its frame number (modulo 1000, as
