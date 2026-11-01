@@ -948,11 +948,50 @@ the whole Bay B run was audited from the log alone, with no new captures.
 | **EXP_B_1600** | 16:39:26 | **3.0** | **stale** — MAD 0.129 |
 | EXP_B_100b | 16:50:40 | 3.0 | retake, violated forced ordering |
 
-**Every stale rung sits in a sub-5 fps window, and nothing above 25 fps went
-stale.** The implication runs one way only: low fps means *at risk*, not
-*wrong* — EXP_A_400 was captured at 2.9 fps and is fine. So frame rate is a
-screen, not a verdict, and it belongs beside the frames rather than in place of
-the other checks.
+**Corrected: measure the rate across the change-to-capture interval itself,
+not across a time window.** The windowed version above put EXP_A_400 at 2.9 fps
+and good, which looked like a counterexample and forced a weaker conclusion.
+It was an artefact: that row follows a 300-second capture hang, so a window
+around it averages across the hang. Measured across the interval that actually
+matters — the dispatch of the state change to the dispatch of the capture —
+the separation is total:
+
+| rung | frames | dt (s) | fps | outcome |
+| --- | --- | --- | --- | --- |
+| EXP_A_025 | 546 | 4.6 | **118.7** | good |
+| EXP_A_100 | 520 | 4.4 | **118.2** | good |
+| EXP_A_1600 | 481 | 4.0 | **120.2** | good |
+| EXP_A_6400 | 478 | 4.0 | **119.5** | good |
+| EXP_B_025 | 514 | 4.3 | **119.5** | good |
+| EXP_B_100 | 18 | 6.0 | **3.0** | stale |
+| EXP_B_1600 | 19 | 6.3 | **3.0** | stale |
+| EXP_B_100b | 20 | 6.7 | **3.0** | ordering violation |
+| EXP_A_400 | 14 | 634.6 | — | post-hang, unmeasurable |
+| EXP_B_400 | 513 | 316.0 | — | post-hang, unmeasurable |
+
+**Good rows: 118, 119, 120, 120, 120. Bad rows: 3.0, 3.0, 3.0.** Forty-fold
+apart with nothing in between and no counterexample. The earlier "at risk, not
+wrong" hedge was conceding to a row that could not be measured at all.
+
+**A capture whose interval spans a hang cannot be judged this way**, because
+the interval includes the stall. Those rows need the other checks, and
+`EXP_B_400` — accepted by no detector firing rather than by passing one — is
+the weakest row in the ladder for exactly that reason.
+
+### The gap, as a boolean, does not work
+
+A tempting repair is to ask only whether the counter *advanced* between the
+change and the capture: if a frame was drawn after the change, the capture
+cannot show the old state. **Audited, and it fails.** The two known-stale rungs
+show 18 and 19 frames elapsed. Frames advanced and the capture was still stale.
+
+The reason is the one that killed the first version: **the log counter is the
+engine loop, not the viewport.** Eighteen engine ticks can pass with zero
+viewport redraws, so advancement proves nothing. Only the *magnitude*
+discriminates, and magnitude is the rate.
+
+So the operand lesson lands a third time: the same counter is useless as a
+gap, useless as a boolean, and decisive as a rate over the right interval.
 
 **Record the fps with every capture.** It is free, it is recoverable
 retrospectively, and it certifies the operating condition rather than the
