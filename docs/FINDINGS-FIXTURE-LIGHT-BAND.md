@@ -325,8 +325,13 @@ blocks the ceiling fixture's direct path to the readable face while leaving the
 relic silhouette visible from the aisle. Ambient troffer at 2 cd, the Lumen
 orientation floor, throughout.
 
-**Geometry** (the lip was lost in a power cut before the map was saved, so this
-is the rebuild spec). A `/Engine/BasicShapes/Cube` with `DefaultMaterial`,
+**Geometry.** The lip is **in the map**, as `StaticMeshActor_0` at
+(323, 0, 110) scale (0.30, 0.60, 0.04) — the deep setting. It survived the
+power cut, verified by explicit path after a `find_actors` sweep had wrongly
+reported it absent: that sweep ran against `LLK_DockBay`, which was the open
+level, so it was an empty answer from the wrong world
+(`docs/TOOLING-TRAPS.md` 6). The spec below is the build recipe for both
+settings. A `/Engine/BasicShapes/Cube` with `DefaultMaterial`,
 horizontal, 60 cm wide and 4 cm thick, at **z = 110** — just above the card,
 which spans z 75–105 at x ≈ 338. Depth is the variable:
 
