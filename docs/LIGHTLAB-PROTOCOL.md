@@ -756,3 +756,59 @@ The flip is a one-line addition under `[/Script/Engine.RendererSettings]` in
 stated on purpose (`aa8b8a5`, `70d81a3`) after years of running on engine
 defaults nobody had chosen. Write the intended value in with a comment rather
 than letting another renderer setting sit at a default by accident.
+
+## 12. The exposure lock sweep — run 2026-11-01, card half only
+
+**The card half is done and lands on the predicted value. The orientation half
+is not established.** Every frame below was accepted by a geometry assertion at
+1014x612 and a distinct-crop check; refused frames were retaken, not measured.
+
+### Bay A, the card — lantern 6 cd, ambient 2 cd, deep lip
+
+Declared criterion, before the run: **glyph separation above 100 with 0% of the
+card at 254.**
+
+| lock | EV100 | card mean | clip% | glyph range | verdict |
+| --- | --- | --- | --- | --- | --- |
+| 0.25 | 1 | 253.21 | **83.3** | 35.2 | fail — blown |
+| 1.0 | 3 | 246.84 | 0.0 | 104.2 | pass, marginal *(current)* |
+| **4.0** | **5** | **221.43** | **0.0** | **175.8** | **pass — best** |
+| 16 | 7 | 159.15 | 0.0 | 171.2 | pass |
+| 64 | 9 | 70.52 | 0.0 | 90.5 | fail — glyphs below 100 |
+
+**The ladder is monotonic in both card and wall** — card 253.2, 246.8, 221.4,
+159.2, 70.5; wall 88.3, 28.6, 5.7, 0.5, 0.01 — so the run's own forced ordering
+holds across all five rungs.
+
+**The optimum is lock 4.0, which is EV100 5 — the predicted value.** Glyph
+separation 175.8 against 104.2 at the current lock, with nothing clipped. The
+prediction was arithmetic from illuminance, made before the run, and it landed.
+
+### Bay B, orientation — not established
+
+The orientation ladder was captured at the same five lock points and **one step
+does not behave**. Lock 0.25 and lock 1.0 measure identically where it matters
+— near blocker 21.43 against 21.43, far blocker 18.52 against 18.52 — across a
+two-stop change. Then 1.0 to 4.0 drops the near blocker 51-fold, to 0.42.
+
+The frames are not duplicates: their cropped pixels hash differently. But in
+Bay A the same 0.25-to-1.0 step moved the wall by 3.1x, and **a global gain
+cannot move one bay and not the other.** Unexplained, so the orientation half
+is not reported and the sweep is **not concluded**.
+
+**What this means for the decision.** Lock 4.0 is a strong candidate on the
+inspection side and it is where the theory said it would be. It is not adoptable
+until the orientation side is measured, because raising the lock darkens the
+run and that is the half this project has failed to protect four times.
+
+### A bug this run found in its own instrument
+
+The geometry assertion initially hashed the **full capture** rather than the
+cropped region it measures. Editor chrome differs between frames while the
+viewport is stale, so a stale viewport passed the duplicate check. Fixed to
+hash the measured crop.
+
+That is the rule from `docs/TOOLING-TRAPS.md` — *a check must run where the
+measurement is sensitive, not where it is convenient* — failing against the
+tool written to enforce it, one commit after it was written down. The full-byte
+hash was the convenient thing to hash.
