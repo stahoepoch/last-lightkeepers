@@ -567,6 +567,31 @@ On-screen path only, with every check in section 9: window uncovered, crop
 verified against window size per frame, every frame hashed, camera verified by
 tracing to a known surface.
 
+### The forced orderings for this run
+
+**The ladder supplies one for free.** Raising the lock point darkens
+everything, so across the five lock points **both** series must decrease
+monotonically — the card and the far end independently. That is two forced
+sequences spanning all ten captures, verifiable before any value is recorded,
+and stronger than a single pair: a confident failure would have to respect
+monotonicity across five rungs in two regions.
+
+**It is not sufficient on its own, and the eleventh capture stays.** Monotonic
+darkening is *invariant to whether the lip casts a shadow*. An instrument that
+has silently lost the occlusion — which is exactly what voided the offscreen
+sweep — would still darken smoothly and monotonically across all five lock
+points, in both regions, and pass that check cleanly. The exposure ladder tests
+that exposure is being applied. It cannot test that the geometry blocking the
+light is being rendered, and the whole card result rests on that.
+
+So the eleventh is a **shaded-versus-unshaded pair at one lock point**: capture
+the card with the lip, and again with the lip hidden, at the same exposure and
+intensity. The shaded reading must be lower. That is the ordering the offscreen
+capture violated — 99.06 shaded against 92.29 unshaded — and the only one in
+this run that exercises occlusion rather than exposure.
+
+Two axes, two orderings, one extra capture.
+
 ### Pass criteria, declared before the run
 
 A lock point passes only if **both** hold:
