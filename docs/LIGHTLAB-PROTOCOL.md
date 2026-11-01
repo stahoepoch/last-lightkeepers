@@ -43,6 +43,22 @@ So the values were read off DockBay's own volume rather than assumed. Read
 makes a candela ladder meaningful at all: the camera cannot quietly
 re-normalise between runs and hand back a flat result.
 
+**But 1.0 is not EV100 here, and that matters.** Queried from the live editor:
+
+```
+r.DefaultFeature.AutoExposure.ExtendDefaultLuminanceRange = 0
+```
+
+The project sets this nowhere, so it sits at the engine default of **0 —
+legacy range**. The cvar's own help says it "change[s] the
+PostProcessSettings.Exposure.MinBrightness, MaxBrightness, HistogramLogMin and
+HistogramLogMax to be expressed in EV100 values instead of in Luminance". With
+it off, these two 1.0s are **legacy luminance values, not EV100 stops**.
+
+Anyone who reads "min = max = 1.0" as EV100 and types 1.0 into a project where
+extended range *is* on has set a wildly different exposure and will get a
+confidently wrong ladder. Copy the numbers **and** the cvar, or copy neither.
+
 Two further readings worth carrying, because they change how light renders and
 would invalidate a comparison if the lab differed:
 
@@ -184,15 +200,80 @@ until something fits. A band produced by quietly adjusting the rig until the
 numbers overlap would be the worst possible outcome here, because it would read
 as permission.
 
-## 7. What stopped the first attempt
+## 7. Build status — the lab exists
 
-The bridge was up and answering, the world was verified as `LLK_DockBay`, and
-the DockBay exposure values in section 1 were read. Then the editor was closed
-and restarted while the lab was being planned, and the Model Context Protocol
-server **does not come back with it** — `ModelContextProtocol.StartServer` is a
-manual console command (see `docs/TOOLING-TRAPS.md` entry 4). Nothing was built
-and nothing was written to `Content/`.
+`Content/LLK_LightLab.umap` is **built and saved**, 44 actors. Second attempt,
+2026-10-31.
 
-Codex owns `LLK_DockBay` for an art pass (row 41, one owner per `.umap`), so
-the lab is a separate map by construction and no part of this protocol touches
-DockBay beyond reading the volume above.
+- Base is `/Engine/Maps/Templates/Template_Default`, **not** `Entry` as section
+  4 planned. Duplicating `Entry` into `/Game/` produces a map that cannot be
+  saved: `Illegal reference to private object: 'Model /Engine/Maps/Entry.Model2'
+  … (private object belongs to an external map)`. The duplicate keeps a pointer
+  to the engine map's BSP model. `Template_Default` duplicates cleanly.
+- All seven exterior sources from the template were deleted: `DirectionalLight`,
+  `SkyAtmosphere`, `SkyLight`, `ExponentialHeightFog`, `VolumetricCloud`, the
+  sky-sphere mesh and the template `Floor`. The box is genuinely sealed and the
+  only light in it is the fixture under test.
+- Three sealed rooms plus the spine, 24 slabs, at the coordinates in section 4.
+  Bay A carries the prop and price card, Bay B the two offset gondola blockers.
+- **Exposure verified field-by-field against DockBay**, not assumed: priority 1,
+  unbound, `bOverride_AutoExposureMinBrightness` and `…MaxBrightness` both true,
+  both values 1.0, `AEM_Histogram`, MegaLights on and overridden, and
+  `autoExposureBias` left at 1.0 **un-overridden** exactly as DockBay has it.
+- Fixtures: two `RectLight`s (Bay A and Bay B ceilings) and one `SpotLight`
+  (Bay C) carrying the authored lantern shape from section 3. All three are
+  pinned to `Candelas` and saved at intensity 0, so the map opens dark.
+
+### Surfaces, and why they are a recorded parameter
+
+The first render was a uniform white blowout: the engine's basic-shape material
+is far too bright, and a lab made of it is a lightbox, not a store. **Surface
+reflectance is as consequential as candela**, and a threshold measured in a
+white box would be far too low and would transfer nowhere.
+
+Room, prop and blockers are therefore `/Engine/EngineMaterials/DefaultMaterial`
+(mid-grey); the price card keeps the lighter `BasicShapeMaterial`, which is what
+a paper card should be. Both are engine assets, so **nothing beyond the lab map
+was written to `Content/`**. Their absolute albedo was not measured — the asset
+paths are recorded instead, and any future reading has to cite them.
+
+### The one measurement that was taken
+
+| fixture | candela | attenuation | bay | camera | result |
+| --- | --- | --- | --- | --- | --- |
+| fluorescent troffer, RectLight 120×60 cm, cool white | **100 cd** | 2000 cm | A | 2 studs (56 cm) | **price card plainly readable** |
+
+So the **inspection ceiling is below 100 cd** — the only bound the day produced.
+It is one cell of a forty-eight cell matrix and it is not an answer to any of
+the three questions.
+
+## 8. What stopped it — the editor stopped drawing
+
+Not the bridge. The bridge stayed up and answered every non-rendering tool for
+the whole session.
+
+**The editor stopped producing frames.** Every capture after the first few
+returned the *same* image — byte-identical, md5 `c983014fe6d3` — no matter where
+the camera had been moved, and captures that could not return a stale frame hung
+until the 300-second tool timeout instead. The editor process reported
+`Responding: True` and burned **0.4 seconds of CPU over six seconds**: idle, not
+busy, with no `ShaderCompileWorker` running.
+
+Tried, and none of it restored rendering: `Slate.bAllowThrottling` (already 0),
+`Slate.ThrottleWhenMouseIsMoving` (already 0), bringing the window to the
+foreground via the Slate automation toolset, and the viewport realtime toggle.
+The one thing that *did* force a redraw was `Alt+G`, which changes the viewport
+type — a structural change, not a camera move.
+
+This needs someone at the machine. A measurement of what a fixture *looks like*
+cannot be taken from an editor that is not drawing, and no amount of retrying
+changes that — it only produces the same frame with new parameters written
+underneath it, which is the most dangerous failure mode available here.
+
+**Resuming:** open `LLK_LightLab` with the editor actually rendering, confirm a
+camera move produces a different image before trusting anything, then run the
+ladders in section 5 from step 1. Nothing needs rebuilding.
+
+Codex owns `LLK_DockBay` for an art pass (row 41, one owner per `.umap`). It was
+opened read-only to take the exposure values in section 1, was never modified,
+and was verified clean (`is_dirty` false) at the end of the session.

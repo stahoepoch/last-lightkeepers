@@ -114,6 +114,33 @@ one-field query can be empty for several unrelated reasons, prefer the call
 whose answer contains its own evidence — and check `IsPIERunning` before
 believing any editor-state reading.
 
+## 7. A screenshot is not a screenshot of now
+
+Driving `LLK_LightLab` on 2026-10-31, every capture came back **byte-identical**
+— md5 `c983014fe6d3`, 437,313 bytes — across camera moves, across
+`CaptureViewport` and `CaptureEditorImage`, and across separate MCP calls. The
+editor was not rendering: `Responding: True`, **0.4 seconds of CPU over six**,
+no shader workers. A capture tool on a stalled editor hands back **the last
+frame that happened to be drawn**, with no indication that it is old.
+
+Two distinct shapes of the same trap:
+
+- **Batched captures never update at all.** A script that moves the camera and
+  captures, repeatedly, runs entirely on the game thread, so no frame is drawn
+  between the steps. Two poses in one script returned the identical image. A
+  forty-eight shot matrix gathered this way would have been forty-eight copies
+  of one frame, each filed under a different candela — numbers with pictures
+  attached, and every picture the same.
+- **Unbatched captures are worse, because they mostly work.** Separate calls
+  succeed often enough to look reliable, then silently serve a stale frame when
+  the editor goes idle.
+
+**The check is a negative control: move the camera, capture, and require the
+image to differ.** Hash it. If two poses hash the same, nothing you capture
+afterwards is evidence. This is the red proof from entry 3 applied to pixels —
+and it is the only reason the lab's ladders were reported as *not taken* rather
+than reported as data.
+
 ---
 
 ## The pattern, stated once
@@ -123,7 +150,7 @@ Each of these is a true answer to the wrong question. The build tool answered
 anywhere", the test runner answered "did the binary on disk pass", the port
 answered "is a server up", the guard answered "what is in the world right now",
 and the level query answered "which world can I see from inside this play
-session".
+session", and the capture tool answered "what was drawn last".
 
 So the question to ask of any green signal is not whether it is true. It is
 **what would this have said if the thing I care about were broken?** Where the
