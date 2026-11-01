@@ -397,44 +397,65 @@ Codex owns `LLK_DockBay` for an art pass (row 41, one owner per `.umap`). It was
 opened read-only to take the exposure values in section 1, was never modified,
 and was verified clean (`is_dirty` false) at the end of the session.
 
-## 9. Capture method, superseded 2026-11-01
+## 9. Capture method — READ THIS BEFORE MEASURING ANYTHING
 
-Sections 7 and 8 describe a pipeline built around `CaptureEditorImage` —
-screenshot the whole editor window, crop the viewport out of it — because
-`CaptureViewport` hung to the 300 s timeout every time. **That is no longer
-true.** The MCP plugin changed (its Python sandbox now requires scripts to
-define `run()` returning a dict, where a bare script body worked before), and
-`CaptureViewport` works.
+**Do not use `CaptureViewport` to measure light.** An earlier version of this
+section recommended it and gave three reasons why it was better. That advice
+was wrong and is retracted here; it was written before the instrument had been
+checked against a known quantity.
 
-Use `CaptureViewport`. It is better than the old path in three ways that matter:
+`CaptureViewport` renders offscreen and has been caught disagreeing with the
+on-screen viewport **twice, in two different ways**:
 
-- **It takes the pose as an argument** (`captureTransform`), so a capture no
-  longer depends on `SetCameraTransform` having taken effect.
-- **It returns the pose it used** alongside the image — `cameraLocation`,
-  `cameraRotation`, `cameraFOV`. Every frame carries proof of its own framing,
-  which is what finally retired the stale-camera problem.
-- **No cropping.** It returns the viewport, so the editor window's size is
-  irrelevant. The edge-relative crop rect in `grab.py` exists only because the
-  window silently changed size twice; nothing needs it now.
+| what it got wrong | evidence |
+| --- | --- |
+| **No global illumination** | At emissive 20, all lights 0, it read the near wall at 11.207 before Lumen and 11.207 after — unmoved across the largest renderer change this project has made, while the on-screen viewport moved to 70.3. |
+| **Wrong about direct occlusion** | With the shelf lip shading the Bay A card, it read the card at **99.06, contrast 202** — plainly readable — where the on-screen viewport read the same state at **10.33, contrast 14.8**. A factor of ten on the quantity the whole experiment was about. |
 
-Two things still bite:
+It is a dangerous instrument precisely because it is otherwise well-behaved: it
+returns a fresh, correctly-exposed, plausible image every time, responds to
+every parameter, carries its own camera metadata and is immune to window
+geometry. Everything about it invites trust except its numbers.
 
-- **It still hangs, intermittently**, for the same reason as before: the level
-  viewport is hidden behind another tab and draws under 1 fps, so the capture
-  waits on a frame that is not coming. **Calling `FocusOnActors` immediately
-  before each capture forces the redraw** and cleared every hang met this
-  session. It costs nothing, because the capture's own `captureTransform`
-  overrides whatever the camera does. On a hang, re-issue the focus and retry.
-  A hang is a 300 s stall, so pair them by default rather than on failure.
-- **`annotations` is required**, not optional. Pass
-  `{"gridSpacing": 0, "gridExtent": 0, "gridHeight": 0, "maxLabelDistance": 0,
-  "classFilter": null, "maxLabels": 0}` for a clean frame. Set
-  `maxLabelDistance` and `maxLabels` non-zero to overlay actor names and
-  crosshairs — which is how you show *which* surfaces are in frame when they
-  are too dark to see.
+### So: measure from the on-screen viewport
 
-**Add to step zero (section 5a): trace your measurement regions.** Before
-trusting any per-region number, run `ScreenCoordsToWorld` on the centre of each
-sampling box and record what it hits and at what distance. A region is a guess
-about geometry until something resolves it to a surface — see
-`docs/TOOLING-TRAPS.md` 10.
+Use `CaptureEditorImage` and crop. It photographs the editor window, which
+brings its own costs, and all of them are manageable if you check:
+
+- **The window must be visible and uncovered.** Anything on top of it, this
+  app included, freezes the frame.
+- **Verify the crop against the window size every time.** The crop is
+  `(3, 126, W-263, H-35)`, which is correct only for the standard layout. The
+  window has changed size repeatedly mid-run — 772, 773 and 693 px tall have
+  all occurred — and at the wrong height the sampling boxes land on different
+  world content and produce confident nonsense. **Print the size with every
+  frame and discard rows that do not match.**
+- **Hash every frame.** Stale repeats are common and silent. On 2026-11-01 the
+  0.75 cd and 2 cd rungs came back byte-identical to each other and matched the
+  6 cd frame to 0.01. Only the hash caught it.
+- **Verify the camera by tracing, not by asking.** `SetCameraTransform` can
+  report success, and `GetCameraTransform` agree, while the rendered view has
+  not moved. `ScreenCoordsToWorld` at screen centre must hit the surface you
+  think you are pointing at. Re-issue the set and re-trace until it does.
+- **Trace every measurement region too**, so you know what each sampling box is
+  actually looking at. See `docs/TOOLING-TRAPS.md` 10.
+
+`CaptureViewport` remains useful for things that are not photometry — checking
+framing, confirming an actor is where you think, producing an annotated overlay
+of actor names. Just never read a brightness off it.
+
+### Record the capture method with every result
+
+Every table in every findings doc should say which instrument produced it, so
+that a future instrument failure tells you exactly which numbers to re-take.
+Results taken before 2026-11-01 do not carry this, and **the fixture contract in
+`docs/FINDINGS-FIXTURE-LIGHT-BAND.md` (`a28fa57`) is the first that should be
+re-checked** — its "inspection ceiling below 0.5 cd, orientation floor 6 cd, no
+band" is load-bearing for the whole fixture design, and the instrument that
+produced it has since been shown wrong about occlusion.
+
+### Add to step zero (section 5a): trace your measurement regions
+
+Before trusting any per-region number, run `ScreenCoordsToWorld` on the centre
+of each sampling box and record what it hits and at what distance. A region is
+a guess about geometry until something resolves it to a surface.
