@@ -120,6 +120,22 @@ until their cost is profiled against dense retail geometry.
 The earlier bar on editing that file (dirty from another writer) had lapsed: it
 was clean in the working tree and last touched by a landed commit.
 
+**The same change also pins the project to SM6.** The editor had been running at
+**Shader Model 5** — `rhifeaturelevel="SM5"`, and `Skipped NVAPI RT queries
+since we the feature level is below SM6` in the startup log — because the
+engine's base default is `PCD3D_SM5` and this project's hand-written config
+never overrode it. That is the *same* gap that left GI unset: a minimal
+`DefaultEngine.ini` that never received the renderer and platform block a
+UE5 template project gets. Without SM6 the Lumen settings would have been
+enabled in config and inert in the editor, which looks identical to the no-GI
+behaviour they replace.
+
+**Verify before believing it.** After the restart, the check is the positive
+control already in this document: `CoreEmissive 500` with every light at 0.
+Under working Lumen the walls, ceiling and floor must light up. If that frame
+still comes back black with a bloom halo, Lumen is not running and nothing
+below has changed.
+
 **Every number in this document, and in
 `docs/FINDINGS-FIXTURE-LIGHT-BAND.md`, was measured before that change and
 describes the no-GI renderer.** They are kept as the record of what was true,
