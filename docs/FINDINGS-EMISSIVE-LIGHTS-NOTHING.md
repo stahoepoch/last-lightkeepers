@@ -155,7 +155,7 @@ landmarks and will not light the aisle, for free and with no tuning.
 If Lumen is later switched on, that changes and all three documents need
 re-measuring.
 
-## First look under Lumen — provisional, not yet a measurement
+## Measured under Lumen, 2026-11-01
 
 Lumen went live on 2026-11-01 (`aa8b8a5`, `70d81a3`). The editor now reports
 `rhifeaturelevel="SM6"`, `r.DynamicGlobalIlluminationMethod=1`,
@@ -177,7 +177,67 @@ number in this document has been re-measured yet. Specifically not established:
 the shape of the response across `CoreEmissive` values, whether 0.5 still reads
 amber once the room around it is lit, or any fixture figure.
 
-### Why the quantitative pass is blocked
+### The ladder, re-run
+
+Editor foreground with Realtime on, which is what the two capture paths needed.
+Nine frames, every light at 0 cd, identical camera pose, **nine distinct md5s**
+so no frame is a stale repeat. `wall86` and `wall261` are two patches of the
+same Y=200 wall, 86 cm and 261 cm from the core. Luminance 0-255.
+
+| CoreEmissive | core | core saturation | wall @86cm | wall @261cm | ceiling | floor |
+| --- | --- | --- | --- | --- | --- | --- |
+| 0 (control) | 0.0 | — | 0.000 | 0.000 | 0.000 | 0.036 |
+| 0.125 | 58.0 | 0.949 | 0.044 | 0.000 | 0.000 | 0.034 |
+| 0.25 | 93.1 | 0.888 | 0.207 | 0.000 | 0.000 | 0.037 |
+| **0.5 (committed)** | **131.2** | **0.811** | **0.908** | **0.000** | **0.000** | **0.034** |
+| 1 | 161.2 | 0.703 | 2.790 | 0.000 | 0.053 | 0.093 |
+| 2 | 182.3 | 0.485 | 7.563 | 0.001 | 0.301 | 0.342 |
+| 5 | 203.0 | 0.226 | 21.474 | 0.220 | 1.836 | 2.002 |
+| 20 | 229.0 | 0.055 | 70.327 | 3.140 | 13.330 | 14.176 |
+| 500 | 251.2 | 0.021 | 130.976 | 6.079 | 28.724 | 37.432 |
+
+**Emissive now lights surfaces.** Pre-Lumen every one of those surface columns
+read exactly 0.000 up to CoreEmissive 20. They now rise smoothly, and roughly
+in proportion to the parameter: doubling the value roughly doubles the wall.
+That is real indirect light, and `docs/lightlab/core/SHEET_lumen_core_ladder.png`
+shows the room appearing out of the dark as the value climbs.
+
+### But at the authored value it still lights nothing
+
+At the committed **0.5** the nearest wall reads **0.9 out of 255**. The far wall,
+the ceiling and the floor read **zero**. In the contact sheet that frame is an
+amber orb floating in black — indistinguishable, to the eye, from the no-GI
+result it replaced.
+
+The room only appears from about **2**, and reads as genuinely lit at **5 to 20**.
+
+### A second band that is not there
+
+The two requirements pull opposite ways, and the numbers say they do not meet:
+
+| | |
+| --- | --- |
+| Glass still reads **amber** | CoreEmissive **≤ 1** (saturation ≥ 0.70) |
+| Core contributes **visible** light | CoreEmissive **≥ 5** (wall ≥ 21; 2 is faint at 7.6) |
+
+So there is no value where the chamber looks like warm amber glass *and* throws
+useful light — the same shape as the fixture contract in
+`docs/FINDINGS-FIXTURE-LIGHT-BAND.md`, arrived at independently.
+
+**The way out is colour, not intensity.** The desaturation is the tonemapper
+clipping to white, and the scalar is the only parameter the material exposes.
+A deeper, more saturated emissive colour would hold its hue to a higher
+intensity, which would move the amber limit up toward the useful-light floor.
+That is a change to `M_LLK_LanternCore`, not to the instance, and it is Chris's
+call — this lab only measured the scalar it was given.
+
+Until then the honest reading is the one from before, for a new reason: **the
+glass and the beam are separate channels.** At 0.5 the core is pure look, and
+`ULLKLanternLightComponent` still does all the lighting.
+
+### How it was captured, and what fought back
+
+
 
 Two instruments, both currently unusable for a Lumen ladder:
 
