@@ -29,6 +29,8 @@ void ULLKInteractorComponent::GetLifetimeReplicatedProps(TArray<FLifetimePropert
 	// and row 59 makes an extracted crate pay every keeper who extracts - so
 	// what each other is holding is crew information, not private.
 	DOREPLIFETIME(ULLKInteractorComponent, CarriedCount);
+	DOREPLIFETIME_CONDITION(ULLKInteractorComponent, TakingRelic, COND_OwnerOnly);
+	DOREPLIFETIME_CONDITION(ULLKInteractorComponent, RelicTakeProgressSeconds, COND_OwnerOnly);
 }
 
 void ULLKInteractorComponent::TickComponent(
@@ -607,12 +609,14 @@ void ULLKInteractorComponent::ServerTake_Implementation(ULLKRelicComponent* Reli
 	// range is not a legibility failure, and recording `None` here with no
 	// `RelicTaken` after it leaves that visible in the event list rather than
 	// filing a reach from across the room as a rule the player misunderstood.
-	OnInteractAttempted.Broadcast(Relic, Relic->GetInteractBlock());
+	const bool bCanTake = Relic->CanBeTaken();
+	OnInteractAttempted.Broadcast(
+		Relic, bCanTake ? ELLKRelicInteractBlock::None : Relic->GetInteractBlock());
 
 	// Re-checked here rather than trusted from the call. The client decided
 	// to ask based on what its own prompt said; whether it may is this
 	// machine's question, and the answer includes the live-light gate.
-	if (!Relic->CanBeTaken())
+	if (!bCanTake)
 	{
 		UE_LOG(LogLLK, Verbose,
 			TEXT("ULLKInteractorComponent: refused a take - %s"),

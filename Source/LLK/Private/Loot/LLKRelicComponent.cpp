@@ -352,18 +352,12 @@ bool ULLKRelicComponent::CanBeTaken() const
 		return false;
 	}
 
-	if (!bLegible)
-	{
-		// You cannot pocket what you cannot identify. This is the half of row
-		// 53 that makes the relic a decision rather than a pickup.
-		return false;
-	}
-
 	// Light was formerly a binary permission here. That made a shelf-edge
 	// sample erase a valid attempt and forced the renderer to define a hard
-	// line between "readable" and "not readable". Held inspection owns the
-	// cost now: it reads IsCurrentlyLit() as a rate, after this component's
-	// existing two-sample debounce, and never resets accumulated work.
+	// line between "readable" and "not readable". The first hold can now
+	// search an unknown object too; held inspection owns the cost through
+	// IsCurrentlyLit(), after this component's existing two-sample debounce,
+	// and never resets accumulated work.
 	return true;
 }
 

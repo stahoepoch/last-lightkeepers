@@ -569,7 +569,7 @@ void ALLKDebugHUD::DrawWorldPrompt()
 		break;
 	case ELLKRelicInteractBlock::Unidentified:
 		Colour = ColourQuiet;
-		Label = FString::Printf(TEXT("%s"), *Relic->GetDisplayName().ToString());
+		Label = FString::Printf(TEXT("[Hold E]  Search slowly  -  %s"), *Relic->GetDisplayName().ToString());
 		break;
 	}
 
@@ -610,6 +610,24 @@ void ALLKDebugHUD::DrawWorldPrompt()
 	Item.Scale = FVector2D(LabelScale, LabelScale);
 	Item.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.9f));
 	Canvas->DrawItem(Item);
+
+	if (Interactor->GetTakingRelic() == Relic)
+	{
+		const float Progress = Interactor->GetRelicTakeProgress();
+		const FString Status = FString::Printf(TEXT("INSPECTING  %.0f%%"), Progress * 100.f);
+		float StatusWidth = 0.f;
+		float StatusHeight = 0.f;
+		Canvas->TextSize(Font, Status, StatusWidth, StatusHeight, LabelScale, LabelScale);
+		FCanvasTextItem StatusItem(
+			FVector2D(Centre.X - StatusWidth * 0.5f, Centre.Y + Half + TextHeight + 12.f * Scale),
+			FText::FromString(Status), Font, ColourCause);
+		StatusItem.Scale = FVector2D(LabelScale, LabelScale);
+		StatusItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.9f));
+		Canvas->DrawItem(StatusItem);
+		DrawProgressBar(
+			FVector2D(Centre.X - Half, Centre.Y + Half + TextHeight + StatusHeight + 18.f * Scale),
+			Half * 2.f, Progress, ColourCause);
+	}
 }
 
 void ALLKDebugHUD::DrawBurdenLine(float& CursorY)
@@ -719,7 +737,7 @@ void ALLKDebugHUD::DrawRelicPanel(float& CursorY)
 		AffordanceColour = ColourUrgent;
 		break;
 	case ELLKRelicInteractBlock::Unidentified:
-		Affordance = TEXT("  unreadable in the dark");
+		Affordance = TEXT("  hold to search slowly in dark");
 		break;
 	}
 	DrawLine(Affordance, AffordanceColour, CursorY);

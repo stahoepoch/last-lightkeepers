@@ -82,6 +82,14 @@ public:
 	UFUNCTION(BlueprintPure, Category = "LLK|Interact")
 	ULLKRelicComponent* GetFocused() const { return Focused; }
 
+	/** The relic this keeper is currently inspecting, or null. Owner-only replicated. */
+	UFUNCTION(BlueprintPure, Category = "LLK|Interact")
+	ULLKRelicComponent* GetTakingRelic() const { return TakingRelic; }
+
+	/** 0..1 of the current inspection. Never falls merely because the light does. */
+	UFUNCTION(BlueprintPure, Category = "LLK|Interact")
+	float GetRelicTakeProgress() const { return RelicTakeProgressSeconds; }
+
 	/** Fires when focus moves to a different object, or away from everything. */
 	UPROPERTY(BlueprintAssignable, Category = "LLK|Interact")
 	FLLKFocusChanged OnFocusChanged;
@@ -254,10 +262,11 @@ protected:
 
 	float CallHeldSeconds = 0.f;
 
-	/** Server only: an identified relic being inspected and the work already done. */
-	UPROPERTY()
+	/** Server authority, replicated to the owner so their prompt can show the real hold. */
+	UPROPERTY(Replicated)
 	TObjectPtr<ULLKRelicComponent> TakingRelic;
 
+	UPROPERTY(Replicated)
 	float RelicTakeProgressSeconds = 0.f;
 
 	/** A dark inspection is possible, but is intentionally a long exposed commitment. */

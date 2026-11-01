@@ -128,10 +128,12 @@ public:
 	/**
 	 * Whether the relic can be picked up right now.
 	 *
-	 * Identity remains the gate. Once a relic is known it can be inspected in
-	 * darkness, but the interactor resolves it much more slowly there. This is
-	 * deliberately a yes/no answer rather than a brightness query: light is a
-	 * rate on the held action, not a second hidden pickup rule.
+	 * A relic is physically searchable before its identity is known. The
+	 * interactor resolves that held action much more slowly in darkness, so
+	 * light buys knowledge and speed without turning the first pickup into a
+	 * silent no-op. This is deliberately a yes/no answer rather than a
+	 * brightness query: light is a rate on the held action, not hidden
+	 * permission.
 	 */
 	UFUNCTION(BlueprintPure, Category = "LLK|Loot")
 	bool CanBeTaken() const;

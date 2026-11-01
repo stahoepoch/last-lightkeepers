@@ -76,7 +76,7 @@ bool FLLKRelicTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("its value is unreadable, and says so rather than reading zero"),
 		Relic->GetReadableValue(), -1);
 
-	TestFalse(TEXT("and it cannot be taken while unidentified"), Relic->CanBeTaken());
+	TestTrue(TEXT("and it can be searched before its identity is known"), Relic->CanBeTaken());
 	TestEqual(TEXT("nothing has broadcast yet"), Listener->Count, 0);
 
 	// Light below the bar changes nothing. A keeper at the far edge of the
@@ -119,16 +119,16 @@ bool FLLKRelicTest::RunTest(const FString& Parameters)
 	// Dark and unread: not interactable, and the prompt can say which of the
 	// two reasons it is.
 	Shelf->SampleLightForTest(0.f);
-	TestFalse(TEXT("an unread relic in the dark is not interactable"), Shelf->CanBeTaken());
+	TestTrue(TEXT("an unread relic in the dark can begin a slow search"), Shelf->CanBeTaken());
 	TestEqual(TEXT("and the prompt knows it is unidentified, not merely dark"),
 		Shelf->GetInteractBlock(), ELLKRelicInteractBlock::Unidentified);
-	TestEqual(TEXT("nothing has changed, so nothing announced it"), Prompt->InteractCount, 0);
+	TestEqual(TEXT("the new slow-search affordance announces itself once"), Prompt->InteractCount, 1);
 
 	// Light arrives. One sample is deliberately not enough: shelf-edge traces
 	// must not make the prompt flash between frames. The second stable sample
 	// makes both legibility and the affordance turn on.
 	Shelf->SampleLightForTest(400.f);
-	TestFalse(TEXT("one bright sample does not flicker the affordance on"), Shelf->CanBeTaken());
+	TestTrue(TEXT("one bright sample leaves the slow-search affordance intact"), Shelf->CanBeTaken());
 	TestEqual(TEXT("and it does not permanently identify on a trace flicker"),
 		Shelf->GetInteractBlock(), ELLKRelicInteractBlock::Unidentified);
 	Shelf->SampleLightForTest(400.f);
@@ -248,7 +248,7 @@ bool FLLKRelicTest::RunTest(const FString& Parameters)
 	Stencil->SetThresholdForTest(125.f);
 	Stencil->SetRelicIdentity(TEXT("Watch2"), FText::FromString(TEXT("Pocket watch")), 450);
 	Stencil->SampleLightForTest(0.f);
-	TestEqual(TEXT("unread: stencil 1, there but unreadable"), Stencil->GetOutlineStencil(), 1);
+	TestEqual(TEXT("unread: stencil 3, searchable but still unnamed"), Stencil->GetOutlineStencil(), 3);
 	Stencil->SampleLightForTest(400.f);
 	Stencil->SampleLightForTest(400.f);
 	TestEqual(TEXT("lit and takeable: stencil 3"), Stencil->GetOutlineStencil(), 3);
@@ -274,8 +274,8 @@ bool FLLKRelicTest::RunTest(const FString& Parameters)
 		Edge->SampleLightForTest((Sample % 2 == 0) ? 400.f : 0.f);
 	}
 	TestFalse(TEXT("alternating edge traces do not identify the relic"), Edge->IsLegible());
-	TestFalse(TEXT("or flash its affordance on"), Edge->CanBeTaken());
-	TestEqual(TEXT("and emit no affordance events"), EdgePrompt->InteractCount, 0);
+	TestTrue(TEXT("and keep the slow-search affordance available"), Edge->CanBeTaken());
+	TestEqual(TEXT("and emit one stable slow-search affordance event"), EdgePrompt->InteractCount, 1);
 	Edge->SampleLightForTest(400.f);
 	Edge->SampleLightForTest(400.f);
 	TestTrue(TEXT("two stable clear samples still make the relic usable"), Edge->CanBeTaken());
