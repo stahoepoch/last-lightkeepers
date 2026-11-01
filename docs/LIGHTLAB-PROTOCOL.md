@@ -828,6 +828,72 @@ inspection side and it is where the theory said it would be. It is not adoptable
 until the orientation side is measured, because raising the lock darkens the
 run and that is the half this project has failed to protect four times.
 
+### Two failures were being carried as one, and they have different cures
+
+The peer session separated them and the distinction decides what to build:
+
+| failure | what it is | the cure |
+| --- | --- | --- |
+| **misalignment** | fixed insets against a window that moved, so the box lands on different world content | **world-space ROI** |
+| **staleness** | the capture returns a render from before the change landed | **a liveness assertion** |
+
+**A world-space ROI does nothing for staleness.** It makes the box land on the
+right world content; it has no opinion about *when* that content was rendered.
+A perfectly aligned box measures a stale frame perfectly. And misalignment does
+not block the orientation half anyway — it is a *cross-run* problem, which is
+why every load-bearing ladder in the geometry audit came out internally
+consistent. The ROI buys comparability across runs and the project should still
+get it; it would not have bought a Bay B ladder.
+
+**Every Bay B failure was staleness**: MAD below the noise floor, a second
+stale rung at 0.129, and an ordering violation consistent with a frame from an
+earlier state.
+
+### Why the MAD detector is not enough, by its own logic
+
+MAD infers staleness from pixel similarity, so **its reliability scales with
+the size of the real change** — the sensitivity problem again. It reads 52.274
+in Bay A where the signal is large and is asked to adjudicate 0.131 in Bay B
+where the signal is small. Worse, in a nearly-black far end two genuinely
+different exposures can legitimately differ by less than the floor, so a
+*correct* frame gets refused as stale **exactly where the orientation half has
+to measure**. The detector is most trustworthy where it is least needed. And it
+leaks the other way too: a frame passed the 0.35 threshold and still produced
+an impossible ordering.
+
+**So a statistical detector may raise the question and must never answer it.**
+
+### The liveness assertion: use the frame counter
+
+Unreal stamps every log line with its frame number (modulo 1000, as
+`[... ][ 461]`), and `LogsToolset.GetLogEntries` can read it. Each MCP tool
+dispatch is logged, so **the frame index at the state change and the frame
+index at the capture are both recoverable**:
+
+    GetLogEntries(pattern="Dispatching toolset tool", maxEntries=12)
+    -> "frame    409  execute_tool_script"
+       "frame    461  execute_tool_script"
+
+**Require the capture's frame index to differ from the preceding state
+change's.** Equal means no frame was drawn in between, so the capture is a
+render of the old state. This is causal rather than statistical: it does not
+care whether the picture changed by 52 or by 0.1, so it works identically in a
+blown-out bay and a black one.
+
+Fallback if a capture path cannot reach the counter: **tag the frame** — set
+some small visible thing to a value derived from the capture index and read it
+back out of the crop. Same property, travels through any path.
+
+### The cheap mitigation to try first
+
+Bay B is the bay the camera *moves to*; Bay A is where it already was. A larger
+view change means more to re-render and re-converge, so staleness should
+correlate with how far the camera just moved — which predicts that Bay B goes
+stale and Bay A does not, and that is exactly what was observed. If that holds,
+the fix is a **fixed settle after any camera move**: force k redraws, discard
+them, then capture. Minutes of work, and with the liveness assertion it is a
+complete answer to this failure without a build.
+
 ### A bug this run found in its own instrument
 
 The geometry assertion initially hashed the **full capture** rather than the
