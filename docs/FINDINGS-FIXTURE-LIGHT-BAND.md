@@ -549,6 +549,41 @@ either opens a usable window below 6 cd or proves there is none. Credit to the
 peer session for this branch; it is better than the fork below, which should
 not be settled until this is tried.
 
+### Resolved in play, not in the lab: light as a rate
+
+**Chris's playtest of `LLK_LanternWalkLab`, 2026-11-01.** A design result
+rather than a measurement, recorded here because it answers the fork below.
+
+Pickup is currently instant. The proposal is **hold-to-interact, with the hold
+shortened when the lantern is lit.**
+
+That dissolves the fork rather than picking a side. The question underneath
+every lighting finding in this document has been whether illumination should
+*gate* inspection — readable or not, a threshold to be found — or whether
+inspection should stop depending on illumination altogether. Hold-to-interact
+makes light **continuous**: it stops being a yes/no and becomes a rate.
+
+Three things follow, and they are why this is worth more than a tuned number:
+
+- **It removes the need for a threshold.** Every band this document failed to
+  find — the inspection ceiling against the orientation floor, amber against
+  useful output, the readable lantern window — was a search for a line
+  separating "legible" from "not". A rate has no line to find.
+- **It is robust to everything the instrument got wrong.** A contrast of 104
+  against 176 is a large difference in how *fast* a relic resolves and a
+  marginal one in whether it resolves at all. The exposure constant stops being
+  load-bearing for whether the game functions.
+- **It generates the central tension from two systems that already exist.**
+  Holding still in the light is exactly what makes a Sweeper your problem. The
+  cost of inspecting is paid in the currency the game already charges in, with
+  no new mechanic.
+
+**This does not retire the exposure work.** The orientation half still decides
+whether the store reads as navigable, which is about whether the space is
+legible rather than whether a relic is. But it does mean the lock point is a
+look decision rather than a functional one, and that is a much safer thing for
+it to be.
+
 ### The third appearance of one shape
 
 The lantern has to light a room at 2–8 studs *and* read a label at 0.6 studs.
