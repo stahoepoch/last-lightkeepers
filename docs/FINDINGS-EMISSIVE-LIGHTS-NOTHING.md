@@ -155,6 +155,64 @@ landmarks and will not light the aisle, for free and with no tuning.
 If Lumen is later switched on, that changes and all three documents need
 re-measuring.
 
+## First look under Lumen — provisional, not yet a measurement
+
+Lumen went live on 2026-11-01 (`aa8b8a5`, `70d81a3`). The editor now reports
+`rhifeaturelevel="SM6"`, `r.DynamicGlobalIlluminationMethod=1`,
+`r.ReflectionMethod=1`, `r.DistanceFields=1`, ray tracing off by project
+setting, and Lumen's own shaders (`FLumenCardPS`, `FVisualizeLumenSceneCS`)
+compiled at startup.
+
+**Emissive now lights the room.** With all four placed lights at 0 cd and
+`CoreEmissive` at 500, the frame
+(`docs/lightlab/core/lumen_e500_first_look.png`) shows a *room*: the wall
+corner reads as a crisp vertical edge, the ceiling and floor planes are lit
+and recede correctly, falloff is shaped by the geometry, and there is genuine
+occlusion below the lamp housing. The pre-Lumen frame at the same settings had
+none of that — only a smooth radial bloom gradient with no edge anywhere.
+
+**This is one qualitative frame, not a ladder.** It is recorded because it
+answers the yes/no question. It does not replace the tables above, and no
+number in this document has been re-measured yet. Specifically not established:
+the shape of the response across `CoreEmissive` values, whether 0.5 still reads
+amber once the room around it is lit, or any fixture figure.
+
+### Why the quantitative pass is blocked
+
+Two instruments, both currently unusable for a Lumen ladder:
+
+- **`CaptureViewport` (offscreen) does not appear to resolve Lumen.** At
+  identical settings it returned a black room with a bloom halo while the
+  on-screen viewport showed a lit room. Offscreen scene captures have no
+  temporal history, and Lumen is temporal. Treat offscreen captures as
+  unusable for GI until proven otherwise. It also still hangs to the 300 s
+  timeout on lit scenes.
+- **`CaptureEditorImage` returns a stale frame while the editor window is
+  occluded.** Changing `CoreEmissive` from 500 to 0 produced a **byte-identical
+  viewport crop**, md5 and all, while the engine ticked on at about 3 fps. The
+  desktop grab returns the window's last composited content, so with the editor
+  behind another window the capture is of whatever was last drawn on screen.
+
+**What unblocks it:** the Unreal Editor window foreground and visible, with
+Realtime enabled in the level viewport (Ctrl+R). Then `CaptureEditorImage` is
+fresh and the ladder can be run with the usual md5-differs check per frame.
+
+### Two things found while trying
+
+- **MegaLights is on and cannot work.** The lab's post-process volume has
+  `bOverride_bMegaLights` set — one of only three overrides on it — and that
+  volume was copied field-for-field from `LLK_DockBay`, so **DockBay carries
+  the same setting**. MegaLights needs hardware ray tracing, which this
+  baseline deliberately leaves off, so the viewport now shows a standing
+  warning: *"MegaLights is enabled, but has no ray tracing data and won't
+  operate correctly."* It was inert at SM5 and is merely broken at SM6. Needs
+  a decision: clear the override, or bring HWRT into scope.
+- **The lab's Bay A fixture is still in neon configuration** — `LightColor`
+  (0.749, 0.349, 1.0), `SourceWidth` 120, `SourceHeight` 8 — left from Ladder 2
+  last session. Any re-run of the fixture ladder must set troffer vs neon
+  explicitly rather than trusting the saved state. A violet-lit room was
+  briefly mistaken here for a broken material.
+
 ## What this does not establish
 
 - **No value above 500 or below 0.125 was tested**, and the sweep is of the
