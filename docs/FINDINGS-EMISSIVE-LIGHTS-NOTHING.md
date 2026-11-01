@@ -259,14 +259,27 @@ fresh and the ladder can be run with the usual md5-differs check per frame.
 
 ### Two things found while trying
 
-- **MegaLights is on and cannot work.** The lab's post-process volume has
-  `bOverride_bMegaLights` set — one of only three overrides on it — and that
-  volume was copied field-for-field from `LLK_DockBay`, so **DockBay carries
-  the same setting**. MegaLights needs hardware ray tracing, which this
-  baseline deliberately leaves off, so the viewport now shows a standing
-  warning: *"MegaLights is enabled, but has no ray tracing data and won't
-  operate correctly."* It was inert at SM5 and is merely broken at SM6. Needs
-  a decision: clear the override, or bring HWRT into scope.
+- **MegaLights was on in the lab and could not work.** The lab's post-process
+  volume had `bOverride_bMegaLights` set — one of only three overrides on it.
+  MegaLights needs hardware ray tracing, which this baseline deliberately
+  leaves off, so the viewport showed a standing warning: *"MegaLights is
+  enabled, but has no ray tracing data and won't operate correctly."* It was
+  inert at SM5 and merely broken at SM6. **Cleared in the lab on 2026-11-01**
+  by rewriting the whole 463-field `Settings` struct, which preserves the two
+  exposure overrides; a partial write would have replaced the struct and taken
+  the exposure lock with it.
+
+  **Correction: `LLK_DockBay` was never affected.** This document previously
+  claimed DockBay carried the same active setting, reasoning that the lab's
+  volume had been copied from it. Chris checked the map directly:
+  DockBay's volume has `bOverride_bMegaLights = false`. The `bMegaLights = true`
+  value is stored but **dormant**, because the override flag that would activate
+  it is off. The lab's flag was switched on somewhere in the copy; DockBay's
+  never was. Nothing in DockBay needs changing, and clearing a dormant value
+  there would mean the same 463-field rewrite for no benefit, against the
+  exposure lock. **Inferring a second map's state from a copy is not checking
+  it** — the claim should have carried a read of DockBay's own flag or not been
+  made.
 - **The lab's Bay A fixture is still in neon configuration** — `LightColor`
   (0.749, 0.349, 1.0), `SourceWidth` 120, `SourceHeight` 8 — left from Ladder 2
   last session. Any re-run of the fixture ladder must set troffer vs neon
