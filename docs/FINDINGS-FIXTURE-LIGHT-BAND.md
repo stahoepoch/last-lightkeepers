@@ -8,6 +8,15 @@ players navigate, but must never look bright enough to read a relic under."*
 is at least twelve times the inspection ceiling. Uniform fixtures cannot meet
 the contract, and the answer is directional ones.
 
+> **Measured before Lumen.** Every number below was taken with
+> `r.DynamicGlobalIlluminationMethod = 0`, i.e. direct light only, no bounce.
+> Lumen became the renderer baseline on 2026-11-01
+> (`Config/DefaultEngine.ini`), so **this ladder needs re-running**. The
+> conclusion may well survive — inverse-square geometry does not care about GI —
+> but the candela figures will move, and indirect light raises the floor
+> everywhere, which is exactly the half of the contract that was failing.
+> See `docs/FINDINGS-EMISSIVE-LIGHTS-NOTHING.md`.
+
 ---
 
 ## The three answers

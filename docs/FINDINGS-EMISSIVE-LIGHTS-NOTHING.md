@@ -104,13 +104,28 @@ dark looks identical to a camera pointed at nothing.
   spot's cone/intensity for the beam, kept in step by whatever owns the
   aperture. They will not track each other for free.
 
-## Turning Lumen on is Chris's call, not this lab's
+## Decided: Lumen is now the renderer baseline
 
-Enabling it is a project-settings change in `Config/DefaultEngine.ini`, which
-this session is barred from editing (it is dirty from another writer). It is
-also not free: Lumen here would need `r.GenerateMeshDistanceFields = 1` for
-software tracing — which forces a rebuild of every static mesh — or hardware ray
-tracing enabled for the project. Virtual Shadow Maps are off too.
+**Chris took this decision on 2026-11-01**, as one deliberate renderer change
+rather than a lantern tweak, on the reasoning that the store's visual language —
+neon as landmarks, a lantern that answers the dark, glass and reflections —
+depends on indirect light, so without GI the "living mall" cannot exist
+physically.
+
+`Config/DefaultEngine.ini` now carries a `[/Script/Engine.RendererSettings]`
+block: Lumen GI, Lumen reflections, mesh distance fields on. **Software tracing
+only** — hardware ray tracing and Virtual Shadow Maps are deliberately left off
+until their cost is profiled against dense retail geometry.
+
+The earlier bar on editing that file (dirty from another writer) had lapsed: it
+was clean in the working tree and last touched by a landed commit.
+
+**Every number in this document, and in
+`docs/FINDINGS-FIXTURE-LIGHT-BAND.md`, was measured before that change and
+describes the no-GI renderer.** They are kept as the record of what was true,
+and all three sheets — fixture, lantern, emissive — need re-running under Lumen.
+Until that happens, treat the tables here as history rather than as the current
+behaviour of the game.
 
 Worth saying plainly: **the whole fixture-light programme so far was measured
 without GI.** `docs/FINDINGS-FIXTURE-LIGHT-BAND.md` is unaffected in its
