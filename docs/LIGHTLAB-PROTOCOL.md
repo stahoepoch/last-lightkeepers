@@ -784,17 +784,44 @@ holds across all five rungs.
 separation 175.8 against 104.2 at the current lock, with nothing clipped. The
 prediction was arithmetic from illuminance, made before the run, and it landed.
 
-### Bay B, orientation — not established
+### Bay B, orientation — an instrument fault, and still not measurable
 
-The orientation ladder was captured at the same five lock points and **one step
-does not behave**. Lock 0.25 and lock 1.0 measure identically where it matters
-— near blocker 21.43 against 21.43, far blocker 18.52 against 18.52 — across a
-two-stop change. Then 1.0 to 4.0 drops the near blocker 51-fold, to 0.42.
+The orientation ladder was captured at the same five lock points and lock 0.25
+and 1.0 measured identically where it mattered. **I argued that the frames were
+not duplicates because their cropped pixels hashed differently. That argument
+is invalid** and the peer session caught it.
 
-The frames are not duplicates: their cropped pixels hash differently. But in
-Bay A the same 0.25-to-1.0 step moved the wall by 3.1x, and **a global gain
-cannot move one bay and not the other.** Unexplained, so the orientation half
-is not reported and the sweep is **not concluded**.
+**A hash detects presence, not magnitude.** One flipped bit of temporal jitter
+makes two identical renders hash differently, so non-identity is no more
+evidence of a changed render than identity was evidence of a live one. It is
+the byte-identical error run backwards.
+
+The test that *is* available costs one subtraction — mean absolute difference,
+against a measured noise floor:
+
+| pair | MAD | % pixels differing by >1 |
+| --- | --- | --- |
+| noise floor: same config, 80 min apart | 0.317 | 4.3 |
+| Bay A 0.25 -> 1.0, which responded 3.1x | 52.274 | 99.6 |
+| **Bay B 0.25 -> 1.0, the suspect** | **0.131** | **0.5** |
+| Bay B 1.0 -> 4.0, which responded | 10.877 | 63.4 |
+
+**The suspect pair differs by less than the noise floor.** It is one render
+plus jitter: the lock change never reached the second capture. No asymmetry
+between the bays, no renderer mystery — a stale frame, which is what the
+impossibility was pointing at all along. *A global gain cannot move one bay and
+not the other* was the diagnosis, and I filed it as the mystery.
+
+**The assertion now uses magnitude instead of identity**: it records the crop
+mean for every frame and refuses any frame whose MAD from the previous accepted
+frame sits at or below 0.35. On the retake it immediately caught a **second**
+stale rung — lock 16 at MAD 0.129 — that the hash check had passed.
+
+**Bay B is still not measurable.** The retaken lock 1.0 rung violates the
+forced ordering outright: scene mean 13.48 at lock 1.0 against 11.44 at lock
+0.25, brighter at a higher lock, which cannot happen under a global gain. Two
+stale rungs and an ordering violation in one ladder, so **the orientation half
+is not reported and the sweep is not concluded.**
 
 **What this means for the decision.** Lock 4.0 is a strong candidate on the
 inspection side and it is where the theory said it would be. It is not adoptable
