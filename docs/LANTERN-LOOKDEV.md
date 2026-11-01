@@ -61,43 +61,73 @@ with no source and no story about where the light comes from.
 
 ## What the frames show
 
-**Close (2 studs, hands and near floor)** — `SHEET_close.png`, four rows:
+Twelve captures: **A, B, C170, C110 at close, mid and far**, identical framing
+within each distance, all clean viewport crops at 1014x610.
+`SHEET_close.png`, `SHEET_mid.png`, `SHEET_far.png` are 2x2 grids in that
+order (A top-left, B top-right, C170 bottom-left, C110 bottom-right).
 
-- **A** blows the near floor and the blocker face to near-white. No visible
-  source, no shadow pattern, nothing that reads as held.
+**Close (2 studs, hands and near floor)**
+
+- **A** blows the near floor and blocker face to near-white. No visible source,
+  no shadow pattern, nothing that reads as held.
 - **B** reads as a lantern immediately: glowing chamber in frame, hard cage-bar
   shadows, the dark disc beneath, warm wash falling off into dark.
-- **C** is B with softer shadow edges and the housing itself legible as an
-  object — the near-field fill lifts the underfoot floor and the lamp body out
-  of silhouette. **This is the one that reads as carried equipment.**
-- **C at 110°** is a tighter pool with more edge falloff. Still carried, more
-  directed. Worth seeing next to 170° because Chris described a hood *and a
-  shutter*, which implies the aperture is meant to vary.
+- **C170** is B with softer shadow edges and the housing legible as an object —
+  the fill lifts the underfoot floor and the lamp body out of silhouette.
+  **This is the one that reads as carried equipment.**
+- **C110** is a tighter, more directed pool. Still carried, more purposeful.
 
-**Far (40 studs down the Bay B run)** — `SHEET_far.png`:
+**Mid (8 studs, a shelf edge)**
 
-- **A** is a narrow hard-edged beam down the aisle with everything outside it
-  black. Unmistakably a flashlight.
-- **B** lights the near aisle and both walls with a soft falloff into dark.
-- **C** is the most enveloping — ceiling catches light, near floor is lit,
-  edges soft.
+- **A** floods the whole corridor — both walls, the floor, the far end — and
+  blows the near blocker to white.
+- **B / C170 / C110** put a warm pool on the near blocker and wall and let the
+  corridor beyond fall away. C110 is marginally more contained than C170; the
+  two are close enough that the aperture is a taste call, not a legibility one.
+
+**Far (40 studs down the Bay B run)**
+
+- **A** lights the entire corridor: both walls to full length, the ceiling, the
+  floor, the far wall. It is a flashlight that happens to also be a room light.
+- **B / C170 / C110** give a modest warm pool that dies within a few metres,
+  with the ceiling and the far end of the run genuinely dark.
+
+## Correction: 170 degrees does NOT turn the corridor into a lit room
+
+The earlier far sheet suggested that at 170 degrees the lantern lights the
+ceiling and most of the corridor, and that this might be wrong for a game whose
+premise is that darkness is a place you enter.
+
+**The clean captures do not support that, and reverse it.** At far range the
+170-degree rigs leave the ceiling and the far half of the run dark; it is
+**A — the authored 72 degrees at 250 cd — that lights the whole corridor,
+ceiling included.** The wide cone spreads 25 cd thinly over a large solid
+angle, so each surface gets little; the narrow cone concentrates 250 cd and
+then bounces it off everything.
+
+The earlier impression came from a compromised sheet: full editor screenshots
+at a different aspect, with the emissive stand-in blooming and the lantern at a
+different offset. It was a real observation about a bad image. **Worth keeping
+as the reason the recapture was demanded** — the matched-framing requirement is
+what made the difference visible.
+
+So the premise is safe. If anything the risk runs the other way: at 25 cd the
+wide rigs may be *too* contained, and the number to argue about is intensity,
+not cone.
 
 ## Limits, stated
 
-- **The source is hidden in the far frames, in all three rigs.** The emissive
-  stand-in is a plain engine material at full brightness, and held near the
-  lens it blooms into a white dome that swamps the frame. Hiding it makes the
-  three *reach* comparisons fair, which is what the far pose is for. Dimming it
-  properly needs a material instance, which would mean a new asset in
-  `Content/` and is outside this brief.
-- **The mid pose (8 studs) is only partly usable** for the same reason: `rigA_mid`
-  and `rigB_mid` are included, `rigC_mid` is dominated by the bloomed stand-in.
-  The close and far sheets carry the comparison.
-- The editor window was resized mid-session, so framing is not pixel-identical
-  between the close set and the far set. **Within each sheet the framing is
-  identical**, which is what matters for flipping between them.
+- **The source is visible in B, C170 and C110 at every distance**, at a reduced
+  body scale (0.08 close, 0.05 mid and far) so the plain engine emissive does
+  not bloom over the frame. Dimming it properly needs a material instance,
+  which would be a new asset in `Content/` and is outside this brief.
+- The cage is six stand-in primitives, not art. It is there to prove the cues
+  exist, not to propose a silhouette.
+- **C170 and C110 are close at mid and far.** The aperture reads mostly at
+  close range. If the shutter is going to be a visible mechanic, it will need
+  to move further than 170 → 110 to be felt down a corridor.
 - No IES profile was tried (optional item D). It shapes distribution only and
-  costs nothing at runtime, so it remains worth a pass later.
+  costs nothing at runtime, so it is still worth a later pass.
 
 ## What this does not touch
 
