@@ -459,3 +459,101 @@ produced it has since been shown wrong about occlusion.
 Before trusting any per-region number, run `ScreenCoordsToWorld` on the centre
 of each sampling box and record what it hits and at what distance. A region is
 a guess about geometry until something resolves it to a surface.
+
+## 10. The exposure lock sweep — specified, not yet run
+
+Designed 2026-11-01 with the peer session. **Not run.** The editor is with
+Codex; the handover is the editor restart Codex needs for its GameFeatureData
+reopen proof, so one restart serves both.
+
+### Why
+
+Every photometric number in this project has been judged against an exposure
+constant nobody chose: the lab's volume pins `AutoExposureMinBrightness` and
+`MaxBrightness` to **1.0**, copied field-for-field from DockBay. The tell is
+that at a 6 cd handheld lantern the bay **ceiling reads 123.4** — a six-candela
+lamp lighting a room, which no plausible eye would see.
+
+**Exposure is a global gain and cannot change a ratio.** The 178x between the
+card at 0.6 studs and the room at 8 studs is invariant under any lock point.
+What the lock changes is *where that range sits on the tonemapper's curve* —
+which end is in the shoulder clipping and which is in the toe crushing. Moving
+the lock cannot create a window physics denies; it decides whether the window
+the scene already has fits the camera's latitude. 178x is about **7.5 stops**,
+and a filmic tonemapper usually carries more than that, so a lock point holding
+both ends probably exists. **That is a prediction, not a result.**
+
+### The units trap — read before setting anything
+
+`r.DefaultFeature.AutoExposure.ExtendDefaultLuminanceRange` is **0** on this
+project, so those two fields are **legacy luminance, not EV100**. Dialling in
+"EV100 5" by typing 5 is wrong. Convert with `L = 0.125 x 2^EV100`
+(equivalently `EV100 = log2(L / 0.125)`):
+
+| EV100 | value to set |
+| --- | --- |
+| 1 | 0.25 |
+| 3 | 1 |
+| 5 | 4 |
+| 7 | 16 |
+| 9 | 64 |
+
+So the current lock of **1.0 is EV100 3**, and the predicted target of EV100 5
+is **4.0**. Setting the literal ladder 1, 3, 5, 7, 9 would span only EV100 3 to
+6.2 — about three stops where eight were intended — and would probably miss the
+answer while looking like a completed sweep.
+
+`AutoExposureBias` is 1 in the volume but its override is **off**, so it does
+not apply. If anyone enables it, every reading moves a stop.
+
+### The predicted arithmetic
+
+Illuminance `E = I / d^2`; for a diffuse white card at ~0.8 albedo,
+`L = E x 0.8 / pi`.
+
+| lantern at 60 cm | E | card L | card's own EV100 |
+| --- | --- | --- | --- |
+| 6 cd | 16.7 lux | ~4.2 cd/m2 | ~5.1 |
+| 250 cd (authored) | 694 lux | ~177 cd/m2 | ~10.5 |
+
+At the current EV100 3 lock, 6 cd puts the card about two stops over mid-grey —
+the near-white paper at 252.9 with glyphs still separated — and 250 cd puts it
+about seven and a half over, which is the fully blown 3.4.
+
+### The method — both ends, every rung
+
+**The failure mode to avoid is the one every lever in this project has hit:**
+optimise one end, do not look at the other. Raising the lock darkens
+*everything*, and Bay B at 2 cd is already only giving silhouettes. A sweep
+that photographs only the card will find EV100 5 beautiful and will have
+crushed the orientation read four stops into the toe without noticing.
+
+**Five lock points x two regions, same frame set, ten captures:**
+
+1. **Card**, Bay A, camera (279, 0, 90), deep lip at (323, 0, 110), lantern at
+   the held position (285, 20, 110) aimed at (338, 0, 90) at **6 cd**, ambient
+   troffer 2 cd.
+2. **Orientation**, Bay B, camera (10, 1050, 160), troffer at **2 cd**, lantern
+   off.
+
+On-screen path only, with every check in section 9: window uncovered, crop
+verified against window size per frame, every frame hashed, camera verified by
+tracing to a known surface.
+
+### Pass criteria, declared before the run
+
+A lock point passes only if **both** hold:
+
+- **Card:** glyph separation above 100 with **0% of the card at 254**.
+- **Orientation:** Bay B's far end still gives a shape read — both blockers and
+  their offset legible — not black.
+
+If a lock point clears both, the exposure constant is found, `a28fa57` is
+re-taken once against it, and the lantern design fork may dissolve. If none
+does, the scene's range genuinely exceeds the camera's latitude and the answer
+is geometric or stateful — but established rather than assumed.
+
+**Settle this before re-taking `a28fa57`.** Every photometric number in both
+findings docs moves with the lock point, so re-checking the fixture contract
+first would mean measuring it twice and holding two contradictory documents in
+the repo in between.
