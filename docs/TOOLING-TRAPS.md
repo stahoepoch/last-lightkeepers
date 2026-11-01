@@ -237,6 +237,41 @@ This one is dangerous because it fails in the flattering direction. A lighting
 result that looks warm and plausible invites you to stop measuring, and the
 author who set the value is the least likely person to doubt it.
 
+## 12. The offscreen capture renders a lit room with no global illumination
+
+On 2026-11-01, with Lumen confirmed live, `CaptureViewport` was used to
+photograph `LLK_LightLab`. It returned a correct, well-exposed, convincingly
+lit image: the price card legible, the cool-white troffer colour right, a soft
+contact shadow under the card. Nothing about it looked wrong.
+
+It has no GI in it. The controlled test was the same scene, same settings,
+same instrument, measured before and after Lumen was switched on:
+
+| emissive 20, all lights 0 | wall @86cm | wall @261cm | ceiling |
+| --- | --- | --- | --- |
+| `CaptureViewport`, pre-Lumen | 11.278 | 0.000 | 0.993 |
+| `CaptureViewport`, post-Lumen | 11.207 | 0.000 | 0.986 |
+| **on-screen viewport, post-Lumen** | **70.3** | **3.14** | **13.3** |
+
+The offscreen path did not move at all across the biggest renderer change the
+project has ever made, while the on-screen viewport moved by a factor of six.
+Offscreen scene captures have no temporal history and Lumen is temporal, so
+direct light and bloom survive the trip and indirect light does not.
+
+**Why this one is nastier than entry 7.** A stale screenshot repeats a frame,
+so a hash check catches it. This returns a *fresh, correct, different* image
+every time, responds properly to every parameter you change, and produces a
+clean monotonic ladder. Every internal consistency check passes. The only way
+to catch it is to measure a quantity you already know the answer to on another
+instrument.
+
+**So: never measure global illumination with an offscreen capture.** Measure
+from the on-screen viewport, which means the editor window has to be genuinely
+visible — `CaptureEditorImage` photographs the window, so anything covering it,
+this app included, silently freezes the frame (entry 7 again, by a different
+route). Two capture paths, each broken in a way the other is not.
+
+
 ---
 
 ## The pattern, stated once
