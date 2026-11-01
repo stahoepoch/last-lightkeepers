@@ -132,10 +132,20 @@ adaptation re-adapts to the new dark and re-clips the cone; the picture ends up
 in the same place and the number that moved was the wrong one. Fix in this
 order:
 
-1. **Clamp exposure in the map.** A `PostProcessVolume` with min and max EV100
-   pinned — equal, or nearly, so adaptation stops hunting. This belongs to
-   whoever owns the `.umap` (row 41, ratified 2026-10-30), not to `Source/`. It
-   is the only step that can be done wrong in a way the others cannot fix.
+1. **Clamp exposure in the map.** A `PostProcessVolume` with
+   `AutoExposureMinBrightness` and `MaxBrightness` pinned — equal, or nearly,
+   so adaptation stops hunting. This belongs to whoever owns the `.umap`
+   (row 41, ratified 2026-10-30), not to `Source/`. It is the only step that
+   can be done wrong in a way the others cannot fix.
+
+   **Those two fields are luminance here, not EV100.** This project has
+   `r.DefaultFeature.AutoExposure.ExtendDefaultLuminanceRange = 0`, the legacy
+   range, so a value typed into them is a luminance. Convert with
+   `L = 0.125 x 2^EV100`: the lab's current clamp of **1.0 is EV100 3**, and
+   EV100 5 is **4.0**. Typing an EV100 number straight into the field is the
+   mistake this step is warning about, and it has already been made once —
+   see `docs/LIGHTLAB-PROTOCOL.md` §10, where a ladder meant to span eight
+   stops would have covered three.
 2. **Then tune `light.intensity` in `data/lantern.json`** until the centre
    holds its colour. Values are Chris's (`docs/LANES.md`); the invariant above
    is why this is safe, and the import commandlet is how it reaches the asset.
