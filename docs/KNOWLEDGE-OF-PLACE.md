@@ -60,6 +60,53 @@ The mirror is therefore a **landmark and partial survey cue**, not a universal
 navigation UI. It makes the main retail floor memorable without teaching the
 player that looking up is a safe or complete answer.
 
+## The next anchor stores
+
+These are distinct **knowledge grammars**, not department reskins. Chris,
+2026-10-31, named the retail references; the gameplay consequences below are
+the proposed build brief to test when either store becomes active work.
+
+### Sayers — service routes, not a plan
+
+Sayers is the Sears-like anchor: a tight, utilitarian automotive repair and
+parts area attached to retail. Its useful knowledge is **route knowledge**.
+Players learn it by following a service sequence — counter, parts cage, bay,
+lift, back corridor, receiving door — rather than by standing anywhere and
+seeing the whole plan.
+
+| Contract part | Sayers answer |
+| --- | --- |
+| Spatial instrument | Service-bay numbers, painted floor lanes, hanging tool rails, vehicle lifts and the parts-counter/service-door chain. |
+| Temporal instrument | The visible cycle of service machinery: a lift rising, bay door opening, extractor fan starting, or repair signal changing. These indicate a route becoming usable or hazardous, not random ambience. |
+| Knowledge gained | The next correct turn and which bay connects to receiving or the back corridor. |
+| Knowledge withheld | A broad floor plan. Rack walls, bays and work partitions keep the store tight and prevent Boswell-style survey orientation. |
+| Counterspace | A bay with no working service cue, a blocked lane, or the dense parts cage forces the crew to use their discovered route record or split to inspect. |
+
+The automotive annex should feel physically narrower, louder in its materials
+and more industrial than the retail floor — but it is still a department-store
+service space, not a generic garage level.
+
+### Penhurst — competing entrances and crooked decisions
+
+**Penhurst is the project’s JCPenney analogue.** It has two real public
+entrances/exits, angled interior routes and an embedded prestige-beauty
+boutique plus hair salon. Its useful knowledge is **node knowledge**: a crew
+learns which entrance they used, which diagonal corridor they crossed and
+which interior department has reoriented them.
+
+| Contract part | Penhurst answer |
+| --- | --- |
+| Spatial instrument | The pair of entrances, the off-axis beauty boutique, salon threshold, angled fixture runs and the decision nodes where diagonal corridors meet. |
+| Temporal instrument | Salon/service activity and storefront conditions distinguish which entrance is presently useful; their state must be visible in-world, not announced by a quest marker. |
+| Knowledge gained | Which entrance is behind the crew, which side route returns to it, and whether they are travelling across or deeper into the crooked plan. |
+| Knowledge withheld | A clean global axis. The layout deliberately defeats "always go east/west" muscle memory and makes the wrong entrance a meaningful commitment. |
+| Counterspace | The interior boutique, fitting/salon back rooms and angled display runs deny long views; a map of discovered structure or a teammate's dated report becomes valuable here. |
+
+The beauty boutique and salon make Penhurst legible as a place, not a product
+placement exercise. Any bright cosmetic counters still obey the fixture-light
+contract: they can establish shape and district identity, but cannot look like
+working relic-reading light unless an explicit gameplay rule says so.
+
 ## The Fieldboard's role
 
 The Fieldboard records **knowledge**, not omniscient state. It separates:
