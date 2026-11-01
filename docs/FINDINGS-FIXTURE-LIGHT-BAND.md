@@ -389,18 +389,33 @@ Run 2026-11-01 after the power cut. Ambient troffer 2 cd, deep lip, lantern at
 the held position, camera 56 cm off the card. Only frames at a matched window
 size are listed; `clipped` means the card region has reached 254+.
 
-| lantern | card mean | text contrast | verdict |
-| --- | --- | --- | --- |
-| 0 (ambient only) | 10.33 | 14.8 | unreadable — the lip working |
-| 6 cd | 246.84 | 141.4 | **already near-clipped** |
-| 15 cd | 252.05 | 79.6 | clipped |
-| 40 cd | 254.03 | 35.8 | clipped |
-| 250 cd (authored) | 254.89 | 3.4 | fully blown |
+Measured on-screen (`CaptureEditorImage`, cropped and hash-checked).
+`clip%` is the fraction of the card region at 254+; `glyph range` is the 5th-to-
+95th percentile spread inside the text band, which is what actually separates
+ink from paper.
 
-**Everything from 6 cd upward clips the card at 60 cm.** Contrast falls
-monotonically from 141 to 3.4 as intensity rises, because the card saturates and
-the glyphs saturate with it. The authored 250 cd is roughly two orders of
-magnitude too bright for reading at arm's length.
+| lantern | card mean | clip% | glyph range | text contrast | verdict |
+| --- | --- | --- | --- | --- | --- |
+| 0 (ambient only) | 10.33 | 0.0 | 13.6 | 14.8 | unreadable — the lip working |
+| **6 cd** | 246.84 | **0.0** | **104.2** | 141.4 | **reads cleanly** |
+| 15 cd | 252.05 | 36.3 | 52.3 | 79.6 | clipping begins |
+| 40 cd | 254.03 | 94.7 | 21.1 | 35.8 | blown |
+| 250 cd (authored) | 254.89 | 94.9 | 1.4 | 3.4 | fully blown |
+
+**Correction.** This table first said "everything from 6 cd upward clips", on
+the strength of the card's high *mean*. That was wrong, and the peer session
+caught it. **At 6 cd nothing clips at all** — 0.0% of the card is at 254, and
+the glyphs sit at 148.7 against paper at 252.9, a clean 104-point separation.
+The mean is high because the paper is bright, which is not the same as the
+label being unreadable. Clipping starts between 6 and 15 cd.
+
+So the readable window is **not** below 6 cd. Its upper bound is somewhere
+between 6 and 15, and 6 cd is inside it. The authored 250 cd is still roughly
+two orders of magnitude too bright, and contrast still collapses monotonically
+as intensity climbs — but the usable region is wider and higher than this
+document first claimed.
+
+**The lower bound remains unmeasured**, for the reason below.
 
 **Below 6 cd is unmeasured and must not be inferred.** The 0.75 cd and 2 cd
 captures came back **byte-identical to each other** (md5 96426774) and match the
@@ -425,6 +440,27 @@ held at arm's length saturates almost at once. If the shipping game uses
 adaptive exposure, a held lantern will not behave this way and these numbers do
 not transfer. **Whether exposure is locked is now a gameplay decision, not a
 lookdev one** — it decides whether close inspection is even possible.
+
+### A 6 cd lamp should not light a room
+
+At 6 cd the bay's **ceiling reads 123.4** and its walls 28.6. A six-candela
+lamp held at arm's length is lighting an entire room, which no plausible eye
+would see. That is not a lantern result, it is a camera result: the exposure is
+pinned at 1.0 with no latitude, and **that constant was copied from DockBay
+rather than chosen for a lantern**.
+
+Which reframes the problem. A 178x range is about **7.5 stops** — an
+unremarkable scene range that real vision and film handle without complaint.
+Nothing clips because the range is too wide; it clips because the view has no
+latitude and its lock point was never defended. This is the same disease as
+250 cd: a number tuned by eye against an exposure constant nobody had chosen.
+
+**So the next experiment is one number, not a redesign.** Keep exposure locked —
+locked brightness is honest and learnable, which is worth keeping — but set the
+lock point for the lantern's working range and re-run this identical sweep. It
+either opens a usable window below 6 cd or proves there is none. Credit to the
+peer session for this branch; it is better than the fork below, which should
+not be settled until this is tried.
 
 ### The third appearance of one shape
 
