@@ -448,6 +448,48 @@ adaptive exposure, a held lantern will not behave this way and these numbers do
 not transfer. **Whether exposure is locked is now a gameplay decision, not a
 lookdev one** — it decides whether close inspection is even possible.
 
+### These numbers did not reproduce after an editor restart
+
+**Recorded 2026-11-01, and it suspends the table above.** The exposure sweep
+was set up on the same rig and the first step was to re-establish the 6 cd
+reading. It did not come back.
+
+| | bay wall | card | text contrast |
+| --- | --- | --- | --- |
+| 6 cd, measured earlier | 28.56 | 246.84 | 141.4 |
+| 6 cd, same settings after restart | **154.48** | 251.31 | 92.2 |
+
+**A five-fold disagreement on the wall, at a configuration verified field by
+field.** Troffer 2 cd, lantern 6 cd at (285, 20, 110), cone 72/17.28,
+attenuation 840, exposure locked 1.0/1.0 with both overrides on, lip visible,
+floors `DefaultMaterial`, camera traced to the card at (336, 0, 90).
+
+It is not a stale frame: two consecutive captures with nothing changed between
+them are byte-identical to each other, so the current render is stable and
+reproducible — it simply disagrees with the earlier one.
+
+The only event between the two is an **editor restart at 18:18:44**. The
+renderer settings survived it: GI method 1, reflections 1, Lumen diffuse
+allowed, MegaLights off for the project, `ExtendDefaultLuminanceRange` 0.
+**I cannot account for the difference**, and the most likely candidate —
+Lumen's scene and surface cache being colder when the earlier sweep ran than
+after the level had been loaded a while — is a guess, not a finding.
+
+**What follows from it:**
+
+- **The lantern table above is suspended, not corrected.** If the earlier run
+  was under-lit by incomplete GI, its numbers understate brightness and the
+  "clipping starts between 6 and 15" boundary moves down.
+- **The exposure sweep was not run.** Measuring a lock point against an
+  instrument that cannot reproduce its own previous reading would produce five
+  numbers with nothing underneath them.
+- **Reproducibility is now the blocking question**, ahead of the lock point and
+  ahead of re-taking `a28fa57`. The check is cheap: capture one reference
+  frame, restart the editor, capture it again, require a match. Until that
+  passes, no photometric number in this project should be trusted across a
+  restart — which includes every number in both findings documents, because
+  none of them record whether a restart happened mid-run.
+
 ### A 6 cd lamp should not light a room
 
 At 6 cd the bay's **ceiling reads 123.4** and its walls 28.6. A six-candela
