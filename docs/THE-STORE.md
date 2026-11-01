@@ -36,10 +36,12 @@ the damage.
 
 Three elements are non-negotiable:
 
-1. **Mirrored ceiling islands and glass soffits.** Large, dark-framed panels
-   reflect aisles, fixtures, emergency lights and the keeper's lantern. They
-   are ceiling landmarks rather than a literal glass roof across every floor:
-   a player should periodically look up and see the store doubled above them.
+1. **Mirrored ceiling islands and glass soffits.** This is **Boswell's**
+   particular signature, drawn from Chris's department-store references; it is
+   not a requirement for every future anchor. Large, dark-framed panels reflect
+   aisles, fixtures, emergency lights and the keeper's lantern. They are
+   ceiling landmarks rather than a literal glass roof across every floor: a
+   player should periodically look up and see the store doubled above them.
 2. **Neon as a broken retail memory.** Blue, violet, magenta and occasional
    red tube/sign light belongs to department thresholds, optical counters,
    toy/furniture signage and ceiling islands. It is never nightclub dressing:
