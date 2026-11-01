@@ -183,6 +183,80 @@ and the number is his call. It is worth saying that dropping 250 → 25 is a
 large change to the most consequential number in the game and should be felt
 in play, not accepted from a lab.
 
+## The directional-downlight remedy, tested — it only half works
+
+The section below recommends "directional downlights that wash floor and lower
+aisle while leaving vertical faces dark". Tested on 2026-11-01 under Lumen,
+using the rect light's own barn doors, which is the "barn doors or narrow
+cones" option named there. Same bays, same poses, same per-rung explicit
+fixture state.
+
+### In the run, barn doors do exactly what was hoped
+
+Bay B, 6 cd, camera at the far end. "Vertical face" is a gondola blocker's
+front face, which is where a shelf label lives.
+
+| rig | floor | vertical face | floor : face | side wall |
+| --- | --- | --- | --- | --- |
+| plain troffer | 30.42 | 15.98 | 1.90 | 5.81 |
+| **barn doors 15°** | **21.98** | **8.21** | **2.68** | **0.00** |
+| barn doors 2° | 3.44 | 2.48 | 1.39 | 0.00 |
+
+**15° is the useful setting.** The side walls go from 5.81 to **exactly zero** —
+in `docs/lightlab/fixtures/SHEET_barndoor_vs_plain.png` the checker texture up
+both walls simply disappears — while the floor keeps 21.98, far above the ~8
+that marked the orientation floor. The run stays legible and arguably reads
+*better*: the blockers now stand as silhouettes against a lit floor instead of
+being lost against lit walls.
+
+**2° is not selectivity, it is just darkness.** Everything drops, the ratio gets
+*worse* than plain (1.39), and the run stops being legible — only a small pool
+survives directly under the fixture. Worth recording because the Bay A result
+below, read alone, would have suggested tightening further.
+
+### But the price card barely notices
+
+Bay A, 6 cd, camera 56 cm off the card face.
+
+| rig | card mean | text contrast | side wall | readable? |
+| --- | --- | --- | --- | --- |
+| plain troffer | 168.45 | 172.7 | 23.84 | yes |
+| **barn doors 15°** | **145.08** | **153.1** | **5.84** | **still yes** |
+| barn doors 2° | 3.48 | 16.3 | 0.31 | no — but the room is dark too |
+
+The side wall drops fourfold. **The card drops 11%.** And it cannot be direct
+light: the card sits 34.6° off the fixture's vertical axis, well outside a 15°
+cone.
+
+### Why, and what it means
+
+**Under Lumen, a downlight that washes the floor turns the floor into a
+secondary source pointed straight up at every vertical face above it.** The
+card faces that lit pool from 90 cm up. Barn doors control what the fixture
+emits; they cannot control what the floor re-emits.
+
+So the remedy fails for *precisely the mechanism that made it work in the run*.
+Bounce off the floor plane is what dropped the orientation floor from 6 cd to
+2 cd, and it is what keeps the price card readable. One mechanism, both
+results. Aiming light downward cannot darken a label that faces a lit floor.
+
+**The fixture is the wrong lever; the next ones to try are not lighting at
+all.** Untested, in order of cheapness:
+
+- **Floor albedo.** Bounce scales directly with floor reflectance, and the lab
+  floor is mid-grey `DefaultMaterial`. A dark floor keeps the lit-pool read for
+  orientation — you still see the pool and the silhouettes against it — while
+  cutting what reaches the labels. This is art direction, not lighting, and it
+  is the single highest-leverage untested variable in this whole document.
+- **Label placement out of the bounce path** — recessed into a shelf, or on a
+  surface that does not face the floor.
+- **Self-luminous signage**, unchanged from the recommendation below.
+
+A caveat on the Bay A rows: the editor window was resized between the 15° and
+2° captures, so that last row's sampling boxes sit slightly differently. The
+42x drop is far larger than that can account for, but the row is indicative
+rather than exact.
+
 ## Why there is no band, and what to do instead
 
 The gap is not a tuning failure. **It is inverse-square geometry.** The price
