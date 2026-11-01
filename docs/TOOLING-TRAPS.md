@@ -159,6 +159,19 @@ reading where the thing being measured is absent, and that reading has to come
 out as nothing. This costs one capture and it is the difference between a
 threshold and a number with a unit stapled to it.
 
+**And the follow-up was worse than the leak.** Holding the camera still and
+taking the same shot at 0 cd and at **5000 cd** produced images that were
+**pixel-identical — mean absolute difference 0.0, maximum difference 0**. There
+was no ambient floor drowning the fixtures; the fixtures were contributing
+nothing at all, because the captured viewport was rendering albedo without
+lighting. Every "candela" in that series was a label on an unlit picture.
+
+The general form: **a control that only tests for darkness cannot tell you the
+instrument is disconnected.** Zeroing proves the floor; it takes a *maximum* —
+an absurd value the rig could not possibly ignore — to prove the input is
+wired to the output at all. Run both ends. A rig that answers the same at 0 and
+at 2500× the top of your ladder is not measuring your variable.
+
 The sharpest part: the contaminated ladder would have been *monotonic and
 plausible*. Brighter candela did give brighter frames. Nothing about the series
 looked wrong — it would simply have had a floor baked into every rung, and the

@@ -187,6 +187,11 @@ Before stepping a single candela:
 1. **Negative control.** All lights to 0 cd, capture. **It must be black.** If
    the room is visible, stop — the box has an ambient floor and the ladder can
    only measure that. See section 7.
+1b. **Positive control, and do not skip this one.** Same pose, one fixture at
+   an absurd value — **5000 cd** — and capture. It must look obviously, wildly
+   different. On 2026-10-31 it was *pixel-identical* to the 0 cd frame, which
+   is how it emerged that the captured viewport had no lighting in it at all.
+   Zeroing proves the floor; only a maximum proves the dial is connected.
 2. **Capture-liveness proof.** Capture, make a change that alters most of the
    frame (a light from 0 to 100 cd), capture again, and compare the two by hash
    or byte size. Identical means the capture path is dead; see
@@ -285,7 +290,64 @@ bottom of the ladder — and it is not one. **The card is readable with the
 lights off.** Reporting that 2 cd reads the card would have been reporting the
 ambient floor and calling it a fixture threshold.
 
-### Where the leak might be, untested
+### It is not a leak. The captured view has no lighting in it at all.
+
+Chased in the order "most likely and fastest to rule out", and the answer
+arrived from a measurement rather than from looking at a picture.
+
+**The decisive test.** Hold the camera still, set Bay B's own fixture to
+**5000 cd**, and compare against the same pose at **0 cd**:
+
+```
+0 cd  vs  5000 cd   mean absolute difference = 0.0   max difference = 0
+```
+
+**Pixel-identical, across a 2500-fold change in intensity.** Earlier, the 2 cd
+and 100 cd Bay A frames likewise shared a mean of 127.56 and a max of 255 to
+the last decimal.
+
+So this was never an ambient floor that happened to drown the fixtures. **The
+fixtures contribute nothing whatsoever to the captured image.** What is being
+captured is albedo with no lighting applied — which is why the control looked
+flat and shadowless, why the card was "readable at 2 cd", and why the very
+first render looked blown out (that was simply a bright material at full
+albedo, not an exposure result).
+
+Per the bar set for this control — *if you cannot get the card unreadable at
+all, stop and report it* — this is that outcome, and the cause is the viewport,
+not the lab.
+
+### What was ruled out, by enumeration rather than assumption
+
+| Suspect | Finding |
+| --- | --- |
+| Template lights left behind | **None.** The only light-type actors in the level are `RectLight_0`, `RectLight_1`, `SpotLight_0` — the three placed deliberately. No DirectionalLight, SkyLight, SkyAtmosphere, VolumetricCloud or Fog actor survives. |
+| Copied PPV carrying light | **Clean.** `bOverride_AmbientCubemapIntensity` false, `ambientCubemap` None, `bOverride_IndirectLightingIntensity` false, `lumenSkylightLeaking` 0. Nothing light-bearing was copied from DockBay. |
+| Fixtures disabled | **No.** All three read `bAffectsWorld` true, `bVisible` true, `IntensityUnits` Candelas. |
+| Emissive materials | Not separately tested, and **moot**: an emissive room would still change when a 5000 cd light is added. Nothing changed. |
+
+### The viewport the tools reach is not the viewport being captured
+
+This is the thread tying together every failure in this session. Three
+independent controls all target a viewport that is **not** the one
+`CaptureEditorImage` returns:
+
+- `SetCameraTransform` reports success and `GetCameraTransform` reads the new
+  pose back, while the captured image keeps the old one — sometimes for many
+  calls, then catching up without warning.
+- `viewmode lit`, executed through the editor's own console (`Cmd: viewmode
+  lit` is in the log), changed the captured image by **nothing**: mean 97.20
+  and max 130 before and after.
+- `CaptureViewport`, the one tool that takes an explicit pose *and* hides UI,
+  hangs to the 300-second timeout every single time.
+
+**So the fix is a human one and it is small:** set the *visible* level viewport
+to **Lit** from its View Mode dropdown, and confirm it with the 0 cd / 5000 cd
+test above before anything else. If that pair stops being pixel-identical, the
+lab is live and the ladders in section 5 can run as written. Nothing in the map
+needs rebuilding.
+
+### Earlier suspicions, now superseded
 
 Not diagnosed, and listed in order of suspicion so whoever picks this up starts
 in the right place rather than from mine:
