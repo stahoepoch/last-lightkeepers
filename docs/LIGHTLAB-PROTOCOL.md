@@ -568,3 +568,86 @@ is geometric or stateful — but established rather than assumed.
 findings docs moves with the lock point, so re-checking the fixture contract
 first would mean measuring it twice and holding two contradictory documents in
 the repo in between.
+
+## 11. Making the exposure units self-describing — procedure, not yet approved
+
+A proposal from the peer session, recorded so it can be done correctly if
+Chris approves it. **It is his call, and the deciding reason is that it edits
+`LLK_DockBay`'s volume, which is Codex's map under the one-owner rule
+(row 41).**
+
+### What and why
+
+`r.DefaultFeature.AutoExposure.ExtendDefaultLuminanceRange` is **0**, the
+legacy range, and it is at the *engine default* — nothing in this project sets
+it. That makes `AutoExposureMinBrightness` / `MaxBrightness` luminance values
+with no label, which has already produced one error in a doc
+(`a647391`) and one in a planned sweep (§10). Setting the flag to **1** makes
+those fields mean EV100 directly, so every future value is self-describing.
+This fixes the class of error rather than labelling it.
+
+### Scope, verified rather than assumed
+
+- **No exposure code in `Source/`** — nothing matching `AutoExposure`,
+  `MinBrightness`, `MaxBrightness`, `EV100` or `ExtendDefaultLuminance`.
+- **Nothing exposure-related in `Config/`**, which is why the flag sits at its
+  engine default.
+- **Exactly two maps**, so exactly two volumes to convert.
+
+**The second volume is not in a `.umap`.** `LLK_DockBay` is World Partition, so
+its `PostProcessVolume` is an external actor:
+`Content/__ExternalActors__/LLK_DockBay/1/54/RVCGAGWU3BP95V6ADJDK28.uasset`.
+Anyone grepping for `*.umap` to find the volumes will convert the lab, miss
+DockBay, and silently re-expose it.
+
+**Read DockBay's current values; do not assume they match the lab's.** §1 of
+this document says the lab's exposure was copied field-for-field from DockBay,
+and that copy has already proved imperfect once: the `bMegaLights` override was
+on in the lab and off in DockBay, which cost a wrong claim in two commits
+before anyone checked. Convert what is actually there.
+
+### The neutrality test, and the control it needs
+
+Done properly the flip is **rendering-neutral**: flip the flag and convert each
+volume to the EV100 equivalent of its current luminance in the same commit, and
+every committed number stays valid. The obvious test is to capture a frame
+before and after and require them to match.
+
+**That test, alone, is worthless — and this document is the reason to know it.**
+A rendering-neutral flip predicts two matching frames. So does a dead capture
+path, which this project has hit twice: the 0 cd versus 5000 cd pair that came
+back pixel-identical because the viewport was unlit
+(`docs/TOOLING-TRAPS.md` 8), and the 0.75 and 2 cd rungs that came back
+byte-identical to each other because the viewport had stopped redrawing
+(trap 7). A match cannot distinguish success from no measurement.
+
+**So gate it the way every ladder here is gated:**
+
+1. **Prove the path is live.** Drive a light to an absurd value, capture,
+   confirm the frame moved, put it back.
+2. Capture the **before** frame.
+3. Flip the flag and convert both volumes.
+4. Capture the **after** frame, same pose, same window size, hashed.
+5. **Require the match.** Now it is evidence.
+
+### Two commits, not one
+
+If the §10 sweep moves the lock point, **do not bundle that with the flip.**
+
+- **Commit 1 — flip and convert.** Proves neutrality: frames match, with the
+  liveness control above.
+- **Commit 2 — set the chosen lock point in EV100.** Proves the change: frames
+  differ, and by the amount the sweep predicted.
+
+Bundled, the two proofs destroy each other — the frames are supposed to differ,
+so neutrality becomes untestable, and a failure in either step looks like a
+failure in both. Separated, each carries its own proof, which is the pattern
+that caught the config token and the dead viewport.
+
+### And it belongs in config deliberately
+
+The flip is a one-line addition under `[/Script/Engine.RendererSettings]` in
+`Config/DefaultEngine.ini`. That file only recently got its renderer baseline
+stated on purpose (`aa8b8a5`, `70d81a3`) after years of running on engine
+defaults nobody had chosen. Write the intended value in with a comment rather
+than letting another renderer setting sit at a default by accident.
