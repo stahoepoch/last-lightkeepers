@@ -448,47 +448,48 @@ adaptive exposure, a held lantern will not behave this way and these numbers do
 not transfer. **Whether exposure is locked is now a gameplay decision, not a
 lookdev one** — it decides whether close inspection is even possible.
 
-### These numbers did not reproduce after an editor restart
+### Retracted: they do reproduce, and the restart claim was wrong
 
-**Recorded 2026-11-01, and it suspends the table above.** The exposure sweep
-was set up on the same rig and the first step was to re-establish the 6 cd
-reading. It did not come back.
+**This section previously said the 6 cd reading failed to reproduce after an
+editor restart, and suspended the table above. Both halves were wrong.**
 
-| | bay wall | card | text contrast |
-| --- | --- | --- | --- |
-| 6 cd, measured earlier | 28.56 | 246.84 | 141.4 |
-| 6 cd, same settings after restart | **154.48** | 251.31 | 92.2 |
+**They reproduce exactly.** Re-measured on the same rig: card **246.83** against
+the original 246.84, bay wall **28.56** against 28.56. The lantern table stands.
 
-**A five-fold disagreement on the wall, at a configuration verified field by
-field.** Troffer 2 cd, lantern 6 cd at (285, 20, 110), cone 72/17.28,
-attenuation 840, exposure locked 1.0/1.0 with both overrides on, lip visible,
-floors `DefaultMaterial`, camera traced to the card at (336, 0, 90).
+**There was no restart between the two runs.** The engine log runs on UTC and
+the machine on EST. The only `Engine is initialized` in the log is at 18:18:44
+UTC = **13:18:44 local**, which is the power-loss recovery — and both readings
+(14:37 and 15:59 local) came after it. The claim was built by reading a log
+timestamp as a local one.
 
-It is not a stale frame: two consecutive captures with nothing changed between
-them are byte-identical to each other, so the current render is stable and
-reproducible — it simply disagrees with the earlier one.
+**What the anomalous frame actually was is still unexplained.** It read the
+wall at 154.48 where the settled value is 28.56. A per-tile ratio against the
+good frame ranges from **1.31 to 7.51** — not the single constant a failed
+exposure lock would produce, so the lock was not silently off. A decay
+hypothesis (indirect light still falling from a preceding 500 cd test) was
+tested directly and **not supported**: a 2 cd frame captured immediately after
+500 cd reads the wall at 27.11, essentially settled. One frame, cause unknown,
+recorded as an anomaly rather than reasoned from.
 
-The only event between the two is an **editor restart at 18:18:44**. The
-renderer settings survived it: GI method 1, reflections 1, Lumen diffuse
-allowed, MegaLights off for the project, `ExtendDefaultLuminanceRange` 0.
-**I cannot account for the difference**, and the most likely candidate —
-Lumen's scene and surface cache being colder when the earlier sweep ran than
-after the level had been loaded a while — is a guess, not a finding.
+### The hazard that is demonstrated: window height silently rescales everything
 
-**What follows from it:**
+Chasing the above produced one solid result. The **identical scene** measures:
 
-- **The lantern table above is suspended, not corrected.** If the earlier run
-  was under-lit by incomplete GI, its numbers understate brightness and the
-  "clipping starts between 6 and 15" boundary moves down.
-- **The exposure sweep was not run.** Measuring a lock point against an
-  instrument that cannot reproduce its own previous reading would produce five
-  numbers with nothing underneath them.
-- **Reproducibility is now the blocking question**, ahead of the lock point and
-  ahead of re-taking `a28fa57`. The check is cheap: capture one reference
-  frame, restart the editor, capture it again, require a match. Until that
-  passes, no photometric number in this project should be trusted across a
-  restart — which includes every number in both findings documents, because
-  none of them record whether a restart happened mid-run.
+| editor window height | card mean | bay wall |
+| --- | --- | --- |
+| 773 px | 246.83 | 28.56 |
+| 693 px | 140.22 | 27.11 |
+
+**A 76% change in the card from a window resize**, because the crop is taken at
+fixed insets and the sampling boxes land on different world content. The wall
+barely moves, because that region is uniform — so the error is large exactly
+where the measurement matters and invisible exactly where it would be noticed.
+
+The window has arrived at 772, 773 and 693 px during this project, changing
+without anyone resizing it. **This is the largest measurement error source
+found so far, and it is completely silent.** Every frame must have its size
+recorded and mismatches discarded; `docs/LIGHTLAB-PROTOCOL.md` §9 requires it
+and this is the measurement that justifies the requirement.
 
 ### A 6 cd lamp should not light a room
 
