@@ -318,6 +318,78 @@ fixtures do not see — rather than dimmed into illegibility. Combined with
 self-luminous signage for landmarks, that is the whole remedy, and none of it
 is a candela value.
 
+## The recessed label — this one passes
+
+Tested 2026-11-01. A shelf lip over the Bay A price card: real geometry that
+blocks the ceiling fixture's direct path to the readable face while leaving the
+relic silhouette visible from the aisle. Ambient troffer at 2 cd, the Lumen
+orientation floor, throughout.
+
+**Geometry** (the lip was lost in a power cut before the map was saved, so this
+is the rebuild spec). A `/Engine/BasicShapes/Cube` with `DefaultMaterial`,
+horizontal, 60 cm wide and 4 cm thick, at **z = 110** — just above the card,
+which spans z 75–105 at x ≈ 338. Depth is the variable:
+
+- **shallow:** 10 cm, spanning x 328–338, actor at (333, 0, 110) scale (0.10, 0.60, 0.04)
+- **deep:** 30 cm, spanning x 308–338, actor at (323, 0, 110) scale (0.30, 0.60, 0.04)
+
+The depth that matters is set by the ray from the fixture at (200, 0, 290) to
+the *bottom* of the card: it crosses z = 110 at x ≈ 315, so a lip must reach
+about **23 cm** out to shade the whole face. 10 cm cannot; 30 cm can.
+
+| rig, troffer 2 cd | card mean | text contrast | bay wall | readable? |
+| --- | --- | --- | --- | --- |
+| no lip | 92.29 | 102.7 | 4.92 | yes |
+| shallow lip, 10 cm | 71.36 | **104.1** | 4.70 | **yes — unchanged** |
+| **deep lip, 30 cm** | 10.33 | **14.8** | **4.64** | **no** |
+
+**The deep lip is the first lever that works.** Text contrast falls sevenfold,
+from 102.7 to 14.8, while **the bay wall is untouched — 4.64 against 4.92**.
+Every earlier lever bought card darkness by taking light out of the room; this
+one takes none. The shallow lip is a useful negative: it drops the card's *mean*
+by shading its top edge while leaving the glyph band fully lit, so contrast does
+not move at all. Shading a label is not the same as shading the part you read.
+
+### The lantern can still reach it, and the lip does not block the player
+
+Traced rather than eyeballed, with the lantern at a held position — (285, 20,
+110), hand height and slightly off the centre line, aimed at the card:
+
+| trace | first hit | path length |
+| --- | --- | --- |
+| lantern → card | 57.8 | 60.1 |
+| player eye → card | 57.0 | 59.0 |
+
+Both first-hits are the card face itself, so **neither the lantern's path nor
+the player's read trace is occluded by the lip.** Geometrically the mechanic
+works: the lip shades the fixture directly overhead and nothing at eye level.
+
+### But the authored lantern destroys the label
+
+With the deep lip and the lantern at that held position:
+
+| lantern | card mean | text contrast |
+| --- | --- | --- |
+| 250 cd (as authored in `data/lantern.json`) | 254.89 | **3.4** |
+
+**Unreadable, by blowing out rather than by darkness.** At 60 cm the authored
+value clips the whole card to white. This is the same 250 cd that
+`docs/LANTERN-LOOKDEV.md` found reads as a floodlight rather than a carried
+lamp, now failing a second, independent test: it cannot perform the inspection
+the store is being designed around.
+
+**Not yet measured: the lantern at ~25 cd**, the value the lookdev suggested.
+The capture was in flight when the machine lost power. That single reading is
+what closes the loop, and it is the first thing to take when the lab is next
+open.
+
+### Where this leaves the contract
+
+The store can withhold inspection detail physically — geometry does what no
+candela value could. What is still open is the instrument: at its authored
+intensity the lantern over-lights the thing it is meant to reveal, so the
+inspection mechanic needs the lantern number settled before it can be tuned.
+
 ## Why there is no band, and what to do instead
 
 The gap is not a tuning failure. **It is inverse-square geometry.** The price
