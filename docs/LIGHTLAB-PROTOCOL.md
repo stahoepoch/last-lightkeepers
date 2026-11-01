@@ -970,8 +970,49 @@ the separation is total:
 | EXP_B_400 | 513 | 316.0 | — | post-hang, unmeasurable |
 
 **Good rows: 118, 119, 120, 120, 120. Bad rows: 3.0, 3.0, 3.0.** Forty-fold
-apart with nothing in between and no counterexample. The earlier "at risk, not
-wrong" hedge was conceding to a row that could not be measured at all.
+apart with nothing in between and no counterexample in this data.
+
+**But rate is still a screen, not a verdict — restored on mechanism.** An
+earlier revision dropped that caveat because its stated counterexample
+(EXP_A_400 at 2.9 fps and good) turned out to be an unmeasurable row. Rejecting
+bad evidence for a claim is not the same as refuting the claim, and the real
+justification was never that row:
+
+**Rate measures the throttle. Staleness is what the throttle causes.** On this
+data the two are perfectly correlated because the coupling runs through
+*focus* — but the capture depends on *visibility*, and those diverge. A window
+covering the viewport while the editor keeps focus, a modal over the viewport,
+the editor on a second display that has gone to sleep: each gives a
+non-redrawing viewport **at 120 fps**, and rate waves it through. The clean
+separation describes today's failure mode, not every failure mode.
+
+### Closed: no settle of any kind fixes this
+
+The stale rungs show 18 and 19 frames elapsed at 3.0 fps — about **six seconds
+of wall time** between the state change and the capture. They waited six
+seconds and were stale regardless. **So waiting does not fix it, in frames or
+in milliseconds**, and every variant of "settle before capturing" is dead:
+waiting k frames, waiting k seconds, forcing k redraws through a throttled
+loop. Recorded as closed so nobody reaches for it again. The only thing that
+moves the needle is the window being in front.
+
+### To make rate a verdict, induce the condition instead of auditing it
+
+The separation is currently a *fit*: two clusters with a threshold interpolated
+across an empty gap. The honest upgrade is to create the condition with known
+ground truth on both sides:
+
+1. **Editor backgrounded** — run a three-rung ladder.
+2. **Editor foregrounded** — run the same three rungs.
+3. **Editor focused, viewport covered** — the case that decides whether rate
+   *generalises* or merely *describes today*, because it should produce a
+   non-redrawing viewport at full frame rate.
+
+Staleness then exists by construction, the threshold is measured rather than
+guessed, and case 3 tests the mechanism rather than the correlation. This is
+the same inversion standard the project already applies to a config change, and
+it is minutes of work — but it needs someone at the machine to move the window,
+so it is not a thing this session can run alone.
 
 **A capture whose interval spans a hang cannot be judged this way**, because
 the interval includes the stall. Those rows need the other checks, and
