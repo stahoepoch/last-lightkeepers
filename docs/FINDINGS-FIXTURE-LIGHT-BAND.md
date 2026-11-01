@@ -383,10 +383,61 @@ value clips the whole card to white. This is the same 250 cd that
 lamp, now failing a second, independent test: it cannot perform the inspection
 the store is being designed around.
 
-**Not yet measured: the lantern at ~25 cd**, the value the lookdev suggested.
-The capture was in flight when the machine lost power. That single reading is
-what closes the loop, and it is the first thing to take when the lab is next
-open.
+### The held-lantern sweep, and where it stops being trustworthy
+
+Run 2026-11-01 after the power cut. Ambient troffer 2 cd, deep lip, lantern at
+the held position, camera 56 cm off the card. Only frames at a matched window
+size are listed; `clipped` means the card region has reached 254+.
+
+| lantern | card mean | text contrast | verdict |
+| --- | --- | --- | --- |
+| 0 (ambient only) | 10.33 | 14.8 | unreadable — the lip working |
+| 6 cd | 246.84 | 141.4 | **already near-clipped** |
+| 15 cd | 252.05 | 79.6 | clipped |
+| 40 cd | 254.03 | 35.8 | clipped |
+| 250 cd (authored) | 254.89 | 3.4 | fully blown |
+
+**Everything from 6 cd upward clips the card at 60 cm.** Contrast falls
+monotonically from 141 to 3.4 as intensity rises, because the card saturates and
+the glyphs saturate with it. The authored 250 cd is roughly two orders of
+magnitude too bright for reading at arm's length.
+
+**Below 6 cd is unmeasured and must not be inferred.** The 0.75 cd and 2 cd
+captures came back **byte-identical to each other** (md5 96426774) and match the
+6 cd frame to 0.01, so the viewport had stopped redrawing — tooling trap 7, and
+the only reason it was caught is that every frame is hashed. A 25 cd row was
+also discarded: its capture arrived at a different window height, and its card
+value broke the monotonic trend, which is the tell.
+
+**An offscreen attempt was discarded entirely.** `CaptureViewport` reported the
+ambient-only card at 99.06 with contrast 202 — plainly readable — where the
+on-screen measurement of the identical state gives 10.33 and 14.8. A tenfold
+disagreement with a known-good reading, so the whole offscreen sweep was
+dropped. See `docs/TOOLING-TRAPS.md` 12; this is a second, independent way that
+instrument lies.
+
+### The caveat that governs all of it
+
+**This clipping is a consequence of the locked exposure.** The lab's
+post-process volume pins `AutoExposureMinBrightness` and `MaxBrightness` to 1.0,
+copied from DockBay, so the view is calibrated for a dark store and anything
+held at arm's length saturates almost at once. If the shipping game uses
+adaptive exposure, a held lantern will not behave this way and these numbers do
+not transfer. **Whether exposure is locked is now a gameplay decision, not a
+lookdev one** — it decides whether close inspection is even possible.
+
+### The third appearance of one shape
+
+The lantern has to light a room at 2–8 studs *and* read a label at 0.6 studs.
+Inverse-square across that range is about **178x**. No single intensity serves
+both, which is why 25 cd can read as a carried lamp in
+`docs/LANTERN-LOOKDEV.md` and still destroy a label here — both are true.
+
+That is the same structural result as the fixture contract and the lantern
+core, reached a third time by a third route: **the store's lighting problems are
+not tuning problems.** Either the lantern's output varies with what it is doing
+(a focus or shutter state, which the housing already implies), or inspection
+stops depending on raw illumination.
 
 ### Where this leaves the contract
 
