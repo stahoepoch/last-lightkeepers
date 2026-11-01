@@ -520,6 +520,17 @@ At the current EV100 3 lock, 6 cd puts the card about two stops over mid-grey �
 the near-white paper at 252.9 with glyphs still separated — and 250 cd puts it
 about seven and a half over, which is the fully blown 3.4.
 
+### What the baseline correction does to the prior
+
+The lock being EV100 3 rather than 1 halves the cost of moving. The predicted
+target of EV100 5 is **two stops up from where the lab sits, not four**, so
+reaching it drops the 2 cd ambient by two stops rather than four. **The prior
+is therefore that a single lock point clears both ends, not that this is a
+knife edge.** The two-region design and the pass criteria do not change —
+a favourable prior is a reason to read the far-end frames carefully, not a
+reason to skip them. The 250 cd case is untouched at about 7.5 stops over the
+lock, which is why it is gone rather than merely bright.
+
 ### The method — both ends, every rung
 
 **The failure mode to avoid is the one every lever in this project has hit:**

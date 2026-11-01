@@ -110,6 +110,13 @@ floodlight at **250 — the value `data/lantern.json` currently authors.**
 
 ## Conditions — every number above depends on these
 
+**Two things about that exposure clamp, because every number in this document
+depends on it.** `AutoExposureMinBrightness` and `MaxBrightness` are **legacy
+luminance, not EV100** (`ExtendDefaultLuminanceRange` is 0), so the clamp of
+1.0 is **EV100 3**; convert with `L = 0.125 x 2^EV100`. And `AutoExposureBias`
+sits at **1 with its override off**, so it is inert — **if anyone enables it,
+every reading in this document moves a stop.**
+
 Exposure copied field-for-field from DockBay's volume and verified by reading
 it back: priority 1, unbound, `AutoExposureMinBrightness` and `MaxBrightness`
 both overridden to **1.0**, MegaLights on, bias left un-overridden. Note those
