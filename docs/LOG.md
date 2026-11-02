@@ -751,3 +751,59 @@ consequence written next to it: if it ever becomes 1, the ladder must be
 re-derived rather than re-used. A week of measurement rested on a value nobody
 had written down, which is `ADVERSARY.md`'s own rule turned on the project's
 most-measured system.
+
+## 2026-11-02 — dwell lands; two other fixes for the same complaint found in flight
+
+`744ffd6` gives the patrol a dwell and moves the route decision out of the
+pawn. Verified the way `ADVERSARY.md` asks: editor target built,
+`LLK.Enemies.SweeperBrain` green, then one new assertion inverted on purpose
+and re-run — it failed by name at `LLKSweeperBrainTest.cpp(391)` — then
+restored to a clean tree and green again.
+
+**Then the working tree turned out to hold two more answers to "he patrols too
+hard", from parties who could not see each other.**
+
+`data/enemies.json`, uncommitted: Sweeper `moveSpeed` **14 → 10** (392 → 280
+cm/s). Chris's call was *dwell first*, so it is reverted to 14 for now. The
+whole change is one line and it is saved as `movespeed-10.patch` in this
+session's scratchpad, which **dies with the session** — recording it here is
+the only durable copy:
+
+```diff
+-    "moveSpeed": 14,
++    "moveSpeed": 10,
+```
+
+The reasoning for taking them one at a time: **dwell makes the Sweeper
+legible; speed makes it evadable, and they are not the same repair.** The NPU
+result says threat has to be *cued* to become fear rather than anxiety.
+Slowing an uncued threat leaves it exactly as uncued, only slower. Landing
+both at once also means not knowing which did the work.
+
+`data/lantern.json`, uncommitted and **left untouched** — a much larger
+change: `knockdownOnContact` **true → false**, with the note *"this
+maintenance machine is not a containment enemy."*
+
+Nothing in `DECISIONS.md` locks it, so it is a legitimate design call and it
+is Chris's. But three things are worth knowing before it lands:
+
+1. **It removes the Sweeper's only consequence.** Contact still accumulates
+   hits that now resolve into nothing. Combined with a dwell and a slower
+   walk, the first encounter becomes an enemy that cannot pause you, cannot
+   catch you, and cannot hurt you.
+2. **That is not what the research recommends.** The fix for uncued threat is
+   a cue, not the removal of consequence — strip the consequence and the
+   predictable condition collapses into the no-threat condition, which is the
+   baseline the other two are measured against.
+3. **The test will not notice.** `LLKSweeperBrainTest` sets
+   `Rules.bKnockdownOnContact = true` in its own fixture, so the knockdown
+   path stays green no matter what the data says. That is the third instance
+   of fixture-blindness this week, after `bHasStockBay` and
+   `AggroRadiusDark` — a fixture that assigns the value under test cannot see
+   the data change.
+
+Also settled: the `enemies.test.mjs` control group was **not** broken. It went
+red only while the edited JSON and the generated asset disagreed, and
+recovered to 49/50 the moment the tree was consistent again. It refused to
+trust itself while its inputs disagreed, which is exactly what a control is
+for. The remaining failure is the pre-existing `SetCollisionEnabled` guard.
