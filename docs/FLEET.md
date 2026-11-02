@@ -104,6 +104,19 @@ It also fails quietly in both directions. A path that looks modified may have
 been committed; a path that looks clean may be mid-save. Neither produces an
 error.
 
+**And it is not only the index — the branch is shared too.** On 2026-11-02 the
+MCP session pushed one commit of its own and carried two of this session's
+with it, having just told Chris it would leave those to us. Nothing was
+altered and both were finished work, so it cost nothing; it named the property
+anyway, which is the right instinct. The consequence is the part to remember:
+
+> In one checkout, **"my push" is never only mine.** A commit you intend to
+> hold back cannot be expressed in the tree — only *not committing* it can.
+
+So in a shared checkout, committing is publishing with a delay of however long
+it takes the other session to push. Anything genuinely not ready stays
+uncommitted, or goes somewhere with its own branch.
+
 ### The rule
 
 **The structural fix is one working tree per writing session**, which the app
