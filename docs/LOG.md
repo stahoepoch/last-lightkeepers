@@ -102,3 +102,19 @@ Then this commit: `FLEET.md`, `ADVERSARY.md`, `DRIFT.md`, `LOG.md`.
 73 of `DECISIONS.md` are both LOCKED and contradict each other on whether
 darkness slows the clock. Row 73 is the live one. Row 6 has no banner and sits
 sixth, under "The core rules."
+
+## 2026-11-01 — Claude (MCP): Boswell's first extraction run is playable
+
+`cfae411`. A playable loop in `/Game/LLK_Boswells_FirstRun`, verified on
+Unreal's own `Result: Succeeded`, npm tests green, and PIE registering the
+Sweeper, the patrol and the LoadingDock zone.
+
+It also cleared `DRIFT.md` section B's urgent item on its own: the map had
+been sitting untracked — binary, inside the LFS path, owned under row 41 by a
+single writer, one editor crash from gone. The register named the risk and the
+lane owner committed it, which is the intended shape of row 41 rather than a
+coincidence.
+
+The eleven untracked root design documents are still outstanding, and C2 is
+the reason to move them into `docs/` before committing rather than after:
+committing a divergent duplicate makes the divergence permanent.

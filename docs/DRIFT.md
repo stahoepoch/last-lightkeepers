@@ -44,11 +44,18 @@ them was not — and no agent can tell which from the file.
 
 ## B. Untracked durable work
 
+> **The map is safe, `cfae411`, 2026-11-01.** The MCP session committed
+> `Content/LLK_Boswells_FirstRun.umap` as "Build Boswell's first extraction
+> run" — a playable loop in `/Game/LLK_Boswells_FirstRun`, build verified on
+> Unreal's own `Result: Succeeded`, PIE registering the Sweeper, the patrol
+> and the LoadingDock zone. **The eleven root documents below are still
+> untracked.**
+
 `git status` on 2026-11-01, after this session committed the three design docs
 it found yesterday:
 
 ```text
-?? Content/LLK_Boswells_FirstRun.umap
+?? Content/LLK_Boswells_FirstRun.umap        [RESOLVED cfae411]
 ?? CAMPAIGN-SHAPE.md          ?? MAKE-IT-FEEL-LIKE-A-LANTERN.md
 ?? FIELDBOARD-OBSERVATIONS.md ?? PERMISSIVE-HOSTILE.md
 ?? FIXTURE-LIGHT-CONTRACT.md  ?? THE-MALL-IS-STILL-TRADING.md
@@ -60,14 +67,17 @@ it found yesterday:
 Eleven design documents and **a map**. None of it is ignored by
 `.gitignore` — it was simply never added.
 
-`Content/LLK_Boswells_FirstRun.umap` is the urgent one. It is binary, it is
+~~`Content/LLK_Boswells_FirstRun.umap` is the urgent one. It is binary, it is
 inside the LFS path, and under row 41 it has an owner who is the only party
 who may write it. An uncommitted `.umap` is one editor crash from gone, and
-nobody else can see it exists.
+nobody else can see it exists.~~ **Landed in `cfae411` by its own writer,
+which is how row 41 is supposed to work: the register names the risk, the lane
+owner clears it.**
 
-**Fix:** commit the docs. Ask the map's writer to commit the map — do not
-commit another party's in-flight binary from outside its lane.
-**Owner: Chris to relay; the map's writer commits it.**
+**Fix, outstanding:** commit the eleven root documents, or move them into
+`docs/` first — see C2, which is the better order, since two of them may be
+shadows of tracked files and committing a divergent duplicate makes the
+divergence permanent. **Owner: Chris's call on move-then-commit.**
 
 ---
 
