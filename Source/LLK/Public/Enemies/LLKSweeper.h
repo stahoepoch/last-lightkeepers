@@ -44,6 +44,8 @@
 
 class ULLKEnemyRosterSubsystem;
 class ULLKVitalsComponent;
+class UStaticMeshComponent;
+class UMaterialInstanceDynamic;
 
 /**
  * Row 16's cue, for whatever plays it.
@@ -146,6 +148,13 @@ protected:
 	/** Acts on the brain's verdict. The only function that moves this pawn. */
 	void Act(const FLLKSweeperStep& Step);
 
+	/**
+	 * Purely visual state language for the temporary Sweeper body. It is never
+	 * consulted by perception or the brain: a player must be able to see that a
+	 * machine has changed jobs before the authored audio arrives.
+	 */
+	void UpdatePresentation();
+
 	/** Walks toward a world position along a queried nav path. */
 	void StepToward(const FVector& Destination, float DeltaSeconds);
 
@@ -192,6 +201,20 @@ protected:
 	bool bHasDef = false;
 
 	FLLKSweeperMind Mind;
+
+	/** Temporary readable body; map art replaces this without touching the brain. */
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Presentation")
+	TObjectPtr<UStaticMeshComponent> Chassis;
+
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Presentation")
+	TObjectPtr<UStaticMeshComponent> BeaconHousing;
+
+	/**
+	 * A self-lit status lens, never a point light. It must announce the machine
+	 * without becoming a free source of readable light in an aisle.
+	 */
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Presentation")
+	TObjectPtr<UMaterialInstanceDynamic> StateLensMaterial;
 
 	UPROPERTY()
 	TObjectPtr<ULLKVitalsComponent> Target;
