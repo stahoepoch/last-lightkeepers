@@ -115,7 +115,58 @@ is registration-based (distress pulses plus registered lantern components) and
 does not scan the world, so no beacon value changes detectability or relic
 legibility. Verified.
 
-## 3. The ceiling fixtures light the ceiling
+## 3. Three of the four lights are walk-lab leftovers, and all four are point lights
+
+**Measured 2026-11-02 through the bridge.** This section originally said only
+"the fixtures light the ceiling". Here is why, with numbers.
+
+| Actor | Folder | Intensity | Colour | Attenuation | Z |
+| --- | --- | --- | --- | --- | --- |
+| `PointLight_0`, `_1`, `_2` | **`WalkLab`** | 18 cd | white | **1800 cm** | 530 |
+| `PointLight_3` | `BoswellsFirstRun/Lighting/Emergency` | 12 cd | **green** (0.2, 1.0, 0.45) | **1200 cm** | 500 |
+
+### Three things fall out of that table
+
+**1. Most of the lighting in Boswell's is not Boswell's.** Only
+`PointLight_3` sits in the authored emergency folder. The other three are in
+the `WalkLab` folder — leftovers that came across with the shell, exactly like
+`WL_TempRobotBody` did on the Sweeper. They outnumber the authored light three
+to one and outshine it 18 cd to 12. **What Chris is reacting to is largely the
+walk lab's temporary lighting**, not a bad authoring pass.
+
+**2. A point light near a ceiling throws most of its output at the ceiling,
+and this is just inverse square.** All four are `PointLight` actors with zero
+rotation, so they radiate spherically. At z≈500–530 under a ceiling traced at
+~604, each sits roughly 75–105 cm below the ceiling and ~500 cm above the
+floor. The ceiling therefore receives on the order of **25x the illuminance
+the floor does**. The pools in the capture are not a mistake anyone made —
+they are what an unshaded point source mounted near a ceiling does.
+
+Fix: spot lights aimed down, or shaded housings that occlude the upward
+hemisphere. This is also the fixture contract's own answer — geometry, not
+intensity.
+
+**3. The attenuation radii are the reason the room reads as murk rather than
+as pools.** 1800 cm and 1200 cm are eighteen and twelve metres, in a room the
+nav bounds put at roughly 40 x 24 m. Each light therefore touches most of the
+floor at a very low level.
+
+That is a **weak uniform wash**, which is precisely the failure
+`docs/FEAR-AND-LIGHT.md` section 4 names: uniform dim gives the eye no edges
+and no structure to read the space by. Big radius at low candela makes murk.
+**Small radius at higher candela makes pools with dark between them** — which
+is what both the research and the contract are asking for, and it is a
+different knob from "make it brighter".
+
+**4. The green is doing nothing the eye can receive.** `(0.2, 1.0, 0.45)` is
+heavily saturated green at 12 cd. Rods do not signal colour, so at these
+levels the hue is largely lost while the luminance cost remains. See
+`FEAR-AND-LIGHT.md` section 3 — this is a physiological reason, not a taste
+argument.
+
+### The original note, which stands
+
+## 3a. The fixtures light the ceiling
 
 Captured from `(-300, -350, 170)`, yaw 45, FOV 90. Both fixtures pool their
 light **on the ceiling tile directly above themselves** — one warm, one green —
