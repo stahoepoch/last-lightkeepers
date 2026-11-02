@@ -185,6 +185,80 @@ the building is not wrong, it is working, and being robbed by something that
 does not consider itself a thief is the whole feeling. If the authored cue
 carries any text at all, that is the distinction to keep.
 
+## 5. The fixture light contract asks for something light cannot do
+
+**What it unblocks:** the first art pass on any lit aisle. Added 2026-11-02
+after measuring against your own locked contract rather than around it.
+
+Your rule in `docs/FIXTURE-LIGHT-CONTRACT.md` - ambient fixtures *"may help
+players navigate, but must never look bright enough to read a relic under"* -
+is the right rule and it has **no candela solution.** Measured in `LLK_LightLab`
+under the Lumen baseline:
+
+| | |
+| --- | --- |
+| inspection ceiling - highest candela where a price card is still NOT readable at 2 studs | **below 0.5 cd** |
+| orientation floor - lowest candela where a 40-stud run stays legible | **~2 cd** troffer, **~6 cd** neon |
+| the gap | **about 4x**, in the wrong direction |
+
+Pre-Lumen that gap was over 12x; indirect light helped orientation far more
+than inspection, because orientation is read off the floor plane and the card
+was always lit directly. **Three levers were tried against the inspection half
+and all three failed:**
+
+| lever | card | orientation |
+| --- | --- | --- |
+| lower the candela | still reads at 0.5 cd, the bottom of the ladder | the run goes dark first |
+| barn doors 15 deg | **-11%** | fine, and the side walls improve to zero |
+| barn doors 2 deg | card dark | run dark too, ratio *worse* than plain |
+| floor albedo 0.18 -> 0.03 | **-2.5%** | floor read **-63%** |
+
+The reason is one sentence: **the card is lit *directly* by any fixture broad
+enough to light the aisle**, so every lever that acts on indirect light misses
+it. Darkening the floor sixfold moved the card by 0.7%.
+
+### The lever that works is geometry, and it is yours
+
+A shelf lip over the readable face. Ambient troffer at 2 cd throughout:
+
+| rig | card mean | text contrast | bay wall | readable? |
+| --- | --- | --- | --- | --- |
+| no lip | 92.29 | 102.7 | 4.92 | yes |
+| shallow lip, 10 cm | 71.36 | **104.1** | 4.70 | **yes - unchanged** |
+| **deep lip, 30 cm** | 10.33 | **14.8** | **4.64** | **no** |
+
+**Text contrast falls sevenfold and the bay wall does not move** - 4.64 against
+4.92. Every earlier lever bought card darkness by taking light out of the room;
+this one takes none.
+
+**The depth is not a taste call, it is a ray.** The lip must reach past where
+the line from the fixture to the *bottom* of the readable face crosses the lip's
+height. For the lab's pose - fixture at (200, 0, 290), card spanning z 75-105 -
+that crossing is at x ~= 315, so the lip needs about **23 cm**. Ten could not;
+thirty could.
+
+**And the shallow lip is the useful negative.** It drops the card's *mean* by
+shading its top edge while leaving the glyph band fully lit, so contrast does
+not move at all. **Shading a label is not the same as shading the part you
+read** - which is the trap if this gets eyeballed rather than traced.
+
+Neither the lantern's path nor the player's eye line is occluded by the lip;
+both were traced and both first-hit the card face. So the mechanic works: the
+lip shades the fixture directly overhead and nothing at eye level.
+
+### One thing to check when you do it
+
+At 60 cm over a recessed label, the readable window measured **6 cd reading
+cleanly with zero clipping, and clipping beginning between 6 and 15 cd.** The
+lantern now authors **25 cd**, which is above that. That reading was taken on a
+**72 deg** outer cone and the authored lantern is **110 deg**, so the same
+candela is spread wider and the two numbers are not directly comparable - which
+is why this is a thing to look at rather than a number to change. Tracked as
+`HANDOFFS.md` M5, and it needs the editor.
+
+Nothing in the contract has been edited. It is LOCKED and it is yours; this is
+the measurement and the remedy, as `HANDOFFS.md` **C9**.
+
 ## What is NOT waiting on you
 
 Said explicitly, because a list like this reads as a backlog of blockers and

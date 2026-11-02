@@ -1,8 +1,30 @@
 # The fixture light contract has no band
 
-> **Status: OPEN.** `docs/FIXTURE-LIGHT-CONTRACT.md` still contains no band -
-> checked 2026-11-02, the word does not occur in it. Tracked as
-> `HANDOFFS.md` M2.
+> **Status: ANSWERED, and the answer is that no band exists.** Rewritten
+> 2026-11-02 after reading the contract it measures against. The question "what
+> is the band" is settled by the evidence below: **there is no candela value
+> that satisfies both halves**, three lighting levers were tried and all three
+> failed, and the one lever that works is geometry rather than intensity. So
+> there is nothing numeric to put in the contract, and
+> `docs/FIXTURE-LIGHT-CONTRACT.md` is **LOCKED by Chris** in any case. It is
+> his decision, waiting in `NOTES-FOR-CHRIS.md` item 5. `HANDOFFS.md` M2 is
+> rewritten accordingly - it previously asked for "a numeric band in the
+> contract", which is the wrong proof of closure for a document that proves no
+> such band is available.
+>
+> **Two numbers below are stale, both about the lantern.** They do not affect
+> any fixture conclusion.
+>
+> - **The authored lantern is 25 cd, not 250.** `a060e78` changed
+>   `data/lantern.json` on 2026-11-01, adopting this lab's own recommendation.
+>   Every "250 - the value `data/lantern.json` currently authors" below should
+>   be read as a past value. The 250 cd *measurements* stand; only the word
+>   "authored" has moved.
+> - **Ladder 3 and the held-lantern sweep used a 72 deg outer cone; the authored
+>   lantern is 110 deg** (`coneAngleDegrees`). The same candela spread over a
+>   wider cone is not the same light, so "25 cd reads as a carried lantern" was
+>   established on a narrower fixture than the one shipping. Flagged rather than
+>   corrected, because re-running it needs the editor and the bridge.
 
 Measured 2026-10-31 by Claude in `LLK_LightLab`, against
 `docs/FIXTURE-LIGHT-CONTRACT.md`'s rule that ambient fixtures *"may help
