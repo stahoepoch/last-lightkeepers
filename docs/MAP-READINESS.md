@@ -259,6 +259,47 @@ navmesh: it notices, telegraphs, and never arrives - which is the one case that
 looks like a bug and is not, so it is worth running `LLK.CheckMap` before
 concluding anything about the brain.
 
+### A tagged stock bay is necessary and not sufficient
+
+Added 2026-11-02, after the first bay was placed in Boswell's First Run and the
+beat was observed. `ALLKSweeper` needs **one actor tagged `LLK.StockBay`** for
+`ELLKSweeperState::Stock` to exist at all - `NearestStockBay()` takes the
+closest one and the state is gated off entirely without it. That much was
+already written down.
+
+**What was not written down is the reach condition.** The brain also requires
+
+```
+Def.bAttractedToDroppedLoot && Senses.bHasStockBay
+  && Senses.MisplacedItemPosition.IsSet()
+  && Senses.DistanceToMisplacedStuds <= Contact.ContactRange
+```
+
+and `ContactRange` is `lantern.json`'s `sweeperContact` value: **5 studs,
+140 cm**. It is the *contact* range doing double duty as a reach, so a Sweeper
+files what is at its feet. `FindMisplacedItem()` imposes no radius of its own -
+it returns the nearest untaken relic anywhere in the level - so the gate is
+entirely this distance.
+
+**Two consequences a map author should expect.**
+
+- **A relic the keeper is carrying is excluded**, because `IsTaken()` is true.
+  The state therefore fires on loot that has been *put down* - which is what
+  `enemies.json`'s `attractedToDroppedLoot: true` describes, and it means the
+  intended trigger is a keeper dropping something near a Sweeper, not a Sweeper
+  tidying a shelf.
+- **Authored shelf stock will usually not trigger it.** Measured on Boswell's
+  First Run, the closest approach between any patrol leg and any relic is
+  **6.26 studs** (`BSW_PATROL_TOY_B` to `BSW_PATROL_TOY_C`, against
+  `BSW_DISPLAY_RECEIVER`) - 35 cm outside the gate. The route runs past the
+  stock without ever being able to file it.
+
+So **do not read an unfiring Stock state as a missing or misplaced bay.** Check
+the distance first. Closing the 35 cm would mean moving a patrol point or a
+relic, and both are route shape - one of the four things Chris's scope says the
+map authors deliberately and the pawn refuses to invent, which is why this page
+records the number rather than changing it.
+
 ## Running it
 
 ```

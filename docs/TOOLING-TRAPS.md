@@ -307,6 +307,43 @@ route). Two capture paths, each broken in a way the other is not.
 
 ---
 
+## 13. While PIE runs, the scene tools answer about a world you are about to throw away
+
+Found 2026-11-02, while proving a newly tagged `LLK.StockBay` actually received
+a filed relic.
+
+Querying the level during a PIE session returns the **PIE duplicate**, not the
+editor world. The refPath says so plainly once you look:
+
+```
+/Game/UEDPIE_0_LLK_Boswells_FirstRun.LLK_Boswells_FirstRun:PersistentLevel.LLKRelicActor_1
+```
+
+**For reading, this is the feature.** It is how the relic's landing position was
+confirmed at `(450, 450, 50)` while the game was still running - the editor
+world's copy had not moved and never does, because `SetActorLocation` happened
+in the play world.
+
+**For writing, it is a trap with the familiar shape.** A `set_actor_transform`
+issued while PIE is up edits the duplicate, which is discarded on `StopPIE` -
+and the read-back *confirms the write*, because it reads the same doomed world.
+The claim and its check are once again the same act, and this time both are
+about the wrong world. A restore done one call too early would have reported
+success and silently left the editor map holding a test value, which is exactly
+the state that then gets committed.
+
+**So assert the world before any write to a map:**
+
+```
+IsPIERunning() == False        # or abort
+get_current_level() == <the map you mean>
+"UEDPIE" not in actor.refPath  # belt and braces, since the path tells you
+```
+
+This is the same guard as trap 6 - an answer about the wrong map - except that
+here the wrong map is one the tooling created for you, is named almost
+identically, and exists for only a few seconds.
+
 ## The pattern, stated once
 
 Each of these is a true answer to the wrong question. The build tool answered

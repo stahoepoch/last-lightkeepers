@@ -66,6 +66,15 @@ is where filed stock goes. **Tag none and the state never runs**, which is the
 deliberate gate: a Sweeper filing a relic into nowhere would delete the run's
 objective. Same discipline as `LLK.Patrol`.
 
+**Correction, 2026-11-02: the tag is necessary and it is not sufficient.** The
+sentence above was written from the tag's side and is true there, but a bay
+alone does not make the state reachable. `LLKSweeperBrain.cpp:126` also
+requires `DistanceToMisplacedStuds <= Contact.ContactRange`, and
+`ContactRange` is **5 studs (140 cm)** - so a Sweeper files what is at its
+feet, not what it can see. Measured on this floor, the closest any patrol leg
+comes to any authored relic is **6.26 studs**, so the route alone never opens
+the state. See the reach note in `docs/MAP-READINESS.md`.
+
 Put it somewhere a keeper can reach but would rather not — the point is the
 walk back, with a patrol between you and it.
 
@@ -77,10 +86,35 @@ walk back, with a patrol between you and it.
 - **The editor target did not build** — Live Coding was active, so UBT refused:
   *"Unable to build while Live Coding is active."* The editor was Chris's and
   open, so it was left alone.
-- **The automation test has therefore not been run**, only compiled. Run
-  `LLK.Enemies.SweeperBrain` once the editor is free.
-- **Nothing has been seen in PIE.** The beat is unobserved until a bay is
-  tagged and someone walks it.
+- `LLK.Enemies.SweeperBrain`: **run, and it passes** - 1/1, no errors, in
+  **6.5 ms**.
+- **That green is not evidence about the bay.** The test is 483 lines with
+  **zero** references to `UWorld`, `GEditor`, `ActorHasTag` or any map; it
+  builds `FLLKSweeperSenses` by hand and sets `bHasStockBay = true` itself. So
+  it cannot read the tag, and it would have passed identically with the map
+  untagged. The 6.5 ms is the corroborating detail: nothing that loads a level
+  finishes that fast. Recorded because a green here is the obvious thing to
+  mistake for a tagged map.
+- **Seen in PIE, 2026-11-02.** `BSW_STOCK_BAY` placed and the beat observed
+  end to end:
+
+  ```
+  LLKSweeper_0 began filing misplaced stock.                       14:38:30.506
+  LLKSweeper_0 filed LLKRelicActor_1 into the stock bay.           14:38:32.439
+                                   It is still there to be found.
+  ```
+
+  1.93 s apart, against the authored `FallbackStockSeconds = 2`. The relic's
+  destination was then read out of the running PIE world at
+  **(450, 450, 50)** - the tagged actor's own origin - so the filing went to
+  the bay rather than merely happening.
+- **The condition was forced, not waited for.** An idle 16-second run - about
+  three full patrol laps, the circuit being 2021 cm at 392 cm/s - produced *no*
+  stock line at all, because of the 5-stud reach gate above. The observation
+  above was obtained by parking a relic 3.59 studs from the Sweeper, and the
+  relic was then restored to its authored `(300, 250, 90)` and the restore read
+  back before saving. Both halves are the finding: **the beat works, and the
+  authored floor does not reach it on its own.**
 
 ## Do not regress
 

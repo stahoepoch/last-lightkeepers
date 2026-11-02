@@ -188,3 +188,55 @@ revert is exact rather than approximately exact.
 **Still unobserved:** nothing has been seen in PIE. The map has no
 `LLK.StockBay` yet, so the Stock state cannot run in the slice. That is one
 tag and it is the MCP session's, now that the editor is free.
+
+---
+
+## 2026-11-02 — Claude (MCP): the bay is tagged, and the floor cannot reach it
+
+The tag the entry above was waiting for. `BSW_STOCK_BAY` — an empty `AActor`
+matching the `LLK.Patrol` convention rather than a `TargetPoint` — placed in
+`LLK_Boswells_FirstRun` at **(450, 450, 50)**, tagged `LLK.StockBay`, saved.
+The spot was chosen against measurements, not by eye: bare floor with clear
+headroom, reachable from the aisle at y=450, and **two** patrol legs cross the
+line from `BSW_WRONG_CRATE` to it. Nearest patrol point 17.6 studs — outside
+the Sweeper's 12-stud dark aggro and inside its 38-stud lit one, so the walk
+back is safe in the dark and a gamble with the lantern up. Z is 50 because all
+three relics are 100-tall boxes with centred origins, so 50 puts a filed
+crate's base exactly on the floor.
+
+**The beat was then observed end to end**, which closes the item above:
+`began filing misplaced stock` to `filed LLKRelicActor_1 into the stock bay`,
+1.93 s apart against the authored 2 s, and the relic read out of the running
+PIE world at **(450, 450, 50)** — the tagged actor's own origin.
+
+**Two things were corrected, and both were corrections of this project's own
+documentation rather than of code.**
+
+- **`LLK.Enemies.SweeperBrain` cannot validate a tag.** It was run, and it
+  passes, 1/1 in 6.5 ms. But it has *zero* references to `UWorld`, `GEditor`
+  or `ActorHasTag` in 483 lines and sets `bHasStockBay = true` in its own
+  fixture, so it would pass identically with the map untagged. The brief asked
+  for the tag and the test in one breath; they turn out to be independent, and
+  reading that green as proof of the bay was the available mistake.
+- **"Tag any actor and the behaviour turns on" is not true.** The brain also
+  gates on `DistanceToMisplacedStuds <= Contact.ContactRange`, and
+  `ContactRange` is 5 studs. The closest any patrol leg comes to any authored
+  relic on this floor is **6.26 studs** — 35 cm outside. An idle 16-second run,
+  about three full laps, produced no stock line at all; the observation above
+  only exists because a relic was deliberately parked 3.59 studs from the
+  Sweeper and then restored. Written up in `docs/MAP-READINESS.md`.
+
+**Still open, and deliberately not acted on:** closing that 35 cm means moving
+a patrol point or a relic, and both are route shape — one of the four things
+Chris's scope says the map authors and the pawn refuses to invent. So the
+number is recorded and the route is untouched. The design question that
+follows is whose: the gate makes the trigger *dropped* loot, since a carried
+relic is `IsTaken()` and excluded, so the intended beat is losing the crate
+near a Sweeper rather than one tidying a shelf. Whether the authored stock
+should also be filable is Chris's call.
+
+**Trap 13** was added on the way: during PIE the scene tools answer about the
+`UEDPIE_0_` duplicate, so a write issued while PIE runs edits a world that is
+discarded on stop — and the read-back confirms it, because it reads the same
+doomed world. One call earlier and the restore would have reported success
+while leaving a test value in the committed map.
