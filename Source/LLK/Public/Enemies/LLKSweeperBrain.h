@@ -159,6 +159,29 @@ struct FLLKSweeperMind
 	UPROPERTY(BlueprintReadOnly, Category = "LLK|Enemies")
 	float StockApproachSecondsRemaining = 0.f;
 
+	/**
+	 * Counts down while it stands at a patrol point doing something.
+	 *
+	 * **Why a patrol pauses at all, which is not a cosmetic question.** The
+	 * NPU-threat literature separates fear from anxiety by one variable:
+	 * whether the threat is *cued*. Predictable, cued threat produces
+	 * fear-potentiated startle that spikes and resolves; uncued threat
+	 * produces anxiety-potentiated startle that is sustained and does not.
+	 * See `docs/FEAR-AND-LIGHT.md`.
+	 *
+	 * A patrol with no dwell is the uncued condition, continuously - and it
+	 * was exactly that until now, because the pawn advanced its route index
+	 * the instant it arrived. The Sweeper never once stopped. Chris's report
+	 * was *"he patrols too hard"*, which is what that feels like.
+	 *
+	 * A dwell makes the loop **learnable**: the route gains a rhythm, the gap
+	 * between passes can be timed, and crossing it becomes a decision rather
+	 * than a dice roll. That is what a telegraph does - convert unpredictable
+	 * threat into predictable threat with a cue.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "LLK|Enemies")
+	float PatrolDwellSecondsRemaining = 0.f;
+
 	/** Only meaningful in Pursue and Search. Set when it last had the keeper. */
 	UPROPERTY(BlueprintReadOnly, Category = "LLK|Enemies")
 	FVector LastKnownKeeperPosition = FVector::ZeroVector;
@@ -214,6 +237,16 @@ struct FLLKSweeperSenses
 	 * its route, and only the second one is a Sweeper behaving correctly.
 	 */
 	TOptional<bool> bHasPatrolPoint;
+
+	/**
+	 * Whether it is standing at its current patrol point this frame.
+	 *
+	 * Plain `bool` rather than `TOptional`, unlike `bHasPatrolPoint`, and the
+	 * difference is honest: "nobody measured" and "not arrived" both mean
+	 * *do not start dwelling*, so there is no third state worth carrying.
+	 * A route with no points never reports arrival either way.
+	 */
+	bool bAtPatrolPoint = false;
 
 	/**
 	 * Where the nearest thing that is in the wrong place is. Unset when there
@@ -303,6 +336,29 @@ struct FLLKSweeperStep
 	 * map problem rather than as a Sweeper that mysteriously stopped filing.
 	 */
 	bool bStockAbandoned = false;
+
+	/**
+	 * It reached a patrol point and has stopped there. True once, like the
+	 * telegraph.
+	 *
+	 * The hook the route's rhythm hangs on. A dwell the player cannot
+	 * perceive teaches nothing, and the whole value of the pause is that the
+	 * pattern becomes learnable - so this is where a directional work sound
+	 * belongs.
+	 */
+	bool bDwellStarted = false;
+
+	/**
+	 * The dwell finished: take the next point.
+	 *
+	 * **This moves a decision out of the pawn, where it did not belong.**
+	 * `ALLKSweeper` advanced `PatrolIndex` itself on arrival, and its own
+	 * comment admitted it: *"The only thing this class decides about a route
+	 * is 'that one is done'."* That one thing was still a decision, and it is
+	 * the reason a dwell was impossible to express - the route moved on
+	 * before the brain was ever consulted.
+	 */
+	bool bAdvancePatrolPoint = false;
 };
 
 namespace LLKSweeperBrain

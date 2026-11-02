@@ -161,6 +161,15 @@ protected:
 	/** The next authored patrol point, or unset when the map has none. */
 	TOptional<FVector> NextPatrolPoint() const;
 
+	/**
+	 * Whether it is standing on its current patrol point, within tolerance.
+	 *
+	 * A measurement, not a decision: it reports the fact and the brain
+	 * decides what the fact means. See `FLLKSweeperStep::bAdvancePatrolPoint`
+	 * for why that distinction had to be made.
+	 */
+	bool IsAtCurrentPatrolPoint() const;
+
 	/** The nearest tagged bay, or unset when the map authored none. */
 	TOptional<FVector> NearestStockBay() const;
 

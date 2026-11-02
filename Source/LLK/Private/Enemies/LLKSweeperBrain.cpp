@@ -39,6 +39,26 @@ namespace LLKSweeperBrainDetail
 	 * here and delete this.
 	 */
 	constexpr float FallbackStockSeconds = 2.f;
+
+	/**
+	 * How long a Sweeper stands at a patrol point before taking the next one.
+	 *
+	 * **Declared, not authored, and Chris's to move** - same precedent as
+	 * `FallbackSearchSeconds` and `FallbackStockSeconds`, because
+	 * `enemies.json` has no key for it and every number in that file is his.
+	 *
+	 * 2.5 seconds, reasoned rather than picked: it sits just above the
+	 * 2-second stock job so a pause reads as the machine doing something
+	 * deliberate rather than stalling, and well above the 1-second audio
+	 * telegraph so it is perceptible as a rhythm at all. Much shorter and
+	 * there is no crossing window - a keeper walks 448 cm/s, so a 5-stud gap
+	 * takes about a third of a second and the pause has to be long enough to
+	 * decide in, not merely to move in. Much longer and the Sweeper spends
+	 * most of its night standing still, which is a different wrong answer.
+	 *
+	 * If Chris authors `patrolDwellSeconds`, read it here and delete this.
+	 */
+	constexpr float FallbackPatrolDwellSeconds = 2.5f;
 }
 
 namespace LLKSweeperBrain
@@ -105,6 +125,10 @@ namespace LLKSweeperBrain
 				Step.Mind.State = ELLKSweeperState::Telegraph;
 				Step.Mind.TelegraphSecondsRemaining =
 					FMath::Max(0.f, LLKSweeperBrainDetail::Finite(Def.AudioTelegraphSeconds));
+				// A keeper beats the route. Dropping the dwell here means it
+				// does not resume a half-spent pause minutes later, somewhere
+				// else, for no reason a player could read.
+				Step.Mind.PatrolDwellSecondsRemaining = 0.f;
 				Step.bTelegraphStarted = true;
 				Step.Move = ELLKSweeperMove::Hold;
 				break;
@@ -128,6 +152,7 @@ namespace LLKSweeperBrain
 				Step.Mind.StockSecondsRemaining = LLKSweeperBrainDetail::FallbackStockSeconds;
 				Step.Mind.StockApproachSecondsRemaining =
 					Def.LosesTargetAfterSeconds.Get(LLKSweeperBrainDetail::FallbackSearchSeconds);
+				Step.Mind.PatrolDwellSecondsRemaining = 0.f;
 				Step.bStockStarted = true;
 
 				// It may already be in reach, in which case it works where it
@@ -137,6 +162,37 @@ namespace LLKSweeperBrain
 				Step.Move = (Contact.ContactRange > 0.f
 					&& Senses.DistanceToMisplacedStuds <= Contact.ContactRange)
 					? ELLKSweeperMove::Hold : ELLKSweeperMove::MisplacedItem;
+				break;
+			}
+
+			// Mid-dwell: standing at a point, doing the job it stopped for.
+			if (Step.Mind.PatrolDwellSecondsRemaining > 0.f)
+			{
+				Step.Mind.PatrolDwellSecondsRemaining =
+					FMath::Max(0.f, Step.Mind.PatrolDwellSecondsRemaining - Delta);
+
+				if (Step.Mind.PatrolDwellSecondsRemaining > 0.f)
+				{
+					Step.Move = ELLKSweeperMove::Hold;
+					break;
+				}
+
+				// Done standing. The route moves on now, and not before -
+				// which is the whole reason this decision lives here rather
+				// than in the pawn.
+				Step.bAdvancePatrolPoint = true;
+				Step.Move = Senses.bHasPatrolPoint.Get(false)
+					? ELLKSweeperMove::PatrolPoint : ELLKSweeperMove::Hold;
+				break;
+			}
+
+			// Just arrived. Stop and start the clock.
+			if (Senses.bAtPatrolPoint)
+			{
+				Step.Mind.PatrolDwellSecondsRemaining =
+					LLKSweeperBrainDetail::FallbackPatrolDwellSeconds;
+				Step.bDwellStarted = true;
+				Step.Move = ELLKSweeperMove::Hold;
 				break;
 			}
 

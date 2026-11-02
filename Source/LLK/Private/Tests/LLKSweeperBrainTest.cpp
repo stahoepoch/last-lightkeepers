@@ -374,6 +374,65 @@ bool FLLKSweeperBrainTest::RunTest(const FString& Parameters)
 			LLKSweeperBrain::Advance(Mind, Hitch, Def, Rules).Mind.TelegraphSecondsRemaining, 1.f);
 	}
 
+	// ---- 9b. the patrol pauses, so the route can be learned -------------
+	//
+	// The NPU literature separates fear from anxiety by whether the threat is
+	// cued: predictable threat spikes and resolves, uncued threat is
+	// sustained and does not. A patrol with no dwell is the uncued condition
+	// continuously — which is what "he patrols too hard" describes, and what
+	// this game shipped until now, because the pawn advanced its route index
+	// the instant it arrived and the Sweeper never once stopped.
+	{
+		FLLKSweeperSenses Arrived = LLKSweeperBrainTestFixture::Unseen(0.5f);
+		Arrived.bAtPatrolPoint = true;
+
+		const FLLKSweeperStep Stops =
+			LLKSweeperBrain::Advance(FLLKSweeperMind(), Arrived, Def, Rules);
+		TestEqual(TEXT("arriving at a patrol point stops it"),
+			Stops.Move, ELLKSweeperMove::Hold);
+		TestTrue(TEXT("and says so, for the cue the rhythm hangs on"),
+			Stops.bDwellStarted);
+		TestTrue(TEXT("with a dwell running"),
+			Stops.Mind.PatrolDwellSecondsRemaining > 0.f);
+		TestFalse(TEXT("the route does not move on yet"),
+			Stops.bAdvancePatrolPoint);
+
+		// Mid-dwell it is still standing there.
+		FLLKSweeperMind Dwelling;
+		Dwelling.PatrolDwellSecondsRemaining = 1.f;
+		const FLLKSweeperStep Waiting =
+			LLKSweeperBrain::Advance(Dwelling, Arrived, Def, Rules);
+		TestEqual(TEXT("mid-dwell it holds"), Waiting.Move, ELLKSweeperMove::Hold);
+		TestFalse(TEXT("and still has not advanced"), Waiting.bAdvancePatrolPoint);
+
+		// Spent: take the next point, once.
+		FLLKSweeperMind Finishing;
+		Finishing.PatrolDwellSecondsRemaining = 0.2f;
+		const FLLKSweeperStep Resumes =
+			LLKSweeperBrain::Advance(Finishing, Arrived, Def, Rules);
+		TestTrue(TEXT("the dwell expires and the route moves on"),
+			Resumes.bAdvancePatrolPoint);
+		TestEqual(TEXT("walking again"), Resumes.Move, ELLKSweeperMove::PatrolPoint);
+		TestEqual(TEXT("and the dwell is spent, not left running"),
+			Resumes.Mind.PatrolDwellSecondsRemaining, 0.f);
+
+		// A keeper beats the route, and does not leave a half-spent pause to
+		// resume somewhere else later.
+		const FLLKSweeperStep Interrupted = LLKSweeperBrain::Advance(
+			Dwelling, LLKSweeperBrainTestFixture::Seen(0.1f, 10.f), Def, Rules);
+		TestEqual(TEXT("noticing a keeper abandons the dwell"),
+			Interrupted.Mind.State, ELLKSweeperState::Telegraph);
+		TestEqual(TEXT("and clears it rather than banking it"),
+			Interrupted.Mind.PatrolDwellSecondsRemaining, 0.f);
+
+		// Not arrived: ordinary walking, no dwell invented.
+		const FLLKSweeperStep Walking = LLKSweeperBrain::Advance(
+			FLLKSweeperMind(), LLKSweeperBrainTestFixture::Unseen(0.5f), Def, Rules);
+		TestEqual(TEXT("away from a point it just walks"),
+			Walking.Move, ELLKSweeperMove::PatrolPoint);
+		TestFalse(TEXT("with no dwell started"), Walking.bDwellStarted);
+	}
+
 	// ---- 10. indifference: it files stock and never noticed you ----------
 	//
 	// Row 47's state. The first encounter should cost the player something

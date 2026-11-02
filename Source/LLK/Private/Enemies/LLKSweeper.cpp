@@ -212,6 +212,7 @@ FLLKSweeperSenses ALLKSweeper::Observe(const float DeltaSeconds)
 	FLLKSweeperSenses Senses;
 	Senses.DeltaSeconds = DeltaSeconds;
 	Senses.bHasPatrolPoint = NextPatrolPoint().IsSet();
+	Senses.bAtPatrolPoint = IsAtCurrentPatrolPoint();
 
 	const UWorld* World = GetWorld();
 	if (World == nullptr || !bHasDef)
@@ -296,6 +297,23 @@ FLLKSweeperSenses ALLKSweeper::Observe(const float DeltaSeconds)
 	Senses.Notice = LLKPerception::Notice(Def, Perceiver, Perceived, &Visibility);
 
 	return Senses;
+}
+
+bool ALLKSweeper::IsAtCurrentPatrolPoint() const
+{
+	const TOptional<FVector> Point = NextPatrolPoint();
+	if (!Point.IsSet())
+	{
+		// No route is not the same as standing on one. A map with no patrol
+		// points must never report arrival, or a Sweeper would dwell forever
+		// on a point that does not exist.
+		return false;
+	}
+
+	// 2D on purpose, like the original check: a Sweeper standing under a
+	// marker somebody floated a metre off the floor has still arrived.
+	const float ToleranceCm = LLKUnits::DistanceFromStuds(ArriveToleranceStuds);
+	return FVector::DistSquared2D(GetActorLocation(), *Point) <= ToleranceCm * ToleranceCm;
 }
 
 TOptional<FVector> ALLKSweeper::NearestStockBay() const
@@ -466,6 +484,18 @@ void ALLKSweeper::Act(const FLLKSweeperStep& Step)
 		UE_LOG(LogLLK, Log, TEXT("%s lost the keeper and went back to its route."), *GetName());
 	}
 
+	if (Step.bDwellStarted)
+	{
+		UE_LOG(LogLLK, Verbose, TEXT("%s reached a patrol point and stopped."), *GetName());
+	}
+
+	if (Step.bAdvancePatrolPoint)
+	{
+		// The brain says the pause is spent. This is the whole of the pawn's
+		// involvement in the route now: take the next one.
+		PatrolIndex = PatrolIndex == INDEX_NONE ? 1 : PatrolIndex + 1;
+	}
+
 	if (Step.bStockStarted)
 	{
 		UE_LOG(LogLLK, Log, TEXT("%s began filing misplaced stock."), *GetName());
@@ -631,17 +661,21 @@ void ALLKSweeper::Tick(float DeltaSeconds)
 		CurrentDestination = Point.GetValue();
 		bHasDestination = true;
 
-		// Arrived: take the next point. The only thing this class decides
-		// about a route is "that one is done", which is why the tolerance is
-		// here and the shape is not.
-		const float ToleranceCm = LLKUnits::DistanceFromStuds(ArriveToleranceStuds);
-		if (FVector::DistSquared2D(GetActorLocation(), CurrentDestination) <= ToleranceCm * ToleranceCm)
+		// **Arrival is now measured, not decided.** This block used to
+		// advance `PatrolIndex` itself the moment it got within tolerance,
+		// and the comment it carried admitted the shape of the problem: "the
+		// only thing this class decides about a route is 'that one is
+		// done'." That one decision was enough to make a dwell impossible —
+		// the route moved on before the brain was ever consulted, so a
+		// Sweeper could never pause anywhere.
+		//
+		// The measurement stays here, because tolerance is a fact about
+		// geometry. The decision moved to the brain, which answers it with
+		// `bAdvancePatrolPoint` once the dwell is spent.
+		if (!IsAtCurrentPatrolPoint())
 		{
-			PatrolIndex = PatrolIndex == INDEX_NONE ? 1 : PatrolIndex + 1;
-			break;
+			StepToward(CurrentDestination, DeltaSeconds);
 		}
-
-		StepToward(CurrentDestination, DeltaSeconds);
 		break;
 	}
 	}
