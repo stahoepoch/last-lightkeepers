@@ -11,7 +11,54 @@ in `Config/DefaultEngine.ini` because it was inherited rather than authored and
 
 ---
 
-## 1. The lantern core material is `MSM_Unlit`
+## 1. ~~The lantern core material is `MSM_Unlit`~~ — REFUTED 2026-11-02
+
+**Wrong, and Codex had the measurement.** The LightLab already tested this
+exact material under live Lumen: at `CoreEmissive 0.5` it is a visible amber
+source with essentially no bounce, and at **5–20 it does light nearby
+surfaces** — clipping and desaturating toward white as it climbs.
+
+An Unlit material that produces bounce at 5–20 is not being excluded from
+Lumen's scene. **So the shading model was never the cause**, the emissive
+value is the axis, and flipping to Default Lit would have been a blind change
+that likely looked *worse* — the material has no Base Color or Roughness
+wired, so the lit path has nothing to shade.
+
+**The actual cause was more boring and more likely: the material was not
+assigned to the held lantern mesh at all.** Fixed by Codex, verified in PIE,
+and visible in the tree at `LLKCharacter.cpp:147` —
+`Glass->SetMaterial(0, LanternCoreMaterial.Object)`.
+
+**The lesson, because it is the second instance in two days.** I read that
+material's shading model, emissive value, parent, blend mode and two-sidedness
+— and never asked whether anything *used* it. That is the asset-level form of
+*a broadcast with no subscriber is silence that compiles*: an inspection that
+was entirely sound, pointed at the wrong question. A material nobody assigned
+looks identical to a material that does not work.
+
+The hedge in the original was right and is worth keeping as the reason this
+cost nothing: it said the engine rule was unverified and that the check cost
+one property flip. Codex's measurement *was* that check.
+
+**What remains, which is Codex's and not a material swap:** a carried lantern
+needs three things, and all three components already exist —
+
+| Job | Component | State |
+| --- | --- | --- |
+| Amber emissive core | `MI_LLK_LanternCore_Working` on the glass | assigned now |
+| Short near-field fill — hands, floor, shelf lip | `LanternCoreGlow_Temporary` (`UPointLightComponent`) | exists, untuned |
+| Hooded directional wash | `ULLKLanternLightComponent : USpotLightComponent` | 25 cd, 110° |
+
+So this is a **tuning** item, not a build item. Keep the core restrained — it
+should not become a small white floodlight — and tune the near-field response
+against the floor and the shelf lip.
+
+Firewall check, since the near-field fill is a second light on the player:
+`GetLitLightSources()` finds `ULLKLanternLightComponent` by class, and
+`LanternCoreGlow` is a plain `UPointLightComponent`, so it is visual-only and
+cannot move detectability or relic legibility. Verified.
+
+### The original claim, kept for the record
 
 **This is the strongest candidate for "the lantern effect isn't there", and it
 means `FINDINGS-EMISSIVE-LIGHTS-NOTHING.md` recorded the wrong cause.** That
