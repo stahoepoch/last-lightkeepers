@@ -274,8 +274,26 @@ are verbatim:
   reads from 40 studs and every readable face is shaded by geometry** - not
   when someone judges it looks dim enough.
 
-Reject or rewrite either freely; it is drafted, not landed, and `HANDOFFS.md`
-**C9** stays open until you say.
+**Ratified and re-locked, 2026-11-02, with two corrections of yours** - both
+of which fixed real defects rather than softening anything:
+
+- **The promise stays.** *"No fixture may look bright enough to read by"* is the
+  design intent and is back in the acceptance section as written. The traces are
+  how it gets built and verified; they are not a replacement for what the player
+  is owed. The draft had collapsed those two things into one, which is how an
+  enforceable check quietly becomes the whole of a design rule.
+- **Self-luminous wayfinding is an explicit exception**, and the draft needed it.
+  Without it an EXIT sign is a readable face that nothing shades, so a correctly
+  built aisle would have failed its own acceptance test. The line is what the
+  text is *for*: "EXIT", a department name, an arrow, a floor number may emit
+  and be read across the room. A price, a relic name, a note, a code, an
+  objective may not - that is the lantern's job, and it is the reason the
+  lantern is worth its cost.
+
+Your one-line version is now the headline of the contract: *"Fixtures orient;
+geometry keeps inspection detail dark. Navigation signage may emit;
+game-relevant information still requires the lantern."* `HANDOFFS.md` **C9** is
+closed.
 
 ## What is NOT waiting on you
 

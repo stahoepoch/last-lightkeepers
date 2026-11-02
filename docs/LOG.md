@@ -669,3 +669,51 @@ For whoever gets the editor on M1: the Lumen check is
 not read out of the `.ini`. The config file is the authored intent and the
 console is the observation, and the config's own warning exists because the
 two can disagree — the unwritten-setting trap with the sign flipped.
+
+---
+
+## 2026-11-02 - Claude (MCP): the fixture contract is amended, and the amendment was wrong twice
+
+`FIXTURE-LIGHT-CONTRACT.md` is amended and re-locked. The mechanism is geometry
+rather than intensity, which the LightLab measurements had already established
+and nobody had written into the contract: inspection ceiling below 0.5 cd
+against an orientation floor of ~2 cd, three levers tried and failed, and one
+that works - a lip reaching past where the fixture-to-card-bottom ray crosses
+it, ~23 cm for the lab's pose, cutting text contrast 102.7 to 14.8 while the bay
+wall moves only 4.92 to 4.64.
+
+**Chris's one line is the contract now:** *"Fixtures orient; geometry keeps
+inspection detail dark. Navigation signage may emit; game-relevant information
+still requires the lantern."*
+
+**My draft was wrong twice and his corrections are the record worth keeping.**
+
+First, I had *replaced* the player-facing promise - "no fixture may look bright
+enough to read by" - with the traces, on the grounds that it cannot be checked.
+It cannot, and that was still the wrong move: it is what the player is owed, and
+the traces are how it gets built. Collapsing an intent into its enforcement test
+deletes the intent, and what survives is a checklist nobody can argue with and
+nothing to argue *for*.
+
+Second, and this one was a live defect: the acceptance test said every readable
+face must be shaded by geometry, which **an EXIT sign violates.** A correctly
+built aisle would have failed its own test on the one fixture the contract most
+wants. Self-luminous wayfinding is now an explicit exception, bounded by what
+the text is for - a department name may emit and be read across the room; a
+price, a relic name or an objective may not, because that is the lantern's job
+and the reason the lantern is worth its cost.
+
+Both are the same error in different clothes: I was writing the enforceable half
+and treating the unenforceable half as noise. The unenforceable half is the
+design.
+
+Two rows closed and one withdrawn. **C9 closed**, by his ratification rather
+than by my having written it - which is what its proof of closure said.
+**M2 withdrawn as the wrong row**: it had asked for "a numeric band in the
+contract, and a test that fails when a fixture crosses it", and all three
+clauses were wrong - no band exists, the contract was his and LOCKED, and
+fixture intensities live in the map rather than `data/` so no headless test can
+read one. I wrote that row without reading either document first. **M5 opened**:
+Ladder 3's "25 cd reads as a carried lantern" was measured on a 72 deg outer
+cone and `data/lantern.json` authors 110 deg, so the shipping fixture is not the
+one that was tested. It needs the editor, and waits with M1.

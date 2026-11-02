@@ -1,11 +1,17 @@
 # Fixture light contract
 
-Status: **LOCKED**, Chris, 2026-10-31. **Amendment drafted 2026-11-02 by
-Claude on Chris's instruction, awaiting his ratification** - the amendment is
-the section "How the rule is met" below, plus the traceable acceptance test
-that replaces the brightness judgement at the end. Nothing above those is
-changed: the gameplay-light table and the rule itself are his words and stand
-verbatim. This supplements
+Status: **LOCKED**, Chris, 2026-10-31. **Amended and re-locked 2026-11-02,
+Chris**, after measurement showed the rule had no candela solution. The
+amendment is the section "How the rule is met" below and the acceptance test at
+the end; the gameplay-light table and the rule itself are unchanged. His
+ratification carried two corrections, both folded in: the player-facing promise
+**stays** as the design intent rather than being replaced, and self-luminous
+wayfinding is an explicit exception. The rule in one line, his words:
+
+> **Fixtures orient; geometry keeps inspection detail dark. Navigation signage
+> may emit; game-relevant information still requires the lantern.**
+
+This supplements
 `docs/THE-STORE.md`; it does not replace its visual direction.
 
 The store needs neon, emergency lighting, mirror ceilings and luminous retail
@@ -33,9 +39,9 @@ signage and a tempting silhouette, never a working interior lamp.
 
 ## How the rule is met — geometry, not intensity
 
-**Drafted 2026-11-02, awaiting ratification.** The rule above is unchanged and
-is the right rule. What follows is the mechanism, because measurement showed
-the obvious reading of it — "pick a dim enough fixture" — cannot work.
+**Ratified 2026-11-02.** The rule above is unchanged and is the right rule.
+What follows is the mechanism, because measurement showed the obvious reading
+of it — "pick a dim enough fixture" — cannot work.
 
 Measured in `LLK_LightLab` under the Lumen baseline; full tables and conditions
 in `docs/FINDINGS-FIXTURE-LIGHT-BAND.md`.
@@ -94,10 +100,22 @@ trace rather than a look.
    relic face — **is recessed, under a lip, or angled off the ceiling plane**,
    so the fixtures do not see it. Legible detail is never dimmed into
    illegibility; it is placed out of the light.
-2. **Landmarks are self-luminous rather than lit.** An exit sign or a neon
-   department sign reads as a landmark because it emits, not because something
-   shines on it — which is also what keeps it out of the inspection problem
-   entirely.
+2. **Landmarks are self-luminous rather than lit**, and this is the one
+   explicit exception to rule 1. An exit sign or a neon department sign reads
+   as a landmark because it emits, not because something shines on it - which
+   is also what keeps it out of the inspection problem entirely.
+
+   **Self-luminous wayfinding may be readable. It may not carry relic, product,
+   lore or objective information.** Chris's correction, 2026-11-02, and it
+   closes a hole in the acceptance test below: without it an EXIT sign is a
+   readable face that nothing shades, so a correctly built aisle would fail.
+   The line that divides them is what the text is *for* - "EXIT", "MENSWEAR",
+   an arrow and a floor number may emit and be read from across the room,
+   because they are the building telling you where you are. A price, a relic
+   name, a note, a code, a quest instruction may not: **that is the lantern's
+   job and the whole reason the lantern is worth its cost.** A sign that starts
+   carrying game-relevant text stops being wayfinding and falls back under
+   rule 1.
 3. **Neon makes the rule harder, not easier.** At matched candela a narrow
    saturated tube puts about **a third** of the troffer's luminance on
    surfaces, so it buys less orientation per candela while still lighting a
@@ -133,10 +151,15 @@ weak neon landmark, feel their warm carried lantern as a separate source, and
 still find a genuinely dark side route. No fixture may change relic legibility,
 enemy detectability or storm pressure unless a C++ gameplay rule names it.
 
-**The brightness clause is replaced by a traceable one, drafted 2026-11-02.**
-"No fixture may look bright enough to read by" cannot be checked — it was
-measured and no such fixture exists, because the aisle and the price card are
-lit by the same direct light. What can be checked, per readable surface:
+**No fixture may look bright enough to read by while those rules remain
+true.** That promise is the design intent and it stands as written - Chris's
+correction, 2026-11-02, to a draft that had replaced it. It is what the player
+is owed; it is not a construction check, because taken literally it cannot be
+met by choosing an intensity. Measurement is why: the aisle and the price card
+are lit by the same direct light, so no candela value satisfies both halves.
+
+**So the traces below are how the promise is built and verified, not a
+substitute for it.** Per readable surface:
 
 - **Trace from the fixture to the bottom of the readable face.** If that ray
   reaches it, the face is lit and no intensity choice will fix it. Shade it
@@ -149,5 +172,6 @@ lit by the same direct light. What can be checked, per readable surface:
   that matters.
 
 A fixture passes when the aisle reads from 40 studs and every readable face in
-it is shaded from direct fixture light by geometry — not when someone judges it
-looks dim enough.
+it is shaded from direct fixture light by geometry - not when someone judges it
+looks dim enough. **Self-luminous wayfinding is exempt by rule 2**, and only
+while it carries no relic, product, lore or objective information.
