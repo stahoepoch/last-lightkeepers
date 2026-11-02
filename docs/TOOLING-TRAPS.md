@@ -30,6 +30,39 @@ build as a success and then tests the binary that was already on disk.
 has held up. `Result: Succeeded` also covers staleness: a build that is already
 up to date says so, and one that could not run says `Failed`.
 
+### Correction, 2026-11-02: the exit code did not reproduce
+
+Re-measured, because this entry is one people act on. `Tools/build_editor.ps1`
+was run against an open editor, producing the identical refusal:
+
+```
+Unable to build while Live Coding is active...
+Result: Failed (OtherCompilationError)
+```
+
+and it exited **6**, not 0.
+
+Same wrapper, same `Build.bat`, same Live Coding refusal, a different exit
+code from the one recorded above. **One of the two observations is
+conditional on something neither of them wrote down** — most likely the
+invocation path, since the 2026-10-31 run is not recorded as having gone
+through `build_editor.ps1`.
+
+**What does not change:** read the `Result:` line. It was correct on both
+occasions and it is the signal this project relies on.
+
+**What does change:** do not invert the lesson. A reader who takes "exits 0 on
+failure" as a rule might treat a non-zero exit as noise, or build a check that
+expects zero to mean failure. **The exit code is unreliable in an unknown
+direction, which is weaker and more honest than unreliable in a known one.**
+Trust `Result:`, and treat a non-zero exit as a reason to look rather than as
+information in itself.
+
+This entry is kept rather than rewritten because a trap that stopped
+reproducing is itself worth recording — the failure it describes was real when
+it was written, and the gap between the two runs is a fact about this
+toolchain.
+
 ## 2. `Tools/import_unreal_data.ps1` exits non-zero when the import succeeded
 
 Found by Codex the same day, and the exact mirror of the above: the MCP and
