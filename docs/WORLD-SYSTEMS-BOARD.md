@@ -146,7 +146,8 @@ environment, or a recovered thing—not an explanation screen.
 | Chained blocker | Radio needs roof needs elevator needs power needs drained basement needs parts. Each link is a different place’s problem, never a different material. | Inbox — Chris, 2026-11-01 |
 | The call is heard | The distress transmission is the escalation. What answers is a procedure, not a person. | Inbox — Chris, 2026-11-01 |
 | Habitability as capability | Power, beds, food and growing space are permanent capability, never a consumable meter. They change what the crew can attempt. | Inbox — Chris, 2026-11-01 |
-| Re-filed, not reprogrammed | The endgame is becoming scheduled, so the valley produces for Lanternhold. Reprogramming is row 5’s banned exception at campaign scale. | Inbox — Chris, 2026-11-01 |
+| ~~Re-filed, not reprogrammed~~ | Withdrawn as the recommendation 2026-11-01: a structural ending, not a horrifying one. It implicates nothing the player did. See the endings section | Cut — reason logged |
+| Endings: A/B/C/D/E | Keepers are the valley’s maintenance; what you reclaim is a defense; Lanternhold is a building too; the filed are the current shift; restoration only relocates harm | Candidates — Chris, 2026-11-01 |
 
 ## Working discipline
 
@@ -568,3 +569,145 @@ And the first move is not a shop. `PROGRESSION-GAP.md` has five fixtures
 already placed, named and signed, saying "not open yet," with four declared
 sinks that have no consumer. **Wire one.** That is the whole of this idea's
 first slice.
+
+## Endings — candidates, and the test they have to pass
+
+Chris, 2026-11-01: *"there is probably a much better ending that adverse
+hasn't found yet. The most sinister and horrifying possibilities."* He is
+right, and the previous entry's ending is withdrawn as the recommendation.
+
+### Why "re-filed" failed
+
+It is a structural ending, not a horrifying one. Named so the same mistake is
+recognizable next time:
+
+- It **resolves** the tension instead of charging for it. Becoming scheduled
+  is a solution; horror is a cost.
+- It is a reveal about the **world**, not about the player. The valley turns
+  out to work differently than you thought. Nothing you did is implicated.
+- Every hour already played stays **innocent**, so the ending cannot reach
+  backwards. It is a last scene rather than a reinterpretation.
+
+### The test
+
+An ending for this game has to pass all six.
+
+| | Requirement |
+| --- | --- |
+| 1 | **It implicates the hours already played.** Not a fact about the valley — a re-reading of what the player has been doing all game |
+| 2 | **Nobody is evil.** Row 47. No villain, no secret king, no appetite |
+| 3 | **No new mechanic.** The evidence is something the player has handled for twenty hours without seeing it |
+| 4 | **The staff stay right.** The people who tell you things are not lying and are not fools |
+| 5 | **It does not stage the real disaster.** `THE-VALLEY.md` |
+| 6 | **It is legible before it happens.** The player is told, understands, and continues. Tragedy, not a gotcha |
+
+"Re-filed" passes 2, 3, 5 and fails 1 and 6.
+
+### Candidate A — the keepers are the valley's maintenance
+
+The machines stock, clean, contain, route and restrain. **None of them can
+improvise.** They cannot decide to drain a basement, divert a shipment, or
+reroute a circuit. A keeper can. So every "practical recovery job" in row 29's
+ladder was maintenance the valley needed and could not perform on itself.
+
+This is why the lantern works at all. It **Presents a valid maintenance
+pattern at a service port** and the system accepts it — and the reason a dead
+system accepts a pattern is that it was built expecting a maintenance
+instrument to arrive. The lantern is not a tool the keepers invented to
+survive the valley. It is the valley's own interface, and the order has been
+holding the contractor's end of a contract nobody alive signed.
+
+Passes all six. The evidence is the service port, used since act one. The
+reinterpretation is total: the progress bar was theirs.
+
+### Candidate B — what you are dismantling is a defense
+
+The valley is over-engineered against water because something already
+happened to it. The schedule is **correct**. The disaster it prepares for is
+real and still coming, and the preparation is proportionate.
+
+Reclaiming the valley means turning that infrastructure to your purposes,
+which means it is no longer doing its job. The pioneer arc is a disarmament.
+
+This is the false all-clear at campaign scale, and it is the most Johnstown
+idea available without staging a flood: **the town that over-prepared was
+right.** Passes 5 because the disaster is ahead, not behind — nobody's death
+is content.
+
+Requires 6 to be honored absolutely. The staff must say this out loud, in act
+two, clearly, and be believed or not. Without that it is a gotcha that
+invalidates the play.
+
+### Candidate C — Lanternhold is a building, too
+
+The hub is a place completing the last job it was built to do, and its job is
+**keeping keepers going out.** Beds exist to hold the next shift. Food exists
+to make the shift viable. The Lamp Wall — one lantern per keeper out, lit,
+taken down, put out — is not a memorial. It is a shift board, and the player
+has been reading it correctly all along without noticing what kind of document
+it is.
+
+Every upgrade in the pioneer arc increased a facility's throughput.
+
+Row 47 applied to us, which is the only place it has not been applied yet. The
+discipline that keeps it honest: **the people of Lanternhold are not lying and
+are not cynical.** The institution outlived the reason, the way every other
+institution in this valley did. That is the same thesis, not an exception to
+it.
+
+Passes all six, and it is the one that lands at home rather than in a dungeon.
+
+### Candidate D — the filed keepers are the current shift
+
+`CONTAINED-KEEPERS.md` holds the rescue contract. The sinister reading: the
+filed were not stored. They were **assigned.**
+
+Some of what moves in the dark with purpose, carrying light, is previous
+keepers still completing a last job. It is why they recognize you and why you
+recognize them. A Window Walker holding someone beneath their own bright
+lantern is a keeper doing a keeper's work.
+
+**The guardrail that keeps this inside row 47:** the system does not want
+flesh and never did — row 47 is explicit. It wants the post filled. A person
+is simply what was available. The moment this reads as hunger it has broken
+the premise and becomes a zombie.
+
+Rescue becomes the hardest thing in the game: you can bring one home, and
+what comes home is a worker.
+
+### Candidate E — restoration only relocates harm
+
+Not an ending on its own; the mechanism that makes the others hurt.
+
+**There is no net repair, only displacement.** Drain the basement and the
+water goes somewhere. Route power and something else goes dark — already true
+as cross-zone topology, now with moral weight. Divert a shipment and a place
+you have never been stops receiving.
+
+For a valley shaped by water, *it has to go somewhere* is the cheapest and
+truest horror available, and it needs no reveal at all. The player can watch
+it happen in act one.
+
+### Recommendation — A as the spine, B as the bottom, C as the turn home
+
+They are one story, not five options:
+
+1. **A** is what the whole campaign has been: the keepers are the valley's
+   hands, and the lantern is the badge.
+2. **E** is how it is felt, every night, from act one: nothing is ever
+   repaired, only moved.
+3. **C** is the moment it reaches Lanternhold: the hub is running a rota, and
+   the Lamp Wall was always a shift board.
+4. **B** is the bottom of the descent: the thing you are taking back is a
+   defense, and the only way to own it is to stop it working.
+5. **D** is the texture you walk past for twenty hours before any of it is
+   said.
+
+The final decision is then unbearable and nobody is evil: **the only way to
+reclaim the valley is to stop it doing the job it was built for, and the job
+was never wrong.** No confession, no villain, no mind. The player supplies the
+guilt, which is the one kind that lands.
+
+**Status: candidates.** This is not a decision and no part of it enters
+`DECISIONS.md` without Chris. Nothing here is built before Boswell's passes
+the slice test — rows 3, 28, 34.
