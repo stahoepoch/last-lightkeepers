@@ -361,8 +361,18 @@ So any hook, CI step or agent that branches on `$?` or `$LASTEXITCODE` reads a
 **failed test suite as a passing one**. The failure is fully reported - by name
 and by line - in the log the exit code is hiding.
 
-**Parse the log.** `Result={Success}` or `Result={Fail}` per test, plus
-`N tests performed`, is the signal. Grep for `Result={Fail}` and treat *zero
+**Use `.\Tools\run_automation.ps1`, which already does this.** Codex's runner
+parses the log rather than the exit code, and the comment at its line 67 said
+so before this was measured. The failing run above emitted
+`LogAutomationController: Error: Test Completed. Result={Fail}`, which that
+script's pattern catches - so this trap was already mitigated and the way to
+step in it is to hand-roll `UnrealEditor-Cmd` instead of calling the script,
+which is what happened here. One caveat while it stands: that runner also
+hard-requires a marker only `LLK.Harness` emits, so a narrowed `-TestFilter`
+currently fails a green run. Handed to Codex in `NOTES-FOR-CODEX.md`.
+
+**If you must parse it yourself: parse the log.** `Result={Success}` or
+`Result={Fail}` per test, plus `N tests performed`, is the signal. Grep for `Result={Fail}` and treat *zero
 `Test Completed` lines at all* as a failure too, since a run that never started
 the test also exits 0 and says nothing - the instrument's absence looking like
 a reading, for the third time on this page.

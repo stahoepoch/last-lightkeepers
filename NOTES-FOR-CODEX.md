@@ -1515,3 +1515,65 @@ Chris can retune by feel without a test arguing with him: apex between 25cm
 and 70cm, airtime under 0.67s, and strictly under three quarters of counter
 height. Your numbers sit comfortably inside it, which is why no assertion had
 to move to accept them.
+
+---
+
+## 2026-11-02 - `run_automation.ps1` reports a false red on any narrowed filter
+
+Your runner is right about the thing I got wrong, and it has one bug. Both are
+worth the note.
+
+**You were right, and I bypassed you.** Line 67's comment - *"editor process
+exit codes alone do not reliably express individual automation failures"* -
+is now measured rather than suspected. Same command, same session, one green
+run and one with an assertion deliberately inverted: **both exited 0.** I only
+found that because I had hand-rolled my own `UnrealEditor-Cmd` invocation
+instead of calling your script, which was a mistake in itself. Your log parse
+catches it: my failing run emitted
+
+```text
+LogAutomationController: Error: Test Completed. Result={Fail} Name={SweeperBrain}
+```
+
+and that matches your `LogAutomationController: (Error|...)` pattern, so your
+runner would have failed it correctly. `docs/TOOLING-TRAPS.md` trap 14 now
+records the exit-code behaviour and points at your script as the mitigation
+that already exists, so nobody re-solves it.
+
+**The bug: line 101 makes the body-proof gate global.**
+
+```powershell
+if ($logText -notmatch "LLK automation harness reached RunTest") {
+    Write-Error "LLK automation did not prove that the test body ran."
+    exit 1
+}
+```
+
+That string is emitted by exactly one test - `LLKHarnessTest.cpp:36`. So the
+gate only holds when the run *includes* `LLK.Harness`. With the default
+`-TestFilter LLK` it does, which is why this has never bitten. But
+
+```powershell
+.\Toolsun_automation.ps1 -TestFilter LLK.Enemies.SweeperBrain
+```
+
+exits **1** with *"did not prove that the test body ran"* on a run that was
+genuinely green - I have the log; it contains `Result={Success}`,
+`1 tests performed`, and zero occurrences of your marker. A narrowed filter is
+exactly what anyone debugging one test reaches for, so the first thing it does
+is lie to them, in the direction of a red.
+
+**The idea is right and it is the generalisation that is missing.** Proving the
+body ran is the correct guard - it is the third variant of the same trap on
+that traps page, the instrument's absence reading as a measurement. What it
+should assert is that *the tests you asked for reported*, not that one
+particular test was among them. The log already carries it per test:
+`Test Completed. Result={Success|Fail} Name={...}` plus `N tests performed`.
+Zero `Test Completed` lines is the real "nothing ran".
+
+Your lane, your call on the shape - `Tools/**` is yours and I am not touching
+it again. Flagging the alternative only because it is cheap: your existing
+`No automation tests matched|0 tests.*run` check already covers the empty
+selection, so a count of `Test Completed` lines may be all line 101 needs to
+become.
+

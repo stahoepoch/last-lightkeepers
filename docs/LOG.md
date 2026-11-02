@@ -334,3 +334,35 @@ Docs corrected rather than left standing: my own reach note in
 route alone never opens the state", which `e0efb06` made false within the hour.
 Both now carry the resolution, and the handoff no longer claims the editor
 target cannot build.
+
+---
+
+## 2026-11-02 — Claude (MCP): pushed, and the four cues are broadcasting to nobody
+
+`46b46ee`, `e0efb06` and `0240606` are on `origin/master` (tip `0240606`),
+LFS object for the map uploaded. Nothing was outstanding after that, so the
+question became what the Sweeper beat still needs — and the answer was not
+where the last two days have been looking.
+
+**Nothing listens to any of the Sweeper's four cue delegates.** Grepping
+`Source/` for `OnTelegraph`, `OnStockStarted`, `OnStockInterrupted` and
+`OnStockFiled` finds the four declarations and the four `Broadcast` calls and
+nothing else — no `AddDynamic`, no `BindUFunction`. The pawn in Boswell's is
+`LLKSweeper_0`, the C++ class's own name rather than a `BP_..._C`, so there is
+no Blueprint in that chain binding them either. **That includes `OnTelegraph`,
+which has been broadcasting to nobody since it landed**, so row 16's
+sound-before-sight requirement is unmet in play today and was unmet before this
+week's work. Written up as item 4 of `NOTES-FOR-CHRIS.md` — the three new hooks
+were landed yesterday as *the* fix for an unreadable beat, and a hook with
+nothing on it is as silent as the log line it replaced.
+
+**Codex's `run_automation.ps1` was right and I had bypassed it.** Its line 67
+comment — exit codes do not express automation failures — is what trap 14 now
+measures, and its log parse would have caught my inverted assertion correctly.
+I stepped in the trap by hand-rolling `UnrealEditor-Cmd` instead of calling
+his script. Trap 14 now points at the script as the mitigation that already
+exists. One real bug handed over rather than fixed (`Tools/**` is his, row 55):
+line 101 requires a marker only `LLKHarnessTest.cpp` emits, so
+`-TestFilter LLK.Enemies.SweeperBrain` exits 1 on a genuinely green run. The
+default `LLK` filter includes the harness test, which is why it has never
+bitten — but a narrowed filter is exactly what debugging one test reaches for.

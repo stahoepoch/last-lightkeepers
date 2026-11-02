@@ -110,6 +110,49 @@ piece of preparation that can happen before the traversal work starts.
 
 ---
 
+## 4. The Sweeper's four cues — nothing is listening to any of them
+
+**What it unblocks:** whether the first Sweeper beat can be *read* at all.
+Added 2026-11-02, and it is the one item on this page that is not about polish.
+
+`ALLKSweeper` broadcasts four Blueprint-assignable delegates, all with the
+same signature — `FLLKSweeperTelegraph(FVector Position)` — so one cue actor
+pattern serves all four:
+
+| Delegate | Fires when | Position it hands you |
+| --- | --- | --- |
+| `OnTelegraph` | it is about to come for a keeper | the Sweeper |
+| `OnStockStarted` | it begins filing something misplaced | the Sweeper |
+| `OnStockInterrupted` | it was seen, and dropped the job | the Sweeper |
+| `OnStockFiled` | it finished; the thing is elsewhere now | **the bay**, not the Sweeper |
+
+**All four broadcast into nothing today.** Grepping `Source/` for the four
+names finds only the four `Broadcast` calls and the four declarations — no
+`AddDynamic`, no `BindUFunction`, nowhere. A Blueprint child could bind them
+and I cannot read a Blueprint's bindings, but the pawn in Boswell's is
+`LLKSweeper_0` — the C++ class's own name, not a `BP_..._C` — so there is no
+Blueprint in that chain to be doing it. **So the beat currently plays in
+silence, and that includes `OnTelegraph`**, which has been broadcasting to
+nobody since it landed. Row 16 wants an enemy to announce itself with sound
+before sight; in play, right now, it does not announce itself at all.
+
+**`OnStockInterrupted` is the one to author first, if only one gets authored.**
+It is the only one of the four the player *caused on purpose* — they raised the
+lantern, accepted being seen, and saved their crate. Without a cue there, the
+mechanic's entire result is invisible: the crate simply stays put, which is
+indistinguishable from nothing having happened. A mechanic whose success looks
+like nothing is not a mechanic the player will ever learn.
+
+**`OnStockFiled` hands you the bay's position deliberately**, so the cue can
+point at where the crate went rather than at the machine that moved it. The
+cost of the beat is the walk back; a sound at the Sweeper tells the player they
+were robbed, and a sound at the bay tells them where to go.
+
+Nothing in code changes when you author these. The broadcasts are already
+correct in play — `began filing` to `filed ... into the stock bay` was observed
+1.93 s apart in PIE on 2026-11-02, so there is a real 1.93-second window for a
+start cue to occupy and an interrupt to land inside.
+
 ## What is NOT waiting on you
 
 Said explicitly, because a list like this reads as a backlog of blockers and
