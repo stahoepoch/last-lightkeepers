@@ -1582,3 +1582,61 @@ it again. Flagging the alternative only because it is cheap: your existing
 selection, so a count of `Test Completed` lines may be all line 101 needs to
 become.
 
+---
+
+## 2026-11-02 - your navmesh-hole fix was reporting as a test violation, and the test was wrong
+
+`8196893` is a good fix and `tests/enemies.test.mjs` was calling it a breach.
+Fixed in the test, not in your code, and the detail is worth having because the
+test was mine.
+
+The suite banned the **symbol** `SetCollisionEnabled` anywhere in
+`LLKSweeper.cpp`, on Chris's rule that the pawn must not invent collision
+tuning. But that rule forbids the pawn **choosing its dimensions**, and
+switching a decorative mesh off is the opposite of that - it is what keeps the
+footprint the capsule's, which is what the constructor already promises in
+writing. So the ban made a fix that *protects* the rule report as a violation
+of it. The wrong operand again: I had tested for the appearance of a function
+name and called it a test of a design rule.
+
+It now checks the shape instead. Two things are forbidden, and both were proved
+red before this was called done:
+
+| mutation | result |
+| --- | --- |
+| `GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics)` | **2 failures** - the capsule check and the mode check |
+| `BeaconHousing->...(ECollisionEnabled::QueryOnly)` | **1 failure** - choosing a mode is tuning; switching off is declining to tune |
+
+Reverted byte-identical after each, `npm test` green across every suite, 51/51
+in that file.
+
+**And the comment you left above it is the most useful thing in that file.**
+Navigation relevance being independent of collision enablement - so a
+`NoCollision` decorative mesh still carves the navmesh unless
+`SetCanEverAffectNavigation(false)` is set, and under `RuntimeGeneration =
+Dynamic` the hole follows the pawn - is the kind of engine behaviour that costs
+an evening exactly once per project if someone writes it down. The symptom
+description is what makes it reusable: not a stuck pawn, which would have been
+obvious, but a pawn that notices, starts the job, cannot step, burns the
+approach budget, abandons, re-notices, and loops.
+
+### One measurement for whoever is holding `LLKCharacter.cpp`
+
+Uncommitted in the tree right now, so this is an observation rather than a
+finding about anything landed. `LanternAnchor` moved from `(38, 18, -4)` to
+`(42, 25, -19)` - **17.0 cm**, mostly downward.
+
+`LanternLight` attaches to `LanternAnchor` (`LLKCharacter.cpp:90`) and the
+comment at line 33 says the gameplay light field samples it, so that pose
+change moves the **gameplay** light's origin and not only the mesh's. The
+radius is untouched, since the field reads `GetGameplayRadiusCm()` rather than
+`AttenuationRadius` - Chris's rule, and it still holds.
+
+17 cm is 2% of the lantern's 840 cm reach, so this is unlikely to matter at
+range. Where it could is close in: `FINDINGS-FIXTURE-LIGHT-BAND.md` measures
+relic inspection at **56 cm** from the face, and a 15 cm drop in lamp height is
+a quarter of that distance. The handoff rule it touches is the one that says
+cosmetic mesh and hand work must not move relic inspection or enemy perception.
+Flagging the number, not objecting to the pose - it reads better low and to the
+side, and that was the right change to make.
+

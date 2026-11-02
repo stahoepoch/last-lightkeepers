@@ -243,7 +243,6 @@ for (const [name, family] of families) {
     "SetCapsuleSize",
     "SetCollisionResponseToChannel",
     "GravityScale",
-    "SetCollisionEnabled",
   ]) {
     check(
       `the pawn does not tune collision (${forbidden})`,
@@ -252,6 +251,40 @@ for (const [name, family] of families) {
         "gaps, which is map work",
     );
   }
+
+  // `SetCollisionEnabled` was a fourth entry in that list until 2026-11-02,
+  // and banning the symbol was the wrong operand for the rule. Chris's rule
+  // forbids the pawn CHOOSING ITS DIMENSIONS. Switching a decorative mesh off
+  // is the opposite of that - it is what keeps the footprint the capsule's,
+  // exactly as the constructor promises - and `8196893` needed it, because a
+  // cosmetic chassis with collision was carving a navmesh hole that travelled
+  // with the pawn. The ban made that fix report as a violation.
+  //
+  // So the shape matters, not the symbol. Two things are forbidden: touching
+  // the pawn's own capsule, and setting any mode other than off.
+  const collisionCalls = [
+    ...code.matchAll(/([A-Za-z_][A-Za-z0-9_()]*)\s*->\s*SetCollisionEnabled\(\s*([^)]*?)\s*\)/g),
+  ].map(([, receiver, argument]) => ({ receiver, argument }));
+
+  const onTheCapsule = collisionCalls.filter(({ receiver }) =>
+    /^(GetCapsuleComponent\(\)|RootComponent|GetMesh\(\))$/.test(receiver),
+  );
+  check(
+    "the pawn never switches its own capsule's collision",
+    onTheCapsule.length === 0,
+    "collision remains ACharacter's capsule, which is the constructor's own " +
+      `promise; found ${onTheCapsule.map((c) => c.receiver).join(", ")}`,
+  );
+
+  const retuned = collisionCalls.filter(
+    ({ argument }) => argument !== "ECollisionEnabled::NoCollision",
+  );
+  check(
+    "decorative parts are only ever switched off, never given a collision mode",
+    retuned.length === 0,
+    "choosing a mode is tuning; switching off is declining to tune. Found " +
+      retuned.map((c) => `${c.receiver} -> ${c.argument}`).join(", "),
+  );
 
   // Route shape and spacing: no generated points, no spawn offsets.
   check(
