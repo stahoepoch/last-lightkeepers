@@ -1,9 +1,12 @@
 #include "Enemies/LLKSweeper.h"
 
 #include "Characters/LLKVitalsComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Data/LLKEnemyDef.h"
 #include "Data/LLKLanternData.h"
 #include "Engine/World.h"
+#include "Engine/StaticMesh.h"
 #include "EngineUtils.h"
 #include "Enemies/LLKEnemyRosterSubsystem.h"
 #include "Enemies/LLKPerception.h"
@@ -17,6 +20,9 @@
 #include "Run/LLKRunStateSubsystem.h"
 #include "Storm/LLKLightField.h"
 #include "Storm/LLKZonePressureSubsystem.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "Materials/MaterialInterface.h"
+#include "UObject/ConstructorHelpers.h"
 
 const FName ALLKSweeper::PatrolPointTag(TEXT("LLK.Patrol"));
 const FName ALLKSweeper::StockBayTag(TEXT("LLK.StockBay"));
@@ -34,6 +40,56 @@ ALLKSweeper::ALLKSweeper()
 	// BeginPlay rather than the constructor because it comes from a data asset.
 	bReplicates = true;
 	SetReplicateMovement(true);
+
+	// A brain without a body was technically moving through the aisle, but the
+	// player only received its debug text. This deliberately crude maintenance
+	// cart makes the first encounter legible until authored enemy art replaces
+	// it. It is presentation only: collision remains ACharacter's capsule.
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(TEXT("/Engine/BasicShapes/Cube.Cube"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> Cylinder(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> BeaconMaterial(
+		TEXT("/Game/LLK/Materials/MI_LLK_LanternCore_Working.MI_LLK_LanternCore_Working"));
+
+	Chassis = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SweeperChassis_Temporary"));
+	Chassis->SetupAttachment(GetCapsuleComponent());
+	Chassis->SetStaticMesh(Cube.Object);
+	Chassis->SetRelativeLocation(FVector(0.f, 0.f, -48.f));
+	Chassis->SetRelativeScale3D(FVector(0.48f, 0.34f, 0.26f));
+	Chassis->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	// **NoCollision is not enough, and this cost an evening of play.**
+	//
+	// Navigation relevance is independent of collision enablement in Unreal.
+	// A decorative mesh with `ECollisionEnabled::NoCollision` still carves the
+	// navmesh unless this is set, and `RecastNavMesh-Default` in Boswell's runs
+	// `RuntimeGeneration = Dynamic` - so this chassis punched a nav hole
+	// centred on the Sweeper, which then FOLLOWED it. It could never path out
+	// of a hole it was carrying.
+	//
+	// The symptom was not a stuck pawn, which would have been obvious. The
+	// Sweeper noticed the crate correctly (perception does not consult the
+	// navmesh), began the filing job, could not take a step, burnt the
+	// `losesTargetAfterSeconds` approach budget, gave up, re-noticed, and
+	// looped - one abandon warning every three seconds while standing
+	// perfectly still. Measured 2026-11-02, from Chris's "sweeper didn't move
+	// anywhere or do anything".
+	//
+	// Every decorative component on a moving pawn needs this line. Nothing in
+	// the project set it anywhere before now, so the default - true - applied
+	// to all of them. `tests/wiring.test.mjs` guards it.
+	Chassis->SetCanEverAffectNavigation(false);
+
+	BeaconHousing = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SweeperBeaconHousing_Temporary"));
+	BeaconHousing->SetupAttachment(GetCapsuleComponent());
+	BeaconHousing->SetStaticMesh(Cylinder.Object);
+	BeaconHousing->SetRelativeLocation(FVector(0.f, 0.f, -7.f));
+	BeaconHousing->SetRelativeScale3D(FVector(0.12f, 0.12f, 0.08f));
+	BeaconHousing->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	BeaconHousing->SetCanEverAffectNavigation(false);
+	if (BeaconMaterial.Succeeded())
+	{
+		BeaconHousing->SetMaterial(0, BeaconMaterial.Object);
+	}
 }
 
 bool ALLKSweeper::HasEnemyAuthority() const
@@ -44,6 +100,14 @@ bool ALLKSweeper::HasEnemyAuthority() const
 void ALLKSweeper::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Dynamic instances belong to a live actor, not the class default object.
+	// The static material is already assigned in the constructor so this is
+	// harmless if a clean checkout lacks the optional presentation asset.
+	if (BeaconHousing != nullptr)
+	{
+		StateLensMaterial = BeaconHousing->CreateAndSetMaterialInstanceDynamic(0);
+	}
 
 	// `enemies.json`'s Sweeper row, through the roster that already reads it.
 	// Nothing about the family is duplicated here - the aggro radii, the
@@ -457,6 +521,43 @@ void ALLKSweeper::Act(const FLLKSweeperStep& Step)
 	}
 }
 
+void ALLKSweeper::UpdatePresentation()
+{
+	if (BeaconHousing == nullptr)
+	{
+		return;
+	}
+
+	const float Pulse = 0.5f + 0.5f * FMath::Sin(GetWorld()->GetTimeSeconds() * 12.f);
+	float CoreEmissive = 0.5f;
+	float Scale = 1.f;
+	switch (Mind.State)
+	{
+	case ELLKSweeperState::Telegraph:
+	case ELLKSweeperState::Pursue:
+		CoreEmissive = 0.7f;
+		Scale = 1.f + Pulse * 0.25f;
+		break;
+
+	case ELLKSweeperState::Stock:
+		CoreEmissive = 0.6f;
+		Scale = 1.f + Pulse * 0.12f;
+		break;
+
+	default:
+		break;
+	}
+
+	// The lab measured visible Lumen bounce only from about 5 upward. Keeping
+	// this lens under one makes it a readable machine cue, never free aisle
+	// illumination or a competing relic-reading source.
+	if (StateLensMaterial != nullptr)
+	{
+		StateLensMaterial->SetScalarParameterValue(TEXT("CoreEmissive"), CoreEmissive);
+	}
+	BeaconHousing->SetRelativeScale3D(FVector(0.12f * Scale, 0.12f * Scale, 0.08f));
+}
+
 void ALLKSweeper::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
@@ -474,6 +575,7 @@ void ALLKSweeper::Tick(float DeltaSeconds)
 
 	Mind = Step.Mind;
 	Act(Step);
+	UpdatePresentation();
 
 	switch (Step.Move)
 	{

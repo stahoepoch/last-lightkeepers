@@ -378,7 +378,60 @@ if (!existsSync(assetPath)) {
   );
 }
 
+// Decorative components on a moving pawn must not carve the navmesh.
+//
+// **Nothing in this project set `bCanEverAffectNavigation` anywhere, so the
+// default — true — applied to every component.** On 2026-11-02 that stopped
+// the Sweeper dead in Boswell's: its temporary chassis punched a nav hole
+// centred on itself, `RuntimeGeneration` is `Dynamic` so the hole followed it,
+// and it could not path out of a hole it was carrying.
+//
+// The trap worth guarding is that **`SetCollisionEnabled(NoCollision)` does
+// not cover this.** Navigation relevance is a separate property, so the
+// obvious correct line gives no protection — which is exactly why a human
+// reading the constructor saw "presentation only: collision remains
+// ACharacter's capsule" and was right about collision and wrong about nav.
+//
+// And the symptom hid: perception never consults the navmesh, so the Sweeper
+// kept noticing the crate and starting the job. Not a frozen pawn, which
+// anyone would have spotted — a pawn behaving correctly in every respect
+// except moving.
+{
+  const pawnPath = "Source/LLK/Private/Enemies/LLKSweeper.cpp";
+  const pawnFile = join(root, pawnPath);
+  const src = existsSync(pawnFile) ? readFileSync(pawnFile, "utf8") : "";
 
+  // Every mesh the constructor creates, by its subobject name.
+  const created = [...src.matchAll(/CreateDefaultSubobject<U(?:Static|Skeletal)MeshComponent>\(TEXT\("([^"]+)"\)\)/g)]
+    .map((m) => m[1]);
+
+  check(
+    `${pawnPath} still builds its temporary bodies in C++`,
+    created.length > 0,
+    "no mesh subobjects found. If the temporary rig moved to Content or a " +
+      "Blueprint, this check is blind and the nav-relevance rule needs a new " +
+      "home — a guard that cannot fail is worse than no guard",
+  );
+
+  for (const name of created) {
+    // The component's local variable, so the assertion follows a rename.
+    const assign = new RegExp(`(\\w+)\\s*=\\s*CreateDefaultSubobject<U(?:Static|Skeletal)MeshComponent>\\(TEXT\\("${name}"\\)\\)`);
+    const varName = (src.match(assign) || [, null])[1];
+    const disabled =
+      varName !== null &&
+      new RegExp(`${varName}->SetCanEverAffectNavigation\\(\\s*false\\s*\\)`).test(src);
+
+    check(
+      `${name} does not carve the navmesh`,
+      disabled,
+      `${name} is a decorative mesh on a pawn that walks, and nothing calls ` +
+        `SetCanEverAffectNavigation(false) on it. The default is true, so it ` +
+        `will punch a dynamic nav hole around the Sweeper and the Sweeper ` +
+        `will stop moving while still noticing the player. NoCollision does ` +
+        `NOT prevent this`,
+    );
+  }
+}
 
 console.log(`\n${checks - failures}/${checks} passed`);
 if (failures > 0) {
