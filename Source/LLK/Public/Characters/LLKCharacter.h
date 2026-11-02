@@ -327,6 +327,15 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "LLK|Lantern")
 	TObjectPtr<USceneComponent> LanternAnchor;
 
+	/**
+	 * Co-op-only presentation anchor, mounted on the keeper mesh's right palm.
+	 * It intentionally never feeds the gameplay light field: animation and mesh
+	 * replacement are presentation concerns, while LanternAnchor remains the
+	 * stable source for interaction and perception.
+	 */
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Lantern")
+	TObjectPtr<USceneComponent> RemoteLanternAnchor;
+
 	/** Temporary glass chamber of the carried lantern. Replaced by authored art later. */
 	UPROPERTY(VisibleAnywhere, Category = "LLK|Lantern")
 	TObjectPtr<UStaticMeshComponent> LanternGlass;
@@ -347,9 +356,31 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "LLK|Lantern")
 	TObjectPtr<UStaticMeshComponent> LanternHandle;
 
+	/** The same temporary silhouette, visible to teammates from the palm socket. */
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Lantern")
+	TObjectPtr<UStaticMeshComponent> RemoteLanternGlass;
+
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Lantern")
+	TObjectPtr<UStaticMeshComponent> RemoteLanternTop;
+
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Lantern")
+	TObjectPtr<UStaticMeshComponent> RemoteLanternBase;
+
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Lantern")
+	TObjectPtr<UStaticMeshComponent> RemoteLanternCageLeft;
+
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Lantern")
+	TObjectPtr<UStaticMeshComponent> RemoteLanternCageRight;
+
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Lantern")
+	TObjectPtr<UStaticMeshComponent> RemoteLanternHandle;
+
 	/** Cosmetic near-field glow only. It is never exposed to the gameplay light field. */
 	UPROPERTY(VisibleAnywhere, Category = "LLK|Lantern")
 	TObjectPtr<UPointLightComponent> LanternCoreGlow;
+
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Lantern")
+	TObjectPtr<UPointLightComponent> RemoteLanternCoreGlow;
 
 	/**
 	 * The keeper's lantern state. M1.2 owns on/off and owns no light.

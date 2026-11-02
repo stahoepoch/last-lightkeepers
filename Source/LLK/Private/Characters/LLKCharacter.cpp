@@ -64,6 +64,15 @@ ALLKCharacter::ALLKCharacter()
 	LanternAnchor->SetupAttachment(FirstPersonCamera);
 	LanternAnchor->SetRelativeLocation(FVector(30.f, 18.f, -28.f));
 
+	// This exists only so another keeper sees an instrument in a hand instead
+	// of a light emerging from a camera. It must stay separate from
+	// LanternAnchor: the latter is the stable gameplay source, and mesh pose
+	// must never alter a relic read or an enemy's perception calculation.
+	RemoteLanternAnchor = CreateDefaultSubobject<USceneComponent>(TEXT("RemoteLanternAnchor"));
+	RemoteLanternAnchor->SetupAttachment(GetMesh(), TEXT("palm_r_Socket"));
+	RemoteLanternAnchor->SetRelativeLocation(FVector(6.f, 0.f, -12.f));
+	RemoteLanternAnchor->SetRelativeRotation(FRotator(0.f, 90.f, 0.f));
+
 	Lantern = CreateDefaultSubobject<ULLKLanternComponent>(TEXT("Lantern"));
 
 	// M1.3's placeholder, attached to the camera rather than the capsule: a
@@ -84,14 +93,16 @@ ALLKCharacter::ALLKCharacter()
 	const ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(
 		TEXT("/Engine/BasicShapes/Cube.Cube"));
 
-	auto ConfigureLanternPart = [this](UStaticMeshComponent* Part, const FVector& Location,
-		const FVector& Scale, UStaticMesh* Shape)
+	auto ConfigureLanternPart = [](UStaticMeshComponent* Part, USceneComponent* Parent,
+		const FVector& Location, const FVector& Scale, UStaticMesh* Shape, bool bOnlyOwner)
 	{
-		Part->SetupAttachment(LanternAnchor);
+		Part->SetupAttachment(Parent);
 		Part->SetRelativeLocation(Location);
 		Part->SetRelativeScale3D(Scale);
 		Part->SetStaticMesh(Shape);
 		Part->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Part->SetOnlyOwnerSee(bOnlyOwner);
+		Part->SetOwnerNoSee(!bOnlyOwner);
 		// The carried source must not cast a shadow through the player's own
 		// camera. The world light remains shadow-casting.
 		Part->SetCastShadow(false);
@@ -104,12 +115,30 @@ ALLKCharacter::ALLKCharacter()
 	LanternCageRight = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LanternCageRight_Temporary"));
 	LanternHandle = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LanternHandle_Temporary"));
 
-	ConfigureLanternPart(LanternGlass, FVector(0.f, 0.f, -8.f), FVector(0.14f, 0.14f, 0.22f), Cylinder.Object);
-	ConfigureLanternPart(LanternTop, FVector(0.f, 0.f, 5.f), FVector(0.18f, 0.18f, 0.045f), Cylinder.Object);
-	ConfigureLanternPart(LanternBase, FVector(0.f, 0.f, -21.f), FVector(0.18f, 0.18f, 0.05f), Cylinder.Object);
-	ConfigureLanternPart(LanternCageLeft, FVector(0.f, -13.f, -8.f), FVector(0.03f, 0.025f, 0.25f), Cube.Object);
-	ConfigureLanternPart(LanternCageRight, FVector(0.f, 13.f, -8.f), FVector(0.03f, 0.025f, 0.25f), Cube.Object);
-	ConfigureLanternPart(LanternHandle, FVector(0.f, 0.f, 24.f), FVector(0.09f, 0.035f, 0.025f), Cube.Object);
+	RemoteLanternGlass = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RemoteLanternGlass_Temporary"));
+	RemoteLanternTop = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RemoteLanternTop_Temporary"));
+	RemoteLanternBase = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RemoteLanternBase_Temporary"));
+	RemoteLanternCageLeft = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RemoteLanternCageLeft_Temporary"));
+	RemoteLanternCageRight = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RemoteLanternCageRight_Temporary"));
+	RemoteLanternHandle = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RemoteLanternHandle_Temporary"));
+
+	auto BuildLanternSilhouette = [&ConfigureLanternPart, Cylinder, Cube](USceneComponent* Parent,
+		UStaticMeshComponent* Glass, UStaticMeshComponent* Top, UStaticMeshComponent* Base,
+		UStaticMeshComponent* CageLeft, UStaticMeshComponent* CageRight, UStaticMeshComponent* Handle,
+		bool bOnlyOwner)
+	{
+		ConfigureLanternPart(Glass, Parent, FVector(0.f, 0.f, -8.f), FVector(0.14f, 0.14f, 0.22f), Cylinder.Object, bOnlyOwner);
+		ConfigureLanternPart(Top, Parent, FVector(0.f, 0.f, 5.f), FVector(0.18f, 0.18f, 0.045f), Cylinder.Object, bOnlyOwner);
+		ConfigureLanternPart(Base, Parent, FVector(0.f, 0.f, -21.f), FVector(0.18f, 0.18f, 0.05f), Cylinder.Object, bOnlyOwner);
+		ConfigureLanternPart(CageLeft, Parent, FVector(0.f, -13.f, -8.f), FVector(0.03f, 0.025f, 0.25f), Cube.Object, bOnlyOwner);
+		ConfigureLanternPart(CageRight, Parent, FVector(0.f, 13.f, -8.f), FVector(0.03f, 0.025f, 0.25f), Cube.Object, bOnlyOwner);
+		ConfigureLanternPart(Handle, Parent, FVector(0.f, 0.f, 24.f), FVector(0.09f, 0.035f, 0.025f), Cube.Object, bOnlyOwner);
+	};
+
+	BuildLanternSilhouette(LanternAnchor, LanternGlass, LanternTop, LanternBase,
+		LanternCageLeft, LanternCageRight, LanternHandle, true);
+	BuildLanternSilhouette(RemoteLanternAnchor, RemoteLanternGlass, RemoteLanternTop, RemoteLanternBase,
+		RemoteLanternCageLeft, RemoteLanternCageRight, RemoteLanternHandle, false);
 
 	LanternCoreGlow = CreateDefaultSubobject<UPointLightComponent>(TEXT("LanternCoreGlow_Temporary"));
 	LanternCoreGlow->SetupAttachment(LanternAnchor);
@@ -120,6 +149,16 @@ ALLKCharacter::ALLKCharacter()
 	LanternCoreGlow->SetLightColor(FLinearColor(1.f, 0.45f, 0.08f));
 	LanternCoreGlow->SetCastShadows(false);
 	LanternCoreGlow->SetVisibility(false);
+
+	RemoteLanternCoreGlow = CreateDefaultSubobject<UPointLightComponent>(TEXT("RemoteLanternCoreGlow_Temporary"));
+	RemoteLanternCoreGlow->SetupAttachment(RemoteLanternAnchor);
+	RemoteLanternCoreGlow->SetRelativeLocation(FVector(0.f, 0.f, -8.f));
+	RemoteLanternCoreGlow->IntensityUnits = ELightUnits::Candelas;
+	RemoteLanternCoreGlow->SetIntensity(4.f);
+	RemoteLanternCoreGlow->SetAttenuationRadius(90.f);
+	RemoteLanternCoreGlow->SetLightColor(FLinearColor(1.f, 0.45f, 0.08f));
+	RemoteLanternCoreGlow->SetCastShadows(false);
+	RemoteLanternCoreGlow->SetVisibility(false);
 
 	Interactor = CreateDefaultSubobject<ULLKInteractorComponent>(TEXT("Interactor"));
 	Vitals = CreateDefaultSubobject<ULLKVitalsComponent>(TEXT("Vitals"));
@@ -272,9 +311,18 @@ void ALLKCharacter::OnLanternVisualStateChanged(bool bIsOn, ELLKLanternChangeRea
 	// Cosmetic only. The gameplay field is still owned by LanternLight and
 	// resolves through LanternAnchor; this tiny fill cannot make a relic
 	// legible or change an enemy's reach.
+	// Point lights do not have mesh-style owner visibility flags. Resolve this
+	// locally instead so an owner gets only the first-person glow while every
+	// other client sees only the hand-mounted glow on this keeper.
+	const bool bOwnsThisKeeper = IsLocallyControlled();
 	if (LanternCoreGlow != nullptr)
 	{
-		LanternCoreGlow->SetVisibility(bIsOn);
+		LanternCoreGlow->SetVisibility(bIsOn && bOwnsThisKeeper);
+	}
+
+	if (RemoteLanternCoreGlow != nullptr)
+	{
+		RemoteLanternCoreGlow->SetVisibility(bIsOn && !bOwnsThisKeeper);
 	}
 }
 
