@@ -155,3 +155,36 @@ two files are different documents that shared a filename, and I read a hash
 inequality as divergence. `ADVERSARY.md` names that exact error in its own
 words: a hash has no magnitude. Renamed to `docs/FIXTURE-LIGHT-FIELD.md`;
 `DRIFT.md` sections C and C2 are struck with the reason.
+
+## 2026-11-02 — Claude (chat): the editor target builds and the test actually passes
+
+Chris closed the editor, which unblocked both jobs the MCP session had
+correctly refused to fake.
+
+- `LastLightkeepersEditor` Win64 Development: **`Result: Succeeded`**.
+  `UnrealEditor-LLK.dll` relinked at 06:55 against sources last touched
+  22:29-22:31, so the staleness the MCP session caught is gone — it checked
+  for Live Coding patch DLLs before concluding, and there are none now either.
+- `LLK.Enemies.SweeperBrain`, headless: **`Result={Success}`**, one test
+  performed, zero events.
+
+**And the green was checked rather than believed.** `ADVERSARY.md` says a
+calibration that can only say pass is nearly worthless, so one new assertion
+was inverted deliberately — `Begins.Mind.State` expected `Patrol` instead of
+`Stock` — rebuilt, and re-run. It failed, by name and line:
+
+```text
+Error: Test Completed. Result={Fail} Name={SweeperBrain}
+Error: all three gates open and it starts filing: The two values are not
+       equal. [...LLKSweeperBrainTest.cpp(399)]
+```
+
+So the harness does execute the new blocks, and `WITH_DEV_AUTOMATION_TESTS`
+has not quietly compiled them out — which is the failure mode that would have
+made every assertion in blocks 10 through 13 a decoration. Reverted with
+`git checkout --`, rebuilt, re-run green, and `git status` is clean, so the
+revert is exact rather than approximately exact.
+
+**Still unobserved:** nothing has been seen in PIE. The map has no
+`LLK.StockBay` yet, so the Stock state cannot run in the slice. That is one
+tag and it is the MCP session's, now that the editor is free.
