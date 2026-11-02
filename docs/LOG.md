@@ -558,3 +558,64 @@ playing it and deletes cleanly when the authored sound lands. C2 stays open.
 One thing kept from its placeholder text, since placeholders get deleted: the
 filed notice states the machine's view rather than the player's loss, which is
 row 47 - the building is not wrong, it is working.
+
+## 2026-11-02 — two sessions, one checkout, and a document that was false on arrival
+
+`845a286` promotes row 16 to the top of `docs/HANDOFFS.md` and generalises it
+well: **a broadcast with no subscriber is silence that compiles.** Both halves
+of the mechanism exist and read as finished — a declaration and a `Broadcast`
+call look exactly like a working cue to anyone opening the file, the compiler
+has no opinion about a delegate nobody subscribed to, and nothing in this
+project could have reported it. No test, no log line, no warning. That covers
+every delegate and interface either session adds from here, which is why it
+earned a section rather than a row.
+
+But `cc04e5c` — the document asserting that nothing binds the four — was
+**already false when it was written**, because `8738b57` was in the tree.
+Corrected and verified: `LLKDebugHUD.cpp:138-141`, four `AddDynamic` calls,
+confirmed here independently.
+
+**How it happened is the finding, and half of it is this session's.** The MCP
+session ran `git status`, saw ` M Source/LLK/Private/UI/LLKDebugHUD.cpp`, ran
+`git diff` moments later, got nothing, and recorded "a stat race that resolved
+to clean." Nothing was wrong with either command. The modification was **this
+session editing those two files in the same working tree at the same time**,
+and the empty diff was the commit landing between the two calls. It has owned
+the rationalisation in its own log.
+
+The half this session owns: **it edited `Source/` in a shared checkout without
+saying so**, while another session was working there — and `FLEET.md`'s own
+lane table predicted exactly this.
+
+So the protocol was the defect. The lane table assigns one active writer per
+*artifact* and never said what happens when two sessions share a *working
+tree*, where the index and working copy are shared mutable state:
+
+> `git status` and `git diff` describe a world another writer is changing
+> underneath you. Two readings taken a moment apart are observations of
+> different worlds, and their disagreement carries no information.
+
+That is the stale-input class at a sub-second timescale, and worse than the
+documentary version — a stale document at least holds still while you read it.
+It also fails quietly both ways: a path that looks modified may have been
+committed, a path that looks clean may be mid-save, and neither errors.
+
+`FLEET.md` gains the section. The structural fix is **one working tree per
+writing session**, which the app can do and which is Chris's call; the interim
+rules are to announce shared paths before touching them, never to conclude
+anything from two git calls taken at different instants, to check `git log`
+before recording what the tree contains, and to read a collision as a
+collision rather than as noise.
+
+Also from that exchange: **C2 stays open and is explicitly not closed by
+`8738b57`.** Its proof of closure is "the debug readout can be deleted without
+losing the beat", which is right — the readout being deletable is the whole
+point of it. And the wording note survives in `NOTES-FOR-CHRIS.md` attributed
+to the distinction rather than the placeholder: the filed notice states the
+machine's view, not the player's loss, because row 47 means the building is
+not wrong. Placeholders get deleted without anyone recording why they read the
+way they did.
+
+Still nobody has watched the beat in PIE. The four notice lines are logged for
+whenever the editor is open, and the bridge needs a manual
+`ModelContextProtocol.StartServer` after it is.

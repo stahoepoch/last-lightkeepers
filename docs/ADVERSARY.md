@@ -202,6 +202,18 @@ protocol matters more than the finding protocol.
   in `LANES.md`, and `docs/HANDOFFS.md` is the ledger: open items by owner,
   each with its evidence and how it is proved closed.
 
+### The sub-second version: a shared working tree
+
+The same class, at the timescale of two consecutive commands. When two
+sessions share one checkout, `git status` and `git diff` describe a world the
+other writer is changing underneath you, so two readings a moment apart are
+observations of different worlds and their disagreement carries no
+information. It produced a false document on 2026-11-02 — `FLEET.md`, *"Two
+sessions in one checkout"*, has the rule.
+
+Worse than the documentary version in one respect: a stale document at least
+holds still while you read it.
+
 ### My own instance of it, which is the clearest one
 
 `roster-sense-audit-UNBUILT.patch` had landed on 2026-10-31 in `9ddc7af`, and

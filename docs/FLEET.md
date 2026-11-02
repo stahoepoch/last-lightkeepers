@@ -71,6 +71,63 @@ carries four "Chris's call" notes, one of which removed the lantern's fuel
 gauge entirely. An agent that invents a number in a service file overrules a
 decision it never saw.
 
+## Two sessions in one checkout — git stops being an instrument
+
+Added 2026-11-02, from a collision that produced a false document.
+
+The MCP session ran `git status` mid-session and saw
+` M Source/LLK/Private/UI/LLKDebugHUD.cpp`. A `git diff` moments later came
+back empty. It recorded that as "a stat race that resolved to clean" and
+carried on — and then shipped `cc04e5c`, a document asserting that nothing in
+the project binds the four Sweeper cue delegates, which was **already false**
+when it was written.
+
+Nothing was wrong with either command. The modification was this session
+editing those two files in **the same working tree at the same time**, and the
+empty diff was the commit landing between the two calls.
+
+### Why this is a protocol defect and not an attention lapse
+
+The lane table above assigns one active writer per **artifact**. It never said
+what happens when two sessions share a **working tree** — and in a shared
+tree, the index and the working copy are shared mutable state, so:
+
+> **`git status` and `git diff` describe a world another writer is changing
+> underneath you.** Two of them taken a moment apart are two observations of
+> different worlds, and the disagreement between them carries no information.
+
+This is the stale-input class from `ADVERSARY.md` at a sub-second timescale,
+and worse than the documentary version: a stale document at least holds still
+while you read it.
+
+It also fails quietly in both directions. A path that looks modified may have
+been committed; a path that looks clean may be mid-save. Neither produces an
+error.
+
+### The rule
+
+**The structural fix is one working tree per writing session**, which the app
+can do, and it is Chris's call whether to spend it. Until then:
+
+- **Announce before editing a shared path.** Say which files, before touching
+  them, to whoever else is working. This session did not, and should have —
+  its own lane table predicted exactly this.
+- **Never conclude anything from two git calls taken at different instants.**
+  If `status` and `diff` disagree, the answer is "another writer is here", not
+  "the first reading was noise."
+- **Check `git log` before recording a claim about what the tree contains.** A
+  commit is a fact with a timestamp; a dirty-file list is a guess about now.
+- **Read a collision as a collision.** Row 27 exists because this happens; the
+  signal appeared in a terminal and was explained away rather than believed.
+
+### Why it matters more than the one document it spoiled
+
+Both agents are fast, both commit often, and neither can see the other except
+through the repo. The repo is therefore the shared instrument — and an
+instrument two parties write to concurrently needs the same discipline as the
+light lab's: know what you are measuring, and do not average two readings of
+different things.
+
 ## Handing work across a lane
 
 A handoff is a committed file, `docs/HANDOFF-<party>-<subject>.md`, and it
