@@ -49,6 +49,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/HUD.h"
 #include "Storm/LLKZonePressureSnapshot.h"
+#include "UObject/ObjectKey.h"
 #include "LLKDebugHUD.generated.h"
 
 class ULLKZonePressureSubsystem;
@@ -143,6 +144,53 @@ protected:
 	 * Chris's - and `ULLKRelicComponent` already sets the stencil for it, so
 	 * the day he authors one it has three states waiting.
 	 */
+	/**
+	 * Binds this HUD to every Sweeper's four cue delegates.
+	 *
+	 * **Why this exists at all.** `OnTelegraph`, `OnStockStarted`,
+	 * `OnStockInterrupted` and `OnStockFiled` were all declared and
+	 * broadcast, and **nothing in the project bound any of them** - no
+	 * `AddDynamic`, no `BindUFunction`, and the pawn in Boswell's is
+	 * `LLKSweeper_0`, the C++ class itself rather than a `BP_..._C`, so no
+	 * Blueprint was binding them either. Found by the MCP session, 2026-11-02.
+	 *
+	 * So row 16 - every enemy announces itself with sound before sight - has
+	 * been unmet *in play* since `OnTelegraph` landed, and the filing beat's
+	 * interrupt was invisible: a player lit up on purpose to save their crate
+	 * and success looked identical to nothing happening.
+	 *
+	 * **This is a debug readout and not the answer.** The authored sound and
+	 * effect are Chris's (row 41), written up as item 4 of
+	 * `NOTES-FOR-CHRIS.md`. What this does is make the beat *perceptible
+	 * tonight*, so the question of whether it reads can be judged by playing
+	 * rather than by reading code. When the real cues land, this can go.
+	 */
+	void BindSweepers();
+
+	UFUNCTION()
+	void OnSweeperTelegraph(FVector Position);
+
+	UFUNCTION()
+	void OnSweeperStockStarted(FVector Position);
+
+	UFUNCTION()
+	void OnSweeperStockInterrupted(FVector Position);
+
+	UFUNCTION()
+	void OnSweeperStockFiled(FVector Position);
+
+	/** Latches a notice for `NoticeSeconds`. Later notices replace earlier ones. */
+	void ShowNotice(const FString& Text, const FLinearColor& Colour);
+
+	/**
+	 * Draws the latched notice, outside the diagnostic gate.
+	 *
+	 * With the storm panel off a player still needs this, for the same reason
+	 * `DrawWorldPrompt` and `DrawExtraction` sit outside that gate: it is the
+	 * playable world's language rather than a diagnostic.
+	 */
+	void DrawBeatNotice();
+
 	void DrawWorldPrompt();
 
 	/**
@@ -208,4 +256,28 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Debug")
 	FLinearColor BackingColour = FLinearColor(0.02f, 0.025f, 0.035f, 0.72f);
+
+	/**
+	 * How long a beat notice stays up.
+	 *
+	 * Three seconds against the 1.93 s the MCP session measured between
+	 * "began filing" and "filed" in PIE, so a start notice is still readable
+	 * when the crate lands rather than being replaced before the player has
+	 * connected the two.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Debug", meta = (ClampMin = "0.1"))
+	float NoticeSeconds = 3.f;
+
+	/** Sweepers already bound, so a re-scan does not double-bind. */
+	TSet<FObjectKey> BoundSweepers;
+
+	/** Next world time at which to look for Sweepers that have appeared since. */
+	float NextSweeperScanSeconds = 0.f;
+
+	FString NoticeText;
+
+	FLinearColor NoticeColour = FLinearColor::White;
+
+	/** World time the notice stops drawing. */
+	float NoticeExpirySeconds = 0.f;
 };

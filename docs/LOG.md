@@ -366,3 +366,55 @@ line 101 requires a marker only `LLKHarnessTest.cpp` emits, so
 `-TestFilter LLK.Enemies.SweeperBrain` exits 1 on a genuinely green run. The
 default `LLK` filter includes the harness test, which is why it has never
 bitten — but a narrowed filter is exactly what debugging one test reaches for.
+
+## 2026-11-02 — the cues were declared, broadcast, and bound by nothing
+
+The MCP session's finding, and it is the one that mattered most this week:
+grepping `Source/` for `OnTelegraph`, `OnStockStarted`, `OnStockInterrupted`
+and `OnStockFiled` returns the four declarations and the four `Broadcast`
+calls **and nothing else.** No `AddDynamic`, no `BindUFunction`. The pawn in
+Boswell's is `LLKSweeper_0` — the C++ class itself, not a `BP_..._C` — so no
+Blueprint was binding them either. Verified here independently before acting
+on it.
+
+So my three new delegates fixed the hook and not the readability, and the
+answer to "does the interrupt read" was still no for a second, different
+reason: not a missing hook, an unconsumed one.
+
+**And `OnTelegraph` has been in that state since it landed.** Row 16 — every
+enemy announces itself with sound before sight, an accessibility requirement
+rather than polish — **has been unmet in play the whole time.** That predates
+this week entirely and is the more serious half of the finding.
+
+`ALLKDebugHUD` now binds all four. Notices draw low on the screen, outside the
+`LLK.ShowStormHUD` gate for the same reason `DrawWorldPrompt` and
+`DrawExtraction` are: this is the playable world's language, not a diagnostic.
+Three seconds against the 1.93 s measured between "began filing" and "filed",
+so a start notice is still up when the crate lands. Sweepers are re-scanned
+once a second rather than every frame.
+
+**This is a debug readout and not the answer.** The authored sound and effect
+are Chris's (row 41), written up as item 4 of `NOTES-FOR-CHRIS.md` with the
+shared signature and `OnStockInterrupted` named first — correctly, since it is
+the only one the player causes on purpose and its success currently looks
+identical to nothing happening. What this buys is that the beat can be judged
+**by playing it tonight** rather than by reading code.
+
+**Verified:** editor target `Result: Succeeded`; the full LLK suite green
+through Codex's `Tools/run_automation.ps1` — **34 tests, `Result={Success}`
+34 times, zero failures**, `LLK.Enemies.SweeperBrain` among them.
+
+**Not verified:** the HUD binding has no automated coverage and cannot have
+much — it is drawn output and delegate wiring. Compiling is real evidence the
+signatures match, since `AddDynamic` is checked at compile time, but **whether
+the notice actually appears has not been seen.** That needs PIE.
+
+Two notes on method. **Trap 14** is theirs and it bites backwards: both
+passing and failing runs of a hand-rolled `UnrealEditor-Cmd` exit 0, so the
+`exit=$?` this session printed on 2026-11-02 was meaningless — the conclusion
+was sound only because it came from grepping the log for `Result={Success}`,
+not from the code. Codex's script parses the report for exactly this reason
+and is the thing to call. And they found a real bug in it: line 101 requires a
+marker only `LLKHarnessTest.cpp` emits, so a narrow `-TestFilter` exits 1 on a
+genuinely green run. The default `LLK` filter includes the harness test, which
+is why nobody had hit it, and is what was used here.

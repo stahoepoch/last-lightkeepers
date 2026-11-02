@@ -9,6 +9,7 @@
 #include "Data/LLKEnemyDef.h"
 #include "Enemies/LLKEnemyRosterSubsystem.h"
 #include "Enemies/LLKPerception.h"
+#include "Enemies/LLKSweeper.h"
 #include "EngineUtils.h"
 #include "GameFramework/Pawn.h"
 #include "Loot/LLKInteractorComponent.h"
@@ -107,6 +108,101 @@ FString ALLKDebugHUD::FormatSeconds(float Seconds)
 	return FString::Printf(TEXT("%d:%02d"), Total / 60, Total % 60);
 }
 
+void ALLKDebugHUD::BindSweepers()
+{
+	UWorld* World = GetWorld();
+	if (World == nullptr)
+	{
+		return;
+	}
+
+	// Once a second, not every frame. Iterating every actor in the level at
+	// frame rate to find pawns that almost never appear is the kind of cost
+	// that hides in a debug class and shows up in a profile.
+	const float Now = World->GetTimeSeconds();
+	if (Now < NextSweeperScanSeconds)
+	{
+		return;
+	}
+	NextSweeperScanSeconds = Now + 1.f;
+
+	for (TActorIterator<ALLKSweeper> It(World); It; ++It)
+	{
+		const FObjectKey Key(*It);
+		if (BoundSweepers.Contains(Key))
+		{
+			continue;
+		}
+		BoundSweepers.Add(Key);
+
+		It->OnTelegraph.AddDynamic(this, &ALLKDebugHUD::OnSweeperTelegraph);
+		It->OnStockStarted.AddDynamic(this, &ALLKDebugHUD::OnSweeperStockStarted);
+		It->OnStockInterrupted.AddDynamic(this, &ALLKDebugHUD::OnSweeperStockInterrupted);
+		It->OnStockFiled.AddDynamic(this, &ALLKDebugHUD::OnSweeperStockFiled);
+	}
+}
+
+void ALLKDebugHUD::OnSweeperTelegraph(FVector)
+{
+	// Row 16's announcement, which until now happened silently. This is not
+	// the sound the row asks for - it is proof the broadcast fires, and a
+	// stand-in a playtest can react to.
+	ShowNotice(TEXT("something has noticed you"), ColourUrgent);
+}
+
+void ALLKDebugHUD::OnSweeperStockStarted(FVector)
+{
+	// `ColourCause` is the right one by its own name: something is happening
+	// because of what the player left on the floor.
+	ShowNotice(TEXT("a machine is dealing with something of yours"), ColourCause);
+}
+
+void ALLKDebugHUD::OnSweeperStockInterrupted(FVector)
+{
+	// **The one the player caused on purpose.** They lit up to save their
+	// crate, and without this the success of that decision looked exactly
+	// like nothing happening.
+	ShowNotice(TEXT("it saw you, and left your crate where it was"), ColourHeading);
+}
+
+void ALLKDebugHUD::OnSweeperStockFiled(FVector)
+{
+	ShowNotice(TEXT("your crate has been put somewhere it belongs"), ColourUrgent);
+}
+
+void ALLKDebugHUD::ShowNotice(const FString& Text, const FLinearColor& Colour)
+{
+	const UWorld* World = GetWorld();
+	if (World == nullptr)
+	{
+		return;
+	}
+
+	NoticeText = Text;
+	NoticeColour = Colour;
+	NoticeExpirySeconds = World->GetTimeSeconds() + NoticeSeconds;
+}
+
+void ALLKDebugHUD::DrawBeatNotice()
+{
+	const UWorld* World = GetWorld();
+	if (World == nullptr || Canvas == nullptr || NoticeText.IsEmpty())
+	{
+		return;
+	}
+
+	if (World->GetTimeSeconds() >= NoticeExpirySeconds)
+	{
+		NoticeText.Reset();
+		return;
+	}
+
+	// Low on the screen and away from the top-left panel, because this is for
+	// the player rather than for whoever is reading the diagnostics.
+	float CursorY = Canvas->SizeY * 0.72f;
+	DrawLine(NoticeText, NoticeColour, CursorY);
+}
+
 void ALLKDebugHUD::DrawLine(const FString& Text, const FLinearColor& Colour, float& CursorY, float Scale)
 {
 	if (Canvas == nullptr)
@@ -146,8 +242,11 @@ void ALLKDebugHUD::DrawHUD()
 	// These are the playable world's language, not the top-left diagnostic
 	// panel. A player still needs an object prompt, a rescue prompt and the
 	// extraction state with LLK.ShowStormHUD disabled.
+	BindSweepers();
+
 	DrawWorldPrompt();
 	DrawExtraction();
+	DrawBeatNotice();
 
 	if (CVarShowStormHUD.GetValueOnGameThread() == 0)
 	{
