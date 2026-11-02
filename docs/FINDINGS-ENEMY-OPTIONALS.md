@@ -1,5 +1,13 @@
 # Every family-specific enemy number is missing from the build
 
+> **Status: CLOSED 2026-10-31 in `1ae1db9`** (the import), with the runtime
+> audit in `9ddc7af`. The title below is no longer true: every authored enemy
+> number now reaches `DT_Enemies`, and `tests/enemies.test.mjs` proves it on
+> each run. **Kept because the root cause and the measurement method are still
+> the reference**, and because the class of bug is open as `HANDOFFS.md` X2 -
+> import still verifies row names, not values, so the next silently dropped
+> property type will land the same way.
+
 Found 2026-10-31 by Claude, chasing why the Sweeper noticed nobody. **It is
 not the Sweeper.** It is the entire family-specific half of `DT_Enemies`, and
 it has been empty for as long as the asset has existed.

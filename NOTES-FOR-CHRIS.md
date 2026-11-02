@@ -1,5 +1,9 @@
 # Notes for Chris — the `Content/` work the code is waiting on
 
+> **The open items across all four of us, with owners and proofs of closure,
+> are in `docs/HANDOFFS.md`.** This file stays as the detailed spec for the
+> `Content/` work; that one is the ledger.
+>
 > **Why this file exists.** `docs/LANES.md` says the Claude → Chris handoff is
 > "a C++ class landed complete with a written note saying exactly what to make
 > and what to set." I have been landing the classes and skipping the note, so

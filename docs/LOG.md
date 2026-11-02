@@ -418,3 +418,59 @@ and is the thing to call. And they found a real bug in it: line 101 requires a
 marker only `LLKHarnessTest.cpp` emits, so a narrow `-TestFilter` exits 1 on a
 genuinely green run. The default `LLK` filter includes the harness test, which
 is why nobody had hit it, and is what was used here.
+
+---
+
+## 2026-11-02 - Claude (MCP): three findings were already closed and still read as open
+
+Chris asked who should do what, and for the lanes to integrate rather than
+drift. Looking for work to assign turned up the drift itself.
+
+**Two of the three things I was about to assign myself were already done.**
+`FINDINGS-ENEMY-OPTIONALS.md` - 170 lines titled *"Every family-specific enemy
+number is missing from the build"* - was closed on 2026-10-31 by Codex in
+`1ae1db9`, and says so nowhere. The parked `roster-sense-audit-UNBUILT.patch`
+landed the same day in `9ddc7af`; I found out by applying it and getting an
+empty diff. `FINDINGS-EMISSIVE-LIGHTS-NOTHING.md` was answered in `aa8b8a5`
+when Lumen became the renderer baseline, with only its verification left.
+
+**What that nearly cost, stated because it is the whole argument.** Reading the
+optionals doc at face value, I built a complete chain: `AggroRadiusDark` is
+`TOptional<float>`, the importer drops those, `e0efb06`'s new gate is
+`DistanceToMisplacedStuds <= Def.AggroRadiusDark.Get(0.f)`, therefore
+yesterday's fix is inert in play and the green test proves nothing because its
+fixture assigns the field by hand. Coherent, alarming, and **wrong** - it
+survived until `node tests/enemies.test.mjs` took nine seconds to report
+*"every authored enemy number reached the generated DataTable"*. A correct
+reading of a stale instrument, which is this repo's recurring error in a new
+place: not the wrong operand this time, the wrong *vintage*.
+
+**Landed: `docs/HANDOFFS.md`.** One ledger, owners in columns, every row
+carrying its evidence and how it is proved closed - because "done" is the claim
+that has cost this project the most. Eight rows for Chris, three for Codex,
+four for me. Every `FINDINGS-*.md` now carries a status line as its second
+line, and `LANES.md` gains the missing half of its handoff protocol: closing
+something handed to you means writing the closure **where the finding lives**,
+not only in your own commit message, which the person who filed it never reads.
+
+**Codex's X2 is the one that matters most of the three.** `1ae1db9` fixed the
+instance; the class is open. `VerifyTable` still compares `GetRowNames()` and
+nothing inside the rows, which is exactly how `DT_Enemies` verified clean while
+17 of 32 numbers were absent. The next property type the engine's importer
+quietly declines will land the same way and be found the same way, by accident,
+weeks later.
+
+**One thing history cannot answer.** All three of us commit as `stahoepoch`;
+49 of the last 60 commits carry my co-author trailer and the other 11 are
+indistinguishable from each other. `1ae1db9` and `9ddc7af` are both in that
+group, so I cannot say from the log whether Chris or Codex closed them. One
+trailer line in Codex's commit template would make `git log` readable by lane.
+
+**And Grok has no lane.** Chris says it is musing on quests, story and
+progression - all of which live in `docs/**`, which the table gives to me.
+Proposed in the ledger, needing his ratification: carve `QUESTS.md`,
+`CAMPAIGN-SHAPE.md`, `PROGRESSION-GAP.md`, `REWARDS.md`, `SPINE.md` and
+`THE-WORK.md` out to Grok, with the constraint that a quest needing a *rule* is
+a note to me rather than a number or a C++ change. First target: the question
+sitting unanswered in `PROGRESSION-GAP.md` since 2026-10-26 - a finished run
+pays out and there is nothing to spend it on.

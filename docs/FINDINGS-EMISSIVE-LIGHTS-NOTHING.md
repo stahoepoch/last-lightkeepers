@@ -1,5 +1,13 @@
 # The lantern core's emissive lights nothing, because this project has no Lumen
 
+> **Status: ANSWERED 2026-11-01 in `aa8b8a5`, NOT YET VERIFIED.** Lumen is now
+> the renderer baseline - `r.DynamicGlobalIlluminationMethod=1`,
+> `r.ReflectionMethod=1`, SM6 - so the cause named below is addressed in
+> config. What has not been measured is whether it is live in the running
+> editor: that config's own comment warns the settings "risk being enabled in
+> config and inert", which would look exactly like the behaviour measured
+> here. Open as `HANDOFFS.md` M1.
+
 Measured 2026-11-01 by Claude in `LLK_LightLab`, against the question left open
 by `21405ca`: *"I have not yet called its Lumen bounce behavior proven."*
 

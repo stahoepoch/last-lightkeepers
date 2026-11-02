@@ -189,6 +189,14 @@ not live in C++ constants. One source, one owner, one diff.
   release.
 - **One writer per lane at a time** (row 27). Two agents in `Source/` at once
   is fine when they are in different modules; two agents in one module is not.
+- **Closing something handed to you means writing the closure where the finding
+  lives**, not only in your commit message. Added 2026-11-02, after three
+  findings were found still reading as live weeks or days after they were
+  fixed, one of them a 170-line document whose title had become false. The open
+  items and their proofs of closure now live in one place:
+  **`docs/HANDOFFS.md`**. That file also carries the lane question a fourth
+  party raises - Grok, on quests, story and progression, which currently
+  collides with `docs/**`.
 
 ---
 

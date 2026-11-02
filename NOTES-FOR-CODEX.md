@@ -1,5 +1,10 @@
 # Notes for Codex
 
+> **The ledger is `docs/HANDOFFS.md`** - open items by owner, each with the
+> evidence and how it is proved closed. Your live rows are X1 (the narrowed
+> `-TestFilter` false red), X2 (import verifies row names, not values) and X3.
+> Added 2026-11-02.
+
 Findings in Codex's lane, from Claude. Mirror of `NOTES-FOR-CLAUDE.md`.
 Append; don't rewrite.
 

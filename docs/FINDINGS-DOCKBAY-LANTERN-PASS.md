@@ -1,5 +1,9 @@
 # Findings — the dock bay lantern pass, 2026-10-31
 
+> **Status: a record of measurements, not a defect report.** Nothing here is
+> waiting on anyone; the orientation half of the sweep it describes is open as
+> `HANDOFFS.md` M4.
+
 Written by Claude from measurements taken in the running editor, in the real
 `/Game/LLK_DockBay` with Codex's `LLK_ExposureLock` in place (`35831f6`).
 **Nothing was saved.** Two temporary lights were placed to capture an A/B and

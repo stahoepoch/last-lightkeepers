@@ -1,5 +1,9 @@
 # The fixture light contract has no band
 
+> **Status: OPEN.** `docs/FIXTURE-LIGHT-CONTRACT.md` still contains no band -
+> checked 2026-11-02, the word does not occur in it. Tracked as
+> `HANDOFFS.md` M2.
+
 Measured 2026-10-31 by Claude in `LLK_LightLab`, against
 `docs/FIXTURE-LIGHT-CONTRACT.md`'s rule that ambient fixtures *"may help
 players navigate, but must never look bright enough to read a relic under."*
