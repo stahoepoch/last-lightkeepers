@@ -134,7 +134,7 @@ environment, or a recovered thing—not an explanation screen.
 | Idea | Smallest Boswell's test | Status |
 | --- | --- | --- |
 | Wrong crate | A recoverable crate bears a deeper-place department stamp, legible only under lantern light. | Build next |
-| Sweeper cargo displacement | A predictable lane knocks or routes a carried crate into a tagged stock bay; the player can recover it by using the lane or distracting it. | Proposed |
+| Sweeper cargo displacement | A predictable lane knocks or routes a carried crate into a tagged stock bay; the player can recover it by using the lane or distracting it. | **BUILT 2026-11-01** — `ELLKSweeperState::Stock`. Needs one actor tagged `LLK.StockBay` to turn on |
 | Mannequin shelving | A Stocker relocates dropped cargo to a visible assigned bay, leaving shelf tags and a route puzzle. | Proposed |
 | Lantern service port | One local routing panel lets the player bias a door/pallet procedure, trading one open route for another danger. | Proposed |
 | First decoy | One throwaway noise source pulls a patrol off a required hold long enough to cross. | Proposed |
@@ -711,3 +711,57 @@ guilt, which is the one kind that lands.
 **Status: candidates.** This is not a decision and no part of it enters
 `DECISIONS.md` without Chris. Nothing here is built before Boswell's passes
 the slice test — rows 3, 28, 34.
+
+## Inbox, 2026-11-01 — two what-ifs, parked with a reason
+
+Chris raised these and deprioritized them himself in the same breath — *"what
+if this what if that. But yea. Let's at least get the horrifying first mini
+play through done."* Logged so they are not re-derived, judged so the judgement
+is not re-derived either.
+
+### "What if you are a robot yourself, and you never knew"
+
+**The strongest objection is not that it is a cliché.** It is that it breaks
+the one rule holding this premise together.
+
+Row 47: the machines are indifferent, and they are indifferent because their
+procedures outlived the conditions that made them humane. A keeper who turns
+out to be a machine makes the player *a member of that category* — and the
+moment the player belongs to it, the question "what do they want?" has an
+answer again, because now one of them wants something. The indifference stops
+being structural and becomes a thing the plot made an exception to.
+
+It also cancels the mechanic the game is built on. **Light makes you legible
+because you are an unscheduled person.** If a keeper is a machine, the lantern
+is not a credential carried by an outsider; it is just equipment, and the
+central tension — the only way to work is to be visible — loses its reason.
+
+Worth keeping from it: the *fear* of it. A keeper who cannot be sure, because
+the building keeps filing them correctly, is free. A keeper who turns out to
+be right is not.
+
+### "What if an army comes and takes over, and the robots become a tertiary party"
+
+Three-way is a real and underused shape, and the instinct behind it is sound:
+the valley should not be the only pressure forever.
+
+**But it changes genre.** An army is a faction with intent, which means
+negotiation, territory and sides — and every one of those is a thing the
+machines cannot do. Put a party with motives on the board and the party
+without motives becomes the *environment*, not the antagonist. Row 47 survives
+in letter and dies in practice, because the player's attention moves to the
+only thing that can be reasoned with.
+
+**The version that keeps the premise:** whatever arrives does not have
+motives either. Another system, another schedule, with a different last job
+and no awareness that the first one is running. Two procedures meeting in one
+valley, each correct, neither aware. The keepers are what gets caught between
+them — which is a three-way without a single mind added to the fiction, and it
+is the same move as "what answers the radio is a procedure, not a person."
+
+That is also the honest sequel hook for candidate B: if what you disarmed was
+a defense, **something it was defending against is a system too.**
+
+**Status: parked.** Neither is built, neither is canon, and neither enters
+`DECISIONS.md`. Both are act-three-or-later questions and rows 3, 28 and 34
+all say the store comes first.

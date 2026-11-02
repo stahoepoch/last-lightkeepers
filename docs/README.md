@@ -61,13 +61,30 @@ does to play.
 
 `FIRST-SIXTY-SECONDS.md`, `HOW-THE-PLAYER-LEARNS.md`,
 `VERTICAL-SLICE.md`, `HUD-STATUS-SCREEN.md`.
+`FOUR-ANCHORS.md` — the four ways of knowing where you are.
+`KNOWLEDGE-SPACE-TIME.md` — the research behind it, and what it buys.
+`FIELDBOARD-OBSERVATIONS.md`, `UI-NOVELTY.md` — the Fieldboard records
+observations rather than state, and where it could go.
+
+## The shape of the whole thing
+
+`CAMPAIGN-SHAPE.md` — the campaign, and the two things it accidentally solves.
+`THE-STORE-STILL-RUNS.md` — the store is still running, and you are inventory.
+`THE-MALL-IS-STILL-TRADING.md` — the same reading, one building out.
+`PERMISSIVE-HOSTILE.md` — permissive about shopping, hostile to exceptions.
 
 ## Lighting — the part that keeps going wrong
 
 `../DONTFUCKUPTHELIGHTS.md` first.
 Then `LIGHTING-IN-UNREAL.md` (what may be tuned, in what order),
 `FIXTURE-LIGHT-CONTRACT.md`, `LIGHTLAB-PROTOCOL.md` (the lab and its
-measurement protocol), `LEGIBILITY-INSTRUMENT.md`, `LANTERN-LOOKDEV.md`.
+measurement protocol), `LEGIBILITY-INSTRUMENT.md`, `LANTERN-LOOKDEV.md`,
+`LIGHTLAB-SPEC.md` (measuring the orientation/inspection band).
+`FIXTURE-LIGHT-FIELD.md` — **which** fixtures enter the gameplay light field,
+fixture by fixture. Distinct from the contract above; it was called
+`FIXTURE-LIGHT-CONTRACT.md` at the repo root until 2026-11-01, which was a
+filename collision rather than a duplicate.
+`MAKE-IT-FEEL-LIKE-A-LANTERN.md` — why it doesn't feel like one yet.
 Open proposals: `PROPOSAL-LANTERN-DIAL.md`,
 `PROPOSAL-LANTERN-DIAL-NEXT.md`.
 Negative results worth not repeating: the four `FINDINGS-*.md` files.

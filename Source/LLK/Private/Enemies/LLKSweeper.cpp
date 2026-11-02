@@ -10,6 +10,7 @@
 #include "Enemies/LLKVisibility.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "LLK.h"
+#include "Loot/LLKRelicComponent.h"
 #include "LLKUnits.h"
 #include "NavigationPath.h"
 #include "NavigationSystem.h"
@@ -18,6 +19,7 @@
 #include "Storm/LLKZonePressureSubsystem.h"
 
 const FName ALLKSweeper::PatrolPointTag(TEXT("LLK.Patrol"));
+const FName ALLKSweeper::StockBayTag(TEXT("LLK.StockBay"));
 
 ALLKSweeper::ALLKSweeper()
 {
@@ -153,6 +155,26 @@ FLLKSweeperSenses ALLKSweeper::Observe(const float DeltaSeconds)
 		return Senses;
 	}
 
+	// **Before the keeper, because indifference does not depend on one.** The
+	// early returns below exist for "there is nobody to chase", and a Sweeper
+	// filing stock is doing the job it would be doing in an empty building.
+	// Resolving this after them would have made the whole behaviour contingent
+	// on a keeper being present and upright, which is the opposite of row 47.
+	PendingShelve = nullptr;
+	if (const TOptional<FVector> Bay = NearestStockBay())
+	{
+		Senses.bHasStockBay = true;
+
+		float MisplacedStuds = 0.f;
+		if (AActor* Misplaced = FindMisplacedItem(MisplacedStuds))
+		{
+			Senses.MisplacedItemPosition = Misplaced->GetActorLocation();
+			Senses.DistanceToMisplacedStuds = MisplacedStuds;
+			PendingShelve = Misplaced;
+			PendingBay = *Bay;
+		}
+	}
+
 	float DistanceStuds = 0.f;
 	ULLKVitalsComponent* Keeper = FindNearestKeeper(DistanceStuds);
 	const AActor* KeeperActor = Keeper != nullptr ? Keeper->GetOwner() : nullptr;
@@ -210,6 +232,81 @@ FLLKSweeperSenses ALLKSweeper::Observe(const float DeltaSeconds)
 	Senses.Notice = LLKPerception::Notice(Def, Perceiver, Perceived, &Visibility);
 
 	return Senses;
+}
+
+TOptional<FVector> ALLKSweeper::NearestStockBay() const
+{
+	const UWorld* World = GetWorld();
+	if (World == nullptr)
+	{
+		return TOptional<FVector>();
+	}
+
+	TOptional<FVector> Nearest;
+	float NearestSquared = TNumericLimits<float>::Max();
+	for (TActorIterator<AActor> It(const_cast<UWorld*>(World)); It; ++It)
+	{
+		if (!It->ActorHasTag(StockBayTag))
+		{
+			continue;
+		}
+
+		const float DistanceSquared =
+			FVector::DistSquared(It->GetActorLocation(), GetActorLocation());
+		if (DistanceSquared < NearestSquared)
+		{
+			NearestSquared = DistanceSquared;
+			Nearest = It->GetActorLocation();
+		}
+	}
+
+	return Nearest;
+}
+
+AActor* ALLKSweeper::FindMisplacedItem(float& OutDistanceStuds) const
+{
+	OutDistanceStuds = 0.f;
+
+	const UWorld* World = GetWorld();
+	if (World == nullptr)
+	{
+		return nullptr;
+	}
+
+	AActor* Nearest = nullptr;
+	float NearestSquared = TNumericLimits<float>::Max();
+	for (TActorIterator<AActor> It(const_cast<UWorld*>(World)); It; ++It)
+	{
+		const ULLKRelicComponent* Relic = It->FindComponentByClass<ULLKRelicComponent>();
+		if (Relic == nullptr || Relic->IsTaken())
+		{
+			continue;
+		}
+
+		// Already filed by this Sweeper. Not by any Sweeper: a second one
+		// finding the same relic in its own lane is a legitimate second work
+		// order, and the keeper having to watch two machines pass it along is
+		// better horror than a relic becoming immune.
+		if (ShelvedAlready.Contains(FObjectKey(*It)))
+		{
+			continue;
+		}
+
+		const float DistanceSquared =
+			FVector::DistSquared(It->GetActorLocation(), GetActorLocation());
+		if (DistanceSquared < NearestSquared)
+		{
+			NearestSquared = DistanceSquared;
+			Nearest = *It;
+		}
+	}
+
+	if (Nearest != nullptr)
+	{
+		OutDistanceStuds = FMath::Sqrt(NearestSquared) / LLKUnits::StudsToCm;
+	}
+
+	return Nearest;
 }
 
 TOptional<FVector> ALLKSweeper::NextPatrolPoint() const
@@ -303,6 +400,37 @@ void ALLKSweeper::Act(const FLLKSweeperStep& Step)
 	if (Step.bLostTheKeeper)
 	{
 		UE_LOG(LogLLK, Log, TEXT("%s lost the keeper and went back to its route."), *GetName());
+	}
+
+	if (Step.bStockStarted)
+	{
+		// The quieter sibling of the telegraph. The sound is Chris's asset;
+		// this is the cue and the log line, so a playtest can see the moment
+		// a machine started work on something the player wanted.
+		UE_LOG(LogLLK, Log, TEXT("%s began filing misplaced stock."), *GetName());
+	}
+
+	if (Step.bStockInterrupted)
+	{
+		UE_LOG(LogLLK, Log, TEXT("%s noticed a keeper and abandoned the filing."), *GetName());
+	}
+
+	if (Step.bItemShelved)
+	{
+		// **Relocated, never destroyed.** `TakeByServer` is the player's verb;
+		// calling it here would remove the relic from the world and delete the
+		// run's objective. The thing stays in the world, at an authored place,
+		// and the cost to the player is the route and the time to go get it.
+		if (AActor* Shelved = PendingShelve.Get())
+		{
+			ShelvedAlready.Add(FObjectKey(Shelved));
+			Shelved->SetActorLocation(PendingBay, false, nullptr, ETeleportType::TeleportPhysics);
+
+			UE_LOG(LogLLK, Log, TEXT("%s filed %s into the stock bay. It is still there to be found."),
+				*GetName(), *Shelved->GetName());
+		}
+
+		PendingShelve = nullptr;
 	}
 
 	if (Step.bKnockedDown && Target != nullptr)

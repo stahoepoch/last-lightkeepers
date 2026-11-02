@@ -74,29 +74,47 @@ nobody else can see it exists.~~ **Landed in `cfae411` by its own writer,
 which is how row 41 is supposed to work: the register names the risk, the lane
 owner clears it.**
 
-**Fix, outstanding:** commit the eleven root documents, or move them into
-`docs/` first — see C2, which is the better order, since two of them may be
-shadows of tracked files and committing a divergent duplicate makes the
-divergence permanent. **Owner: Chris's call on move-then-commit.**
+~~**Fix, outstanding:** commit the eleven root documents, or move them into
+`docs/` first.~~ **Done 2026-11-01**, in that order: moved into `docs/`, one
+renamed out of a filename collision, indexed in `docs/README.md`, committed.
+Section B is clear.
 
 ---
 
-## C. One contract exists twice, with different content
+## ~~C. One contract exists twice, with different content~~ — misdiagnosed
 
-```text
-FIXTURE-LIGHT-CONTRACT.md       ead58546…   (untracked, root)
-docs/FIXTURE-LIGHT-CONTRACT.md  5fc21b80…   (tracked)
-```
+**Corrected 2026-11-01.** This entry claimed two divergent copies of one
+document and warned that "something has been tuned against one of them and it
+is not knowable which." **That was wrong, and the diff says so.** They are two
+entirely different documents that happened to share a filename:
 
-Different hashes. Two copies of a document whose entire purpose is to be the
-single statement of what a fixture light must do. Something has been tuned
-against one of them and it is not knowable which.
+| | |
+| --- | --- |
+| root, 85 lines | *"supplement to `docs/THE-STORE.md`"* — **which fixtures enter the gameplay light field**, fixture by fixture, and the three places the art pass collides with systems already built |
+| `docs/`, 50 lines | the fixture light contract proper |
 
-**Fix:** diff them, keep the tracked one as the contract, fold in anything the
-root copy added, delete the root copy. **Owner: whoever owns the fixture light
-contract** — the root copy's content decides that.
+Nothing had diverged and nothing was tuned against the wrong page. A hash
+inequality was read as divergence — which is the error `ADVERSARY.md` names in
+its own words: *a hash has no magnitude.* It can tell you two files differ. It
+cannot tell you they are versions of each other.
 
-### C2. Candidate shadow documents
+**Resolved by renaming**, not merging: the root page is now
+`docs/FIXTURE-LIGHT-FIELD.md`, which is what it is about.
+
+### ~~C2. Candidate shadow documents~~ — moved, and they were not shadows
+
+**Resolved 2026-11-01.** All eleven root documents are now in `docs/` at their
+own names and indexed. The titles that looked like shadows of tracked files
+are not: none of them collided, so nothing was merged and nothing was deleted.
+The hypothesis below is kept because it was a hypothesis and it was wrong in
+an informative way — titles are not evidence of duplication, which is the same
+mistake as C.
+
+The structural fix stands and is done: **the repo root is no longer a second
+docs directory.** It keeps `README.md`, `DONTFUCKUPTHELIGHTS.md`,
+`COORDINATION.md`, `HUB-DESIGN.md` and the three `NOTES-FOR-*.md` relay files.
+
+### The original hypothesis, for the record
 
 Nine of the eleven untracked root files have titles that look like they shadow
 a tracked `docs/` file. **This is a hypothesis from titles, not a diff** — each

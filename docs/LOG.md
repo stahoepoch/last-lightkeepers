@@ -118,3 +118,40 @@ coincidence.
 The eleven untracked root design documents are still outstanding, and C2 is
 the reason to move them into `docs/` before committing rather than after:
 committing a divergent duplicate makes the divergence permanent.
+
+## 2026-11-01 — Claude (chat): the indifference beat, and the root tidied
+
+Chris: *"Work on the project, get it in order… Let's at least get the
+horrifying first mini play through done. U have the handoff."*
+
+The handoff's own "finish next" list is art and asset migration, which needs
+the editor this session does not have. The gap it could close is the one that
+makes the slice horror rather than stealth: the Sweeper was an obstacle you
+avoid.
+
+**`ELLKSweeperState::Stock`.** On patrol, unnoticed, with stock in the wrong
+place inside the authored `ContactRange`, a Sweeper files it. It wires
+`Sweepers.attractedToDroppedLoot: true` — Chris's key, imported since M0.5,
+asserted for presence by `tests/balance.test.mjs`, consumed by nothing until
+now, and one of the gaps `FINDINGS-ENEMY-OPTIONALS.md` recorded. Being
+noticed interrupts the job, which is the decision it creates: the only way to
+stop a Sweeper taking your crate is to let it see you. It relocates and never
+deletes.
+
+Three gates, all off by default, so it cannot turn itself on in a map that
+did not ask: the authored key, an actor tagged `LLK.StockBay`, and contact
+range. **The map needs that one tag before any of this is visible.**
+
+**Verified:** game target `Result: Succeeded` on all three changed TUs, the
+test TU among them; `npm test` green. **Not verified:** the editor target
+would not build — Live Coding was active and the editor was Chris's and open —
+so `LLK.Enemies.SweeperBrain` has been compiled and never run, and nothing
+has been seen in PIE.
+
+Also: the eleven untracked root documents are in `docs/` and indexed, and the
+repo root is no longer a second docs directory. One correction to my own
+audit — `FIXTURE-LIGHT-CONTRACT.md` was **not** a divergent duplicate. The
+two files are different documents that shared a filename, and I read a hash
+inequality as divergence. `ADVERSARY.md` names that exact error in its own
+words: a hash has no magnitude. Renamed to `docs/FIXTURE-LIGHT-FIELD.md`;
+`DRIFT.md` sections C and C2 are struck with the reason.

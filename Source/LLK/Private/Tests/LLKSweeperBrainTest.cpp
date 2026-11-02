@@ -92,6 +92,36 @@ namespace LLKSweeperBrainTestFixture
 		return Senses;
 	}
 
+	/** `enemies.json`'s Sweeper, with the authored stock key it actually ships. */
+	FLLKEnemyDef SweeperThatFiles()
+	{
+		FLLKEnemyDef Def = Sweeper();
+		// `Sweepers.attractedToDroppedLoot: true`, Chris's, imported since
+		// M0.5 and read by nothing until the Stock state.
+		Def.bAttractedToDroppedLoot = true;
+		return Def;
+	}
+
+	/** Unnoticed, with stock in the wrong place in reach and a bay to put it in. */
+	FLLKSweeperSenses SeesMisplaced(const float DeltaSeconds, const float DistanceStuds)
+	{
+		FLLKSweeperSenses Senses = Unseen(DeltaSeconds);
+		Senses.bHasStockBay = true;
+		Senses.MisplacedItemPosition =
+			FVector(LLKUnits::DistanceFromStuds(DistanceStuds), 0.f, 0.f);
+		Senses.DistanceToMisplacedStuds = DistanceStuds;
+		return Senses;
+	}
+
+	/** Mid-job. */
+	FLLKSweeperMind Filing(const float SecondsLeft)
+	{
+		FLLKSweeperMind Mind;
+		Mind.State = ELLKSweeperState::Stock;
+		Mind.StockSecondsRemaining = SecondsLeft;
+		return Mind;
+	}
+
 	/** A Sweeper mid-chase, telegraph spent. */
 	FLLKSweeperMind Pursuing()
 	{
@@ -331,6 +361,120 @@ bool FLLKSweeperBrainTest::RunTest(const FString& Parameters)
 		Hitch.DeltaSeconds = -4.f;
 		TestEqual(TEXT("and neither does a negative one"),
 			LLKSweeperBrain::Advance(Mind, Hitch, Def, Rules).Mind.TelegraphSecondsRemaining, 1.f);
+	}
+
+	// ---- 10. indifference: it files stock and never noticed you ----------
+	//
+	// Row 47's state. The first encounter should cost the player something
+	// without threatening them, and the three gates below are all off by
+	// default so this cannot turn itself on in a map that did not ask for it.
+	{
+		const FLLKEnemyDef Files = LLKSweeperBrainTestFixture::SweeperThatFiles();
+		const FLLKSweeperSenses Sees = LLKSweeperBrainTestFixture::SeesMisplaced(0.1f, 3.f);
+		FLLKSweeperMind Patrolling;
+
+		// Gate one: Chris's authored key. `Def` here is the plain Sweeper.
+		TestEqual(TEXT("without attractedToDroppedLoot it just keeps walking"),
+			LLKSweeperBrain::Advance(Patrolling, Sees, Def, Rules).Mind.State,
+			ELLKSweeperState::Patrol);
+
+		// Gate two: the map must have authored somewhere for it to go. A
+		// Sweeper filing a relic into nowhere would delete the objective.
+		FLLKSweeperSenses NoBay = Sees;
+		NoBay.bHasStockBay = false;
+		TestEqual(TEXT("with no stock bay in the map it never starts"),
+			LLKSweeperBrain::Advance(Patrolling, NoBay, Files, Rules).Mind.State,
+			ELLKSweeperState::Patrol);
+
+		// Gate three: contact range, authored. It deals with what its own
+		// route brings it next to - it does not acquire a new appetite.
+		const FLLKSweeperSenses TooFar =
+			LLKSweeperBrainTestFixture::SeesMisplaced(0.1f, 40.f);
+		TestEqual(TEXT("stock out of reach is not its problem"),
+			LLKSweeperBrain::Advance(Patrolling, TooFar, Files, Rules).Mind.State,
+			ELLKSweeperState::Patrol);
+
+		const FLLKSweeperStep Begins =
+			LLKSweeperBrain::Advance(Patrolling, Sees, Files, Rules);
+		TestEqual(TEXT("all three gates open and it starts filing"),
+			Begins.Mind.State, ELLKSweeperState::Stock);
+		TestTrue(TEXT("the start-of-work cue fires once"), Begins.bStockStarted);
+		TestFalse(TEXT("and it has not noticed anybody"), Begins.Mind.bHasLastKnown);
+		TestEqual(TEXT("it holds still while it works"),
+			Begins.Move, ELLKSweeperMove::Hold);
+		TestFalse(TEXT("nothing is shelved on the frame it begins"), Begins.bItemShelved);
+	}
+
+	// ---- 11. the job completes, and the thing is moved not deleted -------
+	{
+		const FLLKEnemyDef Files = LLKSweeperBrainTestFixture::SweeperThatFiles();
+		const FLLKSweeperSenses Sees = LLKSweeperBrainTestFixture::SeesMisplaced(0.5f, 3.f);
+
+		const FLLKSweeperStep MidJob = LLKSweeperBrain::Advance(
+			LLKSweeperBrainTestFixture::Filing(1.f), Sees, Files, Rules);
+		TestEqual(TEXT("mid-job it is still working"),
+			MidJob.Mind.State, ELLKSweeperState::Stock);
+		TestFalse(TEXT("and has shelved nothing yet"), MidJob.bItemShelved);
+
+		const FLLKSweeperStep Done = LLKSweeperBrain::Advance(
+			LLKSweeperBrainTestFixture::Filing(0.2f), Sees, Files, Rules);
+		TestTrue(TEXT("the timer expires and the thing is filed"), Done.bItemShelved);
+		TestEqual(TEXT("then it goes back to its route"),
+			Done.Mind.State, ELLKSweeperState::Patrol);
+		TestEqual(TEXT("walking, not standing"),
+			Done.Move, ELLKSweeperMove::PatrolPoint);
+	}
+
+	// ---- 12. being seen is how you stop it ------------------------------
+	//
+	// The decision this state exists to create. Light is already a rate on
+	// the held pickup; here it is the price of interrupting the building's
+	// work, and a keeper always beats the job.
+	{
+		const FLLKEnemyDef Files = LLKSweeperBrainTestFixture::SweeperThatFiles();
+
+		FLLKSweeperSenses Caught = LLKSweeperBrainTestFixture::Seen(0.1f, 10.f);
+		Caught.bHasStockBay = true;
+		Caught.MisplacedItemPosition = FVector(84.f, 0.f, 0.f);
+		Caught.DistanceToMisplacedStuds = 3.f;
+
+		const FLLKSweeperStep Interrupted = LLKSweeperBrain::Advance(
+			LLKSweeperBrainTestFixture::Filing(1.f), Caught, Files, Rules);
+		TestEqual(TEXT("noticing a keeper abandons the job"),
+			Interrupted.Mind.State, ELLKSweeperState::Telegraph);
+		TestTrue(TEXT("and says so, for a readout and a playtest note"),
+			Interrupted.bStockInterrupted);
+		TestTrue(TEXT("row 16 still holds: it announces before it moves"),
+			Interrupted.bTelegraphStarted);
+		TestFalse(TEXT("the thing it was filing is left where it is"),
+			Interrupted.bItemShelved);
+
+		// The race that matters: the frame the job would have completed is
+		// also the frame the keeper lit up. The keeper wins.
+		const FLLKSweeperStep Photo = LLKSweeperBrain::Advance(
+			LLKSweeperBrainTestFixture::Filing(0.05f), Caught, Files, Rules);
+		TestFalse(TEXT("a keeper seen on the last frame still saves the crate"),
+			Photo.bItemShelved);
+		TestEqual(TEXT("and the Sweeper is announcing instead"),
+			Photo.Mind.State, ELLKSweeperState::Telegraph);
+	}
+
+	// ---- 13. the thing leaves reach mid-job -----------------------------
+	//
+	// The keeper picked it up, or another Sweeper filed it first. Finishing
+	// on nothing would relocate whatever happened to be nearest when the
+	// timer expired, which is how a bug becomes a deleted objective.
+	{
+		const FLLKEnemyDef Files = LLKSweeperBrainTestFixture::SweeperThatFiles();
+		FLLKSweeperSenses Gone = LLKSweeperBrainTestFixture::SeesMisplaced(0.5f, 3.f);
+		Gone.MisplacedItemPosition.Reset();
+
+		const FLLKSweeperStep Abandoned = LLKSweeperBrain::Advance(
+			LLKSweeperBrainTestFixture::Filing(0.1f), Gone, Files, Rules);
+		TestFalse(TEXT("it shelves nothing when there is nothing there"),
+			Abandoned.bItemShelved);
+		TestEqual(TEXT("and returns to its route"),
+			Abandoned.Mind.State, ELLKSweeperState::Patrol);
 	}
 
 	return true;

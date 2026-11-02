@@ -59,7 +59,30 @@ enum class ELLKSweeperState : uint8
 	Pursue,
 
 	/** Lost you, and looking where you were. Never where you are. */
-	Search
+	Search,
+
+	/**
+	 * Dealing with stock in the wrong place. **It has not noticed you.**
+	 *
+	 * This is the state row 47 is made of, and it is the one the first
+	 * encounter should be. `enemies.json` authors
+	 * `Sweepers.attractedToDroppedLoot: true` - Chris's key, imported, asserted
+	 * for presence by `tests/balance.test.mjs`, and until now consumed by
+	 * nothing. A Sweeper that walks its route and *files the crate you were
+	 * walking toward* teaches indifference in one beat with no dialogue, and
+	 * it costs the player something without ever threatening them.
+	 *
+	 * **Being noticed interrupts it**, which is the decision this creates: the
+	 * only way to stop a Sweeper taking your crate is to let it see you. Light
+	 * is already a rate on the held pickup; here it is the price of
+	 * interrupting the building's work.
+	 *
+	 * It never deletes anything. `docs/WORLD-SYSTEMS-BOARD.md` is explicit -
+	 * no arbitrary bag deletion, a shelved thing stays in the world with a
+	 * recoverable destination. The pawn moves it to an authored stock bay or
+	 * this state never starts.
+	 */
+	Stock
 };
 
 /** What the pawn should be moving toward this frame. */
@@ -95,6 +118,10 @@ struct FLLKSweeperMind
 	/** Counts down during Search, from `losesTargetAfterSeconds`. */
 	UPROPERTY(BlueprintReadOnly, Category = "LLK|Enemies")
 	float SearchSecondsRemaining = 0.f;
+
+	/** Counts down during Stock. The seconds it spends filing the thing. */
+	UPROPERTY(BlueprintReadOnly, Category = "LLK|Enemies")
+	float StockSecondsRemaining = 0.f;
 
 	/** Only meaningful in Pursue and Search. Set when it last had the keeper. */
 	UPROPERTY(BlueprintReadOnly, Category = "LLK|Enemies")
@@ -151,6 +178,31 @@ struct FLLKSweeperSenses
 	 * its route, and only the second one is a Sweeper behaving correctly.
 	 */
 	TOptional<bool> bHasPatrolPoint;
+
+	/**
+	 * Where the nearest thing that is in the wrong place is. Unset when there
+	 * is none in reach, or when nobody looked.
+	 *
+	 * Deliberately **not** a separate sense radius. The Sweeper deals with
+	 * what its ordinary route brings it within `ContactRange` of, so the
+	 * horror is that its predictable lane is what costs you - not that it
+	 * acquired a new appetite. It also means no invented number: the range is
+	 * the authored contact range it already reaches keepers with.
+	 */
+	TOptional<FVector> MisplacedItemPosition;
+
+	/** Studs to that thing. Only read when the position is set. */
+	float DistanceToMisplacedStuds = 0.f;
+
+	/**
+	 * Whether the map authored somewhere for a shelved thing to GO.
+	 *
+	 * The gate that makes this safe to land before the map has one. No bay,
+	 * no `Stock` state, and the slice behaves exactly as it did - because a
+	 * Sweeper that filed something into nowhere would be deleting a player's
+	 * objective, which the board forbids outright.
+	 */
+	bool bHasStockBay = false;
 };
 
 /** One step's decision, plus the two things a pawn must act on once. */
@@ -171,6 +223,35 @@ struct FLLKSweeperStep
 
 	/** Gave up and went back to its route this frame. For a log, and for a readout. */
 	bool bLostTheKeeper = false;
+
+	/**
+	 * Began filing a misplaced thing this frame. True once, like the telegraph.
+	 *
+	 * This is the cue hook. Row 16 requires every enemy to announce itself
+	 * with sound before sight, and this is the quieter sibling of that: the
+	 * sound of a machine starting work nearby, which a player should learn to
+	 * recognize as *something of mine is about to move.*
+	 */
+	bool bStockStarted = false;
+
+	/**
+	 * It finished. The pawn moves the thing to the bay on this frame, once.
+	 *
+	 * The pawn relocates; it never destroys. `ULLKRelicComponent::TakeByServer`
+	 * is the player's verb and must not be called from here - a Sweeper
+	 * calling it would remove the relic from the world and silently delete the
+	 * run's objective.
+	 */
+	bool bItemShelved = false;
+
+	/**
+	 * A keeper was noticed while it was working, so the job lost.
+	 *
+	 * Reported rather than inferred because this is the moment the mechanic
+	 * exists for: the player chose to be seen in order to save the thing, and
+	 * a readout, a metric or a playtest note should be able to say so.
+	 */
+	bool bStockInterrupted = false;
 };
 
 namespace LLKSweeperBrain

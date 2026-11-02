@@ -1,7 +1,10 @@
 # The ladder — quests that make it easier and harder at once
 
 Status: **the opening five are Chris's, 2026-10-26.** Everything after them is
-proposed. Chris:
+proposed. The future join — why each job exists, which room holds it, and how
+the ladder becomes the story of the valley — is scaffolded in
+`docs/THE-WORK.md`. That page does not replace this one and it is not on the
+current milestone. Chris:
 
 > *"The whole Galleria can be the eventual world, but the game begins with one
 > sealed department store and earns its expansion. Quests should be practical

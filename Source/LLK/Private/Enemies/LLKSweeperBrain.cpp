@@ -21,6 +21,24 @@ namespace LLKSweeperBrainDetail
 	 * light a switch instead of a gamble.
 	 */
 	constexpr float FallbackSearchSeconds = 3.f;
+
+	/**
+	 * How long a Sweeper spends filing one misplaced thing.
+	 *
+	 * **Declared, not authored, and it is Chris's to move.** `enemies.json`
+	 * has no key for this and every number in that file is his, so this
+	 * follows `FallbackSearchSeconds`' precedent rather than inventing a
+	 * balance value in a header. The number matters to play: it is the window
+	 * in which a player can decide to light up and be noticed in order to
+	 * interrupt the work. Too short and the choice does not exist; too long
+	 * and the Sweeper is furniture.
+	 *
+	 * Two seconds is one second longer than the Sweeper's own
+	 * `audioTelegraphSeconds`, so a player who reacts to the start-of-work
+	 * cue has time to act on it. If Chris authors `stockSeconds`, read it
+	 * here and delete this.
+	 */
+	constexpr float FallbackStockSeconds = 2.f;
 }
 
 namespace LLKSweeperBrain
@@ -95,6 +113,70 @@ namespace LLKSweeperBrain
 			// Unset is nobody measuring: no patrol points in the map. It holds
 			// rather than inventing somewhere to be, and the pawn says so by
 			// name - the same seam the boarding route has.
+			// Nothing has noticed anybody. Is there stock in the wrong place?
+			//
+			// Gated on Chris's authored `attractedToDroppedLoot` and on the
+			// map having a bay to put it in. Both false by default, so a
+			// Sweeper in a map that authored neither behaves exactly as it
+			// did before this state existed.
+			if (Def.bAttractedToDroppedLoot.Get(false)
+				&& Senses.bHasStockBay
+				&& Senses.MisplacedItemPosition.IsSet()
+				&& Contact.ContactRange > 0.f
+				&& Senses.DistanceToMisplacedStuds <= Contact.ContactRange)
+			{
+				Step.Mind.State = ELLKSweeperState::Stock;
+				Step.Mind.StockSecondsRemaining = LLKSweeperBrainDetail::FallbackStockSeconds;
+				Step.bStockStarted = true;
+				Step.Move = ELLKSweeperMove::Hold;
+				break;
+			}
+
+			Step.Move = Senses.bHasPatrolPoint.Get(false)
+				? ELLKSweeperMove::PatrolPoint : ELLKSweeperMove::Hold;
+			break;
+
+		case ELLKSweeperState::Stock:
+			// A keeper beats the work, every time. This is the whole decision
+			// the state creates: being seen is how you stop it, and a player
+			// who lights up to save their crate has paid the right price.
+			if (bNoticed)
+			{
+				Step.Mind.State = ELLKSweeperState::Telegraph;
+				Step.Mind.TelegraphSecondsRemaining =
+					FMath::Max(0.f, LLKSweeperBrainDetail::Finite(Def.AudioTelegraphSeconds));
+				Step.Mind.StockSecondsRemaining = 0.f;
+				Step.bTelegraphStarted = true;
+				Step.bStockInterrupted = true;
+				Step.Move = ELLKSweeperMove::Hold;
+				break;
+			}
+
+			// The thing left reach while it was working - the keeper picked it
+			// up, or another Sweeper filed it first. Abandon the job rather
+			// than finishing it on nothing, which would relocate whatever
+			// happened to be nearest when the timer expired.
+			if (!Senses.MisplacedItemPosition.IsSet())
+			{
+				Step.Mind.State = ELLKSweeperState::Patrol;
+				Step.Mind.StockSecondsRemaining = 0.f;
+				Step.Move = Senses.bHasPatrolPoint.Get(false)
+					? ELLKSweeperMove::PatrolPoint : ELLKSweeperMove::Hold;
+				break;
+			}
+
+			Step.Mind.StockSecondsRemaining =
+				FMath::Max(0.f, Step.Mind.StockSecondsRemaining - Delta);
+
+			Step.Move = ELLKSweeperMove::Hold;
+
+			if (Step.Mind.StockSecondsRemaining > 0.f)
+			{
+				break;
+			}
+
+			Step.bItemShelved = true;
+			Step.Mind.State = ELLKSweeperState::Patrol;
 			Step.Move = Senses.bHasPatrolPoint.Get(false)
 				? ELLKSweeperMove::PatrolPoint : ELLKSweeperMove::Hold;
 			break;
@@ -221,6 +303,7 @@ namespace LLKSweeperBrain
 		case ELLKSweeperState::Telegraph: return TEXT("Telegraph");
 		case ELLKSweeperState::Pursue:    return TEXT("Pursue");
 		case ELLKSweeperState::Search:    return TEXT("Search");
+		case ELLKSweeperState::Stock:     return TEXT("Stock");
 		}
 		return TEXT("Unknown");
 	}

@@ -39,6 +39,7 @@
 #include "Data/LLKLanternData.h"
 #include "Enemies/LLKSweeperBrain.h"
 #include "GameFramework/Character.h"
+#include "UObject/ObjectKey.h"
 #include "LLKSweeper.generated.h"
 
 class ULLKEnemyRosterSubsystem;
@@ -88,6 +89,18 @@ public:
 	 */
 	static const FName PatrolPointTag;
 
+	/**
+	 * Where a shelved thing goes. Tag one actor with this and the Stock state
+	 * turns on; tag none and it never runs.
+	 *
+	 * The same discipline as `PatrolPointTag`: whatever the map tagged, with
+	 * no opinion here about where a stock bay should be or what it looks like.
+	 * It is a deliberate on/off switch for the whole behaviour, because a
+	 * Sweeper that filed a relic into nowhere would delete the run's
+	 * objective - see `ELLKSweeperState::Stock`.
+	 */
+	static const FName StockBayTag;
+
 #if WITH_DEV_AUTOMATION_TESTS
 	void SetMindForTest(const FLLKSweeperMind& InMind) { Mind = InMind; }
 	void SetDefForTest(const FLLKEnemyDef& InDef) { Def = InDef; bHasDef = true; }
@@ -108,6 +121,23 @@ protected:
 
 	/** The next authored patrol point, or unset when the map has none. */
 	TOptional<FVector> NextPatrolPoint() const;
+
+	/** The nearest tagged bay, or unset when the map authored none. */
+	TOptional<FVector> NearestStockBay() const;
+
+	/**
+	 * The nearest untaken relic within contact range that this Sweeper has not
+	 * already filed.
+	 *
+	 * "Misplaced" needs no new authoring: an untaken relic sitting in a
+	 * Sweeper's lane *is* stock in the wrong place, which is literally what
+	 * the first run's `BSW_WRONG_CRATE` is - a Misrouted Toy Crate.
+	 *
+	 * The already-filed set is per-Sweeper and local. Without it, a bay that
+	 * happens to sit on the patrol route would have the same Sweeper refiling
+	 * the same relic forever.
+	 */
+	AActor* FindMisplacedItem(float& OutDistanceStuds) const;
 
 	bool HasEnemyAuthority() const;
 
@@ -155,6 +185,15 @@ protected:
 	float ArriveToleranceStuds = 3.f;
 
 	/** Said once rather than every frame, when the map has nothing to walk to. */
+	/** The thing it is filing this moment, resolved in Observe and acted on in Act. */
+	TWeakObjectPtr<AActor> PendingShelve;
+
+	/** Where that thing is going. Set with PendingShelve, used once. */
+	FVector PendingBay = FVector::ZeroVector;
+
+	/** Relics this Sweeper has already filed, so it does not refile them. */
+	TSet<FObjectKey> ShelvedAlready;
+
 	bool bWarnedAboutNoPatrol = false;
 
 	bool bWarnedAboutNoDef = false;
