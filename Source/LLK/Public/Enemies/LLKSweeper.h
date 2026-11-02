@@ -79,6 +79,36 @@ public:
 	FLLKSweeperTelegraph OnTelegraph;
 
 	/**
+	 * It started work on something misplaced. The quieter sibling of the
+	 * telegraph, and the cue the beat was missing.
+	 *
+	 * **These three existed only as log lines**, which means the whole beat
+	 * was unreadable: a player could watch a crate move and have been given
+	 * nothing to connect it to. Row 16 requires an enemy to announce itself
+	 * with sound before sight, and the same logic applies to a machine
+	 * announcing that it is about to take something of yours. The sound and
+	 * the effect are Chris's (row 41); these are the hooks to hang them on,
+	 * matching `OnTelegraph` exactly so there is one pattern rather than two.
+	 */
+	UPROPERTY(BlueprintAssignable, Category = "LLK|Enemies")
+	FLLKSweeperTelegraph OnStockStarted;
+
+	/**
+	 * A keeper was seen and the job lost.
+	 *
+	 * **The most important of the three.** This is the one moment the player
+	 * caused on purpose - they lit up to save their crate - and without a cue
+	 * here they cannot tell that it worked. A mechanic the player cannot
+	 * perceive the result of is not a mechanic.
+	 */
+	UPROPERTY(BlueprintAssignable, Category = "LLK|Enemies")
+	FLLKSweeperTelegraph OnStockInterrupted;
+
+	/** It finished, and the thing is now somewhere else. Fires at the bay. */
+	UPROPERTY(BlueprintAssignable, Category = "LLK|Enemies")
+	FLLKSweeperTelegraph OnStockFiled;
+
+	/**
 	 * The tag a map puts on a patrol point.
 	 *
 	 * An actor tag rather than a route asset, for the reason

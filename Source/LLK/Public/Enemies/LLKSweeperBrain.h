@@ -99,7 +99,28 @@ enum class ELLKSweeperMove : uint8
 	Keeper,
 
 	/** Where the keeper was when it lost them. */
-	LastKnown
+	LastKnown,
+
+	/**
+	 * The misplaced thing it is on its way to deal with.
+	 *
+	 * **This was left out of the first version and the floor refuted it.** The
+	 * argument for omitting it was that a Sweeper should only deal with what
+	 * its route already brings it next to, so it never "acquires a new
+	 * appetite". Measured on the authored floor: the closest any patrol leg
+	 * comes to any authored relic is **6.26 studs**, against a 5-stud gate.
+	 * Thirty-five centimetres, and three laps produced nothing.
+	 *
+	 * Diverting a stride to deal with a box is not an appetite - it is a floor
+	 * cleaner doing its job, and `attractedToDroppedLoot` is literally the
+	 * word *attracted*. What would break row 47 is diverting toward a keeper,
+	 * which it still never does.
+	 *
+	 * It is also better: a player watching a machine leave its route because
+	 * of something they left on the floor is told more than one that happens
+	 * to pass close enough.
+	 */
+	MisplacedItem
 };
 
 /** A Sweeper's own state, carried between frames. */
@@ -119,9 +140,24 @@ struct FLLKSweeperMind
 	UPROPERTY(BlueprintReadOnly, Category = "LLK|Enemies")
 	float SearchSecondsRemaining = 0.f;
 
-	/** Counts down during Stock. The seconds it spends filing the thing. */
+	/** Counts down during Stock, once it is in reach. The seconds spent filing. */
 	UPROPERTY(BlueprintReadOnly, Category = "LLK|Enemies")
 	float StockSecondsRemaining = 0.f;
+
+	/**
+	 * Counts down while walking to the thing. Gives up at zero.
+	 *
+	 * Without this a Sweeper that cannot reach a relic - behind glass, up a
+	 * step, across a hole in the navmesh - would walk at it forever and stop
+	 * patrolling. That is worse than the behaviour not existing, because the
+	 * floor would look fine and one machine would quietly be gone.
+	 *
+	 * The budget is `losesTargetAfterSeconds`, which already means *how long
+	 * before it gives up on something it cannot resolve.* Authored, correct,
+	 * and no new number.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "LLK|Enemies")
+	float StockApproachSecondsRemaining = 0.f;
 
 	/** Only meaningful in Pursue and Search. Set when it last had the keeper. */
 	UPROPERTY(BlueprintReadOnly, Category = "LLK|Enemies")
@@ -183,11 +219,20 @@ struct FLLKSweeperSenses
 	 * Where the nearest thing that is in the wrong place is. Unset when there
 	 * is none in reach, or when nobody looked.
 	 *
-	 * Deliberately **not** a separate sense radius. The Sweeper deals with
-	 * what its ordinary route brings it within `ContactRange` of, so the
-	 * horror is that its predictable lane is what costs you - not that it
-	 * acquired a new appetite. It also means no invented number: the range is
-	 * the authored contact range it already reaches keepers with.
+	 * **Two authored ranges, each used for what it means.** The first version
+	 * used `ContactRange` for both noticing and reaching, on the argument that
+	 * reusing it invented no number. Measuring the floor refuted that: the
+	 * closest approach of any patrol leg to any authored relic is 6.26 studs
+	 * against a 5-stud gate, so the beat could not fire at all. Contact range
+	 * is the reach for *touching a keeper*; noticing that a box is in the lane
+	 * is a different sense, and coupling them to avoid declaring a number was
+	 * the wrong operand rather than a tidy saving - the error `ADVERSARY.md`
+	 * names.
+	 *
+	 * So: it notices within `aggroRadiusDark`, which already means *what this
+	 * machine becomes aware of nearby in the dark*, walks there, and files
+	 * within `ContactRange`, which now means physical reach and nothing else.
+	 * Still no invented number, and the authored floor works unaltered.
 	 */
 	TOptional<FVector> MisplacedItemPosition;
 
@@ -252,6 +297,12 @@ struct FLLKSweeperStep
 	 * a readout, a metric or a playtest note should be able to say so.
 	 */
 	bool bStockInterrupted = false;
+
+	/**
+	 * Gave up walking to it. Reported so an unreachable relic is visible as a
+	 * map problem rather than as a Sweeper that mysteriously stopped filing.
+	 */
+	bool bStockAbandoned = false;
 };
 
 namespace LLKSweeperBrain

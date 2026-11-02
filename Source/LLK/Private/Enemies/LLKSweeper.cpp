@@ -404,15 +404,24 @@ void ALLKSweeper::Act(const FLLKSweeperStep& Step)
 
 	if (Step.bStockStarted)
 	{
-		// The quieter sibling of the telegraph. The sound is Chris's asset;
-		// this is the cue and the log line, so a playtest can see the moment
-		// a machine started work on something the player wanted.
 		UE_LOG(LogLLK, Log, TEXT("%s began filing misplaced stock."), *GetName());
+		OnStockStarted.Broadcast(GetActorLocation());
 	}
 
 	if (Step.bStockInterrupted)
 	{
 		UE_LOG(LogLLK, Log, TEXT("%s noticed a keeper and abandoned the filing."), *GetName());
+		OnStockInterrupted.Broadcast(GetActorLocation());
+	}
+
+	if (Step.bStockAbandoned)
+	{
+		// Not a cue - a map problem. An unreachable relic should be findable
+		// as a warning rather than as a Sweeper that quietly stopped filing.
+		UE_LOG(LogLLK, Warning,
+			TEXT("%s could not reach the misplaced stock it noticed and gave up. ")
+			TEXT("Check the navmesh between it and the relic - see docs/MAP-READINESS.md."),
+			*GetName());
 	}
 
 	if (Step.bItemShelved)
@@ -428,6 +437,10 @@ void ALLKSweeper::Act(const FLLKSweeperStep& Step)
 
 			UE_LOG(LogLLK, Log, TEXT("%s filed %s into the stock bay. It is still there to be found."),
 				*GetName(), *Shelved->GetName());
+
+			// At the bay, not at the Sweeper: the cue should point a player at
+			// where their crate went.
+			OnStockFiled.Broadcast(PendingBay);
 		}
 
 		PendingShelve = nullptr;
@@ -478,6 +491,22 @@ void ALLKSweeper::Tick(float DeltaSeconds)
 		CurrentDestination = Mind.LastKnownKeeperPosition;
 		bHasDestination = true;
 		StepToward(CurrentDestination, DeltaSeconds);
+		break;
+
+	case ELLKSweeperMove::MisplacedItem:
+		// Resolved in Observe this same tick, so it cannot be stale. If the
+		// sense went away the brain has already left Stock and this arm is
+		// unreachable.
+		if (Senses.MisplacedItemPosition.IsSet())
+		{
+			CurrentDestination = *Senses.MisplacedItemPosition;
+			bHasDestination = true;
+			StepToward(CurrentDestination, DeltaSeconds);
+		}
+		else
+		{
+			bHasDestination = false;
+		}
 		break;
 
 	case ELLKSweeperMove::PatrolPoint:

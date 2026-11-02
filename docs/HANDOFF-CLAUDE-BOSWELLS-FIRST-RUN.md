@@ -61,10 +61,55 @@ Landed in the brain and the pawn, not the map:
 
 ### One thing this needs from the map, and it is one actor
 
-Tag any actor **`LLK.StockBay`** and the behaviour turns on; the nearest one
-is where filed stock goes. **Tag none and the state never runs**, which is the
-deliberate gate: a Sweeper filing a relic into nowhere would delete the run's
-objective. Same discipline as `LLK.Patrol`.
+~~Tag any actor **`LLK.StockBay`** and the behaviour turns on~~ — **that was
+false, and measuring the floor proved it.** Corrected 2026-11-02.
+
+Tagging the bay is necessary and was not sufficient. The brain also gated on
+`DistanceToMisplacedStuds <= Contact.ContactRange`, 5 studs, and **the closest
+any patrol leg in Boswell's comes to any authored relic is 6.26 studs** — 35
+centimetres outside, with three laps producing nothing. The MCP session tagged
+`BSW_STOCK_BAY` at (450, 450, 50) in `46b46ee`, observed the beat end to end
+in PIE only by parking a relic 3.59 studs away, and asked whether to nudge a
+patrol point or a relic to close the gap.
+
+**Neither. The gate was wrong, not the floor.** The first version used
+`ContactRange` for both noticing and reaching, on the argument that reusing an
+authored number invented none. That was the wrong operand dressed as a tidy
+saving — contact range is the reach for *touching a keeper*. So now:
+
+- it notices within **`aggroRadiusDark`** (12 studs, authored — what this
+  machine becomes aware of nearby in the dark),
+- walks to it (`ELLKSweeperMove::MisplacedItem`, which the first version left
+  out on the theory that a Sweeper should never leave its route),
+- and files within **`ContactRange`** (5 studs, authored), which now means
+  physical reach and nothing else.
+
+Still no invented number, and **the authored floor works unaltered** — 6.26 is
+asserted in the test precisely because it is the distance the real map offers.
+Diverting a stride to deal with a box is not an appetite; it is a floor
+cleaner doing its job, and `attractedToDroppedLoot` is literally the word
+*attracted*. What would break row 47 is diverting toward a keeper, which it
+still never does.
+
+Bounded by `losesTargetAfterSeconds`, so a relic behind glass or across a hole
+in the navmesh makes it give up and log a warning rather than walk at the
+thing forever.
+
+**Tag none and the state still never runs**, unchanged: a Sweeper filing a
+relic into nowhere would delete the run's objective.
+
+### The beat had no cues at all, which the MCP session caught
+
+`bStockStarted`, `bStockInterrupted` and `bItemShelved` each only wrote a log
+line, so a player could watch a crate move and be given nothing to connect it
+to. There are now `OnStockStarted`, `OnStockInterrupted` and `OnStockFiled`,
+matching `OnTelegraph` so there is one pattern rather than two. `OnStockFiled`
+broadcasts at the **bay**, not the Sweeper, so a cue can point at where the
+crate went. The sound and the effect are Chris's.
+
+`OnStockInterrupted` is the load-bearing one: it is the only moment the player
+caused on purpose — they lit up to save their crate — and without it they
+cannot tell that it worked.
 
 **Correction, 2026-11-02: the tag is necessary and it is not sufficient.** The
 sentence above was written from the tag's side and is true there, but a bay

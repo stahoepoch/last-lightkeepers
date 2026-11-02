@@ -113,12 +113,23 @@ namespace LLKSweeperBrainTestFixture
 		return Senses;
 	}
 
-	/** Mid-job. */
+	/** Mid-job, already in reach. */
 	FLLKSweeperMind Filing(const float SecondsLeft)
 	{
 		FLLKSweeperMind Mind;
 		Mind.State = ELLKSweeperState::Stock;
 		Mind.StockSecondsRemaining = SecondsLeft;
+		Mind.StockApproachSecondsRemaining = 3.f;
+		return Mind;
+	}
+
+	/** On its way to the thing, with this much walking budget left. */
+	FLLKSweeperMind Approaching(const float ApproachLeft)
+	{
+		FLLKSweeperMind Mind;
+		Mind.State = ELLKSweeperState::Stock;
+		Mind.StockSecondsRemaining = 2.f;
+		Mind.StockApproachSecondsRemaining = ApproachLeft;
 		return Mind;
 	}
 
@@ -386,13 +397,29 @@ bool FLLKSweeperBrainTest::RunTest(const FString& Parameters)
 			LLKSweeperBrain::Advance(Patrolling, NoBay, Files, Rules).Mind.State,
 			ELLKSweeperState::Patrol);
 
-		// Gate three: contact range, authored. It deals with what its own
-		// route brings it next to - it does not acquire a new appetite.
+		// Gate three: `aggroRadiusDark`, 12 studs, authored — what this
+		// machine becomes aware of nearby in the dark.
+		//
+		// **This gate was `ContactRange` until the floor refuted it.** The
+		// closest any patrol leg in Boswell's comes to any authored relic is
+		// 6.26 studs, against a 5-stud contact range: 35 cm outside, and
+		// three laps produced nothing. 6.26 is asserted below precisely
+		// because it is the number the authored floor actually offers.
 		const FLLKSweeperSenses TooFar =
 			LLKSweeperBrainTestFixture::SeesMisplaced(0.1f, 40.f);
-		TestEqual(TEXT("stock out of reach is not its problem"),
+		TestEqual(TEXT("stock across the building is not its problem"),
 			LLKSweeperBrain::Advance(Patrolling, TooFar, Files, Rules).Mind.State,
 			ELLKSweeperState::Patrol);
+
+		const FLLKSweeperStep AtTheFloorsDistance = LLKSweeperBrain::Advance(
+			Patrolling, LLKSweeperBrainTestFixture::SeesMisplaced(0.1f, 6.26f),
+			Files, Rules);
+		TestEqual(TEXT("ROW 47: at Boswell's real 6.26 studs it notices the crate"),
+			AtTheFloorsDistance.Mind.State, ELLKSweeperState::Stock);
+		TestEqual(TEXT("and walks to it rather than filing from across the aisle"),
+			AtTheFloorsDistance.Move, ELLKSweeperMove::MisplacedItem);
+		TestTrue(TEXT("with a bounded budget to get there"),
+			AtTheFloorsDistance.Mind.StockApproachSecondsRemaining > 0.f);
 
 		const FLLKSweeperStep Begins =
 			LLKSweeperBrain::Advance(Patrolling, Sees, Files, Rules);
@@ -457,6 +484,45 @@ bool FLLKSweeperBrainTest::RunTest(const FString& Parameters)
 			Photo.bItemShelved);
 		TestEqual(TEXT("and the Sweeper is announcing instead"),
 			Photo.Mind.State, ELLKSweeperState::Telegraph);
+	}
+
+	// ---- 12b. the walk, and giving up on an unreachable thing -----------
+	//
+	// Without the budget a Sweeper that cannot reach a relic — behind glass,
+	// up a step, a hole in the navmesh — walks at it forever and stops
+	// patrolling, which is worse than the behaviour not existing because the
+	// floor looks fine and one machine is quietly gone.
+	{
+		const FLLKEnemyDef Files = LLKSweeperBrainTestFixture::SweeperThatFiles();
+		const FLLKSweeperSenses OutOfReach =
+			LLKSweeperBrainTestFixture::SeesMisplaced(0.5f, 8.f);
+
+		const FLLKSweeperStep Walking = LLKSweeperBrain::Advance(
+			LLKSweeperBrainTestFixture::Approaching(3.f), OutOfReach, Files, Rules);
+		TestEqual(TEXT("out of reach it keeps walking"),
+			Walking.Move, ELLKSweeperMove::MisplacedItem);
+		TestEqual(TEXT("the work timer does not run while it is on its way"),
+			Walking.Mind.StockSecondsRemaining, 2.f);
+		TestTrue(TEXT("the walking budget does"),
+			Walking.Mind.StockApproachSecondsRemaining < 3.f);
+		TestFalse(TEXT("and it cannot file from a distance"), Walking.bItemShelved);
+
+		const FLLKSweeperStep GaveUp = LLKSweeperBrain::Advance(
+			LLKSweeperBrainTestFixture::Approaching(0.2f), OutOfReach, Files, Rules);
+		TestEqual(TEXT("the budget runs out and it goes back to work"),
+			GaveUp.Mind.State, ELLKSweeperState::Patrol);
+		TestTrue(TEXT("saying so, so an unreachable relic reads as a map problem"),
+			GaveUp.bStockAbandoned);
+		TestFalse(TEXT("having shelved nothing"), GaveUp.bItemShelved);
+
+		// Arrived. This is the case the floor already observed at 3.59 studs.
+		const FLLKSweeperStep Arrived = LLKSweeperBrain::Advance(
+			LLKSweeperBrainTestFixture::Approaching(3.f),
+			LLKSweeperBrainTestFixture::SeesMisplaced(0.5f, 3.59f), Files, Rules);
+		TestEqual(TEXT("in reach it stands still and works"),
+			Arrived.Move, ELLKSweeperMove::Hold);
+		TestTrue(TEXT("and the work timer starts running"),
+			Arrived.Mind.StockSecondsRemaining < 2.f);
 	}
 
 	// ---- 13. the thing leaves reach mid-job -----------------------------

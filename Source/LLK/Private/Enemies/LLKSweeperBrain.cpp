@@ -122,13 +122,21 @@ namespace LLKSweeperBrain
 			if (Def.bAttractedToDroppedLoot.Get(false)
 				&& Senses.bHasStockBay
 				&& Senses.MisplacedItemPosition.IsSet()
-				&& Contact.ContactRange > 0.f
-				&& Senses.DistanceToMisplacedStuds <= Contact.ContactRange)
+				&& Senses.DistanceToMisplacedStuds <= Def.AggroRadiusDark.Get(0.f))
 			{
 				Step.Mind.State = ELLKSweeperState::Stock;
 				Step.Mind.StockSecondsRemaining = LLKSweeperBrainDetail::FallbackStockSeconds;
+				Step.Mind.StockApproachSecondsRemaining =
+					Def.LosesTargetAfterSeconds.Get(LLKSweeperBrainDetail::FallbackSearchSeconds);
 				Step.bStockStarted = true;
-				Step.Move = ELLKSweeperMove::Hold;
+
+				// It may already be in reach, in which case it works where it
+				// stands. Deciding that here rather than next frame keeps the
+				// in-reach case identical to the behaviour the floor already
+				// observed at 3.59 studs.
+				Step.Move = (Contact.ContactRange > 0.f
+					&& Senses.DistanceToMisplacedStuds <= Contact.ContactRange)
+					? ELLKSweeperMove::Hold : ELLKSweeperMove::MisplacedItem;
 				break;
 			}
 
@@ -146,6 +154,7 @@ namespace LLKSweeperBrain
 				Step.Mind.TelegraphSecondsRemaining =
 					FMath::Max(0.f, LLKSweeperBrainDetail::Finite(Def.AudioTelegraphSeconds));
 				Step.Mind.StockSecondsRemaining = 0.f;
+				Step.Mind.StockApproachSecondsRemaining = 0.f;
 				Step.bTelegraphStarted = true;
 				Step.bStockInterrupted = true;
 				Step.Move = ELLKSweeperMove::Hold;
@@ -160,8 +169,35 @@ namespace LLKSweeperBrain
 			{
 				Step.Mind.State = ELLKSweeperState::Patrol;
 				Step.Mind.StockSecondsRemaining = 0.f;
+				Step.Mind.StockApproachSecondsRemaining = 0.f;
 				Step.Move = Senses.bHasPatrolPoint.Get(false)
 					? ELLKSweeperMove::PatrolPoint : ELLKSweeperMove::Hold;
+				break;
+			}
+
+			// Not in reach yet: walk, on a budget. The work timer does not run
+			// while it is still on its way - otherwise a Sweeper that noticed
+			// something across the aisle would file it from a distance.
+			if (Contact.ContactRange <= 0.f
+				|| Senses.DistanceToMisplacedStuds > Contact.ContactRange)
+			{
+				Step.Mind.StockApproachSecondsRemaining =
+					FMath::Max(0.f, Step.Mind.StockApproachSecondsRemaining - Delta);
+
+				if (Step.Mind.StockApproachSecondsRemaining <= 0.f)
+				{
+					// Could not get there. Behind glass, up a step, or a hole
+					// in the navmesh. Go back to work rather than standing at
+					// it forever.
+					Step.Mind.State = ELLKSweeperState::Patrol;
+					Step.Mind.StockSecondsRemaining = 0.f;
+					Step.bStockAbandoned = true;
+					Step.Move = Senses.bHasPatrolPoint.Get(false)
+						? ELLKSweeperMove::PatrolPoint : ELLKSweeperMove::Hold;
+					break;
+				}
+
+				Step.Move = ELLKSweeperMove::MisplacedItem;
 				break;
 			}
 
@@ -177,6 +213,7 @@ namespace LLKSweeperBrain
 
 			Step.bItemShelved = true;
 			Step.Mind.State = ELLKSweeperState::Patrol;
+			Step.Mind.StockApproachSecondsRemaining = 0.f;
 			Step.Move = Senses.bHasPatrolPoint.Get(false)
 				? ELLKSweeperMove::PatrolPoint : ELLKSweeperMove::Hold;
 			break;
@@ -316,6 +353,7 @@ namespace LLKSweeperBrain
 		case ELLKSweeperMove::PatrolPoint: return TEXT("PatrolPoint");
 		case ELLKSweeperMove::Keeper:      return TEXT("Keeper");
 		case ELLKSweeperMove::LastKnown:   return TEXT("LastKnown");
+		case ELLKSweeperMove::MisplacedItem: return TEXT("MisplacedItem");
 		}
 		return TEXT("Unknown");
 	}

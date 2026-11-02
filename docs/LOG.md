@@ -240,3 +240,58 @@ should also be filable is Chris's call.
 discarded on stop — and the read-back confirms it, because it reads the same
 doomed world. One call earlier and the restore would have reported success
 while leaving a test value in the committed map.
+
+## 2026-11-02 — Claude (MCP) measured the floor; Claude (chat) had the gate wrong
+
+`46b46ee`. `BSW_STOCK_BAY` tagged at (450, 450, 50) in Boswell's First Run,
+picked against measurements rather than by eye: two patrol legs cross the
+crate→bay line, nearest patrol point 17.6 studs — outside the 12-stud dark
+aggro, inside the 38-stud lit one, so the walk back is safe dark and a gamble
+lit. Z of 50 because the relics are 100-tall boxes with centred origins.
+
+**The beat was observed end to end in PIE**: `began filing misplaced stock` →
+`filed LLKRelicActor_1 into the stock bay`, 1.93 s apart against the authored
+2 s, with the relic read back out of the running world at the bay's own
+origin.
+
+**Three findings, all of them corrections to things I had written.**
+
+1. **The gate could not fire on the authored floor.** `ContactRange` is 5
+   studs; the closest any patrol leg comes to any authored relic is **6.26**.
+   Thirty-five centimetres, three laps, nothing. The PIE observation exists
+   only because a relic was parked 3.59 studs away and then restored.
+2. **"Tag any actor and the behaviour turns on" was false** — my line, in my
+   own handoff. Tagging was necessary and not sufficient.
+3. **`LLK.Enemies.SweeperBrain` cannot validate the tag.** Zero references to
+   `UWorld`, `GEditor` or `ActorHasTag`; it sets `bHasStockBay` in its own
+   fixture, so it passes identically with the map untagged. The tag and the
+   test are independent and I should not have implied otherwise.
+
+**The fix is not to nudge the floor.** Reusing `ContactRange` for both
+noticing and reaching was the wrong operand dressed as a tidy saving — contact
+range is the reach for touching a keeper. It now notices within
+`aggroRadiusDark` (12, authored), walks there via
+`ELLKSweeperMove::MisplacedItem` — which I had dropped as dead vocabulary, and
+the floor says it was not — and files within `ContactRange` (5, authored),
+bounded by `losesTargetAfterSeconds` so an unreachable relic produces a
+warning instead of a Sweeper that silently stops patrolling. No invented
+number, and **the map needs no change**: 6.26 is now asserted in the test
+because it is the distance the real floor offers.
+
+**And the beat had no cues at all.** `bStockStarted`, `bStockInterrupted` and
+`bItemShelved` each only wrote a log line, so a player could watch a crate
+move and have nothing to connect it to. `OnStockStarted`,
+`OnStockInterrupted` and `OnStockFiled` now exist, matching `OnTelegraph`;
+`OnStockFiled` broadcasts at the bay so a cue can point at where the crate
+went. My guess that the cue was the problem was right and understated it —
+the interrupt, the one moment a player causes on purpose, had no hook either.
+
+**Verified:** `LastLightkeepers` game target `Result: Succeeded`.
+**Not verified:** the editor target is blocked by Live Coding again — Chris
+reopened the editor — so `LLK.Enemies.SweeperBrain` has NOT been run against
+this change. The previous green covered the old gate and does not carry.
+
+Also from that session: **trap 13**. During PIE the scene tools answer about
+the `UEDPIE_0_` duplicate world, so a write while PIE runs edits a world
+discarded on stop *and the read-back confirms it*. One call earlier and a test
+value would have been left in the committed map with a success report on it.
