@@ -153,3 +153,71 @@ particular is directly load-bearing for row 47.
 
 That folder is **gitignored** as "regenerable, not source of truth". It is on
 one disk, in one place, and nothing is holding onto it.
+
+---
+
+## Two syntheses from Codex's research pass, 2026-11-02
+
+### Glare and scotopic vision compound into a mechanism
+
+`[HARD]` Codex found that exposed bright fixtures cause glare that reduces
+peripheral visibility through mesopic adaptation shifts.
+
+Set that beside section 3 — rods sit outside the fovea and are what catches
+motion at the edge of vision — and the two stop being separate notes:
+
+> **Every exposed bright source in the scene is actively degrading the
+> player's ability to detect the thing hunting them.**
+
+That makes shielding a **gameplay requirement rather than an art preference**,
+and it indicts the Sweeper's 120–300 cd beacon twice: it is illegal under the
+fixture contract *and* it blinds the player to the machine it is bolted to.
+
+**Caution on the source literature, because it points the other way.** The
+street-lighting and perceived-safety work measures how to make people feel
+*safer*. Using it to make a player feel *less* safe assumes the relationship
+inverts cleanly, and a correlational finding does not automatically run
+backwards. Use it for **where light should land**; do not use it to predict
+how frightened anyone will be. Perceived safety of a real pedestrian and
+enjoyable dread in a game are different dependent variables.
+
+### Outflanking versus predictability — the apparent conflict resolves
+
+`[HARD]` Codex cites a first-person horror study finding that an enemy which
+outflanks or cuts you off builds more tension than one that simply pursues.
+
+That looks like it contradicts section 1, which says uncued threat produces
+unresolving anxiety. It does not, and the resolution is the whole design rule:
+
+> **NPU does not say "make it predictable". It says "give it a cue."**
+
+An outflank you can hear commit — it breaks left, it is going for the aisle
+mouth — is the predictable condition at high tactical complexity. That is
+precisely what a WildStar telegraph is. An outflank you cannot read is the
+unpredictable condition with extra steps.
+
+So: outflank, yes. **But the flank must announce itself**, or the study's
+tension becomes the clinical literature's exhaustion.
+
+### The state machine is already the right shape
+
+Codex's proposed encounter loop — directional sound, commit to a legible job,
+telegraph a route-cut, player counterplay, search last known, resume — maps
+onto states that already exist: `Telegraph`, `Stock`, `Pursue`, `Search`.
+
+What is missing is not states. It is **cues** (nothing in the project binds
+any of the four Sweeper delegates, and directional work sound does not exist)
+and **dwell** (the patrol never pauses). The encounter language he wants is
+mostly authoring plus two small code changes, not a redesign.
+
+### One balance number that explains "patrols too hard"
+
+From the startup log: the Sweeper moves at **392 cm/s**. A keeper walks at
+448, sprints 644, and **crouches at 252**.
+
+So the Sweeper is 87% of walking speed — you cannot stroll away from it — and
+it is **faster than a crouching keeper by half again**. Crouch is therefore
+never an escape, only a concealment bet. That narrows counterplay to sprinting
+or going dark, which is part of why it reads as relentless.
+
+Balance values are Chris's; this is named, not changed.
