@@ -28,7 +28,9 @@
 
 ALLKCharacter::ALLKCharacter()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	// Only drives the visible local lantern assembly below. Gameplay still
+	// samples LanternAnchor, which remains stable beneath the camera.
+	PrimaryActorTick.bCanEverTick = true;
 
 	// Row 44: the camera is the keeper's head, not a setting on a boom. There
 	// is no spring arm and no third-person branch to keep working.
@@ -62,7 +64,9 @@ ALLKCharacter::ALLKCharacter()
 	// relic-read or enemy-perception source.
 	LanternAnchor = CreateDefaultSubobject<USceneComponent>(TEXT("LanternAnchor"));
 	LanternAnchor->SetupAttachment(FirstPersonCamera);
-	LanternAnchor->SetRelativeLocation(FVector(30.f, 18.f, -28.f));
+	// High enough to keep the glass, cage and handle in frame: this is a held
+	// instrument at chest/hand height, not a light hidden below the camera.
+	LanternAnchor->SetRelativeLocation(FVector(38.f, 18.f, -4.f));
 
 	// This exists only so another keeper sees an instrument in a hand instead
 	// of a light emerging from a camera. It must stay separate from
@@ -186,6 +190,40 @@ ALLKCharacter::ALLKCharacter()
 		// stand the player did not ask for; keep the capsule honest instead.
 		Movement->bCanWalkOffLedgesWhenCrouching = true;
 	}
+}
+
+void ALLKCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	// A deliberately small walk response makes the temporary hard-surface rig
+	// read as carried equipment. It is presentation-only: no component in this
+	// function is read by ULLKLanternLightComponent or the gameplay light field.
+	if (!IsLocallyControlled())
+	{
+		return;
+	}
+
+	LanternPresentationSeconds += DeltaSeconds;
+	const float Speed01 = GetVelocity().Size2D() / 448.f;
+	const float Amount = FMath::Clamp(Speed01, 0.f, 1.f);
+	const float Side = FMath::Sin(LanternPresentationSeconds * 7.f) * 1.2f * Amount;
+	const float Lift = FMath::Abs(FMath::Cos(LanternPresentationSeconds * 7.f)) * 1.6f * Amount;
+
+	auto SetPresentationLocation = [Side, Lift](UStaticMeshComponent* Part, const FVector& Rest)
+	{
+		if (Part != nullptr)
+		{
+			Part->SetRelativeLocation(Rest + FVector(0.f, Side, Lift));
+		}
+	};
+
+	SetPresentationLocation(LanternGlass, FVector(0.f, 0.f, -8.f));
+	SetPresentationLocation(LanternTop, FVector(0.f, 0.f, 5.f));
+	SetPresentationLocation(LanternBase, FVector(0.f, 0.f, -21.f));
+	SetPresentationLocation(LanternCageLeft, FVector(0.f, -13.f, -8.f));
+	SetPresentationLocation(LanternCageRight, FVector(0.f, 13.f, -8.f));
+	SetPresentationLocation(LanternHandle, FVector(0.f, 0.f, 24.f));
 }
 
 void ALLKCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

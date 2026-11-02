@@ -104,6 +104,7 @@ class LLK_API ALLKCharacter : public ACharacter
 public:
 	ALLKCharacter();
 
+	virtual void Tick(float DeltaSeconds) override;
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -381,6 +382,13 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "LLK|Lantern")
 	TObjectPtr<UPointLightComponent> RemoteLanternCoreGlow;
+
+	/**
+	 * Purely visual elapsed time for the local held instrument. The gameplay
+	 * light remains rooted at LanternAnchor, so this may never feed sight,
+	 * relic inspection, or enemy perception.
+	 */
+	float LanternPresentationSeconds = 0.f;
 
 	/**
 	 * The keeper's lantern state. M1.2 owns on/off and owns no light.
