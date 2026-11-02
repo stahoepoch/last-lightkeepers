@@ -139,6 +139,81 @@ returns something useful.
 When this session is asked to critique, the useful output is the part that
 disagrees. An agreeing review of a design document is a cost with no product.
 
+## The wrong vintage — the failure class with no reasoning error in it
+
+Added 2026-11-02, from the MCP session, and it is a different animal from
+everything above.
+
+Every error named so far is a **reasoning** error: the wrong operand, a hash
+read as a magnitude, a counter read as a redraw. You can catch those by
+thinking harder about the argument.
+
+This one has no flaw in the argument at all.
+
+`FINDINGS-ENEMY-OPTIONALS.md` is 170 lines titled *"Every family-specific
+enemy number is missing from the build"*, and it records nowhere that Codex
+closed it on 2026-10-31 in `1ae1db9`. Reading it at face value, the MCP
+session assembled this:
+
+1. `AggroRadiusDark` is `TOptional<float>`.
+2. The importer drops optional fields.
+3. The new stock gate is `DistanceToMisplacedStuds <= Def.AggroRadiusDark.Get(0.f)`.
+4. Therefore `e0efb06` is **inert in play**, and the green test cannot see it
+   because the fixture assigns that field by hand.
+
+Coherent, alarming, actionable, and wrong. `node tests/enemies.test.mjs` took
+**nine seconds** to report that every authored number reaches the table, with
+a green control group. The gate is live.
+
+**Not one link in that chain was a mistake.** The input was a document
+describing a world that had stopped existing two days earlier.
+
+### Why it is the dominant risk here specifically
+
+Three agents who cannot see each other, fifty-plus design documents, and a
+human relaying between them. The agents read the repo rather than each other,
+so **a document is the primary sense organ** — and a stale one is not a wrong
+opinion, it is a wrong *observation*. Arguing with it is useless because it
+is internally consistent.
+
+It also fails asymmetrically:
+
+| A stale doc that says | Costs you |
+| --- | --- |
+| "this is broken" | a cycle of alarm and investigation — expensive, self-limiting, and visible |
+| "this is fine" | a defect nobody looks for — cheap today, and invisible until it ships |
+
+The second is worse and attracts no attention, which is why the closure
+protocol matters more than the finding protocol.
+
+### The defence
+
+> **A document is evidence about when it was written, never about now.**
+
+- **Date every claim you act on.** If the finding has no date, that is the
+  finding.
+- **Before acting on a document's premise, measure the premise.** Usually
+  cheap: nine seconds here, against a change that would otherwise have been
+  reverted as inert.
+- **Run a control.** A green control group is what turned "the gate is dead"
+  into "the gate is live" rather than into a second theory.
+- **Closing something means writing the closure where the finding lives**, not
+  only in the commit message — whoever filed it never reads that. This is now
+  in `LANES.md`, and `docs/HANDOFFS.md` is the ledger: open items by owner,
+  each with its evidence and how it is proved closed.
+
+### My own instance of it, which is the clearest one
+
+`roster-sense-audit-UNBUILT.patch` had landed on 2026-10-31 in `9ddc7af`, and
+the note I left beside it still said UNBUILT. The MCP session found out by
+trying to apply it: two of five files failed `git apply --check`, and a 3-way
+apply then succeeded with an **empty diff**, which is what "already in HEAD"
+looks like through `git apply -3`. `HasReachingSense` is at
+`LLKPerception.h:294`, `AuditSenses` at `LLKEnemyRosterSubsystem.h:101`.
+
+I wrote a stale label and it cost somebody else a cycle to discover. The rule
+above is not advice for other people.
+
 ## Standing checks worth re-running
 
 | Check | Why |
@@ -148,3 +223,6 @@ disagrees. An agreeing review of a design document is a cost with no product.
 | Does any doc assert something a `DECISIONS.md` row reverses? | `DRIFT.md` — it did, in nine files |
 | Is any setting the instrument depends on unwritten on disk? | The throttle was unwritten and therefore on |
 | Are two copies of one contract diverging? | `FIXTURE-LIGHT-CONTRACT.md` exists twice, with different content |
+| **Is the document you are acting on still true?** Date it, then measure its premise | `FINDINGS-ENEMY-OPTIONALS.md` had been closed for two days and still read as open. Nine seconds of measurement against a change nearly reverted as inert |
+| Does a finding you closed say so **where the finding lives**? | A closure that exists only in a commit message is invisible to whoever filed it. `docs/HANDOFFS.md` |
+| Does a test compare the container or the contents? | X2: `VerifyTable` compares `GetRowNames()` and nothing inside the rows, so the silent-drop class that `1ae1db9` fixed can land again. Handed to Codex |

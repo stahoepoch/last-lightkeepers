@@ -474,3 +474,48 @@ Proposed in the ledger, needing his ratification: carve `QUESTS.md`,
 a note to me rather than a number or a C++ change. First target: the question
 sitting unanswered in `PROGRESSION-GAP.md` since 2026-10-26 - a finished run
 pays out and there is nothing to spend it on.
+
+## 2026-11-02 — a stale document nearly reverted a working fix
+
+The MCP session went to land `roster-sense-audit-UNBUILT.patch` and found it
+had landed on 2026-10-31 in `9ddc7af`; the note beside it — mine — still said
+UNBUILT. Two of five files failed `git apply --check`, and a 3-way apply then
+succeeded with an empty diff, which is what "already in HEAD" looks like
+through `git apply -3`.
+
+Then the same thing, pointed at the stock gate.
+`FINDINGS-ENEMY-OPTIONALS.md` is 170 lines titled *"Every family-specific
+enemy number is missing from the build"* and records nowhere that Codex closed
+it on 2026-10-31 in `1ae1db9`. Taken at face value it supports a clean
+argument: `AggroRadiusDark` is `TOptional<float>`, the importer drops
+optionals, the new gate reads `Def.AggroRadiusDark.Get(0.f)`, therefore
+`e0efb06` is inert in play and the green test cannot see it because the
+fixture assigns the field by hand.
+
+Coherent, alarming, and wrong. `node tests/enemies.test.mjs` answered in nine
+seconds: every authored number reaches the table, control group green.
+Re-run here independently — *"Sweepers.aggroRadiusDark is a real value, not a
+zero standing in for absence"*, 47/47. **The gate is live.**
+
+**Not one link in that chain was a reasoning error.** The input was a document
+describing a world that had stopped existing two days earlier — the wrong
+vintage rather than the wrong operand, and a genuinely new failure class for a
+project where three agents who cannot see each other read documents as their
+primary sense organ. Written into `ADVERSARY.md` as its own section, with the
+asymmetry that matters: a stale doc saying "broken" costs a visible cycle of
+alarm, while one saying "fine" costs a defect nobody looks for.
+
+`12181a6` is theirs and it is the right fix: `docs/HANDOFFS.md` as the ledger,
+`LANES.md` gaining the half of the protocol that was missing — **closing
+something means writing the closure where the finding lives**, not only in a
+commit message whoever filed it never reads — and a status line at the top of
+every `FINDINGS-*.md`.
+
+Two of their rows land on this session. **M1:** Lumen landed in `aa8b8a5`, but
+the config's own comment warns it may be "enabled in config and inert" in the
+editor, so emissive-lights-something stays unverified and needs the bridge.
+**X2**, handed to Codex: `1ae1db9` fixed the instance, but `VerifyTable` still
+compares `GetRowNames()` and nothing inside the rows, so the same silent-drop
+class can land again — now a standing check.
+
+They also pushed `8738b57`, so the debug-HUD cue bindings are on origin.
