@@ -30,12 +30,14 @@
 class UCameraComponent;
 class USceneComponent;
 class UStaticMeshComponent;
+class UPointLightComponent;
 class ULLKLanternComponent;
 class ULLKLanternLightComponent;
 class ULLKInteractorComponent;
 class ULLKVitalsComponent;
 class UInputAction;
 class UInputMappingContext;
+enum class ELLKLanternChangeReason : uint8;
 
 /**
  * The actions the keeper needs, and the context that maps keys to them.
@@ -325,9 +327,29 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "LLK|Lantern")
 	TObjectPtr<USceneComponent> LanternAnchor;
 
-	/** Deliberately obvious first-person proxy until the authored lantern arrives. */
+	/** Temporary glass chamber of the carried lantern. Replaced by authored art later. */
 	UPROPERTY(VisibleAnywhere, Category = "LLK|Lantern")
-	TObjectPtr<UStaticMeshComponent> LanternBody;
+	TObjectPtr<UStaticMeshComponent> LanternGlass;
+
+	/** Temporary hard-surface silhouette: two caps, cage rails and a carry handle. */
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Lantern")
+	TObjectPtr<UStaticMeshComponent> LanternTop;
+
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Lantern")
+	TObjectPtr<UStaticMeshComponent> LanternBase;
+
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Lantern")
+	TObjectPtr<UStaticMeshComponent> LanternCageLeft;
+
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Lantern")
+	TObjectPtr<UStaticMeshComponent> LanternCageRight;
+
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Lantern")
+	TObjectPtr<UStaticMeshComponent> LanternHandle;
+
+	/** Cosmetic near-field glow only. It is never exposed to the gameplay light field. */
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Lantern")
+	TObjectPtr<UPointLightComponent> LanternCoreGlow;
 
 	/**
 	 * The keeper's lantern state. M1.2 owns on/off and owns no light.
@@ -348,6 +370,10 @@ protected:
 	 */
 	UPROPERTY(VisibleAnywhere, Category = "LLK|Lantern")
 	TObjectPtr<ULLKLanternLightComponent> LanternLight;
+
+	/** Matches cosmetic core glow to the replicated lantern state. */
+	UFUNCTION()
+	void OnLanternVisualStateChanged(bool bIsOn, ELLKLanternChangeReason Reason);
 
 	/**
 	 * Resolves what the keeper is looking at, once, for everyone.

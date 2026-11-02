@@ -8,6 +8,7 @@
 #include "InputMappingContext.h"
 #include "InputModifiers.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -52,17 +53,52 @@ ALLKCharacter::ALLKCharacter()
 	LanternLight = CreateDefaultSubobject<ULLKLanternLightComponent>(TEXT("LanternLight"));
 	LanternLight->SetupAttachment(LanternAnchor);
 
-	LanternBody = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LanternBody_Temporary"));
-	LanternBody->SetupAttachment(LanternAnchor);
-	LanternBody->SetRelativeLocation(FVector(0.f, 0.f, -8.f));
-	LanternBody->SetRelativeScale3D(FVector(0.12f, 0.12f, 0.22f));
-	LanternBody->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	LanternBody->SetCastShadow(false);
-	if (const ConstructorHelpers::FObjectFinder<UStaticMesh> TemporaryLantern(
-		TEXT("/Engine/BasicShapes/Cylinder.Cylinder")); TemporaryLantern.Succeeded())
+	// A visible instrument before authored art exists. This is intentionally
+	// simple hard-surface assembly, not a disguised final asset: the player
+	// needs a base, glass chamber, cage and handle in frame so the light reads
+	// as carried equipment rather than a camera flashlight. Every part remains
+	// below LanternAnchor, the one position gameplay reads.
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> Cylinder(
+		TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
+	const ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(
+		TEXT("/Engine/BasicShapes/Cube.Cube"));
+
+	auto ConfigureLanternPart = [this](UStaticMeshComponent* Part, const FVector& Location,
+		const FVector& Scale, UStaticMesh* Shape)
 	{
-		LanternBody->SetStaticMesh(TemporaryLantern.Object);
-	}
+		Part->SetupAttachment(LanternAnchor);
+		Part->SetRelativeLocation(Location);
+		Part->SetRelativeScale3D(Scale);
+		Part->SetStaticMesh(Shape);
+		Part->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		// The carried source must not cast a shadow through the player's own
+		// camera. The world light remains shadow-casting.
+		Part->SetCastShadow(false);
+	};
+
+	LanternGlass = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LanternGlass_Temporary"));
+	LanternTop = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LanternTop_Temporary"));
+	LanternBase = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LanternBase_Temporary"));
+	LanternCageLeft = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LanternCageLeft_Temporary"));
+	LanternCageRight = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LanternCageRight_Temporary"));
+	LanternHandle = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LanternHandle_Temporary"));
+
+	ConfigureLanternPart(LanternGlass, FVector(0.f, 0.f, -8.f), FVector(0.14f, 0.14f, 0.22f), Cylinder.Object);
+	ConfigureLanternPart(LanternTop, FVector(0.f, 0.f, 5.f), FVector(0.18f, 0.18f, 0.045f), Cylinder.Object);
+	ConfigureLanternPart(LanternBase, FVector(0.f, 0.f, -21.f), FVector(0.18f, 0.18f, 0.05f), Cylinder.Object);
+	ConfigureLanternPart(LanternCageLeft, FVector(0.f, -13.f, -8.f), FVector(0.03f, 0.025f, 0.25f), Cube.Object);
+	ConfigureLanternPart(LanternCageRight, FVector(0.f, 13.f, -8.f), FVector(0.03f, 0.025f, 0.25f), Cube.Object);
+	ConfigureLanternPart(LanternHandle, FVector(0.f, 0.f, 24.f), FVector(0.09f, 0.035f, 0.025f), Cube.Object);
+
+	LanternCoreGlow = CreateDefaultSubobject<UPointLightComponent>(TEXT("LanternCoreGlow_Temporary"));
+	LanternCoreGlow->SetupAttachment(LanternAnchor);
+	LanternCoreGlow->SetRelativeLocation(FVector(0.f, 0.f, -8.f));
+	LanternCoreGlow->IntensityUnits = ELightUnits::Candelas;
+	LanternCoreGlow->SetIntensity(4.f);
+	LanternCoreGlow->SetAttenuationRadius(90.f);
+	LanternCoreGlow->SetLightColor(FLinearColor(1.f, 0.45f, 0.08f));
+	LanternCoreGlow->SetCastShadows(false);
+	LanternCoreGlow->SetVisibility(false);
 
 	Interactor = CreateDefaultSubobject<ULLKInteractorComponent>(TEXT("Interactor"));
 	Vitals = CreateDefaultSubobject<ULLKVitalsComponent>(TEXT("Vitals"));
@@ -119,6 +155,8 @@ void ALLKCharacter::BeginPlay()
 		// with the movement about which file it came from.
 		LanternLight->SetLanternData(LanternData);
 		LanternLight->WatchLantern(Lantern);
+		Lantern->OnLanternStateChanged.AddDynamic(this, &ALLKCharacter::OnLanternVisualStateChanged);
+		OnLanternVisualStateChanged(Lantern->IsLanternOn(), ELLKLanternChangeReason::Replicated);
 	}
 
 	if (Interactor != nullptr)
@@ -172,6 +210,11 @@ void ALLKCharacter::BeginPlay()
 
 void ALLKCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	if (Lantern != nullptr)
+	{
+		Lantern->OnLanternStateChanged.RemoveDynamic(this, &ALLKCharacter::OnLanternVisualStateChanged);
+	}
+
 	// The subsystem holds weak pointers and recounts rather than remembering,
 	// so a missed unregister cannot accelerate the storm. Doing it anyway
 	// keeps the list from growing by one entry per death across a long night.
@@ -201,6 +244,17 @@ void ALLKCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	}
 
 	Super::EndPlay(EndPlayReason);
+}
+
+void ALLKCharacter::OnLanternVisualStateChanged(bool bIsOn, ELLKLanternChangeReason Reason)
+{
+	// Cosmetic only. The gameplay field is still owned by LanternLight and
+	// resolves through LanternAnchor; this tiny fill cannot make a relic
+	// legible or change an enemy's reach.
+	if (LanternCoreGlow != nullptr)
+	{
+		LanternCoreGlow->SetVisibility(bIsOn);
+	}
 }
 
 void ALLKCharacter::ResolveSpeeds()
