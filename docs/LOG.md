@@ -717,3 +717,37 @@ read one. I wrote that row without reading either document first. **M5 opened**:
 Ladder 3's "25 cd reads as a carried lantern" was measured on a 72 deg outer
 cone and `data/lantern.json` authors 110 deg, so the shipping fixture is not the
 one that was tested. It needs the editor, and waits with M1.
+
+## 2026-11-02 — the gate ran, and both answers matter
+
+Read live through the MCP bridge rather than from config, which is the whole
+point of the gate: config is the authored intent, the console is the
+observation.
+
+**`r.DynamicGlobalIlluminationMethod` = 1.** Lumen is live in the running
+editor, not "enabled in config and inert". That closes the ledger's **M1** and
+answers `FINDINGS-EMISSIVE-LIGHTS-NOTHING.md` properly — the cause named there
+is both addressed and verified.
+
+**And it redirects the hunt.** Chris reports the lantern effect "isn't there".
+That is now *not* a global-illumination problem, so the next suspects are the
+lantern's own emissive material and the temporary rig, not the renderer. One
+answered question removes the explanation everyone was reaching for.
+
+**`r.DefaultFeature.AutoExposure.ExtendDefaultLuminanceRange` = 0.** Legacy
+luminance, so **the light lab's interpretation was correct** and its whole
+ladder stands: `L = 0.125 x 2^EV100`, the measured optimum of EV100 5 is a
+lock of 4.0. The sweep is not invalidated.
+
+**But the flag was not written anywhere in this project, and 0 is not the
+engine default.** The engine's own help text says 1 is the UE5 default and 0
+is the UE4 legacy range, so the correct reading was being inherited from
+outside our config. An engine update or a plugin could have flipped it with
+nothing failing and no error — and every exposure number in the project would
+have quietly meant something else.
+
+Pinned in `Config/DefaultEngine.ini` beside the Lumen block, with the
+consequence written next to it: if it ever becomes 1, the ladder must be
+re-derived rather than re-used. A week of measurement rested on a value nobody
+had written down, which is `ADVERSARY.md`'s own rule turned on the project's
+most-measured system.
