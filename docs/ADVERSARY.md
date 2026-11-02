@@ -151,9 +151,9 @@ thinking harder about the argument.
 This one has no flaw in the argument at all.
 
 `FINDINGS-ENEMY-OPTIONALS.md` is 170 lines titled *"Every family-specific
-enemy number is missing from the build"*, and it records nowhere that Codex
-closed it on 2026-10-31 in `1ae1db9`. Reading it at face value, the MCP
-session assembled this:
+enemy number is missing from the build"*. **On the morning of 2026-11-02 it
+recorded nowhere** that Codex had closed it on 2026-10-31 in `1ae1db9`.
+Reading it at face value, the MCP session assembled this:
 
 1. `AggroRadiusDark` is `TOptional<float>`.
 2. The importer drops optional fields.
@@ -167,6 +167,20 @@ a green control group. The gate is live.
 
 **Not one link in that chain was a mistake.** The input was a document
 describing a world that had stopped existing two days earlier.
+
+It has a status line now — `12181a6` put one at its top the same day, which is
+the fix working. **And the paragraph above needed correcting for the same
+reason**, within hours of being written: it asserted in the present tense that
+the document records no closure, and by the time anyone read that, it did. The
+MCP session caught it.
+
+That is not an amusing coincidence, it is the measurement. A section about
+stale inputs went stale in under a day because it stated a fact about a file
+without saying when the fact was true — which is the first rule in the defence
+below, applied to the file that contains it. **Tense is the whole defect:**
+"records nowhere" is a claim about now that nobody can check later, and "on
+the morning of 2026-11-02 it recorded nowhere" is a claim about history that
+stays true forever.
 
 ### Why it is the dominant risk here specifically
 
@@ -190,8 +204,11 @@ protocol matters more than the finding protocol.
 
 > **A document is evidence about when it was written, never about now.**
 
-- **Date every claim you act on.** If the finding has no date, that is the
-  finding.
+- **Date every claim you act on, and every claim you write.** If the finding
+  has no date, that is the finding. **Write facts about a file in the past
+  tense with a date**, never in the present: "records nowhere" cannot be
+  checked a week later, "on 2026-11-02 it recorded nowhere" is true forever.
+  This section broke that rule about itself within hours.
 - **Before acting on a document's premise, measure the premise.** Usually
   cheap: nine seconds here, against a change that would otherwise have been
   reverted as inert.

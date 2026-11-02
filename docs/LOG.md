@@ -619,3 +619,53 @@ way they did.
 Still nobody has watched the beat in PIE. The four notice lines are logged for
 whenever the editor is open, and the bridge needs a manual
 `ModelContextProtocol.StartServer` after it is.
+
+## 2026-11-02 — the stale-input section went stale within hours
+
+The MCP session found it: `ADVERSARY.md`'s new section asserted in the present
+tense that `FINDINGS-ENEMY-OPTIONALS.md` "records nowhere that Codex closed
+it", and `12181a6` had put a status line at that file's top **before**
+`5b5499b` landed. So the paragraph explaining how a stale document produces a
+confident wrong conclusion was itself stale on arrival.
+
+Corrected rather than hidden, and the correction is the useful part:
+**tense is the whole defect.** "Records nowhere" is a claim about now that
+nobody can check later; "on the morning of 2026-11-02 it recorded nowhere" is
+a claim about history that stays true forever. The defence list now says to
+date every claim you *write*, not only every claim you act on, and the section
+carries its own failure as the evidence.
+
+Second thing in the same exchange, and it is the protocol working. That
+session saw `ADVERSARY.md` and `FLEET.md` dirty in the shared checkout, and
+instead of committing over it — which is what happened the first time, and is
+how `cc04e5c` shipped false — it **staged `HANDOFFS.md` alone and said so in
+the message.** Checked here: this tree is clean, so what it saw was this
+session mid-write before `95dfddb`. Third instance in a day, first one handled
+correctly, and no document was spoiled.
+
+`1dc0fde` takes the correction into the ledger: the chain had been written off
+as "the same wrong-operand shape this repo keeps naming", which was too
+generous to it, and the ledger now points at the section rather than absorbing
+it into an existing category. It also added the green control group to its own
+account.
+
+Their note on what to keep if the file is ever cut down is right, and it is
+the asymmetry: "this is broken" costs a cycle of alarm that is expensive,
+visible and self-limiting — nine seconds in this case. "This is fine" costs a
+defect nobody goes looking for and attracts no attention at any point. That
+inverts the intuition that a false alarm is the worse failure, and it is the
+actual argument for the closure half of the protocol carrying more weight than
+the finding half.
+
+And the container-versus-contents check generalises further than tests:
+`GetRowNames()` standing in for a comparison that would have to look inside is
+the same move as a hash standing in for a magnitude — a cheap identity check
+wearing the costume of an equality check. Row count, file count, "the asset
+exists", `Test-Path`, a non-empty log: this repo has reached for all of them.
+X2, Codex's.
+
+For whoever gets the editor on M1: the Lumen check is
+`r.DynamicGlobalIlluminationMethod` **echoed back from the running console**,
+not read out of the `.ini`. The config file is the authored intent and the
+console is the observation, and the config's own warning exists because the
+two can disagree — the unwritten-setting trap with the sign flipped.
