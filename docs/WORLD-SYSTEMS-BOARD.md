@@ -145,6 +145,8 @@ environment, or a recovered thing—not an explanation screen.
 | Lanternhold growth | Wire one dead sink from `PROGRESSION-GAP.md` so a recovery visibly changes a fixture. Closes the open payout loop. | Inbox — Chris, 2026-11-01 |
 | Chained blocker | Radio needs roof needs elevator needs power needs drained basement needs parts. Each link is a different place’s problem, never a different material. | Inbox — Chris, 2026-11-01 |
 | The call is heard | The distress transmission is the escalation. What answers is a procedure, not a person. | Inbox — Chris, 2026-11-01 |
+| Habitability as capability | Power, beds, food and growing space are permanent capability, never a consumable meter. They change what the crew can attempt. | Inbox — Chris, 2026-11-01 |
+| Re-filed, not reprogrammed | The endgame is becoming scheduled, so the valley produces for Lanternhold. Reprogramming is row 5’s banned exception at campaign scale. | Inbox — Chris, 2026-11-01 |
 
 ## Working discipline
 
@@ -443,3 +445,126 @@ correctly, and what arrives is whatever the file says to send.
 
 The plot that unfurls should be *legible and still unstoppable* — not a secret
 being kept from the player.
+
+## Inbox, 2026-11-01 — Chris, third pass: the pioneer arc
+
+The macro shape. Reclaiming a valley that was yours, Lanternhold becoming
+genuinely habitable — power, beds, food, plants — and an endgame where the
+valley is taken back.
+
+### Reclamation gives the keepers a claim
+
+`GAME-THESIS.md` already describes this arc: *"a pump runs, a route opens, a
+record survives, a hall gets warmer, and eventually a city can remember
+itself."* The pioneer framing is that sentence with a verb, so it is not new
+scope.
+
+What it adds is better than a theme. It gives the keeper a **claim**, and the
+claim is contested by the only party that keeps records:
+
+> The keeper believes the valley is theirs. The building's inventory says
+> otherwise. **Both are correct**, and row 47 is why — the machines are not
+> wrong about anything. They are completing the last job they were given, and
+> that job has a stock count in it.
+
+This is stronger than making the machines mistaken. A keeper carrying property
+out of a building that is still doing loss prevention is not a hero fighting a
+monster; they are a person with an older claim than the paperwork.
+
+### Habitability is capability, never a consumable
+
+```text
+Idea:                 Power, beds, food, growing space. Lanternhold becomes a
+                      place people can actually live, by stages.
+Consequence:          Each stage changes what the crew can ATTEMPT next run —
+                      longer nights out, more keepers at once, another lantern
+                      on the wall.
+Status:               inbox
+```
+
+**Chris's own guardrail, and it is the right one:** *"not like you should have
+a depleted food or Minecraft survival method."* That instinct matches a locked
+decision. Row 10 removed the lantern's fuel gauge for the same reason — *"the
+risk is always having it on."* A hunger meter is that mistake in a different
+slot: attrition without a decision.
+
+`GAME-THESIS.md` already states the rule this follows: **the durable reward is
+capability and visible restoration; the disposable reward is the haul from
+this night.** So beds, power and a kitchen are permanent and they are never
+topped up.
+
+### What growth buys is people
+
+The population is the progress bar, and it is better than a number because the
+display already exists: `HubService`'s **Lamp Wall** shows one lantern per
+keeper out, lit, taken down, or put out.
+
+More beds and food mean more keepers. More keepers mean more light in the
+valley, and more light means more attention. **The hub's growth feeds the
+thing that makes the nights harder** — which is light-as-a-rate again, one
+scale up, and it means the reward for progress is danger without the game
+having to arrange that on a schedule.
+
+### The endgame — and why it is not reprogramming
+
+Chris: *"maybe eventually we do reclaim everything or reprogram the robots or
+whatever."* The instinct is right that the arc needs a destination that feels
+like victory. **Reprogramming cannot be it**, on two grounds already in the
+repo:
+
+1. **It is row 5's banned exception at campaign scale.** The lantern Reads,
+   Presents, Biases and Traces, and the board states it *"cannot charm, stun,
+   or make a machine friendly."* A reprogram deletes the only decision the
+   game has, permanently.
+2. **If the machines can be reprogrammed, they were always a solvable
+   technical problem** — and the indifference thesis was a stall rather than
+   the truth. The ending would retroactively make the whole premise a puzzle
+   box.
+
+The version that keeps the premise and still lands as victory:
+
+> **You are not reprogrammed. You are re-filed.**
+
+The system's problem with a keeper was never hostility. It is that a keeper is
+an *unscheduled person* — unrecognized, uncounted, correctly handled as a
+fault. Victory is becoming **scheduled**: the paperwork now says the valley
+produces for Lanternhold, so it does. The town starts shipping to you.
+
+This costs no new mechanic. It is the wrong-stamped crate and the service
+port, inverted — the same two objects already on this board, read the other
+way round.
+
+And it keeps the horror, which an ending must do or the game changes genre in
+its last hour. Being inside the system means the system's errors are now about
+you. A crate arrives that nobody ordered. A sweeper holds a door *for* you.
+**The thing that was indifferent is now indifferent on your behalf**, and that
+is worse than being hunted.
+
+### What persists when a run is lost
+
+Row 8 takes the whole carried haul on a wipe or an expired timer.
+`GAME-THESIS.md` requires that *"a loss must hurt without making a player feel
+their evening was erased."*
+
+The pioneer frame resolves those cleanly: **you lose the haul and you keep the
+knowledge.** Which route floods, which lane a Sweeper owns, which stamp points
+where, what marks a floor. Row 43 makes the store the tutorial;
+`KNOWLEDGE-OF-PLACE.md` makes a location teach time and space. A failed run
+that taught you the building is still progress, and nothing has to be granted
+to make that true.
+
+### The discipline this needs, because base-building eats games
+
+Rows 3, 28 and 34 all forbid expanding before the slice passes, and a growing
+hub is the most appetite-driven system a game can have: every fixture wants
+art, UI and balance.
+
+One test, the hub-side mirror of row 38's test for zones:
+
+> **A new Lanternhold fixture that does not change what the crew can attempt
+> on the next run is wallpaper.**
+
+And the first move is not a shop. `PROGRESSION-GAP.md` has five fixtures
+already placed, named and signed, saying "not open yet," with four declared
+sinks that have no consumer. **Wire one.** That is the whole of this idea's
+first slice.
