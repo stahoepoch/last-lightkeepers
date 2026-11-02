@@ -34,7 +34,7 @@ category, and "it was free on the internet" is not one.
 | How a shipped asset is named | `rbxassetid://123` pointing at an upload | A content path under `/Game/`, cooked into the build |
 | Where the file lives | Roblox's servers | `Content/`, versioned in Git LFS (`.gitattributes`) |
 | How to check the rule | grep `src/` for ids, match against the manifest | Match referenced content paths against the manifest |
-| What an agent may touch | `.rbxmx` was text and merged | **Nothing binary.** Row 41: no agent opens a `.uasset` |
+| What an agent may touch | `.rbxmx` was text and merged | **One active writer per binary asset.** Row 41 permits an explicitly assigned agent to create or revise a `.uasset` or `.umap`; it never permits concurrent binary writers. |
 
 **What did not change is the part that mattered.** The whole argument for
 keeping masters outside the engine was that the portable layer has to survive
@@ -42,6 +42,14 @@ an engine change — and then it did. Design, data, audio masters and documents
 came across; Studio maps, Luau and Roblox networking were rebuilt. The
 `.wav` files in `assets/audio/` are still usable today precisely because they
 were never only an upload id.
+
+## Unreal asset intake
+
+Marketplace and Fab packs are **not** imported directly into a production map.
+They first enter an engine-matched intake project outside this repository, are
+checked for licences, plugins, scale, materials and demo-map lighting, and then
+only the selected assets plus dependencies are migrated through Unreal's
+Content Browser. See `docs/ASSET-INTAKE.md` for the operating procedure.
 
 ## Where masters live
 

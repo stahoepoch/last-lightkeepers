@@ -1,10 +1,18 @@
 # Asset manifest
 
-Every `rbxassetid://` the project references, what it is, and the source file it
-came from. See `docs/ASSETS.md` for the rule.
+The shipping ledger for every external asset the Unreal build references. See
+`docs/ASSETS.md` for the ownership rule and `docs/ASSET-INTAKE.md` for the
+Marketplace/Fab intake procedure.
 
-**If an id appears in `src/` and not here, it is an unlicensed dependency and
-must not ship.**
+**If a referenced external asset or pack has no row here, it is an unlicensed
+dependency and must not ship.** Generated `Content/Data` assets are not vendor
+assets and are intentionally excluded.
+
+## Unreal packs in use
+
+| Pack / source | Imported content root | Used for | Licence record | Cleared |
+| --- | --- | --- | --- | --- |
+| *(none yet)* | — | — | — | — |
 
 ## Shipping
 
