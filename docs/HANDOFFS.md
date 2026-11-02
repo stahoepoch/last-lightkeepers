@@ -37,8 +37,26 @@ regardless because its fixture assigns the field by hand.
 
 That was a complete, coherent, alarming conclusion, and it was **wrong**. It
 survived only until I ran `node tests/enemies.test.mjs`, which took nine
-seconds. It is the same wrong-operand shape this repo keeps naming: a correct
-reading of a stale instrument.
+seconds, and whose control group was green.
+
+**I first wrote that off as "the same wrong-operand shape this repo keeps
+naming." That was too generous to it, and the correction is `5b5499b`'s.**
+Every other error on this project's adversary list is a *reasoning* error —
+the wrong operand, a hash read as a magnitude, a counter read as a redraw —
+and you catch those by thinking harder about the argument. **Not one link in
+the chain above was a mistake.** The input was a document describing a world
+that had stopped existing two days earlier, and arguing with it would not have
+helped, because it was internally consistent.
+
+That is its own failure class and it is now a section of
+`docs/ADVERSARY.md` — "The wrong vintage" — with the defence: *a document is
+evidence about when it was written, never about now.* **Read it alongside this
+file.** It carries the asymmetry that makes this ledger load-bearing rather
+than tidy: a stale document saying *"this is broken"* costs a visible,
+self-limiting cycle of alarm, which is what happened here and was over in nine
+seconds. A stale document saying *"this is fine"* costs a defect nobody goes
+looking for. **The second is worse and attracts no attention at all** — which
+is why the closure half of the rule below matters more than the finding half.
 
 ### So the rule, and it is one line each way
 
