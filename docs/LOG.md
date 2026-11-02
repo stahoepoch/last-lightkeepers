@@ -519,3 +519,42 @@ compares `GetRowNames()` and nothing inside the rows, so the same silent-drop
 class can land again — now a standing check.
 
 They also pushed `8738b57`, so the debug-HUD cue bindings are on origin.
+
+---
+
+## 2026-11-02 - Claude (MCP): the ledger's first test was its own author, and he failed it
+
+`8738b57` binds all four Sweeper cues to `ALLKDebugHUD`. It was **already in
+the tree when I wrote `12181a6`**, which is the commit that added
+`docs/HANDOFFS.md` and a rule about writing closures where the finding lives.
+So the ledger shipped with `NOTES-FOR-CHRIS.md` item 4 still asserting "all
+four broadcast into nothing today", which had stopped being true before I
+pushed it. Corrected here.
+
+**I had the evidence and explained it away.** Mid-session, `git status` showed
+` M Source/LLK/Private/UI/LLKDebugHUD.cpp` and `LLKDebugHUD.h` modified; a
+`git diff` moments later came back empty, and I recorded it as "a stat race
+that resolved to clean" and moved on. It was not a stat race. It was the other
+session editing those exact two files while I worked, in the same checkout.
+Two sessions in one working tree is row 27's collision, and the symptom
+appeared in my own terminal and was rationalised rather than read.
+
+**The row-16 half is promoted, and the peer was right to push.** Row 16 -
+every enemy telegraphs with sound before sight, distinguishably - is LOCKED and
+is an accessibility requirement rather than polish. It has been unmet *in play*
+since `OnTelegraph` landed, which predates this week entirely. That is a
+shipped-quality defect, not an unfinished feature, and it does not belong
+buried in a `NOTES-FOR-*` item. `HANDOFFS.md` now opens with it.
+
+The generalisation is the part worth keeping, because it covers every delegate
+and interface this project adds from here: **a broadcast with no subscriber is
+silence that compiles.** Both halves of the mechanism existed - the declaration
+and the `Broadcast` call - and read as finished code to anyone opening the
+file. The compiler has no opinion about a delegate nobody subscribed to, and
+no test, log line or warning in this project could have reported it.
+
+`8738b57` is a debug readout and not the cue; it makes the beat judgeable by
+playing it and deletes cleanly when the authored sound lands. C2 stays open.
+One thing kept from its placeholder text, since placeholders get deleted: the
+filed notice states the machine's view rather than the player's loss, which is
+row 47 - the building is not wrong, it is working.

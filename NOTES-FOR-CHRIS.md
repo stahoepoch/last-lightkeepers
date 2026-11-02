@@ -130,15 +130,35 @@ pattern serves all four:
 | `OnStockInterrupted` | it was seen, and dropped the job | the Sweeper |
 | `OnStockFiled` | it finished; the thing is elsewhere now | **the bay**, not the Sweeper |
 
-**All four broadcast into nothing today.** Grepping `Source/` for the four
-names finds only the four `Broadcast` calls and the four declarations — no
-`AddDynamic`, no `BindUFunction`, nowhere. A Blueprint child could bind them
-and I cannot read a Blueprint's bindings, but the pawn in Boswell's is
-`LLKSweeper_0` — the C++ class's own name, not a `BP_..._C` — so there is no
-Blueprint in that chain to be doing it. **So the beat currently plays in
-silence, and that includes `OnTelegraph`**, which has been broadcasting to
-nobody since it landed. Row 16 wants an enemy to announce itself with sound
-before sight; in play, right now, it does not announce itself at all.
+**Corrected within the hour: `ALLKDebugHUD` now binds all four**, in
+`8738b57`, and that commit was already in the tree when the paragraph below
+was written. Read the next two paragraphs as history, and `8738b57` as the
+reason there is now *something* to see rather than nothing.
+
+~~**All four broadcast into nothing today.**~~ As first written: grepping
+`Source/` for the four names found only the four `Broadcast` calls and the four
+declarations - no `AddDynamic`, no `BindUFunction`, nowhere. The pawn in
+Boswell's is `LLKSweeper_0`, the C++ class's own name rather than a `BP_..._C`,
+so there was no Blueprint in that chain doing it either. **The beat played in
+silence, and that included `OnTelegraph`**, which had been broadcasting to
+nobody since it landed.
+
+**That last part is the serious half and it is still not fixed by a debug
+readout.** Row 16 - every enemy telegraphs with sound before sight,
+distinguishably - is LOCKED in `DECISIONS.md` and is an accessibility
+requirement, not polish. It has been unmet *in play* since `OnTelegraph`
+landed: in Boswell's the Sweeper announces itself with nothing at all. It was
+invisible because the declaration and the broadcast both exist and read as
+finished code. Tracked as `docs/HANDOFFS.md` **C2**, which is the row to read
+before the rest of this page.
+
+**What `8738b57` is and is not.** The debug HUD latches an on-screen notice for
+three seconds per cue - against the measured 1.93 s between `began filing` and
+`filed`, so a start notice is still up when the crate lands - drawn outside the
+`LLK.ShowStormHUD` gate. **It is a debug readout, not the cue.** It exists so
+you can judge the beat by playing it rather than by reading code, and it
+deletes cleanly when the authored sound and effect land. Everything below still
+needs authoring.
 
 **`OnStockInterrupted` is the one to author first, if only one gets authored.**
 It is the only one of the four the player *caused on purpose* — they raised the
@@ -153,9 +173,17 @@ cost of the beat is the walk back; a sound at the Sweeper tells the player they
 were robbed, and a sound at the bay tells them where to go.
 
 Nothing in code changes when you author these. The broadcasts are already
-correct in play — `began filing` to `filed ... into the stock bay` was observed
+correct in play - `began filing` to `filed ... into the stock bay` was observed
 1.93 s apart in PIE on 2026-11-02, so there is a real 1.93-second window for a
 start cue to occupy and an interrupt to land inside.
+
+**One thing worth keeping from the placeholder text**, which was written to be
+legible rather than good and will be deleted. The debug notice for a finished
+filing reads *"your crate has been put somewhere it belongs"* - the machine's
+view of the event, not the player's loss. That is deliberate and it is row 47:
+the building is not wrong, it is working, and being robbed by something that
+does not consider itself a thief is the whole feeling. If the authored cue
+carries any text at all, that is the distinction to keep.
 
 ## What is NOT waiting on you
 

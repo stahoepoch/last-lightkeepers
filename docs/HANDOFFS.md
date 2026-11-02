@@ -66,6 +66,31 @@ commit template, and `git log` becomes readable by lane for the first time.
 
 ---
 
+## The one row that is a shipped-quality defect, not an unfinished feature
+
+Everything else on this page is work not yet done. **C2 is different, and it
+was buried in a notes file until the session that landed the delegates argued
+it should not be.** It was right.
+
+`DECISIONS.md` row 16 is LOCKED: every enemy telegraphs with sound before
+sight, distinguishably. That is an accessibility requirement and a build
+requirement. **It has been unmet in play since `OnTelegraph` landed** - in
+Boswell's the Sweeper announces itself with nothing at all, because the
+delegate was declared, broadcast, and never bound.
+
+Why it stayed invisible is the part worth generalising: **both halves of the
+mechanism existed and read as finished.** A declaration and a `Broadcast` call
+look exactly like a working cue to anyone reading the file, and the compiler
+has no opinion about a delegate nobody subscribed to. Nothing in the project
+could have told us - no test, no log line, no warning. The same shape covers
+any delegate, any interface, any event this project adds from here: **a
+broadcast with no subscriber is silence that compiles.**
+
+`8738b57` binds all four to `ALLKDebugHUD`, which makes the beat judgeable by
+playing it. It is a debug readout and not the cue, and it does not close C2.
+
+---
+
 ## Live items, by owner
 
 Each row names the evidence and **how to prove it closed**, because "done" is
@@ -76,7 +101,7 @@ the claim that has cost this project the most.
 | | Item | Why it is his | Proof of closure |
 | --- | --- | --- | --- |
 | **C1** | **The Steam App ID.** The reserved `1903488` / `1903489` / `1903490` and store item `1409731` are packages and a store item, not an App ID | Steamworks dashboard; nobody else can read it | Online Subsystem Steam configured with a real App ID, and a friends-invite that connects |
-| **C2** | **The four Sweeper cues.** `OnTelegraph`, `OnStockStarted`, `OnStockInterrupted`, `OnStockFiled` — all four broadcast to nobody today | Row 41, sound and effect are his | Something binds each one. `OnStockInterrupted` first: it is the only one the player causes on purpose, and its success currently looks exactly like nothing happening |
+| **C2** | **The four Sweeper cues - and row 16 is a locked requirement it breaks.** See the section above. `8738b57` binds all four to the debug HUD, so the beat is now judgeable; the authored cue is still absent | Row 41, sound and effect are his. Row 16 is LOCKED and is accessibility, not polish | An authored sound on each, `OnStockInterrupted` first: it is the only one the player causes on purpose, and its success looked exactly like nothing happening. Closed when the debug readout can be deleted without losing the beat |
 | **C3** | **`IMC_LLK` and the seven `IA_LLK_*` actions.** All seven or none — `IsComplete()` falls back wholesale | `Content/` is his | `.\Tools\validate_input_assets.ps1` passes. It fails today, by design, rather than accepting the fallback |
 | **C4** | **The relic outline material.** Stencils 1/2/3/0 are already correct in play | His "make it WHY" note | The 2→3 transition reads: a thing you identified visibly stops being available when you walk away with the lantern |
 | **C5** | **M1.5, the greybox ground floor.** Codex and Claude reached this independently: the next blocker is content, not code | Art direction | Five of the six acceptance questions in `THE-STORE.md` judgeable on the blockout. Also gates row 63's traversal work, which needs real counter heights |
