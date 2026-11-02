@@ -344,6 +344,35 @@ This is the same guard as trap 6 - an answer about the wrong map - except that
 here the wrong map is one the tooling created for you, is named almost
 identically, and exists for only a few seconds.
 
+## 14. A failing automation test exits 0
+
+Found 2026-11-02, while checking a green by inverting an assertion.
+
+`UnrealEditor-Cmd.exe <project> -ExecCmds="Automation RunTests <name>"
+-TestExit="Automation Test Queue Empty"` reports the outcome in the log and
+**not** in its exit code. Measured, same command, same session, two runs:
+
+| run | log says | exit code |
+| --- | --- | --- |
+| assertion intact | `Result={Success} Name={SweeperBrain}` | **0** |
+| assertion inverted | `Result={Fail} Name={SweeperBrain}` | **0** |
+
+So any hook, CI step or agent that branches on `$?` or `$LASTEXITCODE` reads a
+**failed test suite as a passing one**. The failure is fully reported - by name
+and by line - in the log the exit code is hiding.
+
+**Parse the log.** `Result={Success}` or `Result={Fail}` per test, plus
+`N tests performed`, is the signal. Grep for `Result={Fail}` and treat *zero
+`Test Completed` lines at all* as a failure too, since a run that never started
+the test also exits 0 and says nothing - the instrument's absence looking like
+a reading, for the third time on this page.
+
+**This is trap 1's sibling and the stronger case.** Trap 1 is about a *build*
+whose exit code could not be trusted in a known direction; this is a *test*
+whose exit code carries no information whatsoever. The two together mean the
+rule for this toolchain is simply: **exit codes are not results here. Read what
+the tool said.**
+
 ## The pattern, stated once
 
 Each of these is a true answer to the wrong question. The build tool answered

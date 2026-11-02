@@ -120,6 +120,16 @@ feet, not what it can see. Measured on this floor, the closest any patrol leg
 comes to any authored relic is **6.26 studs**, so the route alone never opens
 the state. See the reach note in `docs/MAP-READINESS.md`.
 
+**Resolved the same day in `e0efb06`, and the measurement is why.** The 6.26
+was right and the *gate* was wrong: `ContactRange` was doing double duty as
+both "can touch a keeper" and "can see a box in the lane". Noticing is now
+`aggroRadiusDark` (12 studs, authored), which 6.26 clears comfortably; the
+Sweeper then walks there via `ELLKSweeperMove::MisplacedItem` and files within
+`ContactRange`, which from there means physical reach and nothing else. **So
+the route does now open the state, and the map was never the problem.** 6.26 is
+asserted in the test, with a 40-stud negative control beside it, so moving that
+aisle makes the test complain rather than making the beat quietly stop.
+
 Put it somewhere a keeper can reach but would rather not — the point is the
 walk back, with a patrol between you and it.
 
@@ -128,11 +138,33 @@ walk back, with a patrol between you and it.
 - `LastLightkeepers` **game** target: `Result: Succeeded`. All three changed
   translation units compiled, the test TU among them.
 - `npm test`: passed, every suite.
-- **The editor target did not build** — Live Coding was active, so UBT refused:
-  *"Unable to build while Live Coding is active."* The editor was Chris's and
-  open, so it was left alone.
-- `LLK.Enemies.SweeperBrain`: **run, and it passes** - 1/1, no errors, in
-  **6.5 ms**.
+- **The editor target builds, and the test is run against the fix.** Chris
+  closed the editor, so UBT stopped refusing: `Result: Succeeded`, and
+  `UnrealEditor-LLK.dll` moved to **10:08:46**, later than the newest changed
+  source at 09:46:59. No Live Coding patch DLLs, so it is a clean full build
+  rather than a patched image.
+- **The binary was checked for the new code, not just the new timestamp.** All
+  four of `e0efb06`'s added assertion strings are present in the DLL. They read
+  as absent on a first pass because `TEXT()` literals are **UTF-16** and the
+  search was ASCII - the wrong operand, caught and redone, which is the same
+  error this repo keeps naming.
+- `LLK.Enemies.SweeperBrain` run headless against that binary:
+  `Result={Success}`, 1 test performed, no events.
+- **And the green was checked rather than believed.** The 6.26 notice was
+  inverted to expect `Patrol`, rebuilt and re-run, and it failed by name and
+  line:
+
+  ```text
+  Error: Test Completed. Result={Fail} Name={SweeperBrain}
+  Error: ROW 47: at Boswell's real 6.26 studs it notices the crate:
+         The two values are not equal. [...LLKSweeperBrainTest.cpp(417)]
+  ```
+
+  So the new block executes rather than merely compiling - which the string
+  check above could not establish on its own. Reverted with `git checkout --`,
+  rebuilt, re-run green, and the test file is byte-identical to `e0efb06`.
+- **The run's exit code says nothing.** Both the passing and the failing run
+  exited **0**. See trap 14.
 - **That green is not evidence about the bay.** The test is 483 lines with
   **zero** references to `UWorld`, `GEditor`, `ActorHasTag` or any map; it
   builds `FLLKSweeperSenses` by hand and sets `bHasStockBay = true` itself. So

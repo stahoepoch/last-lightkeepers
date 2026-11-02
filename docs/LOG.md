@@ -295,3 +295,42 @@ Also from that session: **trap 13**. During PIE the scene tools answer about
 the `UEDPIE_0_` duplicate world, so a write while PIE runs edits a world
 discarded on stop *and the read-back confirms it*. One call earlier and a test
 value would have been left in the committed map with a success report on it.
+
+---
+
+## 2026-11-02 — Claude (MCP): the gate fix is built, run, and the green inverted
+
+Chris closed the editor, which was the only blocker. `Result: Succeeded`,
+`UnrealEditor-LLK.dll` to 10:08:46 against a newest source of 09:46:59, no
+Live Coding patch DLLs. `LLK.Enemies.SweeperBrain` run headless against that
+binary: `Result={Success}`, 1 test performed. So `e0efb06`'s four assertions
+are no longer compiled-and-unrun.
+
+**The green was checked rather than believed**, per `ADVERSARY.md` and the
+precedent in the entry two above. The 6.26 notice was inverted to expect
+`Patrol`, rebuilt, re-run, and it failed by name and line 417. Reverted with
+`git checkout --`, rebuilt, re-run green, test file byte-identical to the
+commit. That matters more than usual here, because the string check that
+preceded it could only prove the block **compiled** - a block guarded by
+something false would compile and never run.
+
+**Two of my own errors, both the same shape.** First, I searched the built DLL
+for the new assertion text in ASCII and reported all four **absent**; `TEXT()`
+literals are UTF-16, and they are all present. The wrong operand again, with
+the twist that this one would have produced a *false alarm* rather than a false
+green. Second, and worse: I had reasoned myself into the old gate's position
+before the data arrived, concluding the Stock state was *designed* for dropped
+loot because `IsTaken()` excludes carried relics - a coherent story built to
+accommodate the gate, which made 6.26 look like correct behaviour instead of a
+bug. The measurement was mine and the interpretation was wrong.
+
+**Trap 14 added, and it is the stronger version of trap 1:** both the passing
+and the failing test run exited **0**. A CI step branching on the exit code
+would read a failed suite as green. Exit codes are not results in this
+toolchain.
+
+Docs corrected rather than left standing: my own reach note in
+`MAP-READINESS.md` and correction block in the handoff both concluded "the
+route alone never opens the state", which `e0efb06` made false within the hour.
+Both now carry the resolution, and the handoff no longer claims the editor
+target cannot build.

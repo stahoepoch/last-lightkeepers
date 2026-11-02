@@ -261,6 +261,10 @@ concluding anything about the brain.
 
 ### A tagged stock bay is necessary and not sufficient
 
+**Superseded the same day by `e0efb06` - read the resolution at the end of this
+section before acting on the numbers in it.** The measurement held; the gate it
+measured was the thing that changed.
+
 Added 2026-11-02, after the first bay was placed in Boswell's First Run and the
 beat was observed. `ALLKSweeper` needs **one actor tagged `LLK.StockBay`** for
 `ELLKSweeperState::Stock` to exist at all - `NearestStockBay()` takes the
@@ -295,10 +299,36 @@ entirely this distance.
   stock without ever being able to file it.
 
 So **do not read an unfiring Stock state as a missing or misplaced bay.** Check
-the distance first. Closing the 35 cm would mean moving a patrol point or a
-relic, and both are route shape - one of the four things Chris's scope says the
-map authors deliberately and the pawn refuses to invent, which is why this page
-records the number rather than changing it.
+the distance first.
+
+#### Resolution, `e0efb06`: the gate was wrong, not the floor
+
+The 35 cm was never the map's to close. Reaching for a patrol-point nudge would
+have been the wrong fix, and the reason it looked like the right one is worth
+keeping: a coherent story had been built around the gate - that `IsTaken()`
+excludes carried relics, so the state must be *for* dropped loot, so 6.26 was
+correct behaviour. That story accommodated the gate instead of questioning it,
+which is the same wrong-operand error one level up.
+
+What actually changed:
+
+- **noticing** is now `aggroRadiusDark` - 12 studs, authored - so the 6.26 the
+  floor offers clears it comfortably;
+- the Sweeper then **walks there** via `ELLKSweeperMove::MisplacedItem`, bounded
+  by `losesTargetAfterSeconds`, so a relic behind glass or across a navmesh hole
+  makes it give up and log a `Warning` pointing here rather than walking at the
+  thing forever and silently ceasing to patrol;
+- **filing** still requires `ContactRange`, which from here means physical reach
+  and nothing else.
+
+No invented number and no map change. **6.26 is now asserted in the test**, with
+a 40-stud negative control, precisely because it is the distance the real floor
+offers - so if someone later moves that aisle, the test complains instead of the
+beat quietly stopping.
+
+So the current guidance is the opposite of the bullet above: authored shelf stock
+**does** trigger it on this floor. What still does not is a relic the keeper is
+carrying, because `IsTaken()` is true - that part was correct.
 
 ## Running it
 
