@@ -7,7 +7,11 @@
 > failed, and the one lever that works is geometry rather than intensity. So
 > there is nothing numeric to put in the contract, and
 > `docs/FIXTURE-LIGHT-CONTRACT.md` is **LOCKED by Chris** in any case. It is
-> his decision, waiting in `NOTES-FOR-CHRIS.md` item 5. `HANDOFFS.md` M2 is
+> his decision, and on 2026-11-02 he asked for the amendment to be drafted: it
+> is the section **"How the rule is met - geometry, not intensity"** in the
+> contract, plus a traceable acceptance test replacing the brightness clause,
+> both awaiting his ratification. `NOTES-FOR-CHRIS.md` item 5 has the spec.
+> `HANDOFFS.md` M2 is
 > rewritten accordingly - it previously asked for "a numeric band in the
 > contract", which is the wrong proof of closure for a document that proves no
 > such band is available.

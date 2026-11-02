@@ -256,8 +256,26 @@ candela is spread wider and the two numbers are not directly comparable - which
 is why this is a thing to look at rather than a number to change. Tracked as
 `HANDOFFS.md` M5, and it needs the editor.
 
-Nothing in the contract has been edited. It is LOCKED and it is yours; this is
-the measurement and the remedy, as `HANDOFFS.md` **C9**.
+**You asked for the amendment to be drafted, so it is in the contract now,
+marked as a draft and awaiting your ratification.** Two changes, and nothing
+else in that file was touched - the gameplay-light table and your rule itself
+are verbatim:
+
+- a section, **"How the rule is met - geometry, not intensity"**, carrying the
+  numbers above, the ray, the lip spec and three rules that follow from them
+  (legible detail is placed out of the light rather than dimmed; landmarks
+  emit rather than being lit; neon makes the rule harder and should be budgeted
+  as identity);
+- the final acceptance clause. *"No fixture may look bright enough to read by"*
+  was replaced because it cannot be checked - no such fixture exists. What
+  replaces it is three traces: fixture to the bottom of the readable face,
+  then lantern and eye height to the same face, with contrast judged across the
+  glyph band rather than the card's mean. **A fixture passes when the aisle
+  reads from 40 studs and every readable face is shaded by geometry** - not
+  when someone judges it looks dim enough.
+
+Reject or rewrite either freely; it is drafted, not landed, and `HANDOFFS.md`
+**C9** stays open until you say.
 
 ## What is NOT waiting on you
 
