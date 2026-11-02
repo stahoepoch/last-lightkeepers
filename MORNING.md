@@ -1,5 +1,19 @@
 # Morning, Chris
 
+> **SUPERSEDED 2026-11-01. Do not read this as current state.** It describes
+> the Roblox prototype, which `docs/DECISIONS.md` rows 1 and 33 closed on
+> 2026-10-27, and it asserts two rules that have since been reversed:
+>
+> - "Lantern charge drains — 150 seconds per full charge." **Row 10, LOCKED
+>   the same day this page was written, makes charge unlimited:** *"i don't
+>   think the lantern should ever run out… the risk is always having it on."*
+> - "lanterns accelerate [the storm] 2.5× each." **Rows 72 and 73, LOCKED,
+>   say light never moves the clock** — it creates local consequences only.
+>
+> The Rojo and Studio setup steps are also dead. For current state start at
+> `docs/README.md`; for what this prototype actually did, the body below is a
+> useful record and is kept unchanged. Logged in `docs/DRIFT.md` section D.
+
 Written 2026-10-20, overnight. Read this first; it's the whole state in one page.
 
 ## Do this first (5 minutes)

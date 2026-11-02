@@ -142,6 +142,9 @@ environment, or a recovered thing—not an explanation screen.
 | Contamination trail | The keeper leaves physical evidence — a forced door, a dropped crate, wet tracks. A cleaning procedure follows the evidence rather than the person. | Inbox — Chris, 2026-11-01 |
 | Escape that half-works | Each later place offers a way out that delivers something real and smaller than rescue. | Inbox — Chris, 2026-11-01 |
 | Cross-zone topology | A route or power change made in a later place alters what is reachable in a place already played. | Inbox — Chris, 2026-11-01 |
+| Lanternhold growth | Wire one dead sink from `PROGRESSION-GAP.md` so a recovery visibly changes a fixture. Closes the open payout loop. | Inbox — Chris, 2026-11-01 |
+| Chained blocker | Radio needs roof needs elevator needs power needs drained basement needs parts. Each link is a different place’s problem, never a different material. | Inbox — Chris, 2026-11-01 |
+| The call is heard | The distress transmission is the escalation. What answers is a procedure, not a person. | Inbox — Chris, 2026-11-01 |
 
 ## Working discipline
 
@@ -332,3 +335,111 @@ Then the second encounter holds a door on them.
 
 Aggression first teaches the player they are in a combat game. Indifference
 first teaches them they are in this one.
+
+## Inbox, 2026-11-01 — Chris, second pass
+
+Lanternhold growth, the chained blocker, and the distress call that makes
+things worse. These extend the **escape that half-works** entry above and one
+of them closes a gap that has been open in `PROGRESSION-GAP.md` since banking
+landed.
+
+### Lanternhold growth is the missing sink
+
+```text
+Idea:                 Seeing the stronghold grow is the progression. Not
+                      character upgrades — a building that visibly gains
+                      capability because of what you carried home.
+Place / former job:   Lanternhold itself.
+Consequence:          Each recovery changes a fixture you walk past. The
+                      Lamp Wall, the crate hand-in and the relic plinths
+                      already do this; nothing else does.
+Brings home:          The reason to go back out.
+First slice:          Wire ONE existing dead sink, not a shop.
+Status:               inbox
+```
+
+**Why this one is urgent rather than nice.** `PROGRESSION-GAP.md` says it
+plainly: *a finished run pays out and there is nothing to spend it on.*
+Materials have been accumulating in every profile since banking landed.
+`profile.upgrades` and `profile.cosmetics` are written by nothing and read by
+nothing. Four sinks named in `data/loot.json` have no consumer, and five
+fixtures are placed, named and signed in the map saying "not open yet."
+
+So this is not a new system. **It is the consumer for a payout that already
+works.** It is also the one item on this board that makes the existing loop
+close, which puts it ahead of every lore idea here.
+
+The constraint that file already records: every number that opens the shop is
+a balance value, and those are Chris's. An upgrade shop invented in a service
+file would quietly overrule row 10.
+
+### The chained blocker — and the way it goes wrong
+
+```text
+Idea:                 The radio is on the roof. You cannot reach the roof
+                      because the elevator has no power; the power is out
+                      because the basement is flooded; the pump needs parts;
+                      Lanternhold itself needs fixing before it can hold
+                      them.
+Mistaken for:         A keeper restoring service is doing maintenance the
+                      building agrees with — which is why this works at all.
+Consequence:          Progress is a route being opened, not a counter being
+                      filled.
+Brings home:          Each fix is permanent and visible.
+First slice:          Not Boswell's. This is the shape of act two onward.
+Status:               inbox
+```
+
+**The failure mode, named now because it is the likely one.** If every link in
+the chain is "find N of material X," the chain is a fetch quest with
+set dressing, and row 29 already forbids that: progression is a ladder of
+practical recovery jobs, never "collect ten glowing widgets."
+
+**The rule that saves it: each blocker belongs to a different place.** Not a
+different material — a different *building's* problem.
+
+| Blocker | Whose problem it is |
+| --- | --- |
+| Elevator has no power | solar works — allocation, and something else goes dark |
+| Basement is flooded | the pump run, and whatever the water was doing to the valley's over-engineering |
+| Pump needs parts | foundry / data works — the town is still making replacements |
+| Lanternhold cannot hold the parts yet | Lanternhold, and the first sink above |
+
+Then the chain *is* the campaign, each link teaches one place, and
+`cross-zone topology` is how the links connect rather than a separate system.
+One chain, four places, no widget counters.
+
+### The distress call makes it worse
+
+```text
+Idea:                 The radio works. The call goes out. Being heard is the
+                      escalation — a deeper situation opens because you
+                      transmitted, not because you found a document.
+Mistaken for:         An unscheduled transmission on a monitored frequency.
+                      Something still monitors it. Something answers.
+Consequence:          The reward for progress is danger. New behaviour in
+                      places already played; attention where there was none.
+Counterplay:          Whether to transmit at all, and from where.
+Brings home:          The fact that you are now known.
+First slice:          None. It is the act-two hinge.
+Status:               inbox
+```
+
+**This is the right shape and it passes row 38's test** — *a new level that is
+not more dangerous than the last one is wallpaper.* Here the player
+manufactures the danger themselves by succeeding, which is better than the
+game handing it to them on a schedule.
+
+**The one guardrail.** "A deeper plot unfurls" is exactly where
+`THE-VALLEY.md` warns the story can collapse: into a confession, a villain, or
+a mind that row 47 forbids. So —
+
+> **What answers the radio is a procedure, not a person.**
+
+Another automated system answers because answering is the last job it was
+given. Two dead systems completing a protocol at each other is scarier than a
+voice, and it costs nothing to explain. A keeper's transmission gets filed,
+correctly, and what arrives is whatever the file says to send.
+
+The plot that unfurls should be *legible and still unstoppable* — not a secret
+being kept from the player.

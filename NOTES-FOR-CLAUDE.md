@@ -1,6 +1,14 @@
 # Systems audit — first playable blockers
 
-> **Status:** IN-FLIGHT — 2026-10-19. Codex audit; Claude owns fixes.
+> **Status:** ~~IN-FLIGHT — 2026-10-19~~ **VOID 2026-11-01.** This is a Luau
+> systems audit of `src/`, which `docs/DECISIONS.md` row 33 froze as a design
+> reference and prototype archive on 2026-10-27. **Every P0/P1/P2 item below
+> is void** — nothing in `src/` is advanced by anyone.
+>
+> Kept because each finding is a precise statement of what the interaction,
+> validation and knockdown layers have to *do*, and the UE5 build needs that
+> specification. It is not a work list any more. Logged in `docs/DRIFT.md`
+> section D.
 
 This is deliberately a finding list, not a patch. It keeps gameplay ownership in
 Claude's lane while making the first playable definition testable.

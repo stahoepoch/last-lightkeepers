@@ -29,6 +29,12 @@ each other's work. Agreed 2026-10-19.
 
 ## Lanes
 
+> **This table is superseded by `docs/FLEET.md`, 2026-11-01.** It assigns Luau
+> service ownership for a prototype row 33 froze, and names "banking", which
+> row 8 retired. The Unreal build has four parties, not three, and
+> `docs/FLEET.md` carries the current ownership proposal. The table is kept
+> for the record of who owned what while the prototype was live.
+
 | Party     | Owns                                                                                    |
 | --------- | --------------------------------------------------------------------------------------- |
 | **Claude** | Game systems: Storm Charge, lantern state, loot/banking, knockdown/revive, first Sweeper |

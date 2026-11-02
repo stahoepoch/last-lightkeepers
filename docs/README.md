@@ -13,8 +13,17 @@ and the lower one is stale.
 | --- | --- | --- |
 | 1 | `DECISIONS.md` | Binding calls only, numbered, `LOCKED` / `PROPOSED` / `OPEN`. Cite rows by number. Nothing is promoted into here without Chris |
 | 2 | `WORLD-SYSTEMS-BOARD.md` | The living board for new lore, mechanics and encounters. **New ideas enter here first**, as a pressure test, and move only after a playtest. It carries the intake template |
-| 3 | `PRODUCTION-CONTROL.md`, `../COORDINATION.md`, `LANES.md` | Who is building what, which files are owned, what is in flight |
+| 3 | `FLEET.md`, `PRODUCTION-CONTROL.md`, `LANES.md` | Who is building what, which files are owned, what is in flight. `../COORDINATION.md` is the superseded Roblox-era agreement, kept for its tag contracts |
 | 4 | Everything else | Synthesis, findings, proposals, handoffs. Descriptive. None of it binds |
+
+## How the fleet works
+
+| Read | For |
+| --- | --- |
+| `FLEET.md` | The four parties, lanes, handoff format, and the one rule: **uncommitted work does not exist** |
+| `ADVERSARY.md` | How the agents check each other. What counts as a claim, which arguments have already failed, retraction discipline |
+| `DRIFT.md` | The stale-concept register. **Section A is a contradiction between two LOCKED rows and only Chris can clear it** |
+| `LOG.md` | Append-only log: who was driving, why, what it cost |
 
 **Before proposing a mechanic, read tier 2.** Most good ideas about this game
 have already been had, and the board is where they were written down.
