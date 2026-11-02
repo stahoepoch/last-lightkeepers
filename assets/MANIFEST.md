@@ -12,7 +12,7 @@ assets and are intentionally excluded.
 
 | Pack / source | Imported content root | Used for | Licence record | Cleared |
 | --- | --- | --- | --- | --- |
-| *(none yet)* | — | — | — | — |
+| Epic Games — Game Animation Sample | `/Game/Characters/UEFN_Mannequin/` | Temporary keeper body and skeleton for the first playable slice; no sample maps, UI, GameMode, cameras, or animation database imported | Epic Content License Agreement, acquired through Chris's Epic account with the Game Animation Sample | **temporary / review before shipping** |
 
 ## Shipping
 

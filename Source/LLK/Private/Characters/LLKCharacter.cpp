@@ -10,7 +10,9 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/SceneComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "LLK.h"
@@ -34,6 +36,25 @@ ALLKCharacter::ALLKCharacter()
 	FirstPersonCamera->SetupAttachment(GetCapsuleComponent());
 	FirstPersonCamera->SetRelativeLocation(FVector(0.f, 0.f, 64.f));
 	FirstPersonCamera->bUsePawnControlRotation = true;
+
+	// The UEFN mannequin is intentionally a co-op presentation body for now,
+	// not a dishonest substitute for dedicated first-person arms. The owning
+	// keeper never sees a torso clipping through their camera, while another
+	// keeper can finally see an actual body carrying the shared lantern.
+	//
+	// This is optional presentation: movement, interaction and the gameplay
+	// light field still run if the asset cannot resolve in a clean code-only
+	// checkout. A proper first-person arm rig will replace only the local view.
+	const ConstructorHelpers::FObjectFinder<USkeletalMesh> KeeperBody(
+		TEXT("/Game/Characters/UEFN_Mannequin/Meshes/SKM_UEFN_Mannequin.SKM_UEFN_Mannequin"));
+	if (KeeperBody.Succeeded())
+	{
+		GetMesh()->SetSkeletalMesh(KeeperBody.Object);
+		GetMesh()->SetRelativeLocation(FVector(0.f, 0.f, -89.f));
+		GetMesh()->SetRelativeRotation(FRotator(0.f, -90.f, 0.f));
+		GetMesh()->SetOwnerNoSee(true);
+		GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
 
 	// One honest carried anchor: the mesh and the rendered cone live here, and
 	// the light component reports this transform to gameplay. Cosmetic sway is

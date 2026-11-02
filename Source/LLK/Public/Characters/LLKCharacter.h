@@ -11,10 +11,10 @@
 // is a replicated server decision, never a client-set speed. Crouch uses
 // ACharacter's own replicated crouch rather than a second mechanism beside it.
 //
-// **No Content dependency.** This class runs with no mesh, no Blueprint and
-// no DataAsset: a capsule, a camera and declared fallback speeds. That is
-// deliberate - `Content/` is Chris's alone (row 41), and a gameplay class
-// that cannot be compiled or tested without an artist is a class that blocks.
+// **Gameplay does not depend on Content.** This class still runs from a
+// capsule, camera and declared fallback speeds if an optional presentation
+// asset is absent. The temporary keeper mesh is a co-op visual only; losing
+// it must never prevent a playable build or change a lantern calculation.
 
 #pragma once
 
