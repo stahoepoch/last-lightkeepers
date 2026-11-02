@@ -251,6 +251,7 @@ above is not advice for other people.
 | Does `git status` show untracked design work? | Eleven files and a map, 2026-11-01 |
 | Does any doc assert something a `DECISIONS.md` row reverses? | `DRIFT.md` — it did, in nine files |
 | Is any setting the instrument depends on unwritten on disk? | The throttle was unwritten and therefore on |
+| And the complement: is a setting that **is** written actually in effect? Echo it from the running console, never read it from the `.ini` | `Config/DefaultEngine.ini` warns in its own comment that the Lumen keys "risk being enabled in config and inert in the running editor, which would look exactly like the no-GI behaviour they are meant to replace." The file is the authored **intent**; the console is the **observation**; the warning exists because they can disagree. `r.DynamicGlobalIlluminationMethod` echoed at the console is the check — `HANDOFFS.md` M1 |
 | Are two copies of one contract diverging? | `FIXTURE-LIGHT-CONTRACT.md` exists twice, with different content |
 | **Is the document you are acting on still true?** Date it, then measure its premise | `FINDINGS-ENEMY-OPTIONALS.md` had been closed for two days and still read as open. Nine seconds of measurement against a change nearly reverted as inert |
 | Does a finding you closed say so **where the finding lives**? | A closure that exists only in a commit message is invisible to whoever filed it. `docs/HANDOFFS.md` |
