@@ -72,8 +72,30 @@ What is new: one state, one cue value, one authored number.
 
 | | |
 | --- | --- |
-| **[CHRIS]** | `noticeSeconds` — how long you have to react before it commits. Long enough to recognise the sound and act; short enough that it is not a free pass. The Warden already authors 3.0s of telegraph, so 1.0 is not the house ceiling |
+| ~~**[CHRIS]**~~ | **DECIDED 2026-11-03: `noticeSeconds` = 3.0.** Chris's call. It has precedent in the data — the Warden already authors 3.0s of telegraph — so this is the house's own upper end rather than a new scale. **Total is then 4 seconds** from "it has seen you" to "it moves": 3 of Notice, 1 of Commit |
 | **[CHRIS]** | The recovery window. Chris: *"he just doesn't quit."* Contact currently recurs every **2.508 s**, because `ContactRecoverySecondsRemaining` uses `FallbackPatrolDwellSeconds` (2.5) — so the authored 1.5 s contact cooldown governs nothing. Seventeen contacts in forty seconds is what that feels like |
+
+### The risk in 3 seconds, named so it is checked rather than discovered
+
+Four seconds is a long time to watch a machine not move, and guardrail 2 says
+Notice must not translate it. **A motionless enemy for four seconds can read
+as broken rather than as tense.**
+
+What stops that is the thing already in the table: during Notice it **turns to
+face you**. Rotation is not translation, so the window stays honest, but the
+machine is visibly doing something — orienting, deciding — rather than
+standing inert. If the stage is built without the turn, the risk is real and
+the first playtest will say so.
+
+The second thing 3 seconds buys, which is worth wanting: going dark becomes
+**reliably** survivable rather than luckily so. That is not a deflation of the
+threat, because darkness still costs what it always cost — you cannot read a
+relic, you pick up slower, and you cannot see what is coming. Row 5 is intact
+and the trade simply became legible, which is the whole point of the change.
+
+If it plays as too generous, the number comes down. Coming down from too much
+is one playtest; creeping up from too little is several, which is the lesson
+the camera kick taught this afternoon.
 
 ## Guardrails
 
