@@ -158,6 +158,16 @@ on this project (see `docs/LIGHTLAB-PROTOCOL.md` §1).
 - **One fixture per bay**, so every figure is a **per-fixture candela**, not an
   installed-aisle figure. Converting to a lighting plan means choosing spacing
   separately.
+- **The troffer and the neon are both `RectLight`s, and that is worth a note
+  added 2026-11-02.** This project runs **software** Lumen tracing, and the
+  usual guidance for that mode is to prefer a wide-cone spot over a rect
+  light: rect lights are stochastically sampled, noisier, and heavier on the
+  GPU. **It does not invalidate anything above** - the ceiling and floor were
+  read off surfaces lit *directly*, which is not where stochastic sampling
+  shows up, and the whole conclusion is that direct light is the problem. But
+  an authored aisle built from wide-cone spots is not quite the instrument
+  these numbers were taken on, so expect the orientation floor to be the
+  figure that moves if anyone re-measures with spots.
 - Troffer = RectLight 120×60 cm, cool white (0.72, 0.84, 1.0), attenuation
   2000 cm. Neon = RectLight 120×8 cm, violet (0.75, 0.35, 1.0), same
   attenuation. Lantern = SpotLight, candelas pinned, 840 cm attenuation,

@@ -1019,3 +1019,45 @@ a consequence. Those three report.
 Proved red by unwiring the stumble: the census fails by name with the message
 that describes the original defect. Restored, rebuilt, `Result: Succeeded`,
 48/48 and `npm test` green across every suite.
+
+---
+
+## 2026-11-02 - Claude (MCP): the Lumen noise article, and what it does not say
+
+Chris circulated an 80.lv piece on suppressing Lumen noise. Read in full. **It
+does not explain the lantern**, which is the thing it looks like it should,
+and saying so is most of the value: it never discusses a weak carried light, a
+moving local source, or anything reading as absent. The one cvar it names,
+`r.Lumen.ScreenProbeGather.Temporal.MaxFramesAccumulated` at 16 against a
+default of 10, is for residual noise in a closed slow interior, and costs a
+ghosting risk in motion plus VRAM.
+
+**Not applied, and that is the recommendation.** Nobody here has measured
+noise in Boswell's. Adopting a fix for a problem nobody has observed is the
+error this project keeps naming, and it would cost motion ghosting in a game
+whose threat is a machine moving in the dark. Filed as `HANDOFFS.md` X5 for
+the day someone sees noise and can point at it. `Config/*.ini` is Codex's lane
+in any case.
+
+Two things in it do land, and neither is the headline.
+
+**The lab's fixtures are the wrong type for our tracing mode.** Both the
+troffer and the neon are `RectLight`s, and this project runs *software* Lumen,
+where the usual guidance is a wide-cone spot instead: rect lights are
+stochastically sampled, noisier and heavier. It does not invalidate the
+fixture numbers - the ceiling and floor were read off *directly* lit surfaces,
+which is not where stochastic sampling shows up, and the whole conclusion is
+that direct light is the problem. But an authored aisle of wide-cone spots is
+not quite the instrument those numbers came from, and the orientation floor is
+the figure to expect to move. Noted in the conditions section rather than
+rewriting anything.
+
+**And the open half of `FINDINGS-EMISSIVE-LIGHTS-NOTHING.md` may be the wrong
+question.** The article's standard practice for a glowing fixture is not to
+make the emissive light the room - emissive is stochastic and a noise source -
+but to disable Affect Indirect Lighting on the mesh and **put a real light
+inside the fixture**. `bb50592` had already done the second half:
+`LanternCoreGlow`, a cosmetic point light at the glass, 4 to 15 cd and 90 to
+160 cm. So "the emissive lights nothing" is likely a true measurement of a
+mechanism that was never going to be the one. Still M1, still needs a look in
+play.

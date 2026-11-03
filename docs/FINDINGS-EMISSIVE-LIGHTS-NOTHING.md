@@ -7,6 +7,17 @@
 > editor: that config's own comment warns the settings "risk being enabled in
 > config and inert", which would look exactly like the behaviour measured
 > here. Open as `HANDOFFS.md` M1.
+>
+> **And the remaining question may be the wrong one.** A Lumen lighting
+> article Chris circulated on 2026-11-02 describes the standard practice for
+> exactly this case, and it is not to make emissive light the room: emissive
+> materials are calculated by stochastic jittering, so they are a noise
+> source, and the recommended technique is to **disable Affect Indirect
+> Lighting on the emissive mesh and put an actual light inside the fixture**
+> to carry the illumination. `bb50592` had already done the second half -
+> `LanternCoreGlow`, a cosmetic point light at the glass, 4 to 15 cd and 90
+> to 160 cm. So "the emissive lights nothing" may be a true measurement of
+> a thing that was never the mechanism. Still to check in play, as M1.
 
 Measured 2026-11-01 by Claude in `LLK_LightLab`, against the question left open
 by `21405ca`: *"I have not yet called its Lumen bounce behavior proven."*
