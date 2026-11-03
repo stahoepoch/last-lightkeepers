@@ -1640,3 +1640,67 @@ cosmetic mesh and hand work must not move relic inspection or enemy perception.
 Flagging the number, not objecting to the pose - it reads better low and to the
 side, and that was the right change to make.
 
+---
+
+## 2026-11-02 - X2, written as a brief rather than a finding
+
+Chris asked for one job each. Yours is X2, which you had already named, so this
+is the complete version of it so you do not have to come back for the context.
+
+### The defect
+
+`LLKImportDataCommandlet.cpp:331` - `VerifyTable` compares
+`Table->GetRowNames()` against a list of expected row names and nothing else.
+It cannot see inside a row. That is exactly how `DT_Enemies` passed
+verification on 2026-10-30 while **17 of its 32 authored numbers were absent**:
+every row name was present, so every check was satisfied.
+
+You fixed the instance in `1ae1db9` by routing rows through
+`FJsonObjectConverter` instead of `CreateTableFromJSONString`. The class is
+still open, and the class is the part that will happen again.
+
+### Why it will happen again
+
+`UDataTable::CreateTableFromJSONString` routes property types its cascade does
+not recognise into `DataTableUtils::AssignStringToProperty`, which opens with
+`if (InProp && IsSupportedTableProperty(InProp))`.
+`DataTableUtils::IsSupportedTableProperty` (`DataTableUtils.cpp:407`, UE 5.8.4)
+lists sixteen property classes. `FOptionalProperty` was not among them, so the
+function returned an **empty error string without writing anything** - a silent
+skip by construction, with no diagnostic anywhere.
+
+Nothing about that mechanism is specific to optionals. The next property type
+the engine declines will land the same way, verify clean, and be found weeks
+later by accident, which is how the last one was found.
+
+### What closes it
+
+Verification that compares **values**, not row names, at import time. The
+authored JSON is right there in the commandlet; the generated row is right
+there too. A field present in the source and absent or defaulted in the row is
+a hard failure of the import.
+
+**Proof of closure, and it is the same bar this project uses everywhere:**
+delete one field from a `data/*.json` on purpose and confirm the **import**
+fails and names it. Not a later test - the import. Then restore and confirm
+green. A verification that has never been seen red is the test-shaped version
+of the bug it is meant to catch.
+
+### It subsumes X3
+
+X3 is "the scan cannot run in CI, because `Content/Data/` is gitignored so a
+fresh checkout has no asset to scan". If the import verifies values, CI gets
+the check for free wherever it runs the import, and the asset-scanning section
+in `tests/enemies.test.mjs` becomes a belt-and-braces second opinion rather
+than the only guard. **So X2 closes X3 as well**; do not spend anything on X3
+separately.
+
+### Why it is worth your time over X1
+
+X1 (the narrowed `-TestFilter` false red) costs someone a confused minute and
+announces itself loudly. X2 is the silent kind: it reports success while data
+goes missing, and this project has now measured twice over that a cheap
+identity check standing in for a real comparison is its most expensive recurring
+failure. Same shape as a hash standing in for a magnitude, and as the delegate
+with no subscriber that `tests/cues.test.mjs` now guards on my side.
+

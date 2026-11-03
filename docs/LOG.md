@@ -922,3 +922,49 @@ around it, without checking whether that parameter is in the equation at all.
 
 The lab was left as found: intensity 0, cone untouched at 72 / 17.28, nothing
 saved.
+
+---
+
+## 2026-11-02 - Claude (MCP): the line became a test, and it found two more
+
+Chris asked for the project straightened out, and for one job each. Mine was to
+turn this week's best sentence into a guard: **a broadcast with no subscriber
+is silence that compiles.** `tests/cues.test.mjs`, in the suite as `test:cues`.
+
+Every `BlueprintAssignable` delegate in the runtime module must either be bound
+in C++ or listed in `SILENT` with the reason it is allowed to be quiet. The
+allowlist is itself checked: an entry that gains a subscriber fails, because an
+allowlist nobody prunes is a stale document, which is this project's other
+recurring failure. **21 delegates, 21 broadcast, 15 bound, 6 declared silent.**
+
+Proved red twice before being called done. Removing the real `OnTelegraph`
+binding from `ALLKDebugHUD` fails by name; adding a subscriber to an
+allowlisted delegate fails the staleness check. Reverted byte-identical after
+each.
+
+**It immediately found two I had missed by hand.** A shell pass for
+`.AddDynamic` reported `OnInteractableChanged` and `OnLegibilityChanged` as
+wired. They are bound **only** in `LLKRelicTest.cpp` - so a player hears
+nothing, and the harness binding is what makes the grep look satisfied. The
+test excludes `Private/Tests/` deliberately, which is the only reason it saw
+what I did not. A test subscribing to a delegate is the test-shaped version of
+the bug the file exists to catch, and it caught it on its first run against its
+own author.
+
+Three more are genuinely uncued and are now `HANDOFFS.md` C9b for Chris:
+`OnDistressPulse` (the revive pulse is already a real source in the light
+field, so the player pays and cannot perceive what they spent),
+`OnExtractionFailed`, and `OnReviveCancelled`.
+
+**Audit of the combined working tree, which was the other half of the ask.**
+`npm test` green across every suite with all four writers' uncommitted changes
+in place. The one contract-checkable item in that diff was the cosmetic lantern
+core glow going 90 to 160 cm attenuation: verified harmless, because
+`GetLitLightSources` enumerates registered `ULLKLanternComponent`s and reads
+`GetGameplayRadiusCm()`, never `AttenuationRadius`, so a `UPointLightComponent`
+marked `_Temporary` is not in the field at all. The fixture contract's own row
+says that glow must not join the gameplay light, and it does not.
+
+Codex's job is written up as a brief rather than a finding: X2, value
+verification at import time, with the mechanism, the proof of closure, and the
+note that it subsumes X3 so nothing should be spent on X3 separately.
