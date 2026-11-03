@@ -326,6 +326,7 @@ the lane above.
 | Body, engine defaults, four fixture heights, the eye, the verb list | "Being there is a body", "The head, the hands, and a real counter", "The verb list" | Try to break a number against UE 5.8 source or against `data/` at `HEAD`. A paper's walking speed is not a candidate value. |
 | Five feelings | "Five feelings, each turned over" | Scary and fun are one inverted-U (Andersen et al. 2020). Addictive is the thesis's "one more night," and a season, a streak, a pass, or a fifth counter is the pattern being refused. The emotional gamble is a price the crew can name. A designed near-miss is Clark's slot machine (Neuron, 2009) and is refused. |
 | The build | "The build", same hard-run section | Two active cards, both Chris's: seven measured lines from one sitting, and one sound on `OnStockInterrupted`. The vault opens only if the landed counter is above the 56 cm hop. Later rows are the full scale and are inactive. |
+| The instrument | "The instrument, in parts" | One lamp. Hooded / Working / Open are flashlight, lantern, beacon. The stick and setting the lamp down are the flare. Not the aisle's next card. No second tool, no repelling beam. |
 
 Checked against `HEAD` after `bb50592` and `bd7c300`, and two of the old
 misreads are retracted in the board rather than left as warnings:

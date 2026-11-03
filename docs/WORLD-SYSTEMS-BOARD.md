@@ -324,6 +324,158 @@ charge unlimited and that is locked. The scarcity lives in the distraction
 tools above. For it to bite, they must be genuinely few, usable once, and
 findable only in places worth the walk.
 
+## The instrument, in parts
+
+Status: **proposed, 2026-11-02.** Chris asked to keep going on light: a
+flashlight, a basic lantern, a beacon, a flare set to distract, something
+thrown, and a model of the object itself, what it does, and what it looks
+like. This is that model. It is not a `DECISIONS` row. It does not add a
+beam that charms a machine. The sentence above still holds: a hood is a
+different relationship to being seen, not a different robot.
+
+One issued instrument. Not a hotbar. Row 67 is where it sits on the body.
+The 2026-11-02 controls in `THE-LANTERN.md` are what the hands do to the
+housing. The distraction table above is the only thing that leaves the hand.
+Row 31 still stands: the lantern and a tool compete for the same hand, so a
+throw is the hand leaving the lamp, not a second grip.
+
+What is already true in play is one state. Power on, the Working cone, the
+light in the hand. Hood, shutter, and a detachable stick are the object
+being described so the mesh and the state machine are the same thing when
+hands are built. They are not the next card. The implementation gate in
+`THE-LANTERN.md` stays: no shutter until a machine can hear, no hood wheel
+until Hooded / Working / Open are authored values, and the aisle is still
+the honest single state until then.
+
+### Where it is, and how open it is
+
+These are two different questions, and mixing them is how the lantern
+becomes eighteen modes nobody can name over voice chat.
+
+**Where it is** is row 67. Stowed and off. Stowed and lit, which lights the
+feet and is not good enough to read a shelf. Raised and lit, which occupies
+a hand and is how a relic gets read. A bulky crate forces it stowed. That
+is physics, not a fourth mode.
+
+**How open it is** is the hood, and only while it is lit. Three detents, the
+ones already named, not a slider. `MAKE-IT-FEEL-LIKE-A-LANTERN.md` already
+says the cone is the hood. Those angles are a proposal, not a number anyone
+has locked.
+
+| What Chris called it | The detent | What the keeper is doing | What fails if this is the only way you ever hold it |
+| --- | --- | --- | --- |
+| Flashlight | Hooded | A slot of light, aimed. Enough to walk a gap and read what is in the hand. | A shelf across the aisle stays a shape. The building still notices a light. Hooded is not darkness. |
+| Basic lantern | Working | The issued carry. Feet, a counter, a stamp at arm's length when raised. | This is the night that exists. It is not a safer special. |
+| Beacon | Open | The hood back, the glass bare, the room filled. You do it because you mean to be seen, or because the room is the thing you have to read. | You are legible from farther than you can see. That asymmetry is already the rule: lit notice is 38 studs, reach is 30. |
+
+The failure column is the design. If Hooded sees enough and gets you noticed
+less, nobody opens the hood except by mistake, and the flashlight has
+deleted the lantern. The dial proposal already says a hooded keeper is
+noticed from farther than a dark one and nearer than a bright one. That
+ordering is the one to keep. A hood that removes attention is the upgrade
+row 69 forbids.
+
+The shutter is not a fourth beam. It is the sleeve. Spill goes away, the
+cell stays powered, the hum stays. Sight traded for sound. A silent shutter
+is free darkness, and it retires the question row 3 exists to ask. It waits
+on a hearing path. Until that path exists, the sleeve can be on the mesh and
+must not be on the input.
+
+Present stays what it is. At a port you aim the Working beam and stand
+still. It is a job the building recognises. It is not a flashlight mode and
+it does not stun, charm, or open a door from across the aisle.
+
+### What is attached, and what each part is for
+
+The temporary rig in `LLKCharacter` is already the size: about 18 cm across
+and 32 cm tall, a service lantern rather than a barrel. The mesh that
+replaces it should be the same object, with parts a hand can be imagined to
+touch. Amber against the storm's blue, steady, a small area of light inside
+a cage so the bars throw a pattern. A point with no cage reads as a torch.
+That is the whole of the look.
+
+| Part | What it is | What you do | What it must not be |
+| --- | --- | --- | --- |
+| Base | Heavy, sealed. The cell lives here. No cap, no port, no window onto a battery. Charged at the hall, between nights. | Nothing, in the field. | A fuel can, a scavenged cell, a gauge that empties because you did your job. |
+| Glass | Short cylinder. Dark honey when the cell is off. Amber when it is on. The source has size, so the shadow edge is soft. | Nothing. It is the sun. | A white LED, a flame that flickers for atmosphere. A flicker means the building has done something to the lamp. |
+| Cage | Four or six bars and a top ring, close to the glass. | Nothing. The bars are the shadow. | Decoration that does not interrupt the light. If the bars cast nothing, it is a tube. |
+| Hood | A skirt that rides the cage. Down, at the rim, or up under the bail. Three stops. | The wheel, when authored. | A brightness slider. Brightness, range, and attention stay the terms row 69 will not sell. |
+| Shutter | A sleeve, separate from the skirt, so the two verbs are two parts. | Hold, when a machine can hear. Closes the spill. The hum remains. | An instant blackout that also silences the cell. |
+| Bail | The wire handle. Hand when raised. Belt hook when stowed. | The raise. | A weapon, a grapple, a hook for a ledge. |
+| Collar | One clip on the cage. Empty is visible. | Where the stick lives. | A rack of gadgets. One clip, one stick, or none. |
+
+### The stick, and setting the lamp down
+
+The lantern is not what you throw. It is the issued instrument, and a night
+without it is a different game. The thing that leaves your hand is a short
+sealed stick on that collar, the same metal, a tip you can tell from the
+cell. It is the flare row in the distraction table, given a place to sit so
+the prop is one object.
+
+Two ways to put a sun where you are not. They are the same idea at two prices.
+
+**Set the lantern down.** Open, on a counter you can reach again. The room
+has a sun. You do not. Relics stay unreadable. Present is gone. You are a
+dark keeper standing near a light you created, and going back for it is a
+hold inside that light. A Sweeper comes to the light because the light is
+the food, not because the flare is a special lure. The lamp stays in the
+world. Nothing files it into a pocket and nothing destroys it.
+
+**Unclip the stick and set it, or throw it a short way.** You keep the
+lantern. The stick is the scarce one. The board already says these tools are
+few, usable once, and found on a walk that costs something. It burns out. It
+does not get crafted into a better one. It reveals the patch of floor it
+lands on and it does not identify a relic the way a raised lantern does. If
+it reads stamps, it is a second lantern and the collar was a mistake.
+
+A throw is not a trajectory puzzle. One authored toss, it lands, it lights.
+The hand that threw it was the lantern hand, so the lamp is stowed for the
+throw and raised again after. A bulky crate already forbids the whole verb.
+
+The noisemaker stays a separate found thing, a can or a bell from the store,
+not a barrel on the lamp. Sound and light are different lies. The stick says
+"the sun is here." The can says "something fell." A Sweeper's job decides
+which lie it answers. Neither lie repels it.
+
+### What this refuses
+
+A second flashlight in the inventory. A beacon that is a placed gadget with
+its own radius bigger than the lantern. A colour, a frequency, or a strobe
+that makes one machine friendly and another afraid. Throwing the lantern
+itself. A stick you can stack. Any of those is either a second sun or the
+repels-enemies exception.
+
+### The reading that kills the hood
+
+Played, if everyone leaves the skirt down and still reads the aisle, Hooded
+is the best mode and Open is a trap for the careless. The fix is the shelf,
+not a damage number: Hooded does not resolve a stamp across the room, and
+Open is how you read the room on purpose. If a playtest shows the opposite,
+the detents are wrong and the skirt comes off the input until they are
+right. Row 79: measure which detent they were holding when they read, and
+when they got noticed. A sentence about the flashlight feeling cool does
+not decide it.
+
+### The reading that kills the stick
+
+If the stick is as good as the lantern, you pocket the real sun and throw
+the decoy, and the issued lamp becomes the thing you forget. If the stick
+is free and common, scarcity moved back onto a tool that does not run out,
+which is the lantern, and row 10 already forbids that bill. The stick works
+only while losing it hurts and a lantern on the counter hurts in a different
+way: one spends a found thing, the other spends your hands until you go back.
+
+```text
+Idea:                 One collar, one stick. Set the lantern down or spend the stick. Both are a sun where you are not.
+Place / former job:   The issued inspection lamp. The stick is a work-light the order clips on, not a weapon.
+What the system mistakes the keeper for:  A light that needs tending, wherever it is sitting.
+Immediate physical consequence:  Machines treat the dropped sun as the work. The keeper who walked away is dark.
+Player counterplay (without killing it):  Go back for the lamp, or cross while the stick is the brighter fact.
+What the player brings home or learns:  Nothing in the pocket. The lesson is which sun they were willing to leave.
+First slice it could appear in:  Not this aisle. The aisle is one Working lantern. The stick is the first decoy, after the crate beat is fun.
+Status:               proposed
+```
+
 ## One critique of the fear curriculum above
 
 Step 1 is "ordinary wrongness" — a lit checkout lane, a distant service loop.
