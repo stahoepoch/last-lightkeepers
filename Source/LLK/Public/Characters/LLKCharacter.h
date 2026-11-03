@@ -372,11 +372,50 @@ protected:
 	 *   cost. At the authored walk of 16 studs/s it is about 4.8 studs of
 	 *   ground - real, and survivable.
 	 */
+	/**
+	 * **Retuned 2026-11-02 on Chris's "tune it", and derived rather than
+	 * picked.** 0.7 for 1.0s was the first pass; the arithmetic says it did
+	 * not bite.
+	 *
+	 * Sprinting is free, and deliberately so - `data/lantern.json`:
+	 * *"Movement is a readability and route-choice tool, not a stamina
+	 * minigame. Sprint gets you to an exit or away from a Sweeper."* So at
+	 * 0.7 a stumbled sprint is 451 cm/s against the Sweeper's 392, and
+	 * sprinting defeated the stumble outright at no cost. It only taxed
+	 * players who did not think to sprint, which punishes not knowing rather
+	 * than choosing.
+	 *
+	 * At **0.55**, against the authored speeds:
+	 *
+	 *   - stumbled walk is 246 cm/s, which is **below the deliberate crouch
+	 *     of 252**. Reduced to less than a careful crouch is unmistakably
+	 *     "tripped" rather than "slightly slowed", which is the thing Chris
+	 *     described.
+	 *   - stumbled sprint is 354 against the Sweeper's 392, so a contact
+	 *     costs you ground **whatever you do** for as long as it lasts.
+	 *   - avoiding the third hit becomes the skill, which is the whole point
+	 *     of the ladder.
+	 *
+	 * **What this knowingly trades**: it makes sprint temporarily
+	 * insufficient, which is a 1.2-second exception to "sprint gets you away
+	 * from a Sweeper" rather than a reversal of it. Flagged because it is the
+	 * one place this value argues with an authored note, and that is Chris's
+	 * to overrule.
+	 */
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Data", meta = (ClampMin = "0", ClampMax = "1"))
-	float FallbackStumbleMultiplier = 0.7f;
+	float FallbackStumbleMultiplier = 0.55f;
 
+	/**
+	 * 1.2s, still safely under the 1.5s contact cooldown.
+	 *
+	 * That bound is the load-bearing half and it is unchanged: a stumble that
+	 * outlasted the cooldown would be re-applied before expiring, and
+	 * repeated contact would become a permanent slow nothing in the code
+	 * calls permanent. 0.3s of full speed between contacts is the recovery
+	 * window, and it is what keeps this a cost rather than a spiral.
+	 */
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Data", meta = (ClampMin = "0"))
-	float FallbackStumbleSeconds = 1.f;
+	float FallbackStumbleSeconds = 1.2f;
 
 	/** Replicated so an owning client's movement agrees with the server's. */
 	UPROPERTY(ReplicatedUsing = OnRep_Stumbling)
