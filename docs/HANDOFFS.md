@@ -325,26 +325,28 @@ the lane above.
 | --- | --- | --- |
 | Body, engine defaults, four fixture heights, the eye, the verb list | "Being there is a body", "The head, the hands, and a real counter", "The verb list" | Try to break a number against UE 5.8 source or against `data/` at `HEAD`. A paper's walking speed is not a candidate value. |
 | Five feelings | "Five feelings, each turned over" | Scary and fun are one inverted-U (Andersen et al. 2020). Addictive is the thesis's "one more night," and a season, a streak, a pass, or a fifth counter is the pattern being refused. The emotional gamble is a price the crew can name. A designed near-miss is Clark's slot machine (Neuron, 2009) and is refused. |
+| The build | "The build", same hard-run section | Two active cards, both Chris's: seven measured lines from one sitting, and one sound on `OnStockInterrupted`. The vault opens only if the landed counter is above the 56 cm hop. Later rows are the full scale and are inactive. |
 
-Four things in that section are easy to misread, and each one is called out
-there so a later session does not have to discover it:
+Checked against `HEAD` after `bb50592` and `bd7c300`, and two of the old
+misreads are retracted in the board rather than left as warnings:
 
 1. The Andersen caveat — that the inverted U disappeared when people rated the
    *whole* attraction — was taken from the article page, not from a PDF. If the
    paper does not say it, retract that sentence and keep the repeated-measures
-   result.
-2. `LanternAnchor` at `(42, 25, -19)` is the uncommitted character file. `HEAD`
-   is still `(38, 18, -4)`. M1 above is the record of the 17.0 cm move. The
-   board is not the pose until that file's owner commits it. The fallback that
-   adds 152 cm to the capsule center is still a comment bug in Claude's lane,
-   and it becomes a play bug only if a live keeper hits `GameplayLightPosition`.
-3. The dirty `data/lantern.json` sets `knockdownOnContact` to false. Not this
-   commit, not a decision, not adopted by the feeling section. Rows 11 and 59
-   still describe a knockdown when one happens.
-4. No new authored number. `data/` at `HEAD` wins any disagreement.
+   result. Still open.
+2. **Retracted.** `LanternAnchor` at `(42, 25, -19)` is `HEAD` as of `bb50592`.
+   The fallback that adds 152 cm to the capsule center is still a comment bug
+   in Claude's lane, and it is a ride-along, not a package.
+3. **Retracted as a warning, adopted as the night.** `knockdownOnContact` false
+   is `HEAD`. Sweeper contact is the stumble (× 0.55 for 1.2 s, no input lock).
+   The third contact raises a decaying floor alert. Rows 11 and 59 still
+   describe a knockdown when a later machine causes one. The Sweeper is not
+   that machine.
+4. The Sweeper at 2.8 m/s is retracted. `HEAD` is 14 studs/s, 392 cm/s. No new
+   authored number. `data/` at `HEAD` wins any disagreement.
 
-Proof this row can be closed: a later commit either retracts a named sentence
-or leaves it, and says which of the four it checked. Silence is not a check.
+The active card for the other sessions to unblock is the seven lines. Until
+they exist, a vault, a climb, and a footstep sensor are early.
 
 ---
 

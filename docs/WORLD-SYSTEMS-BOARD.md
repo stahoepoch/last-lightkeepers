@@ -442,7 +442,7 @@ What is still the engine's body, read from the UE 5.8 constructor in `CharacterM
 
 One override is already ours: crouching may walk off a ledge. The engine default refuses. The dock edge is where that shows up.
 
-The speed is the presence question nobody has played. Walk is 16 studs a second, 448 cm/s, because that was Roblox's default humanoid and the conversion was checked against Unreal's 600, not against a person. The measured preferred human walk sits around 1.1–1.6 m/s (Ralston's cost minimum is about 1.23 m/s; a 2025 center-of-mass study finds about 1.2 m/s for young adults on level ground). 4.48 m/s is past the usual walk-to-run transition, near 2 m/s. It is a run. Sprint at 6.44 m/s is a human sprint, not the thing that is wrong. Slowing the walk to the metabolic number is not automatically more present: the presence experiments are about the body matching the view, mostly in VR, and this game's Sweeper is authored at 2.8 m/s. A stroll at 1.2 m/s would make the cleaner faster than a walking keeper. The number stays Chris's, and it gets played, not pasted in from a paper.
+The speed is the presence question nobody has played. Walk is 16 studs a second, 448 cm/s, because that was Roblox's default humanoid and the conversion was checked against Unreal's 600, not against a person. The measured preferred human walk sits around 1.1–1.6 m/s (Ralston's cost minimum is about 1.23 m/s; a 2025 center-of-mass study finds about 1.2 m/s for young adults on level ground). 4.48 m/s is past the usual walk-to-run transition, near 2 m/s. It is a run. Sprint at 6.44 m/s is a human sprint, not the thing that is wrong. Slowing the walk to the metabolic number is not automatically more present: the presence experiments are about the body matching the view, mostly in VR, and this game's Sweeper is authored at 14 studs/s, 392 cm/s, 3.92 m/s (`data/enemies.json` at `HEAD`; an earlier 2.8 m/s was 10 studs/s and is not the shipped row). A stroll at 1.2 m/s would make the cleaner faster than a walking keeper. The walk still beats the Sweeper, by 56 cm/s. The stumble inverts that for 1.2 s, which is written on the pain row. The number stays Chris's, and it gets played, not pasted in from a paper.
 
 The greybox earns the traversal by containing four measured things and nothing else:
 
@@ -469,7 +469,7 @@ Until the four heights exist, a vault system would be tuned against the test har
 
 Researched 2026-11-02, after the movement pass. Still proposed. Not a decision.
 
-**The eye is consistent. The constant's comment is not, and the fallback is the dangerous path.** The camera sits 64 cm above the capsule center. The center is 88 cm off the floor, so the picture is 152 cm off the floor. In play the gameplay light is not that constant. It is attached to `LanternAnchor`, a child of the camera at 42 cm forward, 25 cm right, and 19 cm down, so the building judges a lantern in the hand, and that hand moves with the look. There is no camera dip today, so the coupling is quiet. The header in `LLKLanternFeel.h` still says 152 is both "above the floor" and an offset added to `GetActorLocation()`. A character's actor location is the capsule center, so that sum is about 240 cm, 88 cm above the eyes. `GameplayLightPosition` does exactly that add, and the tests lock it. The running component only calls it when the light has no parent. If that fallback ever runs on a live keeper, the storm, the Warden, and relic legibility jump to the ceiling. The comment should be split into a floor height and a center offset before anyone uses the constant as both. That correction is Claude's lane.
+**The eye is consistent. The constant's comment is not, and the fallback is the dangerous path.** The camera sits 64 cm above the capsule center. The center is 88 cm off the floor, so the picture is 152 cm off the floor. In play the gameplay light is not that constant. It is attached to `LanternAnchor`, a child of the camera at 42 cm forward, 25 cm right, and 19 cm down (that pose is `HEAD` as of `bb50592`), so the building judges a lantern in the hand, and that hand moves with the look. There is no camera dip today, so the coupling is quiet. The header in `LLKLanternFeel.h` still says 152 is both "above the floor" and an offset added to `GetActorLocation()`. A character's actor location is the capsule center, so that sum is about 240 cm, 88 cm above the eyes. `GameplayLightPosition` does exactly that add, and the tests lock it. The running component only calls it when the light has no parent. If that fallback ever runs on a live keeper, the storm, the Warden, and relic legibility jump to the ceiling. The comment should be split into a floor height and a center offset before anyone uses the constant as both. That correction is Claude's lane.
 
 **Retail heights, so the greybox stops being round numbers.** ADA 2010 section 904.3.2 caps a checkout counter at 38 inches, 96.5 cm, and allows a 2-inch lip above that. Section 904.4 caps the accessible part of a sales counter at 36 inches, 91 cm. A standing retail counter is commonly 36 or 42 inches (91 or 107 cm). All of those are above the 56 cm jump. The mantle still has a job. An empty GMA pallet deck is about 15 cm, under the 45 cm step, so it stays a step. Convenience gondolas are often 54–60 inches (137–152 cm). Department-store runs go to 84 inches and past it, which is taller than the 176 cm capsule, so you do not look over them. Knee clearance under an accessible counter is 27 inches, 69 cm. The crouched capsule is about 80 cm, so that hole is not a hiding place unless it is built deeper than the code.
 
@@ -495,7 +495,7 @@ Row 63 already answered the pile. Improvisation, not a superhero. The verbs belo
 | Getting down | Crouch, at 9 studs/s, 252 cm/s. The capsule will not stand you up under a ceiling you did not choose to leave. | A crouch. Not a prone, and not a roll. |
 | Getting down, the other one | `downedWalkSpeed` is 0. `bleedOutSeconds` is 0. The lantern is forced off. You keep the crate (row 11, row 59). | A collapse. You wait, and the crew comes to you. A bleed timer is a playtest decision, not a default. |
 | Getting up | A teammate's revive hold, or the one solo anchor. Not a kip-up. | Stays a hold. Standing is the other person spending attention. |
-| Pain | The downed state. No flinch, no screen injury, no limp. | Binary until a session proves the middle is needed. |
+| Pain | On this night a Sweeper does not knock you down (`knockdownOnContact` false, landed in `bb50592`). Contact is a stumble: speed × 0.55 for 1.2 s (`bd7c300`), the stick stays yours, and there is no scripted shove. Walk during it is about 246 cm/s and sprint about 354 cm/s, both under the Sweeper's 392, so the machine is faster for that window. The next contact is 1.5 s later, so one Sweeper cannot stack a second window inside the first. The third contact reports you: a floor alert that decays, 3 s when the Sweeper row omits `losesTargetAfterSeconds`. The downed collapse still exists in code for a later containment. It is not what this machine does. | A tempo cost you can feel and still steer through. Not a limp, not a flinch, not a bleed timer added to make the smack "more real." |
 | Limping | Not built. | A third speed between walk and zero. It would be a second tax beside relic burden. Do not add it to make pain "realistic." |
 | Carrying | Only relics slow you: 4% each, cap 12% at three (row 77). Crates do not. Light never does. A downed carrier cannot walk the crate to the dock. | Hands full when the carry is bulky, which blocks mantle, revive, and tools until it is set down. Proposed, waiting on geometry. |
 | Vaulting | Not built. | One low vault, server-authoritative, after a real counter exists. |
@@ -503,7 +503,7 @@ Row 63 already answered the pile. Improvisation, not a superhero. The verbs belo
 | Parkour | Refused, row 63. | The word for the moveset that makes a counter a puzzle instead of a risk. |
 | Animation | A co-op mannequin exists. The owner does not see their own body. No montage for any verb above. Look is immediate. The lantern may trail the look by at most 9°. | Hands and the lantern, after the move exists, so the animation is of a thing you already did. Motion matching is a search over a body we do not have. |
 | Sounds, footsteps | No footstep asset is wired. Enemy cues exist as files and as unbound-until-debug events. | One sound per verb that is already real: the interrupt, then a step that marks your own weight and tells a friend where you are. Not a sensor. |
-| Relativity | Not a system. | How fast the aisle feels. Optic flow from a gondola close to the eye, the Sweeper at 2.8 m/s beside a 4.5 m/s walk, the lantern late relative to the head. Perceived speed is a ratio. It is not a new movement mode. |
+| Relativity | Not a system. | How fast the aisle feels. Optic flow from a gondola close to the eye, the Sweeper at 3.92 m/s beside a 4.48 m/s walk, the same Sweeper faster than you for the 1.2 s you are stumbling, the lantern late relative to the head. Perceived speed is a ratio. It is not a new movement mode. |
 
 The order under the table is the same order as row 63. Play the walk, the stop, and the hop on a floor that has a pallet and a counter. Then one vault. Then one authored climb. Then the hands and the sounds of those moves. Pain stays the collapse that is already written.
 
@@ -527,13 +527,13 @@ A claim here names an operand, a floor, a clock, and a falsifier, per `docs/ADVE
 
 **Falsifier.** The counter can be hopped, or the pallet asks for a prompt. Then the heights are wrong, or the jump number moved, and a vault tuned tonight would be wrong the day the store is.
 
-**The reading that kills "make the walk real."** Preferred human walk sits near 1.1–1.6 m/s. This walk is 4.48 m/s, a run, and the Sweeper is authored at 2.8 m/s. Pasting the metabolic number in makes the machine faster than a walking keeper. Gait realism and threat realism are two operands. The spacing of this aisle was built against the fast walk. A paper cannot pick between them. Playing the aisle can.
+**The reading that kills "make the walk real."** Preferred human walk sits near 1.1–1.6 m/s. This walk is 4.48 m/s, a run, and the Sweeper is authored at 3.92 m/s. The 2.8 m/s figure written here on 2026-11-02 was 10 studs/s and is retracted: `HEAD` is 14. Pasting the metabolic number in makes the machine faster than a walking keeper. Gait realism and threat realism are two operands. A paper cannot pick between them. Playing the aisle can. The stumble already inverts the race for 1.2 s without a speed change.
 
 **The reading that kills "make the floor real."** Lowering `MaxStepHeight` so every curb costs a vault turns the store into a course. That is parkour by friction, which row 63 refuses. One counter above 45 cm is the decision. A global step change is the costume of that decision.
 
 **Footsteps, turned over.** *Alien: Isolation* lets the creature hear steps, and a store that never hears the keeper can feel like a slideshow. The split that survives the turn-over: the keeper hears their own weight, and a friend hears where the other one is. The Sweeper's notice stays light. Wiring volume into aggro is a second notice rule beside row 16. **Falsifier:** with a step playing, a dark walking keeper is still unnoticed inside the dark radius, and a lit one is still noticed out to the lit radius. If darkness stops protecting a walking keeper, the split failed in the build.
 
-**The eye, turned over.** The eye paragraph above is a code read, and one pose in it is not in `HEAD`. Committed `LanternAnchor` is `(38, 18, -4)`. The working tree, which this commit does not include, is `(42, 25, -19)`. That is the 17.0 cm move already written on M1 in `docs/HANDOFFS.md`. Quoting this board as the build, before that character change lands, reads the wrong hand. The dangerous path is unchanged either way: `GameplayLightPosition` adds 152 cm to the capsule center, the tests lock that add, and the live component uses it only when the light has no parent. Splitting the comment into a floor height and a center offset is still Claude's lane. **Falsifier:** in PIE, print the gameplay light's world Z and the actor's world Z. Attached, the difference should be a hand below the eye. A difference of about 152 cm means the fallback is what the building is judging, and the comment bug has become a play bug.
+**The eye, turned over.** The pose landed. `LanternAnchor` at `(42, 25, -19)` is `HEAD` as of `bb50592`, and the earlier warning that it was only in the working tree is retracted. The dangerous path is unchanged: `GameplayLightPosition` adds 152 cm to the capsule center, the tests lock that add, and the live component uses it only when the light has no parent. Splitting the comment into a floor height and a center offset is still Claude's lane, and it is a ride-along on the next touch of that header, not its own milestone. **Falsifier:** in PIE, print the gameplay light's world Z and the actor's world Z. Attached, the difference should be a hand below the eye. A difference of about 152 cm means the fallback is what the building is judging, and the comment bug has become a play bug.
 
 **Head bob, turned over.** The 2025 review of visual cybersickness is mostly about VR, where oscillating the view makes people sick. It does not prove a flat 90° picture needs zero camera motion. A walk with no gait cue can feel like a dolly, which fails "being there" from the other side. The move that does not spend the refused bob is the one already written: a step you can hear, and a lantern allowed to be late by at most 9°. **Falsifier:** Chris plays and the walk feels like a slider. Sound and lantern lag are the first change. A camera dip stays refused until those fail in a chair.
 
@@ -619,7 +619,95 @@ On the test this repo already trusts, great is the list in `GAME-THESIS.md`: the
 1. The Andersen whole-attraction caveat. It is taken from the article page at doi:10.1177/0956797620972116, not from a PDF opened in this session. If the paper does not say the summary rating lost the curve, retract that sentence in a commit and keep the repeated-measures result, which the abstract does state.
 2. The anchor pose. `(42, 25, -19)` is the dirty `LLKCharacter.cpp`. `HEAD` is `(38, 18, -4)` until that file's owner commits it. M1 already records the 17.0 cm move. This board must not be quoted as the shipped pose.
 3. `data/lantern.json` is dirty, and this commit does not include it. The working tree sets `knockdownOnContact` to false and says the first-slice Sweeper does not freeze a solo keeper. That is not a decision and not adopted here. The downed paragraphs still describe rows 11 and 59 for when a knockdown happens.
-4. Any number in this section that disagrees with `data/` at `HEAD` loses. The data wins, and the sentence comes out.
+4. Any number in this section that disagrees with `data/` at `HEAD` loses. The data wins, and the sentence comes out. The 2.8 m/s Sweeper and the "anchor is uncommitted" warning were that kind of sentence, and both are retracted above.
+
+### The build
+
+Status: **proposed scaffold, 2026-11-02.** Chris asked to assimilate the research and implement it at full scale, as something the fleet can work from. This is that. It is not a `DECISIONS` row, and it does not open a new system.
+
+Full scale here means the same five tests on every later floor. It does not mean building the valley, a second enemy, or a return-calendar while the aisle is unplayed. Production control allows one active package per owner. Two are active. Everything under "Later, same rules" is inactive until the active cards close.
+
+What already exists, so the cards do not rebuild it. The Sweeper patrols, telegraphs, files, and interrupts. Extraction is a state machine with a price. Relic burden is read. The stumble is server-authoritative and replicated. `knockdownOnContact` is false. Boswell's has departments: toy-side tables, a furniture platform, a service counter, a front display case, gondola runs with raised shelf lips, and TOYS / HOME / EXIT landmarks (`bb50592`). There is still no vault, no climb, no footstep asset, and no authored sound on `OnStockInterrupted`. Nobody has measured the landed counter in centimetres. That measurement is the implementation. A vault written before it would be tuned against a guess.
+
+#### Active — Chris — one sitting
+
+**Owner.** Chris. He is the only one who can press Play.
+
+**Depends on.** The map and the pawn that are already on `HEAD`. Not blocked.
+
+**Does.** Load `/Game/LLK_Boswells_FirstRun` and write seven lines. No code.
+
+1. Height of the service-counter top, in cm, against the 56 cm hop and the 45 cm step.
+2. Height of a gondola run, against the 176 cm standing capsule.
+3. Whether any lip on that floor is under 45 cm, and whether the capsule walks it with no prompt.
+4. Whether the Sweeper, unwatched-into, takes the authored crate while you stay dark.
+5. Whether `OnStockInterrupted` is audible. The expected answer today is no: the debug HUD has the line, and no sound is bound.
+6. On contact: the stick stays, and for about 1.2 s the Sweeper is faster than both the walk and the sprint. If the shove that already lives in the movement component throws you off a ledge, say so. A scripted impulse is still his call and stays off until this line exists.
+7. After a wipe or an extraction, the choice you would name out loud. "We lit up," "we stayed," "we called and left the dock," or only "it got us."
+
+**Acceptance.** Seven lines, dated, in the handoff or in `NOTES-FOR-CHRIS.md`. A missing line is a missing measurement, not a soft pass.
+
+**Modes.** Solo PIE is enough for this card. A second keeper is the later card.
+
+**Evidence.** The seven lines. A capture only if a line is easier to show than to write.
+
+**Files.** None in `Source/`, `Content/`, or `data/`. The note is the product.
+
+**Feelings this closes, or fails.** Real, on lines 1–3. Scary and fun, on lines 4 and 6: the crate leaving while you are ignored is the small deviation; a first-minute hunt, or a stumble that takes the stick, is past the curve. The bet, on line 7. Competence, on line 5, which is expected to fail and so names the next card.
+
+#### Active — Chris — the interrupt you caused
+
+**Owner.** Chris. Row 41: sound is his.
+
+**Depends on.** The delegates, which exist. Can share the sitting above. Not blocked on the counter measurement.
+
+**Does.** One authored sound on `OnStockInterrupted`, then `OnStockFiled` at the bay so the walk has a direction. `OnTelegraph` can ride the same pass because row 16 is the accessibility lock. The debug readout is deleted only when the sound carries the beat without it.
+
+**Acceptance.** A keeper who lights up can tell that the lighting is what saved the crate, with the voice channel muted. That is the curve and the competence need in one event. A success that looks like nothing is not a success.
+
+**Modes.** Solo first. Then one listen-host check that the other keeper hears the same interrupt.
+
+**Files.** The sound asset, under Content, his. If the wav cannot be heard without a subscribe on the existing delegate, that subscribe is one binding and it is Claude's, on the delegate that already exists. It is not a bus, not occlusion, and not MetaSounds.
+
+**Does not.** A footstep sensor. A mix. A second enemy cue set.
+
+#### Ride-along — Claude — the eye comment
+
+Not a package and not a milestone. The next time `LLKLanternFeel.h` is open, split the comment so 152 cm is a floor height and the center offset is a different number. Do not change the add the tests lock. Do not change the attached path, which is the hand. The PIE print on the falsifier above is what says whether this is a comment or a play bug.
+
+#### Opens only after the seven lines — Claude — one vault, or no vault
+
+**Owner.** Claude, runtime. Chris keeps the heights.
+
+**Depends on.** Lines 1–3 of the sitting. Blocked until they exist.
+
+**The branch.** If the counter top is above 56 cm, build one server-authoritative low vault over that counter, and a ledge mantle of the same family. Bulky carry blocks it once bulky carry exists; until then the block is a commented seam, not a fake crate. If the counter top is under 56 cm, do not build the vault. The greybox is short, and the hop is already doing the vault's job. Raising `JumpStuds` to clear it is the same mistake.
+
+**Acceptance.** On the real counter, a jump fails and the vault succeeds, and the server is the one that says so. A client cannot vault a counter the host rejects.
+
+**Modes.** Solo, then listen host plus client.
+
+**Files.** `Source/LLK` traversal only, plus a test that fails when the vault succeeds with no counter in range. Not `IMC_LLK`. Not a free-climb trace.
+
+**Does not.** `MaxStepHeight` changes. A hang on an arbitrary ledge. Motion matching. Mover.
+
+#### Later, same rules — inactive
+
+These are the full scale. Each one inherits the card above it. None of them is a reason to skip the sitting.
+
+| When | What gets built | Owner | The test it has to pass | Refused while building it |
+| --- | --- | --- | --- | --- |
+| The interrupt is audible | One footstep. The keeper hears their weight. A friend hears where they are. | Chris for the asset. Claude only if a subscribe is required, and the subscribe reads no enemy sense. | With the step playing, dark aggro is still 12 studs and lit aggro is still 38. A walking dark keeper is not noticed. | Volume as a Sweeper input. Head bob. A landing dip. |
+| The vault has been played on the real counter | One authored climb: a ladder, an escalator rail, or a hatch. | Chris places the point. Claude makes it server-authoritative. | The rest of the wall is a wall. | Free climbing. A hang on any ledge. |
+| That climb exists | Hands and the lantern, animating a move the player already did. | Chris for the mesh, Claude so the gameplay light does not follow the cosmetic sway. | The building still judges the hand anchor, not the posed mesh. | Motion matching. A body the owner can see, before row 44 moves. |
+| The seven lines include a named wipe or a named extract | Nothing new. Extraction already has the price. | Chris plays it. | The crew can say which choice cost the haul. | A pity timer, a last-second save, an "almost" meter, a nearer miss. |
+| The aisle is fun in a chair, per the six thesis behaviours | One visible change at home from a crate that was secured. A job becomes real by gaining a `restoration` block, which is the existing rule. | Chris for what the hall shows. Claude only on the block the rules already name. | They load the same night again with no prompt and no expiring counter. | A season, a streak, a pass, a fifth resource, a shop stat on night one. |
+| That replay happened | The next floor repeats the four heights. It does not repeat a new moveset. | Chris, content. | A pallet is still a step and a counter is still not a hop. | A second zone opened to make the game feel larger. |
+| The first slice is played | A later machine may contain. Rows 11 and 59 describe that collapse. Row 49 stages it after the slice. The Sweeper is not that machine. | Claude for the pawn, when a pawn is actually next. | The crew can still choose. `bleedOutSeconds` stays 0 until a session shows the wait is past the curve. | Giving the Sweeper its knockdown back in order to have a failure state. The stumble and the alert are the failure state. |
+
+#### Not in any card
+
+A metabolic walk pasted over 16 studs/s. A lower step height. A global fall-damage curve. A limp. A bleed timer as a default. A designed near-miss. A streak. A questionnaire about whether it felt scary. A second enemy. A quest log. The valley. Any of those would be the turned-over reading, built by mistake.
 
 ### Refused until this night is fun in a chair
 
