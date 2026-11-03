@@ -148,7 +148,7 @@ cannot launch the editor.
 | **M1** | ~~**Verify emissive now lights something.**~~ **HALF CLOSED 2026-11-02.** `r.DynamicGlobalIlluminationMethod` read **1** live through the MCP bridge, so Lumen is *not* "enabled in config and inert" — the renderer half of `FINDINGS-EMISSIVE-LIGHTS-NOTHING.md` is verified, not just answered. **And it redirects the open problem:** Chris reports the lantern effect still "isn't there", which is now provably *not* a global-illumination fault. Remaining suspects are the lantern's own emissive material and the temporary rig | `FINDINGS-EMISSIVE-LIGHTS-NOTHING.md`; gate read in `3b209ae`. **Plus the anchor move, added 2026-11-02 on Chris's instruction:** `LanternAnchor` went `(38, 18, -4)` → `(42, 25, -19)`, **17.0 cm mostly downward**, and `LanternLight` attaches to it while the gameplay light field samples it, so the gameplay origin moved with the pose | The surface measurement is no longer the blocker and does **not** need `LLK_LightLab` — judge it in Boswell's during the visual pass, which is where the lantern actually has to look right. **Two things to read in that same sitting**, because the pose and the look are one pass: does the lantern light its own glass, and does a relic still read at the authored distance from the new anchor height. 17 cm is 2% of the 840 cm reach and nothing at range, but a **quarter of the 56 cm** at which `FINDINGS-FIXTURE-LIGHT-BAND.md` measures inspection — and the rule it brushes is the one saying cosmetic hand work must not move relic inspection. The radius is untouched: the field reads `GetGameplayRadiusCm()`, not `AttenuationRadius` |
 | **M2** | ~~The fixture light contract still has no band~~ **- withdrawn 2026-11-02, as the wrong row.** It asked for "a numeric band in the contract, and a test that fails when a fixture crosses it", and all three clauses are wrong: no band exists, the contract is **LOCKED by Chris**, and fixture intensities live in the map rather than `data/`, so no headless test can read one | `FINDINGS-FIXTURE-LIGHT-BAND.md` measures the gap at ~4x under Lumen - inspection ceiling below 0.5 cd, orientation floor ~2 cd - and records three failed levers | **Closed by being correctly re-stated.** The decision is Chris's, as **C9**. What was mine was reading the contract before writing a proof of closure against it |
 | **M5** | **Ladder 3's lantern reading was taken on the wrong cone.** "25 cd reads as a carried lantern" came from a 72 deg outer cone; `data/lantern.json` authors **110 deg**. `a060e78` adopted the 25 anyway | `FINDINGS-FIXTURE-LIGHT-BAND.md` conditions section against `data/lantern.json:44` | Ladder 3's three rungs re-run at 110 deg, or the authored cone changed to match what was measured. Needs the editor and the bridge - **check 4 of "The editor sitting" below** |
-| **M6** | **`BSW_STOCK_BAY`'s tag is unverified since the map was saved by another writer.** The greybox store room was written into `LLK_Boswells_FirstRun.umap` while that map was assigned to this lane. Nothing was lost — `BSW_STOCK_BAY`, `LLK.StockBay`, `LLK.Patrol`, `BSW_WRONG_CRATE`, `WL_PlayerStart`, `BSW_LOADING_DOCK_EXIT`, the Sweeper and fourteen relic references are all in the new 146,495-byte package | Byte search of the package, 2026-11-02. The name hits alone could not prove placement, so the transform was scanned too: **`(450, 450, 50)` is present once as a double-precision triple**, with the crate's authored `(300, 250, 90)` as a green control proving the scan can see transforms at all. The first attempt searched float32 and found nothing *including the control* - the wrong precision, caught by the control rather than reported as a loss. So the bay is still exactly where it was placed. What a byte scan cannot prove is that the **tag array** is still attached | `find_actors` by tag returns `BSW_STOCK_BAY` - **check 1 of "The editor sitting" below** - plus the harder question no scan can touch: **is the bay now inside the new gondola geometry?** |
+| ~~**M6**~~ | **CLOSED 2026-11-02 by measurement in the live editor, and it was worth running.** The tag is attached and the bay has been moved from `(450, 450, 50)` to `(450, 390, 50)` to stop a filed crate clipping a wall. Detail in "What check 1 found". Original: **`BSW_STOCK_BAY`'s tag is unverified since the map was saved by another writer.** The greybox store room was written into `LLK_Boswells_FirstRun.umap` while that map was assigned to this lane. Nothing was lost — `BSW_STOCK_BAY`, `LLK.StockBay`, `LLK.Patrol`, `BSW_WRONG_CRATE`, `WL_PlayerStart`, `BSW_LOADING_DOCK_EXIT`, the Sweeper and fourteen relic references are all in the new 146,495-byte package | Byte search of the package, 2026-11-02. The name hits alone could not prove placement, so the transform was scanned too: **`(450, 450, 50)` is present once as a double-precision triple**, with the crate's authored `(300, 250, 90)` as a green control proving the scan can see transforms at all. The first attempt searched float32 and found nothing *including the control* - the wrong precision, caught by the control rather than reported as a loss. So the bay is still exactly where it was placed. What a byte scan cannot prove is that the **tag array** is still attached | `find_actors` by tag returns `BSW_STOCK_BAY` - **check 1 of "The editor sitting" below** - plus the harder question no scan can touch: **is the bay now inside the new gondola geometry?** |
 | **M3** | **Status lines on every `FINDINGS-*.md`** | This file's whole argument | Done 2026-11-02, in the same commit as this file |
 | **M4** | **The orientation half of the exposure sweep (Bay B)** | Longstanding, not acted on | The sweep covers orientation as well as intensity |
 
@@ -184,11 +184,58 @@ checks below cannot be driven at all.
   lands in a world that is discarded on stop and the read-back confirms it by
   reading the same doomed world.
 
+### What check 1 found, and the correction it forced
+
+Run 2026-11-02 with the bridge up. `/Game/LLK_Boswells_FirstRun` confirmed as
+the open level first, because trap 6 makes an answer from the wrong world look
+exactly like an answer. No `UEDPIE` prefix on any returned `refPath`, so PIE was
+not running and writing was safe — trap 13's own test, for free.
+
+**The tag is attached.** `find_actors` by tag returns exactly one actor:
+`BSW_STOCK_BAY`, tags `["LLK.StockBay"]`, transform `(450, 450, 50)` live,
+matching the byte scan exactly.
+
+**The floor was not clear, and the obstruction is not new.** Traces from the bay
+origin at z=50:
+
+| direction | first hit |
+| --- | --- |
+| down from z=300 | **300** — the floor at z=0, nothing in the column |
+| −X, −Y | no hit within 600 cm |
+| +X | **110** — the shelving run at x=560, already known from the original placement |
+| **+Y** | **20** — a face at y=470 |
+
+That face is **`WL_DarkPocket_Partition`**, bounds `(0, 372, 0)` to
+`(500, 628, 280)`, and a reverse trace from y=700 hits at y=530 — so it is a
+60 cm thick wall spanning y 470–530. The `WL_` prefix is walk-lab naming, so it
+**predates the greybox**: this was mis-measured at placement time, not broken by
+another writer. The original note claimed "bare floor with clear headroom" and
+checked x but never traced +Y.
+
+**Why it mattered.** `BSW_WRONG_CRATE` is `100 × 100 × 100`. Teleported to
+`(450, 450, 50)` it spans y 400–500 against a wall face at y=470 — **30 cm of
+interpenetration.**
+
+**Fixed, in this lane, on this lane's own actor.** The bay is now at
+`(450, 390, 50)` — 60 cm along −Y, the direction with over 600 cm of clear
+floor. A crate there spans y 340–440 and clears the wall by **30 cm**; +X
+clearance is unchanged at 110 cm to x=560, so the crate's 400–500 span clears
+that by 60 cm; the column is clear from the floor to z=300. Verified after the
+move: transform `(450, 390, 50)`, label `BSW_STOCK_BAY`, tag `["LLK.StockBay"]`,
+and on disk the new triple appears once while the old one is gone.
+
+**An overclaim of mine, corrected.** Before measuring, this was described as a
+crate that would land "inside a shelf", be "unrecoverable", and "read as the
+crate vanishing". The real defect was 30 cm of clipping into a partition, with
+the crate still reachable from the −Y side, which has clear floor. Worth fixing
+and not worth the alarm — and the alarm was written before the trace, which is
+the wrong order.
+
 ### The four checks, cheapest first
 
 | | Check | How | Closes |
 | --- | --- | --- | --- |
-| **1** | **Is `LLK.StockBay` still attached to `BSW_STOCK_BAY`, and is the bay still standing on open floor?** The transform is confirmed unchanged at (450, 450, 50), so this is the tag array - and the geometry now around it | `find_actors` by tag, then look at where it stands. **(450, 450) was chosen against an empty floor**, and the greybox added two gondola runs plus endcaps. The Sweeper does not walk a filed relic to the bay, it **teleports** it to that origin - so if the bay now sits inside a shelf, a filed crate lands inside the shelf and the run's objective is unrecoverable. In play it reads as the crate vanishing | **M6** |
+| ~~**1**~~ | **DONE 2026-11-02 — tag intact, and the bay has been moved 60 cm.** `find_actors` by tag returns exactly one actor, `BSW_STOCK_BAY`, tags `["LLK.StockBay"]`. The floor check found a real defect and it is fixed: see "What check 1 found" below. Original question kept for the record — **is `LLK.StockBay` still attached, and is the bay still standing on open floor?** The transform is confirmed unchanged at (450, 450, 50), so this is the tag array - and the geometry now around it | `find_actors` by tag, then look at where it stands. **(450, 450) was chosen against an empty floor**, and the greybox added two gondola runs plus endcaps. The Sweeper does not walk a filed relic to the bay, it **teleports** it to that origin - so if the bay now sits inside a shelf, a filed crate lands inside the shelf and the run's objective is unrecoverable. In play it reads as the crate vanishing | **M6** |
 | **2** | **Do the Sweeper's four cues read?** Lowest third of the screen, in PIE, with the debug HUD from `8738b57`: *"something has noticed you"* on telegraph, *"a machine is dealing with something of yours"* on start, *"it saw you, and left your crate where it was"* on interrupt, *"your crate has been put somewhere it belongs"* on filed | Play it. This is a human judgement, not a measurement — the question is whether a player could tell that lighting up is what saved the crate | the **C2** judgement. Not C2 itself: that needs the authored sound, and the readout exists to be deleted |
 | **3** | **Does the lantern light its own glass, and does a relic still read from the new anchor height?** Lumen is verified live, so what remains is the lantern's own emissive and the rig. The anchor moved **17.0 cm** mostly downward and the gameplay light moved with it | Judge it in Boswell's during the visual pass, not in `LLK_LightLab` — this is where the lantern has to look right. Read the relic at the authored distance, not at a lab distance | the open half of **M1** |
 | **4** | **Re-run Ladder 3 at the authored cone.** "25 cd reads as a carried lantern" was measured at **72°** outer; `data/lantern.json` authors **110°**, so the same candela is spread wider and the shipping fixture is not the one that was tested | Three rungs — 6, 25, 100 cd — at 110°, per `LIGHTLAB-PROTOCOL.md`. Or change the authored cone to match what was measured, which is Chris's call either way | **M5** |

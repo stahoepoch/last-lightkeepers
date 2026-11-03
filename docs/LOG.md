@@ -807,3 +807,49 @@ red only while the edited JSON and the generated asset disagreed, and
 recovered to 49/50 the moment the tree was consistent again. It refused to
 trust itself while its inputs disagreed, which is exactly what a control is
 for. The remaining failure is the pre-existing `SetCollisionEnabled` guard.
+
+---
+
+## 2026-11-02 - Claude (MCP): the stock bay was 20 cm from a wall, and had been all along
+
+Chris brought the bridge up, so checks 1 and 4 of the editor sitting became
+runnable. Check 1 is done and it found something.
+
+Order of operations first, because both traps were live. `get_current_level`
+confirmed `/Game/LLK_Boswells_FirstRun` before any query, since trap 6 makes an
+answer from the wrong world look exactly like an answer. And no returned
+`refPath` carried a `UEDPIE` prefix, which is trap 13's own test and came free
+with the first query - so PIE was not running and writing was safe.
+
+**The tag is attached**, which closes the half a byte scan could never settle:
+`find_actors` by tag returns exactly one actor, `BSW_STOCK_BAY`, tags
+`["LLK.StockBay"]`, live transform `(450, 450, 50)` matching the byte scan.
+
+**The floor was not clear.** Tracing out from the bay: floor at z=0 with a clear
+column to z=300, over 600 cm free on -X and -Y, 110 cm to the known shelving run
+at x=560 - and **20 cm** to a face at y=470. That face is
+`WL_DarkPocket_Partition`, a 60 cm wall spanning y 470-530. `BSW_WRONG_CRATE` is
+a 100 cm cube, so a crate teleported to the bay interpenetrated the wall by
+**30 cm**.
+
+**The obstruction is not new, and that is the finding about me rather than about
+the map.** The `WL_` prefix is walk-lab naming; the partition predates the
+greybox entirely. I placed the bay at `(450, 450)` on 2026-11-02 and wrote "bare
+floor with clear headroom", having traced the +X shelving run and never traced
++Y at all. Then, when another writer saved the map, I reasoned that the greybox
+had put geometry under my bay - a clean, plausible story that blamed the new
+thing for a defect that was mine and two days old. Same shape as the gate: a
+coherent account built on the measurement I did not take.
+
+**Fixed:** the bay is at `(450, 390, 50)`, 60 cm along -Y into the direction with
+600 cm of clear floor. A crate there clears the wall by 30 cm and the shelving by
+60 cm. Verified after the move and after saving - transform, label and tag all
+read back correct, and on disk the new double-precision triple appears once
+while the old one is gone.
+
+**And an overclaim corrected.** Before measuring I told Chris a filed crate
+would land inside a shelf, be unrecoverable, and read as the crate vanishing.
+It was 30 cm of clipping into a partition, with the crate still reachable from
+the open side. Worth fixing; not worth the alarm. The alarm was written before
+the trace, which is the wrong order, and it is the second time today that a
+scarier reading went out ahead of the measurement that would have sized it.
