@@ -171,7 +171,28 @@ light does different things to the robots" and the RMB shutter as free
 concealment — which is a sign it is a genuinely attractive shape rather than a
 careless one. It is still the one thing the design cannot have.
 
-### What to build instead, and it is already specified
+### DECIDED 2026-11-02: it just times out
+
+Chris's call. **No clearing action in the first version** — the alert decays
+on its own and that is all.
+
+What that costs, stated plainly so it is not rediscovered as a surprise: the
+player has no way to *act* on the alert, so de-escalation is waiting. That is
+the thing this file argued was not a decision.
+
+What makes it the right first version anyway: **there are no service ports in
+Boswell's yet.** Building a clearing action would mean authoring the port, the
+pattern and the interaction before the thing being cleared has ever been felt.
+A timer is the smallest version that lets the ladder be played, and the
+`Present` route below stays available once ports exist — at which point
+clearing an alert is a natural second job for them rather than their reason to
+exist.
+
+So the section that follows is **not scheduled**. It is kept because it is the
+answer to "can the lantern do something about this" that does not break row 5,
+and that question will be asked again.
+
+### The route that stays open, for when service ports exist
 
 **The lantern already has a legal way to act on this, and it is the `Present`
 verb.** `WORLD-SYSTEMS-BOARD.md` defines it: *offer a valid maintenance
