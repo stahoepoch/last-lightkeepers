@@ -853,3 +853,33 @@ It was 30 cm of clipping into a partition, with the crate still reachable from
 the open side. Worth fixing; not worth the alarm. The alarm was written before
 the trace, which is the wrong order, and it is the second time today that a
 scarier reading went out ahead of the measurement that would have sized it.
+
+---
+
+## 2026-11-02 - Claude (MCP): the route measured, after the bay taught the lesson
+
+The bay's defect was mine and two days old because I traced +X and never +Y.
+So the same question was put to the route, which had never been traced against
+the enclosed room either.
+
+All three `LLK.Patrol` points stand on open floor: a down-trace from z=300 hits
+at exactly 300 at each one, so the floor is at z=0 with a clear column above.
+None is embedded in the new geometry.
+
+**One is tight.** `Actor_11` at `(-250, 400, 100)` has **25 cm** to an
+obstruction at y=375 and 77.5 cm to one at x=-327.5; +X and +Y are open past
+400 cm. `ACharacter`'s default capsule radius is 34 cm and the pawn may not
+change it - `tests/enemies.test.mjs` bans `SetCapsuleSize` - so the capsule
+cannot centre on that waypoint, and Recast insets navmesh by the agent radius,
+which leaves the point about 9 cm outside the walkable surface.
+
+Probably benign: `ArriveToleranceStuds = 3` is 84 cm, so a goal projected to the
+nearest poly still reads as arrival. Recorded as `HANDOFFS.md` C10 rather than
+fixed, because **route shape is Chris's** - one of the four things the scope says
+the map authors and the pawn refuses to invent. The bay was mine to move; a
+patrol point is not.
+
+Two of the three legs are blocked on the straight line - P1 to P2 at 32.5 cm,
+P2 to P3 at 698 of 886 - and P3 to P1 is clear. That is ordinary for a room with
+gondola runs in it; nav paths around. Noted only so nobody later reads a blocked
+straight line as a blocked route.
