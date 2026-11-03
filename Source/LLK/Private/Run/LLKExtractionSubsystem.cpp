@@ -175,7 +175,7 @@ ELLKExtractionRefusal ULLKExtractionSubsystem::CallExtraction(const FName PointI
 	}
 
 	const ULLKRunStateSubsystem* Run = GetRunState();
-	const bool bRunIsOver = Run != nullptr && Run->HasCrewWiped();
+	const bool bRunIsOver = Run != nullptr && Run->IsRunOver();
 
 	ELLKExtractionRefusal Refusal = ELLKExtractionRefusal::None;
 	const FLLKExtractionState Next = LLKExtraction::Call(
@@ -437,6 +437,17 @@ void ULLKExtractionSubsystem::Apply(const FLLKExtractionStep& Step)
 	if (Step.bSecured)
 	{
 		ResolveSecuredHaul();
+
+		// **The run now has a success terminus.** Until 2026-11-03 this
+		// branch logged, credited telemetry and changed no run state, so
+		// `bRunIsOver` below was `HasCrewWiped()` alone - a run could be lost
+		// and could not be won. Row 8 makes extraction the only thing that
+		// secures loot, which makes this the winning end of the night.
+		if (ULLKRunStateSubsystem* Run = GetRunState())
+		{
+			Run->MarkRunSecured();
+		}
+
 		PublishSnapshot();
 		return;
 	}

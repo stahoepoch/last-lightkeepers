@@ -19,6 +19,7 @@ void ALLKGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 	// and they cannot argue about a meter only one of them can see.
 	DOREPLIFETIME(ALLKGameState, StormSnapshot);
 	DOREPLIFETIME(ALLKGameState, bCrewWiped);
+	DOREPLIFETIME(ALLKGameState, bRunSecured);
 	DOREPLIFETIME(ALLKGameState, ExtractionSnapshot);
 }
 
@@ -44,6 +45,16 @@ void ALLKGameState::PublishCrewWiped()
 	}
 
 	bCrewWiped = true;
+}
+
+void ALLKGameState::PublishRunSecured()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	bRunSecured = true;
 }
 
 void ALLKGameState::PublishExtractionSnapshot(const FLLKExtractionSnapshot& InSnapshot)

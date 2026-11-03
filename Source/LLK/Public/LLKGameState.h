@@ -70,6 +70,23 @@ public:
 	UFUNCTION(BlueprintPure, Category = "LLK|Run")
 	bool HasCrewWiped() const { return bCrewWiped; }
 
+	/**
+	 * The haul got out. The success terminus, and the mirror of
+	 * `PublishCrewWiped`.
+	 *
+	 * **This existed only as a loss before 2026-11-03.** A wipe set run state,
+	 * logged, resolved the haul and replicated; securing an extraction logged
+	 * and broadcast to telemetry and changed no run state at all. So
+	 * `bRunIsOver` in the extraction subsystem was `HasCrewWiped()` alone -
+	 * you could lose a run and you could not win one. Row 8 makes extraction
+	 * the only thing that secures loot, which makes it the success terminus,
+	 * and a terminus the world does not know about is not one.
+	 */
+	void PublishRunSecured();
+
+	UFUNCTION(BlueprintPure, Category = "LLK|Run")
+	bool HasRunSecured() const { return bRunSecured; }
+
 	/** What every machine may read about the extraction. M3. */
 	UFUNCTION(BlueprintPure, Category = "LLK|Extraction")
 	const FLLKExtractionSnapshot& GetExtractionSnapshot() const { return ExtractionSnapshot; }
@@ -92,6 +109,9 @@ protected:
 
 	UPROPERTY(Replicated, VisibleInstanceOnly, Category = "LLK|Run")
 	bool bCrewWiped = false;
+
+	UPROPERTY(Replicated)
+	bool bRunSecured = false;
 
 	UPROPERTY(Replicated, VisibleInstanceOnly, Category = "LLK|Extraction")
 	FLLKExtractionSnapshot ExtractionSnapshot;

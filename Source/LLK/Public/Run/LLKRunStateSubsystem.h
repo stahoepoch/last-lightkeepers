@@ -80,6 +80,23 @@ public:
 	bool HasCrewWiped() const { return bCrewWiped; }
 
 	/**
+	 * The haul got out. Set once, by the extraction subsystem, when a hold
+	 * completes.
+	 *
+	 * The symmetric half of `bCrewWiped`, which did not exist until
+	 * 2026-11-03: a wipe resolved the run and a success did not, so the only
+	 * terminus the world knew about was the losing one.
+	 */
+	void MarkRunSecured();
+
+	UFUNCTION(BlueprintPure, Category = "LLK|Run")
+	bool HasRunSecured() const { return bRunSecured; }
+
+	/** Either terminus. What "the run is over" means from here on. */
+	UFUNCTION(BlueprintPure, Category = "LLK|Run")
+	bool IsRunOver() const { return bCrewWiped || bRunSecured; }
+
+	/**
 	 * A machine filed a fault, and the floor is paying attention.
 	 *
 	 * **Run-scoped, not per-enemy, and that is the point.** A Sweeper bumped
@@ -142,6 +159,8 @@ protected:
 	TArray<TWeakObjectPtr<ULLKVitalsComponent>> Keepers;
 
 	bool bCrewWiped = false;
+
+	bool bRunSecured = false;
 
 	/** World time the floor alert lapses. Zero means it was never raised. */
 	float FloorAlertExpirySeconds = 0.f;

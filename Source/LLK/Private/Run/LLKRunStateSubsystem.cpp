@@ -241,3 +241,28 @@ float ULLKRunStateSubsystem::GetFloorAlertSecondsRemaining() const
 
 	return FMath::Max(0.f, FloorAlertExpirySeconds - World->GetTimeSeconds());
 }
+
+void ULLKRunStateSubsystem::MarkRunSecured()
+{
+	if (bRunSecured || bCrewWiped || !HasRunAuthority())
+	{
+		return;
+	}
+
+	bRunSecured = true;
+
+	// Symmetric to the wipe's line, and deliberately so: a run that ends well
+	// should announce itself as loudly as one that ends badly. Before this,
+	// the only resolution the log ever carried was "CREW CONTAINED".
+	UE_LOG(LogLLK, Log,
+		TEXT("HAUL IS OUT. %d keeper(s) in the run. The night does not get this one."),
+		CountKeepers());
+
+	if (UWorld* World = GetWorld())
+	{
+		if (ALLKGameState* GameState = World->GetGameState<ALLKGameState>())
+		{
+			GameState->PublishRunSecured();
+		}
+	}
+}
