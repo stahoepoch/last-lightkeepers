@@ -437,6 +437,109 @@ not a barrel on the lamp. Sound and light are different lies. The stick says
 "the sun is here." The can says "something fell." A Sweeper's job decides
 which lie it answers. Neither lie repels it.
 
+### The two fingers
+
+Chris, the same night: a player wants to left-click and right-click, and
+feeding that want is something to do on purpose, tactically.
+
+The seven actions in `NOTES-FOR-CHRIS.md` do not include either mouse button.
+`IA_LLK_Lantern` is F. `IA_LLK_Interact` is E. C3 is those seven, all or
+none. These two clicks are the next pair, after that set exists. They are
+not a quiet eighth and ninth stuffed into the validator.
+
+What the fingers are asking for is a closed loop. Steve Swink, *Game Feel*
+(2008), defines that feel as real-time control of a virtual object in a
+simulated space, with polish on top of the simulation. Polish is the part
+that makes the event read. It is not allowed to be the event. A click that
+only shakes the lantern, and changes no fact in the aisle, is a request the
+building did not hear. The finger will still press it. That is the fidget,
+and it is the version of this idea that fails.
+
+The want underneath the fidget is the one already measured for this project.
+Przybylski, Rigby, and Ryan (2010) put the return on competence: the click
+did a thing, and you can tell. The feelings section already refused the
+other return, the one Clark, Lawrence, Astley-Jones, and Gray (*Neuron*,
+2009) measured on a slot machine, where an "almost" recruits the urge and
+teaches nothing. A shutter that sometimes fails at random is that machine.
+A shutter you closed a moment after the telegraph is a skill. The telegraph
+is already honest and already holds still for a second. The click has a
+fair clock. Do not add a second, hidden one.
+
+Hunt: Showdown's Update 2.2 is the misclick lesson, from the other direction.
+Crytek split dark sight in two: you can look without spending the boost, and
+the spend moved to its own press, because one button that both looks and
+spends taught people to burn the scarce thing by accident
+(`store.steampowered.com`, app 594650, the 2.2 notes). Their scarce thing is
+a five-second pool. Ours is not a pool. Row 10 keeps the cell from emptying.
+The lesson that transfers is the split. Looking and spending stay different
+fingers. The finger that spends has to be the one you meant.
+
+So the pair is an argument, and the argument is the whole panic vocabulary.
+The wheel and F are for when there is a second to think. Under a Sweeper the
+hand goes to the two buttons it already trusts. If Hooded and Open live only
+on a scroll wheel, they will not be used at the moment they matter.
+
+| Finger | The verb | What changes this moment | The bill, which is why you do it again |
+| --- | --- | --- | --- |
+| Left click | Commit the light along the gaze. | The cone answers. A stamp resolves, a port accepts a Present, or you abort and the cone drops. | The building learned where the work was. You wanted to know, and knowing was loud. |
+| Right click, held | Withhold. The shutter. | The spill closes on the press and returns on the release, with no warm-up. | The cell stays on and the hum stays. You got the dark and you are still a machine's job. |
+| F, unchanged | Power. | Off is off. Coming back takes the warm-up already written. | You are actually dark, and you cannot flinch back to lit. |
+
+Left click does not cycle the hood. Right click does not cycle it either. A
+click that changes mode is a misclick that rewrites the tactic. The wheel
+picks Hooded, Working, or Open in the quiet. The clicks use whatever detent
+you already chose. That is how the flashlight, the lantern, and the beacon
+become something the hand does under pressure instead of a menu.
+
+The throw does not steal the left button. Hunt's patch is the reason. Left
+click means "commit the light I am already holding." The stick becomes that
+object only after you ready it on purpose, with the interact hold, on the
+collar. Then the left click throws, because you changed what the hand is
+holding. A left click that sometimes reads and sometimes throws is the
+accident the patch was written to stop.
+
+The frequency is the tactical part. The night wants many small clicks, each
+with a price you could have said before you pressed. A shelf. A shutter. A
+shelf. That is the addiction worth feeding: the next fact is one press away,
+and so is the next mistake. An ultimate you fire once at the dock is the
+opposite shape. The fingers have nothing to do for eleven minutes and then
+a cutscene. The stick and the set-down lamp stay rare on top of this. They
+are the clicks you aim for a whole aisle. They are not the clicks that keep
+the hand awake.
+
+**The reading that kills the pair.** If the right button is a silent
+blackout, everyone holds it and the left button becomes the mistake. Row 3's
+question, whether people put the light out, gets answered by a finger that
+never lifts. The shutter stays off the input until a humming keeper is
+noticeable and a powered-off keeper is not. If the left button resolves a
+stamp with no change in who is coming, the click is a fidget and the
+competence never arrives. The interrupt you can hear is still the first
+proof. These two buttons are how that proof gets a hand later, not a
+replacement for it.
+
+**The reading that kills it from the other side.** If every click is juicy
+and none of them change the aisle, Swink's polish has replaced his
+simulation. Camera kick, a spark on the glass, a click sound: those are
+allowed only as the emphasis on a fact that already changed. A left click
+with no target still moves the cone. It does not award a relic, a cooldown,
+or a "almost." The want to press again has to be the next unread shelf.
+
+### Each idea, turned over
+
+No new radius in this table. Notice and reach stay the authored pair, 38 and
+30, until a detent has its own numbers and Chris writes them.
+
+| Idea | What the research says it is | The reading that kills it | Falsifier, when it is playable |
+| --- | --- | --- | --- |
+| Hooded, the flashlight | A slot. The dial notes already put a hooded keeper between dark notice and lit notice. Less seen than Open, never unseen. | It reads a stamp across the room. Then nobody opens the hood, and the lantern is gone. | Across the aisle, Hooded leaves the stamp a shape. Working, raised, resolves it. |
+| Working, the basic lantern | The state that exists tonight. Feet, a counter, a stamp at arm's length. | It is worse than Hooded at hiding and worse than Open at reading, so it is the detent you scroll past. | There is a job only Working does: the stamp, without filling the room. |
+| Open, the beacon | You mean to be seen, or the room is the thing you have to read. Lit notice already sits past the edge of your own light. | Open adds reach and not notice, which is free vision. Or it adds notice and not reach, which is a cosmetic that only makes you easier to find. | Both ends move together, or the detent is not in the build. |
+| Shutter, the right button | Spill off, cell on, hum on. Returns when the button comes up. | It is silent. Then it is the best mode in the game and it is held down for the whole night. | A shuttered keeper is found by the hum. A keeper who used F is not, and pays the warm-up. |
+| Set the lamp down | A sun you can go back for. You are dark beside your own light. | The machines ignore it, and you have placed a lamp post for free. Or they destroy it, and the night no longer has a lantern. | A Sweeper on its route diverts to the lamp. The lamp is still there. Picking it up is a hold inside the pool you made. |
+| The stick | One found sun you do not get back. It lights a patch. It does not read. | It reads stamps, or the counter is full of them. Then the issued lamp is the spare. | After it is spent, the collar is empty and the stamp on the far shelf still needs the raised lantern. |
+| Left click | Commit the gaze. Real-time, per Swink: the cone changes with the press. | It cycles modes, or it throws without a ready, or it pays out with no change in the room. | The stamp resolves on the hold, and a notice that was not there before the click is there after it. |
+| Right click | Withhold, on the hold. The flinch with a receipt. | It is bound before the hearing path exists. | With the sound off, the shutter stops being worth holding. That is the gate, failed in the open. |
+
 ### What this refuses
 
 A second flashlight in the inventory. A beacon that is a placed gadget with
