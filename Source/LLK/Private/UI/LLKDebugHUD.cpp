@@ -607,6 +607,48 @@ void ALLKDebugHUD::DrawWorldPrompt()
 		return;
 	}
 
+	// **And the half that did not exist until 2026-11-03.** The losing end of
+	// the night got a full-screen panel that outranks everything; the winning
+	// end got nothing at all, so a player who did the whole loop was told
+	// only by a small readout that said SECURED and then fell silent.
+	//
+	// That was the same asymmetry `8307a86` fixed one layer down, where a
+	// wipe resolved the run and securing the haul changed no state. This is
+	// the part the player actually sees.
+	//
+	// The second line is `GAME-THESIS.md`'s own words. Its stated emotional
+	// promise is "We got something home", and the one moment that promise is
+	// kept is this one - so the screen says it rather than paraphrasing it.
+	if (RunGameState != nullptr && RunGameState->HasRunSecured())
+	{
+		UFont* Font = GEngine != nullptr ? GEngine->GetMediumFont() : nullptr;
+		if (Font == nullptr)
+		{
+			return;
+		}
+
+		const float Scale = GetUIScale();
+		const float CentreX = Canvas->SizeX * 0.5f;
+		float Y = Canvas->SizeY * 0.42f;
+
+		const auto CentredWin = [&](const FString& Text, const FLinearColor& Colour, float TextScale)
+		{
+			float W = 0.f;
+			float H = 0.f;
+			const float S = TextScale * Scale;
+			Canvas->TextSize(Font, Text, W, H, S, S);
+			FCanvasTextItem Item(FVector2D(CentreX - W * 0.5f, Y), FText::FromString(Text), Font, Colour);
+			Item.Scale = FVector2D(S, S);
+			Item.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.95f));
+			Canvas->DrawItem(Item);
+			Y += H * S + 10.f * Scale;
+		};
+
+		CentredWin(TEXT("HAUL IS OUT"), ColourHeading, 2.4f);
+		CentredWin(TEXT("You got something home."), ColourQuiet, 1.3f);
+		return;
+	}
+
 	// **This keeper's own condition first.** A player on the floor needs to
 	// know what they can do about it before they need to know about a shelf.
 	const ULLKVitalsComponent* Own = Character->GetVitals();
