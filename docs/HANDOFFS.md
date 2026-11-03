@@ -175,6 +175,34 @@ ModelContextProtocol.StartServer
 Until that runs, `127.0.0.1:8000/mcp` refuses every connection and the four
 checks below cannot be driven at all.
 
+**It can be retired permanently, and it should be.** Epic publishes the MCP
+workflow as a Claude Code plugin -
+`EpicGames/unreal-engine-skills-for-claude-code-plugin` - and its setup
+reference gives the setting this project has been doing by hand since
+2026-10-31. Four lines in
+`Saved/Config/WindowsEditor/EditorPerProjectUserSettings.ini`, which is
+**per-user and gitignored**, so it is nobody's lane and costs no one else
+anything:
+
+```ini
+[/Script/ModelContextProtocolEngine.ModelContextProtocolSettings]
+bAutoStartServer=True
+```
+
+Checked 2026-11-02: that section is **absent**, which is why every session has
+started with a manual `StartServer`. The two plugins the server needs,
+`ModelContextProtocol` and `AllToolsets`, are already enabled in the
+`.uproject`, so this one setting is the whole of what is missing. It takes
+effect on the next editor launch.
+
+**What the plugin does not cover:** photometry. Its skill says nothing about
+`CaptureViewport`, `CaptureEditorImage` or measuring light, so
+`docs/LIGHTLAB-PROTOCOL.md` section 9 remains this project's authority there -
+including that the offscreen path has no global illumination and that a
+stale frame comes back byte-identical rather than failing. Checked rather than
+assumed, because an official skill that contradicted a measured finding would
+be the worse outcome and was worth ruling out.
+
 **Two traps that would make this list return wrong answers**, both already in
 `docs/TOOLING-TRAPS.md`:
 
