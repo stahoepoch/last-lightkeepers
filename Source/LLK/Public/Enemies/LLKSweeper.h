@@ -170,6 +170,17 @@ protected:
 	 */
 	bool IsAtCurrentPatrolPoint() const;
 
+	/**
+	 * Where a filed thing should come to rest at the bay.
+	 *
+	 * The bay's XY, which is authored, and the floor's Z, which is not. Hand
+	 * maintaining a bay's height works until the greybox moves under it, and
+	 * `SetActorLocation` does not sweep - so without this a crate can be
+	 * teleported inside a gondola, and a filed thing inside a shelf is not
+	 * recoverable.
+	 */
+	FVector RestingPlaceAt(const FVector& Bay, const AActor* Thing) const;
+
 	/** The nearest tagged bay, or unset when the map authored none. */
 	TOptional<FVector> NearestStockBay() const;
 
@@ -255,6 +266,10 @@ protected:
 
 	/** Relics this Sweeper has already filed, so it does not refile them. */
 	TSet<FObjectKey> ShelvedAlready;
+
+	/** How far above and below the bay to look for a floor. */
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Enemies", meta = (ClampMin = "1"))
+	float DropProbeHeightCm = 400.f;
 
 	bool bWarnedAboutNoPatrol = false;
 

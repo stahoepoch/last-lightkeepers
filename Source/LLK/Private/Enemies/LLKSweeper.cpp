@@ -331,6 +331,55 @@ FLLKSweeperSenses ALLKSweeper::Observe(const float DeltaSeconds)
 	return Senses;
 }
 
+FVector ALLKSweeper::RestingPlaceAt(const FVector& Bay, const AActor* Thing) const
+{
+	// **Why this is not just `Bay`.** The filed crate used to be placed at the
+	// tagged actor's exact origin, which worked because somebody computed the
+	// bay's Z by hand so a 100 cm relic with a centred origin would land its
+	// base on the floor. That is correct until the floor moves - and on
+	// 2026-11-02 the greybox was rebuilt under a bay that stayed exactly where
+	// it was. `SetActorLocation` does not sweep, so a crate would be teleported
+	// into a gondola without complaint.
+	//
+	// A filed thing that is inside a shelf is not recoverable, and
+	// `WORLD-SYSTEMS-BOARD.md` is explicit that a shelved thing must stay in
+	// the world with a recoverable destination. So: keep the bay's XY, which
+	// is the authored decision, and find the floor for the Z, which is a fact
+	// about geometry that nobody should be maintaining by hand.
+	const UWorld* World = GetWorld();
+	if (World == nullptr || Thing == nullptr)
+	{
+		return Bay;
+	}
+
+	FVector Origin = FVector::ZeroVector;
+	FVector Extent = FVector::ZeroVector;
+	Thing->GetActorBounds(true, Origin, Extent);
+
+	FHitResult Hit;
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(LLKStockBayDrop), false, this);
+	Params.AddIgnoredActor(Thing);
+
+	const FVector From(Bay.X, Bay.Y, Bay.Z + DropProbeHeightCm);
+	const FVector To(Bay.X, Bay.Y, Bay.Z - DropProbeHeightCm);
+
+	if (!World->LineTraceSingleByChannel(Hit, From, To, ECC_WorldStatic, Params))
+	{
+		// No floor found under the bay at all. Falling back to the authored
+		// point is strictly no worse than before this function existed, and a
+		// warning is better than a crate quietly inside the scenery.
+		UE_LOG(LogLLK, Warning,
+			TEXT("%s found no floor under the stock bay at %s. Filing to the authored ")
+			TEXT("point, which may be inside geometry - see docs/MAP-READINESS.md."),
+			*GetName(), *Bay.ToCompactString());
+		return Bay;
+	}
+
+	// Centre-origin actors need half their height above the floor to rest on
+	// it rather than in it.
+	return FVector(Bay.X, Bay.Y, Hit.ImpactPoint.Z + Extent.Z);
+}
+
 bool ALLKSweeper::IsAtCurrentPatrolPoint() const
 {
 	const TOptional<FVector> Point = NextPatrolPoint();
@@ -559,7 +608,8 @@ void ALLKSweeper::Act(const FLLKSweeperStep& Step)
 		if (AActor* Shelved = PendingShelve.Get())
 		{
 			ShelvedAlready.Add(FObjectKey(Shelved));
-			Shelved->SetActorLocation(PendingBay, false, nullptr, ETeleportType::TeleportPhysics);
+			Shelved->SetActorLocation(
+				RestingPlaceAt(PendingBay, Shelved), false, nullptr, ETeleportType::TeleportPhysics);
 
 			UE_LOG(LogLLK, Log, TEXT("%s filed %s into the stock bay. It is still there to be found."),
 				*GetName(), *Shelved->GetName());
