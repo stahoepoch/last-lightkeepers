@@ -27,6 +27,21 @@
 const FName ALLKSweeper::PatrolPointTag(TEXT("LLK.Patrol"));
 const FName ALLKSweeper::StockBayTag(TEXT("LLK.StockBay"));
 
+namespace
+{
+	/**
+	 * How long the floor stays alerted when a machine files a fault and the
+	 * enemy authored no `losesTargetAfterSeconds` of its own.
+	 *
+	 * Sweepers do not author that key - only Stockers do - so this is the
+	 * value they actually get. Same precedent as the brain's fallbacks:
+	 * declared here rather than invented in `enemies.json`, because every
+	 * number in that file is Chris's. Three seconds is "quickly", which was
+	 * his word for it.
+	 */
+	constexpr float FallbackFloorAlertSeconds = 3.f;
+}
+
 ALLKSweeper::ALLKSweeper()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -280,6 +295,23 @@ FLLKSweeperSenses ALLKSweeper::Observe(const float DeltaSeconds)
 			Pressure->GetLitLightSources(), Senses.KeeperPosition);
 	}
 
+	// **While the floor is alerted, every Sweeper notices from further.**
+	// Chris's authored `swarmCallRadius` of 45, against 12 dark and 38 lit -
+	// and it applies to machines that never touched the keeper, because the
+	// alert is a record the building keeps rather than a grudge one machine
+	// holds. `max`, never a replacement: a lit keeper at 38 does not become
+	// harder to notice because the floor got more attentive.
+	FLLKEnemyDef Alerted = Def;
+	if (const ULLKRunStateSubsystem* Run = World->GetSubsystem<ULLKRunStateSubsystem>())
+	{
+		if (Run->IsFloorAlerted() && Def.SwarmCallRadius.IsSet())
+		{
+			const float Call = *Def.SwarmCallRadius;
+			Alerted.AggroRadiusDark = FMath::Max(Def.AggroRadiusDark.Get(0.f), Call);
+			Alerted.AggroRadiusLit = FMath::Max(Def.AggroRadiusLit.Get(0.f), Call);
+		}
+	}
+
 	FLLKPerceiver Perceiver;
 	Perceiver.Position = GetActorLocation();
 	Perceiver.Facing = GetActorForwardVector();
@@ -294,7 +326,7 @@ FLLKSweeperSenses ALLKSweeper::Observe(const float DeltaSeconds)
 	// through geometry nobody could measure.
 	const FLLKWorldVisibility Visibility(World, this);
 
-	Senses.Notice = LLKPerception::Notice(Def, Perceiver, Perceived, &Visibility);
+	Senses.Notice = LLKPerception::Notice(Alerted, Perceiver, Perceived, &Visibility);
 
 	return Senses;
 }
@@ -538,6 +570,36 @@ void ALLKSweeper::Act(const FLLKSweeperStep& Step)
 		}
 
 		PendingShelve = nullptr;
+	}
+
+	if (Step.bFloorAlerted)
+	{
+		// **It reports you; it does not punish you.** Row 47's answer to
+		// being bumped three times.
+		//
+		// The duration is `losesTargetAfterSeconds` rather than a new number:
+		// it already means "how long before it gives up on something it
+		// cannot resolve", which is the same shape as a floor forgetting a
+		// fault. Chris's call was that it decays quickly, with no clearing
+		// action in the first version - see
+		// docs/PROPOSAL-SWEEPER-CONTACT.md.
+		if (UWorld* World = GetWorld())
+		{
+			if (ULLKRunStateSubsystem* Run = World->GetSubsystem<ULLKRunStateSubsystem>())
+			{
+				Run->RaiseFloorAlert(
+					Def.LosesTargetAfterSeconds.Get(FallbackFloorAlertSeconds));
+			}
+		}
+	}
+
+	if (Step.bStumbleLanded)
+	{
+		// The keeper-side effect is not wired yet: a brief speed penalty and
+		// a shove, which lives on ALLKCharacter and is another writer's file.
+		// Logged so the beat is observable in a playtest meanwhile, and so
+		// the seam is visible rather than silently absent.
+		UE_LOG(LogLLK, Log, TEXT("%s clipped a keeper's feet."), *GetName());
 	}
 
 	if (Step.bKnockedDown && Target != nullptr)

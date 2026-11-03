@@ -80,6 +80,29 @@ public:
 	bool HasCrewWiped() const { return bCrewWiped; }
 
 	/**
+	 * A machine filed a fault, and the floor is paying attention.
+	 *
+	 * **Run-scoped, not per-enemy, and that is the point.** A Sweeper bumped
+	 * three times does not hold a grudge - it files, and every machine on the
+	 * floor reads the same record. So a Sweeper that never touched the keeper
+	 * notices from `swarmCallRadius` too. It is a state of the building, not
+	 * a mood of one machine, which is what keeps it inside row 47.
+	 *
+	 * Chris, 2026-11-02: it **decays, and quickly**, with no clearing action
+	 * in the first version. So this is a deadline rather than a flag, and it
+	 * needs no tick: a stored expiry compared against world time cannot drift
+	 * with frame rate, and nothing has to remember to count it down.
+	 */
+	void RaiseFloorAlert(float Seconds);
+
+	UFUNCTION(BlueprintPure, Category = "LLK|Run")
+	bool IsFloorAlerted() const;
+
+	/** Seconds left on the alert, or zero. For a readout and for tests. */
+	UFUNCTION(BlueprintPure, Category = "LLK|Run")
+	float GetFloorAlertSecondsRemaining() const;
+
+	/**
 	 * The roll, with the dead weak pointers dropped. M3.
 	 *
 	 * Added for extraction, which needs keeper POSITIONS rather than a count -
@@ -119,6 +142,9 @@ protected:
 	TArray<TWeakObjectPtr<ULLKVitalsComponent>> Keepers;
 
 	bool bCrewWiped = false;
+
+	/** World time the floor alert lapses. Zero means it was never raised. */
+	float FloorAlertExpirySeconds = 0.f;
 
 	/**
 	 * Seconds between evaluations.

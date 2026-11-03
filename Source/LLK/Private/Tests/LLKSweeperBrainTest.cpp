@@ -374,6 +374,58 @@ bool FLLKSweeperBrainTest::RunTest(const FString& Parameters)
 			LLKSweeperBrain::Advance(Mind, Hitch, Def, Rules).Mind.TelegraphSecondsRemaining, 1.f);
 	}
 
+	// ---- 8b. contact: it smacks your feet, then it reports you ----------
+	//
+	// `knockdownOnContact` is now the switch between two kinds of enemy on
+	// one accumulator. **Both branches are asserted deliberately**: the
+	// fixture must not be the only thing deciding which one ships, which is
+	// the mistake `bHasStockBay` and `AggroRadiusDark` both made this week.
+	{
+		FLLKSweeperContactRules Maintenance = Rules;
+		Maintenance.bKnockdownOnContact = false;
+
+		const FLLKSweeperSenses Touching = LLKSweeperBrainTestFixture::Seen(0.1f, 1.f);
+
+		// Below the threshold: a stumble, nothing more.
+		const FLLKSweeperStep One = LLKSweeperBrain::Advance(
+			LLKSweeperBrainTestFixture::Pursuing(), Touching, Def, Maintenance);
+		TestTrue(TEXT("a contact smacks your feet"), One.bStumbleLanded);
+		TestFalse(TEXT("one hit does not alert the floor"), One.bFloorAlerted);
+		TestFalse(TEXT("and a maintenance machine never puts a keeper down"),
+			One.bKnockedDown);
+
+		// The third hit with knockdown off: it reports you instead.
+		FLLKSweeperMind TwoLanded = LLKSweeperBrainTestFixture::Pursuing();
+		TwoLanded.HitAgesSeconds = {0.2f, 0.1f};
+		const FLLKSweeperStep Third =
+			LLKSweeperBrain::Advance(TwoLanded, Touching, Def, Maintenance);
+		TestTrue(TEXT("ROW 47: the third hit alerts the floor"), Third.bFloorAlerted);
+		TestFalse(TEXT("and still does not put the keeper down"), Third.bKnockedDown);
+		TestEqual(TEXT("the ladder resets, so it does not re-alert on every hit"),
+			Third.Mind.HitsLanded(), 0);
+
+		// Same count, same accumulator, knockdown ON: the other branch.
+		// `Rules` is the fixture's own, with bKnockdownOnContact true.
+		FLLKSweeperMind TwoAgain = LLKSweeperBrainTestFixture::Pursuing();
+		TwoAgain.HitAgesSeconds = {0.2f, 0.1f};
+		const FLLKSweeperStep Contained =
+			LLKSweeperBrain::Advance(TwoAgain, Touching, Def, Rules);
+		TestTrue(TEXT("a containment enemy still puts the keeper down"),
+			Contained.bKnockedDown);
+		TestFalse(TEXT("and does not also alert the floor"), Contained.bFloorAlerted);
+		TestFalse(TEXT("nor stumble them on the hit that downs them"),
+			Contained.bStumbleLanded);
+
+		// Escape, already authored: let the hits age past hitDecaySeconds and
+		// the ladder empties, so two touches and a break never escalate.
+		FLLKSweeperMind Stale = LLKSweeperBrainTestFixture::Pursuing();
+		Stale.HitAgesSeconds = {5.9f, 5.95f};
+		const FLLKSweeperStep Expired = LLKSweeperBrain::Advance(
+			Stale, LLKSweeperBrainTestFixture::Seen(0.2f, 10.f), Def, Maintenance);
+		TestEqual(TEXT("hitDecaySeconds expires the ladder, which is the escape"),
+			Expired.Mind.HitsLanded(), 0);
+	}
+
 	// ---- 9b. the patrol pauses, so the route can be learned -------------
 	//
 	// The NPU literature separates fear from anxiety by whether the threat is

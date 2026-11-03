@@ -299,6 +299,38 @@ struct FLLKSweeperStep
 	/** That hit was the third. The keeper goes down. */
 	bool bKnockedDown = false;
 
+	/**
+	 * It smacked your feet. Every landed contact below the threshold.
+	 *
+	 * **Costs distance and tempo, never input.** A brief speed penalty and a
+	 * shove off your line - no camera lock, no input suppression, no
+	 * animation to wait out. A control-removal the player cannot act through
+	 * is a knockdown with a shorter timer, and that is the thing that makes
+	 * people stop playing.
+	 *
+	 * Superseded by `bKnockedDown` when the enemy is a containment type: you
+	 * do not stumble and go down from the same hit.
+	 */
+	bool bStumbleLanded = false;
+
+	/**
+	 * The threshold hit, on a machine that does not contain people: **it
+	 * reports you.**
+	 *
+	 * `hitsToKnockDown` still names the count, because it is still the count
+	 * that matters - what changes is what happens when you reach it.
+	 * `knockdownOnContact` is now the switch between the two kinds of enemy:
+	 * true for a containment type that puts a keeper down, false for a
+	 * maintenance machine that files a fault and widens what the floor
+	 * notices. Chris's authored key, finally meaning two things instead of
+	 * one.
+	 *
+	 * Row 47 is the whole character of this: the answer to being bumped three
+	 * times is not to punish the keeper, it is to raise what the building is
+	 * paying attention to. Nothing is hurt, frightened or retaliated against.
+	 */
+	bool bFloorAlerted = false;
+
 	/** Gave up and went back to its route this frame. For a log, and for a readout. */
 	bool bLostTheKeeper = false;
 

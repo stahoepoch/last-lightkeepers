@@ -338,10 +338,29 @@ namespace LLKSweeperBrain
 				Step.Mind.ContactCooldownRemaining =
 					FMath::Max(0.f, LLKSweeperBrainDetail::Finite(Contact.ContactCooldownSeconds));
 
+				// Every contact smacks your feet. It is a floor machine, and
+				// that is what being clipped by one is.
+				Step.bStumbleLanded = true;
+
 				const int32 Needed = FMath::Max(1, Contact.HitsToKnockDown);
-				if (Contact.bKnockdownOnContact && Step.Mind.HitsLanded() >= Needed)
+				if (Step.Mind.HitsLanded() >= Needed)
 				{
-					Step.bKnockedDown = true;
+					// **The threshold means two things now, and
+					// `knockdownOnContact` is the switch.** True: a containment
+					// enemy puts the keeper down. False: a maintenance machine
+					// files a fault and the floor starts paying attention. Same
+					// count, same accumulator, same decay - a different
+					// consequence for a different kind of machine.
+					if (Contact.bKnockdownOnContact)
+					{
+						// You do not stumble and go down from the same hit.
+						Step.bStumbleLanded = false;
+						Step.bKnockedDown = true;
+					}
+					else
+					{
+						Step.bFloorAlerted = true;
+					}
 
 					// Spent. The stack does not carry over into the next
 					// knockdown, or a revived keeper would be one touch from

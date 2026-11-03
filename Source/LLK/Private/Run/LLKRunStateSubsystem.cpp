@@ -205,3 +205,39 @@ void ULLKRunStateSubsystem::ResolveHaul()
 
 	UE_LOG(LogLLK, Log, TEXT("The night kept %d carried item(s)."), Lost);
 }
+
+void ULLKRunStateSubsystem::RaiseFloorAlert(const float Seconds)
+{
+	const UWorld* World = GetWorld();
+	if (World == nullptr || Seconds <= 0.f || !FMath::IsFinite(Seconds))
+	{
+		return;
+	}
+
+	// Extend, never shorten. A second machine filing while the first alert is
+	// still running must not reset the clock to something smaller - the floor
+	// gets more attentive, not less, as faults accumulate.
+	FloorAlertExpirySeconds =
+		FMath::Max(FloorAlertExpirySeconds, World->GetTimeSeconds() + Seconds);
+
+	UE_LOG(LogLLK, Log,
+		TEXT("The floor is alerted for %.1fs: a machine filed a fault and every ")
+		TEXT("Sweeper is now noticing from its swarm-call distance."),
+		Seconds);
+}
+
+bool ULLKRunStateSubsystem::IsFloorAlerted() const
+{
+	return GetFloorAlertSecondsRemaining() > 0.f;
+}
+
+float ULLKRunStateSubsystem::GetFloorAlertSecondsRemaining() const
+{
+	const UWorld* World = GetWorld();
+	if (World == nullptr || FloorAlertExpirySeconds <= 0.f)
+	{
+		return 0.f;
+	}
+
+	return FMath::Max(0.f, FloorAlertExpirySeconds - World->GetTimeSeconds());
+}
