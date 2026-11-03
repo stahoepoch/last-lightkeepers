@@ -213,6 +213,20 @@ for (const [name, family] of families) {
     "audioTelegraphSeconds is Chris's number, per family (row 55)",
   );
 
+  // The brain's telegraph is only a decision. The pawn has to turn that
+  // decision into a real, spatial cue or a player gets the old failure mode:
+  // a warning in the log / HUD and no information about where the machine is.
+  const pawnPath = "Source/LLK/Private/Enemies/LLKSweeper.cpp";
+  const pawn = existsSync(join(root, pawnPath)) ? readFileSync(join(root, pawnPath), "utf8") : "";
+  check(
+    "the Sweeper telegraph reaches a replicated spatial cue",
+    pawn.includes("MulticastPlayCue(ELLKSweeperCue::Telegraph, GetActorLocation())") &&
+      pawn.includes("CueAttenuation->Attenuation.bSpatialize = true") &&
+      pawn.includes("CueAttenuation->Attenuation.bAttenuate = true"),
+    "row 16 is not served by a screen message. The cue must originate at " +
+      "the machine, fall off by distance, and reach clients as well as the server",
+  );
+
   for (const forbidden of ["UWorld", "GetWorld", "AActor", "MoveTo", "NavigationSystem"]) {
     check(
       `the brain never names ${forbidden}`,
@@ -237,11 +251,11 @@ for (const [name, family] of families) {
 
   check("the Sweeper pawn exists", code.length > 0, pawnPath);
 
-  // Collision tuning: the capsule, the gravity, the channels. The defaults
-  // stand until a map asks for something else.
+  // Collision tuning: capsule size and world collision still belong to the
+  // map. The sole keeper-contact exception is deliberate: Sweepers overlap
+  // Pawn so a trip is never a physical containment wall in a shelf gap.
   for (const forbidden of [
     "SetCapsuleSize",
-    "SetCollisionResponseToChannel",
     "GravityScale",
   ]) {
     check(
@@ -251,6 +265,15 @@ for (const [name, family] of families) {
         "gaps, which is map work",
     );
   }
+
+  const pawnResponses = [
+    ...code.matchAll(/GetCapsuleComponent\(\)\s*->\s*SetCollisionResponseToChannel\(\s*ECC_Pawn\s*,\s*ECR_Overlap\s*\)/g),
+  ];
+  check(
+    "the Sweeper overlaps keepers instead of body-blocking them",
+    pawnResponses.length === 1,
+    "keeper contact is resolved by the brain's range and cooldown, not by a moving collision wall",
+  );
 
   // `SetCollisionEnabled` was a fourth entry in that list until 2026-11-02,
   // and banning the symbol was the wrong operand for the rule. Chris's rule

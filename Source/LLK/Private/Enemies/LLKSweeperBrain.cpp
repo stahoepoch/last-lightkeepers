@@ -97,6 +97,8 @@ namespace LLKSweeperBrain
 
 		Step.Mind.ContactCooldownRemaining =
 			FMath::Max(0.f, Step.Mind.ContactCooldownRemaining - Delta);
+		Step.Mind.ContactRecoverySecondsRemaining =
+			FMath::Max(0.f, Step.Mind.ContactRecoverySecondsRemaining - Delta);
 
 		// ---- was the keeper noticed this frame ---------------------------
 		//
@@ -368,11 +370,29 @@ namespace LLKSweeperBrain
 					// wearing a different hat.
 					Step.Mind.HitAgesSeconds.Reset();
 				}
+
+				// A contact is a trip, not a containment grapple. The already
+				// established patrol rhythm is the recovery: this machine works
+				// where it clipped the keeper rather than snapping back into a
+				// visible target after the shorter hit cooldown. No new balance
+				// value is introduced; this is FallbackPatrolDwellSeconds, the
+				// same interval that already makes its route readable. It remains
+				// short enough for three contacts to fit inside the authored
+				// hit-decay window, so a machine can still report a repeated fault.
+				Step.Mind.State = ELLKSweeperState::Search;
+				Step.Mind.ContactRecoverySecondsRemaining =
+					LLKSweeperBrainDetail::FallbackPatrolDwellSeconds;
+				Step.Mind.SearchSecondsRemaining =
+					LLKSweeperBrainDetail::FallbackPatrolDwellSeconds;
+				Step.Move = Step.Mind.bHasLastKnown
+					? ELLKSweeperMove::LastKnown : ELLKSweeperMove::Hold;
 			}
 			break;
 
 		case ELLKSweeperState::Search:
-			if (bNoticed)
+			if (bNoticed
+				&& Step.Mind.ContactCooldownRemaining <= 0.f
+				&& Step.Mind.ContactRecoverySecondsRemaining <= 0.f)
 			{
 				// Found again. No second telegraph: it never stopped hunting,
 				// and re-announcing would turn a tense re-acquisition into a

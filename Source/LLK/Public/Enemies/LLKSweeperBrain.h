@@ -210,9 +210,31 @@ struct FLLKSweeperMind
 	/** Hits still counting toward a knockdown. */
 	int32 HitsLanded() const { return HitAgesSeconds.Num(); }
 
-	/** Time until it may touch the keeper again. `contactCooldownSeconds` is 1.5. */
+	/**
+	 * Time until it may touch the keeper again. `contactCooldownSeconds` is 1.5.
+	 *
+	 * This is also a pursuit break, not merely a hit-rate limiter. A floor
+	 * machine that keeps steering into the keeper it just clipped turns a narrow
+	 * retail aisle into a body-block, even though the player technically still
+	 * has input. While this is positive, Search keeps working the last known
+	 * position instead of immediately re-acquiring a visible keeper. The player
+	 * gets one honest escape window; the authored cooldown stays the only timer.
+	 */
 	UPROPERTY(BlueprintReadOnly, Category = "LLK|Enemies")
 	float ContactCooldownRemaining = 0.f;
+
+	/**
+	 * The post-contact escape window. While this is positive the Sweeper works
+	 * the last place it had the keeper, even if it can still see them.
+	 *
+	 * Separate from ContactCooldownRemaining on purpose: the latter is the
+	 * authored hit-rate limit (1.5s), while this is the existing patrol rhythm
+	 * (2.5s). Collapsing them made a visible keeper re-lock the instant the hit
+	 * timer expired, which felt like perpetual pursuit rather than a machine
+	 * that had just clipped someone and overshot its route.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "LLK|Enemies")
+	float ContactRecoverySecondsRemaining = 0.f;
 };
 
 /** What the world looked like this frame. Measured by the pawn, concluded by nobody. */

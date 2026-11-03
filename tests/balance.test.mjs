@@ -443,6 +443,12 @@ console.log("\nLantern, knockdown, revive");
   check("reviving needs proximity", lantern.revive.maxReviveDistance > 0);
 
   // One Sweeper survivable, a swarm not.
+	check(
+	  "the Sweeper is not a containment enemy",
+	  lantern.sweeperContact.knockdownOnContact === false,
+	  "a Sweeper can stumble, alert, and search, but it must never force a revive; " +
+	    "containment belongs to a different enemy with an authored counterplay",
+	);
   check("one Sweeper hit is not a knockdown", lantern.sweeperContact.hitsToKnockDown >= 2);
   check("contact decays", lantern.sweeperContact.hitDecaySeconds > 0);
   check(

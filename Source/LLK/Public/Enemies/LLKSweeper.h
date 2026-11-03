@@ -46,6 +46,26 @@ class ULLKEnemyRosterSubsystem;
 class ULLKVitalsComponent;
 class UStaticMeshComponent;
 class UMaterialInstanceDynamic;
+class USoundAttenuation;
+class USoundBase;
+
+/**
+ * The temporary audible language for a Sweeper.
+ *
+ * These are deliberately jobs rather than emotions: the machine announces it
+ * has noticed somebody, started filing stock, been interrupted, or completed
+ * its filing.  The placeholder tone makes the spatial/audio contract playable
+ * before authored mechanical audio arrives; it is not intended as final sound
+ * design.
+ */
+UENUM()
+enum class ELLKSweeperCue : uint8
+{
+	Telegraph,
+	StockStarted,
+	StockInterrupted,
+	StockFiled
+};
 
 /**
  * Row 16's cue, for whatever plays it.
@@ -236,6 +256,18 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "LLK|Presentation")
 	TObjectPtr<UMaterialInstanceDynamic> StateLensMaterial;
 
+	/**
+	 * A short engine-provided tone used only until an authored Sweeper sound
+	 * asset exists.  It is a real spatial cue now, rather than a delegate and a
+	 * log line the player cannot hear.
+	 */
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Presentation")
+	TObjectPtr<USoundBase> TemporaryCueSound;
+
+	/** The distance and spatialization contract shared by every temporary cue. */
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Presentation")
+	TObjectPtr<USoundAttenuation> CueAttenuation;
+
 	UPROPERTY()
 	TObjectPtr<ULLKVitalsComponent> Target;
 
@@ -274,4 +306,8 @@ protected:
 	bool bWarnedAboutNoPatrol = false;
 
 	bool bWarnedAboutNoDef = false;
+
+	/** Replicated cue playback: the server decides; every nearby client hears it. */
+	UFUNCTION(NetMulticast, Unreliable)
+	void MulticastPlayCue(ELLKSweeperCue Cue, FVector_NetQuantize CueLocation);
 };

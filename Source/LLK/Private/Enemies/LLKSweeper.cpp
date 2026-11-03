@@ -23,6 +23,9 @@
 #include "Storm/LLKZonePressureSubsystem.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundAttenuation.h"
+#include "Sound/SoundBase.h"
 #include "UObject/ConstructorHelpers.h"
 
 const FName ALLKSweeper::PatrolPointTag(TEXT("LLK.Patrol"));
@@ -47,15 +50,22 @@ ALLKSweeper::ALLKSweeper()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	// **No capsule size, no gravity, no acceleration, no collision channels.**
-	// Chris: *"Do not invent patrol points, route shapes, collision tuning, or
-	// spawn spacing."* A Sweeper's real dimensions are a question about
-	// doorways and shelf gaps, so the defaults stand until a map asks.
+	// **No capsule size, no gravity, no acceleration, and no world collision
+	// tuning.** The map owns the Sweeper's physical scale against shelves and
+	// doorways. Keeper contact is different: it is a gameplay event measured by
+	// the brain, never a reason to make the machine a moving wall.
 	//
 	// The one movement value set here is the authored speed, and it is set in
 	// BeginPlay rather than the constructor because it comes from a data asset.
 	bReplicates = true;
 	SetReplicateMovement(true);
+
+	// A Sweeper may clip a keeper's feet, apply its authored stumble, then
+	// search their last-known position. It must never trap them in an aisle by
+	// blocking the Pawn channel. The capsule still blocks WorldStatic, so this
+	// does not let it walk through gondolas or walls; it only makes keeper
+	// contact an overlap, resolved by the brain's range/cooldown rules.
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 
 	// A brain without a body was technically moving through the aisle, but the
 	// player only received its debug text. This deliberately crude maintenance
@@ -65,6 +75,8 @@ ALLKSweeper::ALLKSweeper()
 	const ConstructorHelpers::FObjectFinder<UStaticMesh> Cylinder(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
 	const ConstructorHelpers::FObjectFinder<UMaterialInterface> BeaconMaterial(
 		TEXT("/Game/LLK/Materials/MI_LLK_LanternCore_Working.MI_LLK_LanternCore_Working"));
+	const ConstructorHelpers::FObjectFinder<USoundBase> TemporaryCue(
+		TEXT("/Engine/EngineSounds/1kSineTonePing.1kSineTonePing"));
 
 	Chassis = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SweeperChassis_Temporary"));
 	Chassis->SetupAttachment(GetCapsuleComponent());
@@ -105,6 +117,23 @@ ALLKSweeper::ALLKSweeper()
 	if (BeaconMaterial.Succeeded())
 	{
 		BeaconHousing->SetMaterial(0, BeaconMaterial.Object);
+	}
+
+	// A cue has to be spatial before it can be a telegraph.  A global UI blip
+	// tells a player that *something* happened; a bounded source tells them
+	// where a machine has committed.  The range uses the authored bright
+	// Sweeper reach, not a second hidden gameplay radius.
+	CueAttenuation = CreateDefaultSubobject<USoundAttenuation>(TEXT("SweeperCueAttenuation"));
+	CueAttenuation->Attenuation.bAttenuate = true;
+	CueAttenuation->Attenuation.bSpatialize = true;
+	CueAttenuation->Attenuation.DistanceAlgorithm = EAttenuationDistanceModel::Logarithmic;
+	CueAttenuation->Attenuation.AttenuationShape = EAttenuationShape::Sphere;
+	CueAttenuation->Attenuation.AttenuationShapeExtents = FVector(LLKUnits::DistanceFromStuds(38.f), 0.f, 0.f);
+	CueAttenuation->Attenuation.FalloffDistance = LLKUnits::DistanceFromStuds(12.f);
+
+	if (TemporaryCue.Succeeded())
+	{
+		TemporaryCueSound = TemporaryCue.Object;
 	}
 }
 
@@ -559,6 +588,7 @@ void ALLKSweeper::Act(const FLLKSweeperStep& Step)
 		UE_LOG(LogLLK, Log, TEXT("%s TELEGRAPHS. %.1fs before it moves."),
 			*GetName(), Def.AudioTelegraphSeconds);
 		OnTelegraph.Broadcast(GetActorLocation());
+		MulticastPlayCue(ELLKSweeperCue::Telegraph, GetActorLocation());
 	}
 
 	if (Step.bLostTheKeeper)
@@ -582,12 +612,14 @@ void ALLKSweeper::Act(const FLLKSweeperStep& Step)
 	{
 		UE_LOG(LogLLK, Log, TEXT("%s began filing misplaced stock."), *GetName());
 		OnStockStarted.Broadcast(GetActorLocation());
+		MulticastPlayCue(ELLKSweeperCue::StockStarted, GetActorLocation());
 	}
 
 	if (Step.bStockInterrupted)
 	{
 		UE_LOG(LogLLK, Log, TEXT("%s noticed a keeper and abandoned the filing."), *GetName());
 		OnStockInterrupted.Broadcast(GetActorLocation());
+		MulticastPlayCue(ELLKSweeperCue::StockInterrupted, GetActorLocation());
 	}
 
 	if (Step.bStockAbandoned)
@@ -618,6 +650,7 @@ void ALLKSweeper::Act(const FLLKSweeperStep& Step)
 			// At the bay, not at the Sweeper: the cue should point a player at
 			// where their crate went.
 			OnStockFiled.Broadcast(PendingBay);
+			MulticastPlayCue(ELLKSweeperCue::StockFiled, PendingBay);
 		}
 
 		PendingShelve = nullptr;
@@ -672,6 +705,44 @@ void ALLKSweeper::Act(const FLLKSweeperStep& Step)
 		UE_LOG(LogLLK, Log, TEXT("%s put a keeper down."), *GetName());
 		Target->GoDown(ELLKDownedReason::Contained);
 	}
+}
+
+void ALLKSweeper::MulticastPlayCue_Implementation(
+	const ELLKSweeperCue Cue, const FVector_NetQuantize CueLocation)
+{
+	if (TemporaryCueSound == nullptr || CueAttenuation == nullptr)
+	{
+		return;
+	}
+
+	// One neutral waveform, four deliberately distinguishable envelopes.  This
+	// is plumbing, not authored sound design: a future asset assignment replaces
+	// the source without changing the state-machine events or network route.
+	float Volume = 0.15f;
+	float Pitch = 0.40f;
+	switch (Cue)
+	{
+	case ELLKSweeperCue::Telegraph:
+		Volume = 0.32f;
+		Pitch = 0.36f;
+		break;
+	case ELLKSweeperCue::StockStarted:
+		Volume = 0.16f;
+		Pitch = 0.28f;
+		break;
+	case ELLKSweeperCue::StockInterrupted:
+		Volume = 0.25f;
+		Pitch = 0.62f;
+		break;
+	case ELLKSweeperCue::StockFiled:
+		Volume = 0.20f;
+		Pitch = 0.46f;
+		break;
+	}
+
+	UGameplayStatics::PlaySoundAtLocation(
+		this, TemporaryCueSound, CueLocation, GetActorRotation(), Volume, Pitch,
+		0.f, CueAttenuation, nullptr, this);
 }
 
 void ALLKSweeper::UpdatePresentation()

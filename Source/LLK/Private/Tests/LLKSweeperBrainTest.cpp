@@ -55,7 +55,10 @@ namespace LLKSweeperBrainTestFixture
 	FLLKSweeperContactRules Contact()
 	{
 		FLLKSweeperContactRules Rules;
-		Rules.bKnockdownOnContact = true;
+		// The shipped Sweeper is a maintenance machine, not a containment
+		// enemy. Three contacts escalate the floor response; they must never
+		// force a revive or pin a solo keeper in place.
+		Rules.bKnockdownOnContact = false;
 		Rules.ContactRange = 5.f;
 		Rules.ContactCooldownSeconds = 1.5f;
 		Rules.HitsToKnockDown = 3;
@@ -288,10 +291,34 @@ bool FLLKSweeperBrainTest::RunTest(const FString& Parameters)
 		TestFalse(TEXT("one hit is not a knockdown"), Step.bKnockedDown);
 		TestNearlyEqual(TEXT("the cooldown starts"),
 			Step.Mind.ContactCooldownRemaining, 1.5f, 0.001f);
+		TestNearlyEqual(TEXT("a contact begins the full last-known recovery search"),
+			Step.Mind.ContactRecoverySecondsRemaining, 2.5f, 0.001f);
+		TestEqual(TEXT("a contact breaks pursuit rather than body-blocking the keeper"),
+			FString(LLKSweeperBrain::NameOf(Step.Mind.State)), FString(TEXT("Search")));
+
+		// A visible keeper must not make it instantly re-acquire. The contact
+		// cooldown is the escape window as well as the hit-rate limiter.
+		const FLLKSweeperStep Recovering =
+			LLKSweeperBrain::Advance(Step.Mind, Seen(0.1f, 4.f), Def, Rules);
+		TestEqual(TEXT("a visible keeper gets the authored contact cooldown to leave"),
+			FString(LLKSweeperBrain::NameOf(Recovering.Mind.State)), FString(TEXT("Search")));
+		TestEqual(TEXT("and the Sweeper works the last known position during that window"),
+			FString(LLKSweeperBrain::NameOf(Recovering.Move)), FString(TEXT("LastKnown")));
+
+		// The hit cooldown is shorter than the recovery. A keeper that remains
+		// visible must still be able to sprint through the escape window rather
+		// than having the Sweeper immediately snap back to their capsule.
+		FLLKSweeperMind CooldownSpent = Step.Mind;
+		CooldownSpent.ContactCooldownRemaining = 0.f;
+		CooldownSpent.ContactRecoverySecondsRemaining = 0.1f;
+		const FLLKSweeperStep RecoverySpent =
+			LLKSweeperBrain::Advance(CooldownSpent, Seen(0.1f, 4.f), Def, Rules);
+		TestEqual(TEXT("the Sweeper may re-acquire only after the full recovery search"),
+			FString(LLKSweeperBrain::NameOf(RecoverySpent.Mind.State)), FString(TEXT("Pursue")));
 
 		// Still touching, but on cooldown: no second hit this frame.
 		const FLLKSweeperStep Again =
-			LLKSweeperBrain::Advance(Step.Mind, Seen(0.1f, 4.f), Def, Rules);
+			LLKSweeperBrain::Advance(Recovering.Mind, Seen(0.1f, 4.f), Def, Rules);
 		TestFalse(TEXT("and it cannot hit again until the cooldown is spent"),
 			Again.bContactLanded);
 
@@ -300,19 +327,23 @@ bool FLLKSweeperBrainTest::RunTest(const FString& Parameters)
 			LLKSweeperBrain::Advance(Pursuing(), Seen(2.f, 9.f), Def, Rules);
 		TestFalse(TEXT("and nothing lands from outside contact range"), Far.bContactLanded);
 
-		// Three hits, with the cooldown respected between them, is the floor.
+		// Three hits, with the cooldown respected between them, is the floor
+		// alert. The Sweeper may interrupt movement, but it never contains.
 		FLLKSweeperMind Chase = Pursuing();
 		int32 Hits = 0;
+		bool bAlerted = false;
 		bool bDown = false;
-		for (int32 Tick = 0; Tick < 200 && !bDown; ++Tick)
+		for (int32 Tick = 0; Tick < 200 && !bAlerted; ++Tick)
 		{
 			const FLLKSweeperStep Touch =
 				LLKSweeperBrain::Advance(Chase, Seen(0.1f, 3.f), Def, Rules);
 			Chase = Touch.Mind;
 			Hits += Touch.bContactLanded ? 1 : 0;
-			bDown = Touch.bKnockedDown;
+			bAlerted = Touch.bFloorAlerted;
+			bDown |= Touch.bKnockedDown;
 		}
-		TestTrue(TEXT("three hits knock a keeper down"), bDown);
+		TestTrue(TEXT("three hits alert the floor"), bAlerted);
+		TestFalse(TEXT("a Sweeper never knocks the keeper down"), bDown);
 		TestEqual(TEXT("and it takes exactly the authored three"), Hits, 3);
 		TestEqual(TEXT("the stack is spent rather than carried into the next one"),
 			Chase.HitsLanded(), 0);
@@ -404,12 +435,14 @@ bool FLLKSweeperBrainTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("the ladder resets, so it does not re-alert on every hit"),
 			Third.Mind.HitsLanded(), 0);
 
-		// Same count, same accumulator, knockdown ON: the other branch.
-		// `Rules` is the fixture's own, with bKnockdownOnContact true.
+		// Same count, same accumulator, knockdown ON: the other branch. This
+		// belongs to a future containment enemy, not to the Sweeper fixture.
+		FLLKSweeperContactRules Containment = Rules;
+		Containment.bKnockdownOnContact = true;
 		FLLKSweeperMind TwoAgain = LLKSweeperBrainTestFixture::Pursuing();
 		TwoAgain.HitAgesSeconds = {0.2f, 0.1f};
 		const FLLKSweeperStep Contained =
-			LLKSweeperBrain::Advance(TwoAgain, Touching, Def, Rules);
+			LLKSweeperBrain::Advance(TwoAgain, Touching, Def, Containment);
 		TestTrue(TEXT("a containment enemy still puts the keeper down"),
 			Contained.bKnockedDown);
 		TestFalse(TEXT("and does not also alert the floor"), Contained.bFloorAlerted);
