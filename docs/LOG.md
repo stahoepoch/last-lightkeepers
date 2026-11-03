@@ -1061,3 +1061,47 @@ inside the fixture**. `bb50592` had already done the second half:
 160 cm. So "the emissive lights nothing" is likely a true measurement of a
 mechanism that was never going to be the one. Still M1, still needs a look in
 play.
+
+## 2026-11-03 — nobody has ever finished a run, and that is the finding
+
+Chris: *"i want a playable level asap."* The telemetry says the level may
+already be one, and that the back half of it has never been touched.
+
+Every run in `Saved/LLKTelemetry/`:
+
+| | 2026-11-03 10:44 | 2026-11-03 10:07 |
+| --- | --- | --- |
+| `outcome` | **Unresolved** | **Unresolved** |
+| `relicsSecured` | **0** | **0** |
+| `extractionCalledSeconds` | **-1.0** (never) | **-1.0** (never) |
+| `runSeconds` | 9.8 | 35.1 |
+| `relicsTaken` | 0 | 1, at 27.3 s |
+
+**Extraction has never been called, once, by anyone.** One relic has been
+taken in the project's history. Every session has been ten to thirty-five
+seconds of poking at the first thing in the aisle — which is testing, not
+playing, and it is why the Sweeper, the lantern and the lighting have had
+four days of attention while the half of the loop that resolves a run has had
+none.
+
+**And the loop is wired.** Traced end to end rather than assumed:
+
+- `ULLKInteractorComponent::FindZone` focuses the dock; interact fires
+  `ServerBeginExtractionCall` → `ULLKExtractionSubsystem::CallExtraction`.
+  There is no separate input to bind - it is the same interact key.
+- Every refusal in `ELLKExtractionRefusal` is satisfiable at the LoadingDock.
+  `NoSuchPoint` - it registers by name in PIE. `NoHoldAuthored` -
+  `arrivalSeconds` is **20**. `RequirementNotMet` - the dock has no
+  `requires`; that is the FreightLift's `SubBasementBreakerRestored`.
+  `AlreadyUnderway` - not on a first call.
+- `ELLKExtractionPhase::Secured` and `bSecured` exist and are reachable.
+
+So the shortest path to a playable level is not a feature. **It is somebody
+walking to the dock and holding it for twenty seconds.** That hold is the
+authored climax - the siren, the patrol convergence - and it has never once
+been experienced.
+
+Recorded because four days of polish went into the first thirty seconds of a
+run that nobody has ever reached the end of, and the only reason anyone
+noticed is that the telemetry writes `relicsSecured` whether or not anybody
+reads it.
