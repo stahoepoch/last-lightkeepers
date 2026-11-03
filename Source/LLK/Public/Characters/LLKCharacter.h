@@ -373,46 +373,53 @@ protected:
 	 *   ground - real, and survivable.
 	 */
 	/**
-	 * **Retuned 2026-11-02 on Chris's "tune it", and derived rather than
-	 * picked.** 0.7 for 1.0s was the first pass; the arithmetic says it did
-	 * not bite.
+	 * **0.65, and the floor under it is a hard constraint, not a preference.**
 	 *
-	 * Sprinting is free, and deliberately so - `data/lantern.json`:
-	 * *"Movement is a readability and route-choice tool, not a stamina
-	 * minigame. Sprint gets you to an exit or away from a Sweeper."* So at
-	 * 0.7 a stumbled sprint is 451 cm/s against the Sweeper's 392, and
-	 * sprinting defeated the stumble outright at no cost. It only taxed
-	 * players who did not think to sprint, which punishes not knowing rather
-	 * than choosing.
+	 * Chris, 2026-11-02, overruling a 0.55 that went too far: **sprint must
+	 * always work.** That is consistent with what he asked for at the start -
+	 * *"we should be able to escape it"* - and with `data/lantern.json`,
+	 * which says sprint costs nothing on purpose: *"Movement is a readability
+	 * and route-choice tool, not a stamina minigame. Sprint gets you to an
+	 * exit or away from a Sweeper."*
 	 *
-	 * At **0.55**, against the authored speeds:
+	 * **The floor is 392 / 644 = 0.6087** - the Sweeper's speed over the
+	 * keeper's sprint. At or below it a stumbled sprint cannot outrun a
+	 * Sweeper, and Chris has ruled that out. Any future tuning stays above
+	 * it; that is the number to check, not the one below.
 	 *
-	 *   - stumbled walk is 246 cm/s, which is **below the deliberate crouch
-	 *     of 252**. Reduced to less than a careful crouch is unmistakably
-	 *     "tripped" rather than "slightly slowed", which is the thing Chris
-	 *     described.
-	 *   - stumbled sprint is 354 against the Sweeper's 392, so a contact
-	 *     costs you ground **whatever you do** for as long as it lasts.
-	 *   - avoiding the third hit becomes the skill, which is the whole point
-	 *     of the ladder.
+	 * At 0.65, against the authored 448 walk / 644 sprint / 252 crouch and
+	 * the Sweeper's 392:
 	 *
-	 * **What this knowingly trades**: it makes sprint temporarily
-	 * insufficient, which is a 1.2-second exception to "sprint gets you away
-	 * from a Sweeper" rather than a reversal of it. Flagged because it is the
-	 * one place this value argues with an authored note, and that is Chris's
-	 * to overrule.
+	 *   - a stumbled **walk** is 291, losing 101 cm/s - over 1.2s that is
+	 *     121 cm of ground, nearly the whole 140 cm contact range. Walking it
+	 *     off is not an option.
+	 *   - a stumbled **sprint** is 419, gaining 27 cm/s. It works, and not by
+	 *     much, which is the tension without the trap.
+	 *
+	 * **What the stumble actually costs, now that escape is guaranteed:** not
+	 * the chase, but the gap you had built and the choice to keep walking.
+	 * Three contacts take roughly 360 cm off a walker - more than twice
+	 * contact range - so the ladder still escalates. It just never makes
+	 * getting away impossible, which was the point.
+	 *
+	 * Against the first pass of 0.7 for 1.0s: a walker loses 121 cm instead
+	 * of 78, and a sprinter gains 32 instead of 59. Strictly more bite, with
+	 * the escape intact.
 	 */
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Data", meta = (ClampMin = "0", ClampMax = "1"))
-	float FallbackStumbleMultiplier = 0.55f;
+	float FallbackStumbleMultiplier = 0.65f;
 
 	/**
 	 * 1.2s, still safely under the 1.5s contact cooldown.
 	 *
-	 * That bound is the load-bearing half and it is unchanged: a stumble that
-	 * outlasted the cooldown would be re-applied before expiring, and
+	 * That bound is the load-bearing half and it is unchanged: a stumble
+	 * outlasting the cooldown would be re-applied before expiring, and
 	 * repeated contact would become a permanent slow nothing in the code
 	 * calls permanent. 0.3s of full speed between contacts is the recovery
 	 * window, and it is what keeps this a cost rather than a spiral.
+	 *
+	 * The duration is doing the work the multiplier is no longer allowed to:
+	 * with escape guaranteed, length is how a contact costs ground.
 	 */
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Data", meta = (ClampMin = "0"))
 	float FallbackStumbleSeconds = 1.2f;
