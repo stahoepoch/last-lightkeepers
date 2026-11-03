@@ -24,6 +24,19 @@
 //      project's other recurring failure (`ADVERSARY.md`, "the wrong
 //      vintage").
 //
+// **What this file does NOT cover, stated so nobody over-trusts it.** It sees
+// `BlueprintAssignable` delegates and nothing else. The same failure —
+// produced, asserted by tests, logged, and never consumed by anything a player
+// feels — happens to plain fields too, and there is a live instance:
+// `bStumbleLanded` is set by `LLKSweeperBrain`, asserted twice in
+// `LLKSweeperBrainTest`, and read exactly once, by a `UE_LOG` at
+// `LLKSweeper.cpp:646`. The keeper never actually stumbles. This file cannot
+// see that — a bool on a struct has no declaration shape to key on — and
+// `HANDOFFS.md` X4 tracks it by hand instead.
+//
+// A guard believed to cover more than it does is the same failure one level
+// up, so: delegates only, and the census line at the end is the honest scope.
+//
 // Regex over C++, not a parser. It can miss a binding; it does not invent one.
 // Bindings inside `Source/LLK/Private/Tests/` do not count — a test harness
 // subscribing to a delegate makes it no more audible to a player.

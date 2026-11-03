@@ -383,6 +383,32 @@ whose exit code carries no information whatsoever. The two together mean the
 rule for this toolchain is simply: **exit codes are not results here. Read what
 the tool said.**
 
+## 15. Live Coding blocks the EDITOR target, not the game target
+
+Found 2026-11-02 by the other session, and it retires a blocker this project
+has hit four times.
+
+`UnrealBuildTool` refuses with *"Unable to build while Live Coding is active"*
+only for the target the editor is holding - `LastLightkeepersEditor`. The
+**game** target, `LastLightkeepers`, builds the same `Source/LLK` module and
+is not blocked. So with the editor open:
+
+| target | blocked by Live Coding | covers |
+| --- | --- | --- |
+| `LastLightkeepersEditor` | **yes** | `Source/LLK` + `Source/LLKEditor` + automation tests |
+| `LastLightkeepers` | **no** | `Source/LLK` - the whole runtime module |
+
+That is real compile coverage rather than a near-miss: anything outside
+`LLKEditor` is genuinely checked. `bb50592` was committed unbuilt for exactly
+this reason and then confirmed clean against the game target without anyone
+closing the editor.
+
+**What it does not cover:** `Source/LLKEditor` (the import commandlet, the
+validators) and the automation tests, which live in the editor target. A green
+game target is not a licence to claim `LLK.Enemies.SweeperBrain` passes - that
+still needs the editor closed, and trap 14 still applies to how you read the
+result.
+
 ## The pattern, stated once
 
 Each of these is a true answer to the wrong question. The build tool answered
