@@ -968,3 +968,54 @@ says that glow must not join the gameplay light, and it does not.
 Codex's job is written up as a brief rather than a finding: X2, value
 verification at import time, with the mechanism, the proof of closure, and the
 note that it subsumes X3 so nothing should be spent on X3 separately.
+
+---
+
+## 2026-11-02 - Claude (MCP): the keeper stumbles, and the census grew the eye it was missing
+
+I had told Chris X4 was blocked on a number from him. The other session showed
+that was wrong, with evidence rather than argument: **fifteen declared
+fallbacks already exist in `Source/LLK`**, three of them on `ALLKCharacter`
+itself, and the header comment beside them states the pattern - *"a copy
+nobody can detect is the problem; a copy that announces itself is a
+fallback."* So the house rule for "this number is Chris's and `data/` does not
+author it" is not stop, it is declare it where he can see it and ship. I
+verified the fifteen before acting on the claim.
+
+**The stumble is built.** `ApplyStumble` is server-authoritative and
+replicated through `bStumbling`, so an owning client's movement agrees instead
+of being corrected. It runs on a timer rather than Tick, because
+`ALLKCharacter::Tick` early-returns for anything not locally controlled and a
+server-side effect decayed there would never decay for a remote keeper. It
+composes into `ApplyMovementSpeed` as `Burden * Stumble`, so all three speeds
+pay it - the same argument that already applies burden everywhere: you must
+not be able to sprint out of a cost you took.
+
+Two numbers, reasoned against authored ones rather than chosen. **0.7** is a
+30% cost against burden's `maxSpeedPenalty` of 0.12, so being clipped reads as
+worse than a full haul without being a stop. **1.0 s** sits under the authored
+`contactCooldownSeconds` of 1.5, and that bound is the load-bearing half: a
+stumble that outlasted the cooldown would be re-applied before expiring, so
+repeated contact would become a permanent slow that nothing in the code calls
+permanent. No impulse - the movement component's own push may already be the
+shove, which is checkable in play before anyone writes one.
+
+**And the census grew the eye it had just admitted to lacking.** Yesterday's
+file said in its own header that it could not see `bStumbleLanded`, because a
+bool on a struct has no `BlueprintAssignable` shape to key on. `FLLKSweeperStep`
+does have a shape: twelve output flags, each meant to be acted on once. The
+second pass pulls the braced block each `if (Step.bX)` guards, strips comments
+and `UE_LOG` calls, and fails if nothing survives.
+
+It found three more log-only flags - `bLostTheKeeper`, `bStockAbandoned`,
+`bDwellStarted` - and all three are legitimate, which is the interesting part.
+`bStockAbandoned` carries its own comment saying *"Not a cue - a map problem"*
+and logs a Warning pointing at `MAP-READINESS.md`. So the rule that separates
+them from the stumble had to be written down: **a flag may be log-only when it
+reports a transition the brain already owns, and may not when it names a
+consequence somebody outside the brain is supposed to feel.** The stumble named
+a consequence. Those three report.
+
+Proved red by unwiring the stumble: the census fails by name with the message
+that describes the original defect. Restored, rebuilt, `Result: Succeeded`,
+48/48 and `npm test` green across every suite.

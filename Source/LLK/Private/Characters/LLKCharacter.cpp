@@ -247,6 +247,11 @@ void ALLKCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 	// Everyone sees everyone's sprint: co-op players read each other's state,
 	// and a lantern-lit crew needs to see who is about to outrun them.
 	DOREPLIFETIME(ALLKCharacter, bSprinting);
+
+	// The owning client needs this or its own movement component disagrees
+	// with the server's for the length of the stumble and gets corrected;
+	// everyone else needs it because a crew reads each other's state.
+	DOREPLIFETIME(ALLKCharacter, bStumbling);
 }
 
 void ALLKCharacter::BeginPlay()
@@ -495,6 +500,55 @@ float ALLKCharacter::GetBurdenMultiplier() const
 	return LLKBurden::SpeedMultiplier(Points, BurdenRules);
 }
 
+float ALLKCharacter::GetStumbleMultiplier() const
+{
+	return bStumbling ? FallbackStumbleMultiplier : 1.f;
+}
+
+void ALLKCharacter::ApplyStumble()
+{
+	// Server-authoritative, like every other thing that decides a speed. The
+	// client learns through OnRep_Stumbling so its own movement component
+	// agrees rather than being corrected.
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	// A downed keeper does not stumble. The downed branch of
+	// ApplyMovementSpeed already owns that speed outright, so a stumble set
+	// here would be invisible until they stood up and then apply to someone
+	// who was never clipped.
+	if (IsDowned())
+	{
+		return;
+	}
+
+	bStumbling = true;
+	ApplyMovementSpeed();
+
+	// SetTimer replaces an existing handle, so a second contact inside the
+	// window restarts it rather than stacking. Stacking would make three
+	// quick contacts a near-stop, which is the knockdown's job and already
+	// authored as `hitsToKnockDown`.
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimer(
+			StumbleTimer, this, &ALLKCharacter::EndStumble, FallbackStumbleSeconds, false);
+	}
+}
+
+void ALLKCharacter::EndStumble()
+{
+	bStumbling = false;
+	ApplyMovementSpeed();
+}
+
+void ALLKCharacter::OnRep_Stumbling()
+{
+	ApplyMovementSpeed();
+}
+
 void ALLKCharacter::OnCarriedCountChanged(int32 CarriedCount)
 {
 	// The haul changed, so the speed has. Event-driven rather than polled:
@@ -511,7 +565,11 @@ void ALLKCharacter::ApplyMovementSpeed()
 		// keeper cannot sprint away from a cost they accepted - and applied
 		// here, in the single function that assigns a speed, so there is no
 		// path to a movement value that forgot about the haul.
-		const float Burden = GetBurdenMultiplier();
+		// Stumble composes with burden rather than replacing it, for the same
+		// reason burden applies to every speed: a keeper must not be able to
+		// sprint out of a cost they took. Being clipped while carrying a full
+		// haul is both costs, and that is the honest sum.
+		const float Burden = GetBurdenMultiplier() * GetStumbleMultiplier();
 		Movement->MaxWalkSpeedCrouched = CrouchSpeedCms * Burden;
 
 		if (IsDowned())

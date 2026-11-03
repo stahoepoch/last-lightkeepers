@@ -1,5 +1,6 @@
 #include "Enemies/LLKSweeper.h"
 
+#include "Characters/LLKCharacter.h"
 #include "Characters/LLKVitalsComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -643,12 +644,22 @@ void ALLKSweeper::Act(const FLLKSweeperStep& Step)
 		}
 	}
 
-	if (Step.bStumbleLanded)
+	if (Step.bStumbleLanded && Target != nullptr)
 	{
-		// The keeper-side effect is not wired yet: a brief speed penalty and
-		// a shove, which lives on ALLKCharacter and is another writer's file.
-		// Logged so the beat is observable in a playtest meanwhile, and so
-		// the seam is visible rather than silently absent.
+		// Wired 2026-11-02. This was a log line for long enough that
+		// `tests/cues.test.mjs` had to name it as the class of defect its own
+		// census cannot see: produced by the brain, asserted twice in the
+		// brain's test, read once by a UE_LOG, and never felt by anybody.
+		//
+		// No impulse. The movement component's own push may already supply
+		// the shove, and whether there should be a scripted one on top is
+		// Chris's call and checkable in play first. The speed cost is the
+		// part the rule names.
+		if (ALLKCharacter* Keeper = Cast<ALLKCharacter>(Target->GetOwner()))
+		{
+			Keeper->ApplyStumble();
+		}
+
 		UE_LOG(LogLLK, Log, TEXT("%s clipped a keeper's feet."), *GetName());
 	}
 

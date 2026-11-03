@@ -156,6 +156,29 @@ public:
 	/** The authored burden rules this pawn resolved, for a readout to explain. */
 	const FLLKBurdenRules& GetBurdenRules() const { return BurdenRules; }
 
+	/**
+	 * A Sweeper clipped the keeper's feet. Server-authoritative; a repeat
+	 * contact restarts the window rather than stacking.
+	 *
+	 * **It costs distance and tempo, never input.** No camera lock, no input
+	 * suppression, nothing to wait out - a control removal the player cannot
+	 * act through is a knockdown with a shorter timer, and the knockdown is
+	 * already the authored consequence of three landed contacts. This is the
+	 * cost of the first two.
+	 */
+	void ApplyStumble();
+
+	UFUNCTION(BlueprintPure, Category = "LLK|Movement")
+	bool IsStumbling() const { return bStumbling; }
+
+	/**
+	 * The stumble's speed scale, composing with burden rather than replacing
+	 * it: a burdened keeper who is clipped pays both, which is the same
+	 * argument that applies burden to every speed.
+	 */
+	UFUNCTION(BlueprintPure, Category = "LLK|Movement")
+	float GetStumbleMultiplier() const;
+
 	/** Launch speed in cm/s, after the stud conversion. */
 	UFUNCTION(BlueprintPure, Category = "LLK|Movement")
 	float GetJumpVelocity() const;
@@ -320,6 +343,46 @@ protected:
 
 	/** Pushes the current speed to the movement component. Server and clients. */
 	void ApplyMovementSpeed();
+
+	/** Clears the stumble and re-applies the speed. Server-side, on a timer. */
+	void EndStumble();
+
+	UFUNCTION()
+	void OnRep_Stumbling();
+
+	/**
+	 * The stumble's two numbers, declared here rather than authored in
+	 * `data/lantern.json` because they are **Chris's to set and he has not
+	 * set them**. Declared rather than hidden, for the reason the speed
+	 * fallbacks above give: a copy nobody can detect is the problem; a copy
+	 * that announces itself is a fallback. They move to
+	 * `sweeperContact` the moment he has a feel for them.
+	 *
+	 * Both are reasoned against numbers that *are* authored, not chosen:
+	 *
+	 * - **0.7** is a 30% cost, against burden's `maxSpeedPenalty` of 0.12.
+	 *   Being clipped by a maintenance machine should read as worse than
+	 *   carrying a full haul, and two and a half times is enough to feel
+	 *   without being a stop.
+	 * - **1.0 s** sits under the authored `contactCooldownSeconds` of 1.5, and
+	 *   that bound is the load-bearing half. A stumble that outlasts the
+	 *   cooldown would be re-applied before it expired, so repeated contact
+	 *   would become a permanent slow that nothing in the code says is
+	 *   permanent. Under the cooldown, each contact is a separate, visible
+	 *   cost. At the authored walk of 16 studs/s it is about 4.8 studs of
+	 *   ground - real, and survivable.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Data", meta = (ClampMin = "0", ClampMax = "1"))
+	float FallbackStumbleMultiplier = 0.7f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Data", meta = (ClampMin = "0"))
+	float FallbackStumbleSeconds = 1.f;
+
+	/** Replicated so an owning client's movement agrees with the server's. */
+	UPROPERTY(ReplicatedUsing = OnRep_Stumbling)
+	bool bStumbling = false;
+
+	FTimerHandle StumbleTimer;
 
 	UPROPERTY(VisibleAnywhere, Category = "LLK|Camera")
 	TObjectPtr<UCameraComponent> FirstPersonCamera;

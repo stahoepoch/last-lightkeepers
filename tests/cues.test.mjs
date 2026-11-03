@@ -24,18 +24,19 @@
 //      project's other recurring failure (`ADVERSARY.md`, "the wrong
 //      vintage").
 //
-// **What this file does NOT cover, stated so nobody over-trusts it.** It sees
-// `BlueprintAssignable` delegates and nothing else. The same failure —
-// produced, asserted by tests, logged, and never consumed by anything a player
-// feels — happens to plain fields too, and there is a live instance:
-// `bStumbleLanded` is set by `LLKSweeperBrain`, asserted twice in
-// `LLKSweeperBrainTest`, and read exactly once, by a `UE_LOG` at
-// `LLKSweeper.cpp:646`. The keeper never actually stumbles. This file cannot
-// see that — a bool on a struct has no declaration shape to key on — and
-// `HANDOFFS.md` X4 tracks it by hand instead.
+// **The second census, added 2026-11-02, covers the other shape.** The first
+// version of this file saw `BlueprintAssignable` delegates and nothing else,
+// and said so — which was honest and was also a hole, because the same failure
+// happens to plain fields. The live instance was `bStumbleLanded`: set by
+// `LLKSweeperBrain`, asserted twice in the brain's own test, read exactly once
+// by a `UE_LOG`, and never felt by the keeper. A delegate census structurally
+// cannot see that.
 //
-// A guard believed to cover more than it does is the same failure one level
-// up, so: delegates only, and the census line at the end is the honest scope.
+// So the flags on `FLLKSweeperStep` get their own pass. They are the brain's
+// output — each one exists to be acted on by the pawn exactly once — and they
+// do have a declaration shape to key on. The rule is that the block guarding
+// each flag must do something other than log, because a `UE_LOG` is how
+// `bStumbleLanded` looked finished for as long as it did.
 //
 // Regex over C++, not a parser. It can miss a binding; it does not invent one.
 // Bindings inside `Source/LLK/Private/Tests/` do not count — a test harness
@@ -192,6 +193,113 @@ for (const name of Object.keys(SILENT).sort()) {
     `SILENT does not list a delegate that no longer exists (${name})`,
     declared.has(name),
     "it is not declared BlueprintAssignable anywhere, so this entry is dead",
+  );
+}
+
+// ---- 3. the brain's output flags are acted on, not just logged --------------
+
+// Flags on FLLKSweeperStep that the pawn is not expected to act on. Same
+// contract as SILENT: an entry is a decision somebody made, and the test
+// checks the entry is still true.
+// The distinction that decides an entry here, because `bStumbleLanded` looked
+// exactly like these for weeks and was not one of them: a flag belongs in
+// UNACTED when it reports a transition the brain already owns, and does not
+// when it names a consequence somebody outside the brain is supposed to feel.
+// The stumble named a consequence — a speed the keeper pays — so a log was
+// never enough. These four report.
+const UNACTED = {
+  bContactLanded:
+    "The raw contact. `bStumbleLanded` and `bKnockedDown` are what the pawn " +
+    "acts on; this one is the brain's own bookkeeping for the decay window, " +
+    "and acting on it too would charge one touch twice.",
+  bLostTheKeeper:
+    "The brain has already returned itself to the route and the pawn follows " +
+    "`Step.Move`, not this flag. Nothing outside the brain changes, so there " +
+    "is nothing for the pawn to do but say so.",
+  bStockAbandoned:
+    "Deliberately a diagnostic rather than a cue, and the code says so: it " +
+    "logs a Warning pointing at docs/MAP-READINESS.md, because an " +
+    "unreachable relic is a map problem that should be findable as a warning " +
+    "rather than as a Sweeper that quietly stopped filing.",
+  bDwellStarted:
+    "Verbose, and the action that matters is `bAdvancePatrolPoint`, which " +
+    "the pawn does act on when the pause is spent. Starting a pause asks " +
+    "nothing of the pawn.",
+};
+
+const brainHeader = readFileSync(
+  join(root, "Source", "LLK", "Public", "Enemies", "LLKSweeperBrain.h"),
+  "utf8",
+);
+const pawn = readFileSync(
+  join(root, "Source", "LLK", "Private", "Enemies", "LLKSweeper.cpp"),
+  "utf8",
+);
+
+// Only the flags declared on FLLKSweeperStep — the brain's output. The Mind's
+// and the Senses' bools are inputs and state, and are not the pawn's to act on.
+const stepStart = brainHeader.indexOf("struct FLLKSweeperStep");
+const stepFlags = [
+  ...brainHeader.slice(stepStart).matchAll(/\bbool\s+(b[A-Za-z0-9_]*)\s*=/g),
+].map((m) => m[1]);
+
+check(
+  "the step struct declares output flags",
+  stepFlags.length > 0,
+  "found none, so this scan is broken rather than the brain being empty",
+);
+
+// Pull the braced block that each `if (Step.<flag>` guards, so the question is
+// what the pawn DOES with the flag rather than whether it mentions it.
+function guardedBlock(source, flag) {
+  const at = source.search(new RegExp(`if\\s*\\(\\s*Step\\.${flag}\\b`));
+  if (at === -1) return null;
+  const open = source.indexOf("{", at);
+  if (open === -1) return null;
+  let depth = 0;
+  for (let i = open; i < source.length; i += 1) {
+    if (source[i] === "{") depth += 1;
+    else if (source[i] === "}") {
+      depth -= 1;
+      if (depth === 0) return source.slice(open + 1, i);
+    }
+  }
+  return null;
+}
+
+// Strip comments and every UE_LOG call; whatever survives is the action.
+function actionIn(block) {
+  return block
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/\/\/[^\n]*/g, "")
+    .replace(/UE_LOG\s*\([\s\S]*?\);/g, "")
+    .replace(/\s+/g, "");
+}
+
+for (const flag of stepFlags) {
+  const exempt = Object.prototype.hasOwnProperty.call(UNACTED, flag);
+  const block = guardedBlock(pawn, flag);
+  const acted = block !== null && actionIn(block).length > 0;
+
+  if (exempt) {
+    check(
+      `UNACTED still describes ${flag}`,
+      !acted,
+      "the pawn now acts on it, so remove the entry — an allowlist nobody " +
+        "prunes is a stale document",
+    );
+    continue;
+  }
+
+  check(
+    `the pawn acts on ${flag}, not just logs it`,
+    acted,
+    block === null
+      ? "no `if (Step." + flag + ")` in LLKSweeper.cpp at all — the brain " +
+        "emits it and the pawn never reads it"
+      : "the guarded block is nothing but a UE_LOG. That is exactly how " +
+        "`bStumbleLanded` looked finished while the keeper never stumbled. " +
+        "Act on it, or add it to UNACTED with the reason",
   );
 }
 
