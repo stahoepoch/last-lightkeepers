@@ -27,8 +27,8 @@
   },
 
   "sweeperContact": {
-    "_note": "Day 4 behaviour: a Sweeper that reaches a Lightkeeper knocks them down. Weak alone, dangerous as a swarm.",
-    "knockdownOnContact": true,
+    "_note": "First-slice rule: a Sweeper pressures, telegraphs, searches and interferes with stock; it does not freeze a solo player in place. Contact remains a readable threat seam for later enemy-specific consequences, but this maintenance machine is not a containment enemy.",
+    "knockdownOnContact": false,
     "contactRange": 5,
     "contactCooldownSeconds": 1.5,
     "hitsToKnockDown": 3,

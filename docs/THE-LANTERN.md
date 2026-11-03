@@ -112,6 +112,43 @@ That last clause is what stops the middle mode from being strictly better than
 the other two. Without it, stowed-lit would be free light and the other modes
 would be for people who had not noticed.
 
+### Physical controls and sensory trade — Chris, 2026-11-02
+
+**Direction, approved for implementation; values remain provisional until the
+first real aisle is played.** The lantern is one physical instrument, not a
+hotbar. Its controls must describe what a keeper can actually do to its housing:
+
+| Input | Physical action | Player-facing consequence |
+| --- | --- | --- |
+| `F` | Master power | Fully off: no light and no lantern hum. Returning to light has a short, committed warm-up. |
+| Hold right mouse | Shutter | Closes visible spill immediately while the sealed core remains powered. It is concealment from sight, **not** free safety: the active core continues to hum and can be heard by relevant machines. |
+| Mouse wheel | Hood / aperture | Selects **Hooded**, **Working**, or **Open**. These are authored states, not an arbitrary brightness slider: each later carries a deliberate reach, visible detectability, and sound signature. |
+| Context use | Present | At an authored service port, button, routing panel, badge reader, or calibration mark, the keeper focuses the lantern's inspection beam to present a valid maintenance pattern. It may open a procedure, wake machinery, or make a visible local response; it may not remotely hack, charm, stun, or reveal hidden facts. |
+
+The focused beam is therefore a **local work action**, not a fourth permanent
+flashlight mode. A service button that needs a strong, precisely aimed beam is
+an example of *Present*: the player chooses to stand still, aim the recognisable
+instrument, and advertise that work to the room. The building responds because
+the Lightkeeper's issued equipment is doing a job it recognises.
+
+**Sound is co-equal with light.** The intended threat model is not "light
+versus darkness" but two managed signals: light tells a machine where work is
+happening; lantern sound tells it that a shuttered instrument is still active.
+Player proximity voice remains deliberately outside enemy perception so crews
+never learn to stop talking out of superstition. Enemy telegraphs must retain a
+clear visual counterpart, because player voice can cover sound at exactly the
+moment tension rises.
+
+This makes the verbs non-redundant: shuttering trades sight exposure for sound
+exposure; switching off removes both but delays recovery; adjusting the hood
+changes the kind of risk volunteered. No battery/fuel cost is introduced.
+
+**Implementation gate.** Do not wire a shutter as a free instant blackout. It
+requires an actual enemy hearing / sound-notice path first. Do not wire the
+wheel as fake cosmetic dimming: it requires authored Hooded / Working / Open
+values. Until those systems exist, the current single Working state remains the
+honest runtime behaviour.
+
 **Bulky carry is the fourth state and it is a consequence, not a mode.** A
 crate takes both hands, so the lantern is stowed by physics: no mantle, no
 revive, no tool use until you set it down. `data/loot.json` already authors

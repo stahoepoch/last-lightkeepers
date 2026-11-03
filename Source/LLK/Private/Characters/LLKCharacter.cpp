@@ -14,6 +14,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
+#include "Materials/MaterialInterface.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "LLK.h"
 #include "Lantern/LLKLanternComponent.h"
@@ -64,9 +65,10 @@ ALLKCharacter::ALLKCharacter()
 	// relic-read or enemy-perception source.
 	LanternAnchor = CreateDefaultSubobject<USceneComponent>(TEXT("LanternAnchor"));
 	LanternAnchor->SetupAttachment(FirstPersonCamera);
-	// High enough to keep the glass, cage and handle in frame: this is a held
-	// instrument at chest/hand height, not a light hidden below the camera.
-	LanternAnchor->SetRelativeLocation(FVector(38.f, 18.f, -4.f));
+	// A hand lantern belongs low and to the side of the view.  The old pose was
+	// almost eye-height and centred, so the temporary model read as a helmet
+	// lamp while blocking the scene it was meant to illuminate.
+	LanternAnchor->SetRelativeLocation(FVector(42.f, 25.f, -19.f));
 
 	// This exists only so another keeper sees an instrument in a hand instead
 	// of a light emerging from a camera. It must stay separate from
@@ -96,6 +98,12 @@ ALLKCharacter::ALLKCharacter()
 		TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
 	const ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(
 		TEXT("/Engine/BasicShapes/Cube.Cube"));
+	// The core material has always existed, but the temporary lantern assembly
+	// never assigned it to its glass chamber.  That left a point light floating
+	// inside an untextured engine cylinder: technically illuminated, but not an
+	// object the eye could believe was supplying the light.
+	const ConstructorHelpers::FObjectFinder<UMaterialInterface> LanternCoreMaterial(
+		TEXT("/Game/LLK/Materials/MI_LLK_LanternCore_Working.MI_LLK_LanternCore_Working"));
 
 	auto ConfigureLanternPart = [](UStaticMeshComponent* Part, USceneComponent* Parent,
 		const FVector& Location, const FVector& Scale, UStaticMesh* Shape, bool bOnlyOwner)
@@ -126,17 +134,23 @@ ALLKCharacter::ALLKCharacter()
 	RemoteLanternCageRight = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RemoteLanternCageRight_Temporary"));
 	RemoteLanternHandle = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RemoteLanternHandle_Temporary"));
 
-	auto BuildLanternSilhouette = [&ConfigureLanternPart, Cylinder, Cube](USceneComponent* Parent,
+	auto BuildLanternSilhouette = [&ConfigureLanternPart, Cylinder, Cube, LanternCoreMaterial](USceneComponent* Parent,
 		UStaticMeshComponent* Glass, UStaticMeshComponent* Top, UStaticMeshComponent* Base,
 		UStaticMeshComponent* CageLeft, UStaticMeshComponent* CageRight, UStaticMeshComponent* Handle,
 		bool bOnlyOwner)
 	{
-		ConfigureLanternPart(Glass, Parent, FVector(0.f, 0.f, -8.f), FVector(0.14f, 0.14f, 0.22f), Cylinder.Object, bOnlyOwner);
-		ConfigureLanternPart(Top, Parent, FVector(0.f, 0.f, 5.f), FVector(0.18f, 0.18f, 0.045f), Cylinder.Object, bOnlyOwner);
-		ConfigureLanternPart(Base, Parent, FVector(0.f, 0.f, -21.f), FVector(0.18f, 0.18f, 0.05f), Cylinder.Object, bOnlyOwner);
-		ConfigureLanternPart(CageLeft, Parent, FVector(0.f, -13.f, -8.f), FVector(0.03f, 0.025f, 0.25f), Cube.Object, bOnlyOwner);
-		ConfigureLanternPart(CageRight, Parent, FVector(0.f, 13.f, -8.f), FVector(0.03f, 0.025f, 0.25f), Cube.Object, bOnlyOwner);
-		ConfigureLanternPart(Handle, Parent, FVector(0.f, 0.f, 24.f), FVector(0.09f, 0.035f, 0.025f), Cube.Object, bOnlyOwner);
+		// Engine primitives are one metre across.  These dimensions make a
+		// roughly 18 cm wide, 32 cm tall service lantern rather than a barrel.
+		ConfigureLanternPart(Glass, Parent, FVector(0.f, 0.f, -4.f), FVector(0.08f, 0.08f, 0.13f), Cylinder.Object, bOnlyOwner);
+		if (LanternCoreMaterial.Succeeded())
+		{
+			Glass->SetMaterial(0, LanternCoreMaterial.Object);
+		}
+		ConfigureLanternPart(Top, Parent, FVector(0.f, 0.f, 4.f), FVector(0.10f, 0.10f, 0.03f), Cylinder.Object, bOnlyOwner);
+		ConfigureLanternPart(Base, Parent, FVector(0.f, 0.f, -12.f), FVector(0.10f, 0.10f, 0.035f), Cylinder.Object, bOnlyOwner);
+		ConfigureLanternPart(CageLeft, Parent, FVector(0.f, -7.f, -4.f), FVector(0.017f, 0.015f, 0.145f), Cube.Object, bOnlyOwner);
+		ConfigureLanternPart(CageRight, Parent, FVector(0.f, 7.f, -4.f), FVector(0.017f, 0.015f, 0.145f), Cube.Object, bOnlyOwner);
+		ConfigureLanternPart(Handle, Parent, FVector(0.f, 0.f, 14.f), FVector(0.05f, 0.02f, 0.016f), Cube.Object, bOnlyOwner);
 	};
 
 	BuildLanternSilhouette(LanternAnchor, LanternGlass, LanternTop, LanternBase,
@@ -146,20 +160,20 @@ ALLKCharacter::ALLKCharacter()
 
 	LanternCoreGlow = CreateDefaultSubobject<UPointLightComponent>(TEXT("LanternCoreGlow_Temporary"));
 	LanternCoreGlow->SetupAttachment(LanternAnchor);
-	LanternCoreGlow->SetRelativeLocation(FVector(0.f, 0.f, -8.f));
+	LanternCoreGlow->SetRelativeLocation(FVector(0.f, 0.f, -4.f));
 	LanternCoreGlow->IntensityUnits = ELightUnits::Candelas;
-	LanternCoreGlow->SetIntensity(4.f);
-	LanternCoreGlow->SetAttenuationRadius(90.f);
+	LanternCoreGlow->SetIntensity(15.f);
+	LanternCoreGlow->SetAttenuationRadius(160.f);
 	LanternCoreGlow->SetLightColor(FLinearColor(1.f, 0.45f, 0.08f));
 	LanternCoreGlow->SetCastShadows(false);
 	LanternCoreGlow->SetVisibility(false);
 
 	RemoteLanternCoreGlow = CreateDefaultSubobject<UPointLightComponent>(TEXT("RemoteLanternCoreGlow_Temporary"));
 	RemoteLanternCoreGlow->SetupAttachment(RemoteLanternAnchor);
-	RemoteLanternCoreGlow->SetRelativeLocation(FVector(0.f, 0.f, -8.f));
+	RemoteLanternCoreGlow->SetRelativeLocation(FVector(0.f, 0.f, -4.f));
 	RemoteLanternCoreGlow->IntensityUnits = ELightUnits::Candelas;
-	RemoteLanternCoreGlow->SetIntensity(4.f);
-	RemoteLanternCoreGlow->SetAttenuationRadius(90.f);
+	RemoteLanternCoreGlow->SetIntensity(15.f);
+	RemoteLanternCoreGlow->SetAttenuationRadius(160.f);
 	RemoteLanternCoreGlow->SetLightColor(FLinearColor(1.f, 0.45f, 0.08f));
 	RemoteLanternCoreGlow->SetCastShadows(false);
 	RemoteLanternCoreGlow->SetVisibility(false);
@@ -218,12 +232,12 @@ void ALLKCharacter::Tick(float DeltaSeconds)
 		}
 	};
 
-	SetPresentationLocation(LanternGlass, FVector(0.f, 0.f, -8.f));
-	SetPresentationLocation(LanternTop, FVector(0.f, 0.f, 5.f));
-	SetPresentationLocation(LanternBase, FVector(0.f, 0.f, -21.f));
-	SetPresentationLocation(LanternCageLeft, FVector(0.f, -13.f, -8.f));
-	SetPresentationLocation(LanternCageRight, FVector(0.f, 13.f, -8.f));
-	SetPresentationLocation(LanternHandle, FVector(0.f, 0.f, 24.f));
+	SetPresentationLocation(LanternGlass, FVector(0.f, 0.f, -4.f));
+	SetPresentationLocation(LanternTop, FVector(0.f, 0.f, 4.f));
+	SetPresentationLocation(LanternBase, FVector(0.f, 0.f, -12.f));
+	SetPresentationLocation(LanternCageLeft, FVector(0.f, -7.f, -4.f));
+	SetPresentationLocation(LanternCageRight, FVector(0.f, 7.f, -4.f));
+	SetPresentationLocation(LanternHandle, FVector(0.f, 0.f, 14.f));
 }
 
 void ALLKCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
