@@ -281,6 +281,38 @@ the author of two files under `research_notes/`.
 file is the replacement: one ledger, owners in columns. If Grok gets a lane,
 its handoffs are rows here rather than a seventh file.
 
+### Check Grok's board before treating it as the build — 2026-11-02
+
+Chris asked for the research to be committed and for the other sessions to be
+able to check it. The writing is on `docs/WORLD-SYSTEMS-BOARD.md`, inside **The
+hard run**. It is proposed. It is not a `DECISIONS` row, and it does not ratify
+the lane above.
+
+| Block | Where | What a check is for |
+| --- | --- | --- |
+| Body, engine defaults, four fixture heights, the eye, the verb list | "Being there is a body", "The head, the hands, and a real counter", "The verb list" | Try to break a number against UE 5.8 source or against `data/` at `HEAD`. A paper's walking speed is not a candidate value. |
+| Five feelings | "Five feelings, each turned over" | Scary and fun are one inverted-U (Andersen et al. 2020). Addictive is the thesis's "one more night," and a season, a streak, a pass, or a fifth counter is the pattern being refused. The emotional gamble is a price the crew can name. A designed near-miss is Clark's slot machine (Neuron, 2009) and is refused. |
+
+Four things in that section are easy to misread, and each one is called out
+there so a later session does not have to discover it:
+
+1. The Andersen caveat — that the inverted U disappeared when people rated the
+   *whole* attraction — was taken from the article page, not from a PDF. If the
+   paper does not say it, retract that sentence and keep the repeated-measures
+   result.
+2. `LanternAnchor` at `(42, 25, -19)` is the uncommitted character file. `HEAD`
+   is still `(38, 18, -4)`. M1 above is the record of the 17.0 cm move. The
+   board is not the pose until that file's owner commits it. The fallback that
+   adds 152 cm to the capsule center is still a comment bug in Claude's lane,
+   and it becomes a play bug only if a live keeper hits `GameplayLightPosition`.
+3. The dirty `data/lantern.json` sets `knockdownOnContact` to false. Not this
+   commit, not a decision, not adopted by the feeling section. Rows 11 and 59
+   still describe a knockdown when one happens.
+4. No new authored number. `data/` at `HEAD` wins any disagreement.
+
+Proof this row can be closed: a later commit either retracts a named sentence
+or leaves it, and says which of the four it checked. Silence is not a check.
+
 ---
 
 ## Keeping this current
