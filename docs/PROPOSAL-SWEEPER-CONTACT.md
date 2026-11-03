@@ -124,8 +124,84 @@ precedent for "something external modifies the keeper's speed" — burden runs
 | **[CHRIS]** | Stumble duration — how long the penalty lasts |
 | **[CHRIS]** | Stumble severity — how much slower, against burden's 0.04/0.12 as the scale reference |
 | **[CHRIS]** | Impulse: is there a shove at all, or only a slow? A shove reads more physical and is more likely to annoy in the bad way near ledges |
-| **[CHRIS]** | **Does the floor-alert ever end?** Permanent for the run fits row 64 and makes the third hit a threshold worth defending. Decaying gives recovery and softens it. This is the biggest design question in the proposal |
+| ~~**[CHRIS]**~~ | ~~Does the floor-alert ever end?~~ **DECIDED 2026-11-02: it decays, quickly.** Chris's call. So the alert is a *state the player can get out of*, which makes the third hit a setback rather than a sentence, and keeps the run recoverable |
 | **[CHRIS]** | Does the alert apply to Sweepers only, or to every enemy family? `swarmCallRadius` is authored on Sweepers alone |
+
+## Ending the alert — decided, plus one idea that cannot ship
+
+**Chris, 2026-11-02:** *"let it decay, quickly if we can, like maybe using the
+lantern in a way to overwhelm it, like a superflash stun. or it runs away and
+loses interest?"*
+
+### Decay: decided, and it needs no new number
+
+The alert times out. `Def.LosesTargetAfterSeconds` already means *how long
+before it gives up on something it cannot resolve*, which is the same shape,
+and reusing it keeps this at zero invented values. If the floor should forget
+faster than a single Sweeper forgets a keeper, that is a **[CHRIS]** number.
+
+### "It runs away and loses interest" — yes to half of it
+
+**Loses interest: yes**, and it is already built. `Search` → `Patrol` is the
+Sweeper disengaging on its own.
+
+**Runs away: no**, and the distinction is row 47's whole character. A machine
+does not flee, because fleeing is fear and these things have none. It
+**disengages** — the job is finished, or the fault is no longer reported, so
+it returns to its route. Same observable behaviour, opposite meaning, and the
+meaning is the thing the game is about. A Sweeper that visibly *flees* a
+keeper has been promoted to a creature.
+
+### The superflash stun cannot ship, and it is not close
+
+> **`DECISIONS.md` row 5, LOCKED:** *"Light reveals value and attracts danger.
+> There is **no** 'light repels enemies' exception."* Its own reasoning line:
+> *"Softening this deletes the game's only decision."*
+
+A flash that stuns a machine is that exception exactly, whatever fiction is
+wrapped around it — a dazzled sensor is still light protecting the keeper. The
+cost model is what breaks, not the lore: **light currently buys capability and
+charges visibility.** Give light a defensive use and the charge disappears,
+because the thing that got you into trouble now gets you out of it. There is
+then no reason to ever turn it off, and the game's single recurring decision
+stops being a decision.
+
+This is the third variant of the same idea to come up — after "different
+light does different things to the robots" and the RMB shutter as free
+concealment — which is a sign it is a genuinely attractive shape rather than a
+careless one. It is still the one thing the design cannot have.
+
+### What to build instead, and it is already specified
+
+**The lantern already has a legal way to act on this, and it is the `Present`
+verb.** `WORLD-SYSTEMS-BOARD.md` defines it: *offer a valid maintenance
+pattern at a local service port — a badge, routing tag, calibration mark, or
+work order.*
+
+So the player-agency version of clearing an alert is **filing a correction**:
+present at an authored service port and the floor's alert clears, because the
+building's own record now says the fault is resolved. That is:
+
+- **Row 5 intact.** The light acts on *infrastructure*, never on a creature —
+  the same line Codex and I landed on for the focused beam. "A beam that opens
+  a shutter" is legal; "a beam that stops a robot" is not.
+- **Row 47 intact.** Nothing is stunned, frightened, or overwhelmed. A record
+  was corrected and the machines believe it, which is more unsettling than a
+  stun and costs nothing in rules.
+- **Agency, which is what the superflash was reaching for.** Waiting out a
+  timer is not a decision; walking to a port while the floor is at 45-stud
+  notice very much is.
+- **No new verb.** It is `Present`, which the board already specifies and
+  which `HANDOFFS.md` already wants authored.
+
+**[CHRIS]** Whether clearing is instant on presenting, or shortens the decay.
+
+### One note on the physics research
+
+The stumble in this proposal is deliberately specified to need **no physics
+and no animation work**: a movement impulse plus a short speed multiplier.
+If the parallel physics and animation research turns up something richer, it
+is welcome — but nothing here is blocked on it, and this should not wait.
 
 ## Proof of closure
 
