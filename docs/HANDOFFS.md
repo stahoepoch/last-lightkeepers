@@ -146,10 +146,55 @@ cannot launch the editor.
 | --- | --- | --- | --- |
 | **M1** | ~~**Verify emissive now lights something.**~~ **HALF CLOSED 2026-11-02.** `r.DynamicGlobalIlluminationMethod` read **1** live through the MCP bridge, so Lumen is *not* "enabled in config and inert" — the renderer half of `FINDINGS-EMISSIVE-LIGHTS-NOTHING.md` is verified, not just answered. **And it redirects the open problem:** Chris reports the lantern effect still "isn't there", which is now provably *not* a global-illumination fault. Remaining suspects are the lantern's own emissive material and the temporary rig | `FINDINGS-EMISSIVE-LIGHTS-NOTHING.md`; gate read in `3b209ae`. **Plus the anchor move, added 2026-11-02 on Chris's instruction:** `LanternAnchor` went `(38, 18, -4)` → `(42, 25, -19)`, **17.0 cm mostly downward**, and `LanternLight` attaches to it while the gameplay light field samples it, so the gameplay origin moved with the pose | The surface measurement is no longer the blocker and does **not** need `LLK_LightLab` — judge it in Boswell's during the visual pass, which is where the lantern actually has to look right. **Two things to read in that same sitting**, because the pose and the look are one pass: does the lantern light its own glass, and does a relic still read at the authored distance from the new anchor height. 17 cm is 2% of the 840 cm reach and nothing at range, but a **quarter of the 56 cm** at which `FINDINGS-FIXTURE-LIGHT-BAND.md` measures inspection — and the rule it brushes is the one saying cosmetic hand work must not move relic inspection. The radius is untouched: the field reads `GetGameplayRadiusCm()`, not `AttenuationRadius` |
 | **M2** | ~~The fixture light contract still has no band~~ **- withdrawn 2026-11-02, as the wrong row.** It asked for "a numeric band in the contract, and a test that fails when a fixture crosses it", and all three clauses are wrong: no band exists, the contract is **LOCKED by Chris**, and fixture intensities live in the map rather than `data/`, so no headless test can read one | `FINDINGS-FIXTURE-LIGHT-BAND.md` measures the gap at ~4x under Lumen - inspection ceiling below 0.5 cd, orientation floor ~2 cd - and records three failed levers | **Closed by being correctly re-stated.** The decision is Chris's, as **C9**. What was mine was reading the contract before writing a proof of closure against it |
-| **M5** | **Ladder 3's lantern reading was taken on the wrong cone.** "25 cd reads as a carried lantern" came from a 72 deg outer cone; `data/lantern.json` authors **110 deg**. `a060e78` adopted the 25 anyway | `FINDINGS-FIXTURE-LIGHT-BAND.md` conditions section against `data/lantern.json:44` | Ladder 3's three rungs re-run at 110 deg, or the authored cone changed to match what was measured. Needs the editor and the bridge, so it waits with M1 |
-| **M6** | **`BSW_STOCK_BAY`'s tag is unverified since the map was saved by another writer.** The greybox store room was written into `LLK_Boswells_FirstRun.umap` while that map was assigned to this lane. Nothing was lost — `BSW_STOCK_BAY`, `LLK.StockBay`, `LLK.Patrol`, `BSW_WRONG_CRATE`, `WL_PlayerStart`, `BSW_LOADING_DOCK_EXIT`, the Sweeper and fourteen relic references are all in the new 146,495-byte package | Byte search of the package, 2026-11-02. **Those are name-table hits**: they prove the strings are still referenced and cannot prove the tag is still *attached* to the actor. Presence never proves placement — the same limit `tests/enemies.test.mjs` states about its own asset scan | `find_actors` by tag returns `BSW_STOCK_BAY`, or the Stock beat runs once in PIE. One call in the same editor sitting as M1 and M5 |
+| **M5** | **Ladder 3's lantern reading was taken on the wrong cone.** "25 cd reads as a carried lantern" came from a 72 deg outer cone; `data/lantern.json` authors **110 deg**. `a060e78` adopted the 25 anyway | `FINDINGS-FIXTURE-LIGHT-BAND.md` conditions section against `data/lantern.json:44` | Ladder 3's three rungs re-run at 110 deg, or the authored cone changed to match what was measured. Needs the editor and the bridge - **check 4 of "The editor sitting" below** |
+| **M6** | **`BSW_STOCK_BAY`'s tag is unverified since the map was saved by another writer.** The greybox store room was written into `LLK_Boswells_FirstRun.umap` while that map was assigned to this lane. Nothing was lost — `BSW_STOCK_BAY`, `LLK.StockBay`, `LLK.Patrol`, `BSW_WRONG_CRATE`, `WL_PlayerStart`, `BSW_LOADING_DOCK_EXIT`, the Sweeper and fourteen relic references are all in the new 146,495-byte package | Byte search of the package, 2026-11-02. **Those are name-table hits**: they prove the strings are still referenced and cannot prove the tag is still *attached* to the actor. Presence never proves placement — the same limit `tests/enemies.test.mjs` states about its own asset scan | `find_actors` by tag returns `BSW_STOCK_BAY`, or the Stock beat runs once in PIE. One call in the same editor sitting as M1 and M5 - **check 1 of "The editor sitting" below** |
 | **M3** | **Status lines on every `FINDINGS-*.md`** | This file's whole argument | Done 2026-11-02, in the same commit as this file |
 | **M4** | **The orientation half of the exposure sweep (Bay B)** | Longstanding, not acted on | The sweep covers orientation as well as intensity |
+
+---
+
+## The editor sitting — everything that needs a viewport, in one pass
+
+Written 2026-11-02 on Chris's instruction, because **M1, M5, M6 and the C2
+judgement are four rows blocked on one thing**, and a list is cheaper than four
+rows each saying "needs the editor". Nobody can do any of it from a terminal:
+these need a running editor, the MCP bridge, and in two places a human looking
+at a screen.
+
+**Step 0, and it is the step that gets forgotten.** The bridge does not start
+with the editor. In the editor console:
+
+```
+ModelContextProtocol.StartServer
+```
+
+Until that runs, `127.0.0.1:8000/mcp` refuses every connection and the four
+checks below cannot be driven at all.
+
+**Two traps that would make this list return wrong answers**, both already in
+`docs/TOOLING-TRAPS.md`:
+
+- **Trap 6 — `find_actors` answers about the level that is open.** If
+  `LLK_DockBay` is the open level, a sweep for `BSW_STOCK_BAY` returns empty
+  and that empty is about the wrong world, not about the tag. **Open
+  `/Game/LLK_Boswells_FirstRun` first and confirm it.**
+- **Trap 13 — during PIE the scene tools answer about the `UEDPIE_0_`
+  duplicate.** Read freely while PIE runs; **write nothing**, because the edit
+  lands in a world that is discarded on stop and the read-back confirms it by
+  reading the same doomed world.
+
+### The four checks, cheapest first
+
+| | Check | How | Closes |
+| --- | --- | --- | --- |
+| **1** | **Is `LLK.StockBay` still attached to `BSW_STOCK_BAY`?** The greybox save rewrote the package; a byte search proves the strings are still referenced and cannot prove the tag is still on the actor | `find_actors` by tag. One call | **M6** |
+| **2** | **Do the Sweeper's four cues read?** Lowest third of the screen, in PIE, with the debug HUD from `8738b57`: *"something has noticed you"* on telegraph, *"a machine is dealing with something of yours"* on start, *"it saw you, and left your crate where it was"* on interrupt, *"your crate has been put somewhere it belongs"* on filed | Play it. This is a human judgement, not a measurement — the question is whether a player could tell that lighting up is what saved the crate | the **C2** judgement. Not C2 itself: that needs the authored sound, and the readout exists to be deleted |
+| **3** | **Does the lantern light its own glass, and does a relic still read from the new anchor height?** Lumen is verified live, so what remains is the lantern's own emissive and the rig. The anchor moved **17.0 cm** mostly downward and the gameplay light moved with it | Judge it in Boswell's during the visual pass, not in `LLK_LightLab` — this is where the lantern has to look right. Read the relic at the authored distance, not at a lab distance | the open half of **M1** |
+| **4** | **Re-run Ladder 3 at the authored cone.** "25 cd reads as a carried lantern" was measured at **72°** outer; `data/lantern.json` authors **110°**, so the same candela is spread wider and the shipping fixture is not the one that was tested | Three rungs — 6, 25, 100 cd — at 110°, per `LIGHTLAB-PROTOCOL.md`. Or change the authored cone to match what was measured, which is Chris's call either way | **M5** |
+
+Checks 1 and 4 are measurements and can be driven through the bridge. Checks 2
+and 3 need eyes on a screen and are Chris's, since he is the only one who can
+press Play.
 
 ---
 
