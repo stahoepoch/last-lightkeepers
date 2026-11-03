@@ -68,7 +68,8 @@ Tagging the bay is necessary and was not sufficient. The brain also gated on
 `DistanceToMisplacedStuds <= Contact.ContactRange`, 5 studs, and **the closest
 any patrol leg in Boswell's comes to any authored relic is 6.26 studs** — 35
 centimetres outside, with three laps producing nothing. The MCP session tagged
-`BSW_STOCK_BAY` at (450, 450, 50) in `46b46ee`, observed the beat end to end
+`BSW_STOCK_BAY` at (450, 450, 50) in `46b46ee` — **moved to (450, 390, 50) in
+`98796d4`**, see below — observed the beat end to end
 in PIE only by parking a relic 3.59 studs away, and asked whether to nudge a
 patrol point or a relic to close the gap.
 
@@ -184,7 +185,10 @@ walk back, with a patrol between you and it.
   1.93 s apart, against the authored `FallbackStockSeconds = 2`. The relic's
   destination was then read out of the running PIE world at
   **(450, 450, 50)** - the tagged actor's own origin - so the filing went to
-  the bay rather than merely happening.
+  the bay rather than merely happening. That coordinate is **where the bay
+  stood on 2026-11-02 and is not where it stands now**: `98796d4` moved it
+  to (450, 390, 50) because the original sat 20 cm from a 60 cm walk-lab
+  partition and a 100 cm crate would have interpenetrated it by 30.
 - **The condition was forced, not waited for.** An idle 16-second run - about
   three full patrol laps, the circuit being 2021 cm at 392 cm/s - produced *no*
   stock line at all, because of the 5-stud reach gate above. The observation
