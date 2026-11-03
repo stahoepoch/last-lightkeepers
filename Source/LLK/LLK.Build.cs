@@ -12,6 +12,9 @@ public class LLK : ModuleRules
             "CoreUObject",
             "Engine",
             "EnhancedInput",
+			// Explicitly enabled in the .uproject: the contact response is a
+			// local camera shake, never a movement/input lock.
+			"EngineCameras",
             // Map-readiness navigation diagnostics.  The runtime contract owns
             // the observations; this module supplies the read-only query API.
             "NavigationSystem",

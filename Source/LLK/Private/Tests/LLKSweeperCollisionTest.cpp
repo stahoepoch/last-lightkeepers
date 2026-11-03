@@ -6,6 +6,7 @@
 // respects the store's gondolas and walls.
 
 #include "Components/CapsuleComponent.h"
+#include "Characters/LLKStumbleCameraShake.h"
 #include "Data/LLKLanternData.h"
 #include "Enemies/LLKSweeper.h"
 #include "Misc/AutomationTest.h"
@@ -47,6 +48,14 @@ bool FLLKSweeperCollisionTest::RunTest(const FString& Parameters)
 			CueAttenuation->Attenuation.bSpatialize);
 		TestTrue(TEXT("the temporary telegraph cue falls off with distance"),
 			CueAttenuation->Attenuation.bAttenuate);
+	}
+
+	const ULLKStumbleCameraShake* StumbleShake = GetDefault<ULLKStumbleCameraShake>();
+	if (TestNotNull(TEXT("a stumble has an input-safe camera acknowledgement"), StumbleShake))
+	{
+		TestTrue(TEXT("the stumble shake is brief rather than a second containment timer"),
+			StumbleShake->OscillationDuration > 0.f && StumbleShake->OscillationDuration < 1.f);
+		TestTrue(TEXT("the stumble shake cannot stack into visual noise"), StumbleShake->bSingleInstance);
 	}
 
 	// Read the generated asset, not merely data/lantern.json. The first run

@@ -1,6 +1,7 @@
 #include "Enemies/LLKSweeper.h"
 
 #include "Characters/LLKCharacter.h"
+#include "Characters/LLKStumbleCameraShake.h"
 #include "Characters/LLKVitalsComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -13,6 +14,7 @@
 #include "Enemies/LLKPerception.h"
 #include "Enemies/LLKVisibility.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/PlayerController.h"
 #include "LLK.h"
 #include "Loot/LLKRelicComponent.h"
 #include "LLKUnits.h"
@@ -691,6 +693,15 @@ void ALLKSweeper::Act(const FLLKSweeperStep& Step)
 		if (ALLKCharacter* Keeper = Cast<ALLKCharacter>(Target->GetOwner()))
 		{
 			Keeper->ApplyStumble();
+
+			// A stumble costs distance and tempo; it never removes input.  The
+			// controller's client RPC plays only for the keeper who was clipped,
+			// including a listen-server host, so another player cannot have their
+			// view shaken by somebody else's contact.
+			if (APlayerController* PlayerController = Cast<APlayerController>(Keeper->GetController()))
+			{
+				PlayerController->ClientStartCameraShake(ULLKStumbleCameraShake::StaticClass());
+			}
 		}
 
 		UE_LOG(LogLLK, Log, TEXT("%s clipped a keeper's feet."), *GetName());
