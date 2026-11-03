@@ -327,6 +327,7 @@ the lane above.
 | Five feelings | "Five feelings, each turned over" | Scary and fun are one inverted-U (Andersen et al. 2020). Addictive is the thesis's "one more night," and a season, a streak, a pass, or a fifth counter is the pattern being refused. The emotional gamble is a price the crew can name. A designed near-miss is Clark's slot machine (Neuron, 2009) and is refused. |
 | The build | "The build", same hard-run section | Two active cards, both Chris's: seven measured lines from one sitting, and one sound on `OnStockInterrupted`. The vault opens only if the landed counter is above the 56 cm hop. Later rows are the full scale and are inactive. |
 | The instrument | "The instrument, in parts" | One lamp. Hooded / Working / Open are flashlight, lantern, beacon. The stick and setting the lamp down are the flare. Left click commits the light. Right click shutters it, and only after a machine can hear. Not the aisle's next card, and not two extra actions stuffed into the seven. |
+| Grok's slice | "The slice that can be coded" | Pure `Step` for the clicks, test `LLK.Lantern.Clicks`, no actor. Blocked while the Sweeper brain files are dirty in `Source/LLK`. Not a second writer in that module. |
 
 Checked against `HEAD` after `bb50592` and `bd7c300`, and two of the old
 misreads are retracted in the board rather than left as warnings:

@@ -540,6 +540,41 @@ No new radius in this table. Notice and reach stay the authored pair, 38 and
 | Left click | Commit the gaze. Real-time, per Swink: the cone changes with the press. | It cycles modes, or it throws without a ready, or it pays out with no change in the room. | The stamp resolves on the hold, and a notice that was not there before the click is there after it. |
 | Right click | Withhold, on the hold. The flinch with a receipt. | It is bound before the hearing path exists. | With the sound off, the shutter stops being worth holding. That is the gate, failed in the open. |
 
+### The slice that can be coded
+
+The lane, named so it can be refused. Pure rules for the lantern's hands.
+The same shape as `LLKExtraction`: a state, a step, a test, no actor. Not
+the Sweeper, not the map, not `data/*.json`, not the seven input assets, not
+the editor, not tools.
+
+`Source/LLK` is one module, and the lane rule is one writer in it at a time.
+This slice waits while `LLKSweeperBrain.cpp`, `LLKSweeperBrainTest.cpp`, and
+`tests/enemies.test.mjs` are dirty. A new file in that module beside an
+uncommitted brain is the collision the rule is for.
+
+What is already built, so the slice does not rebuild it. `FLLKLanternLightLevel`
+is Hooded / Working / Open, with a detectability that is not intensity.
+`SetActiveLevelIndex` exists. `data/lantern.json` has no levels, so play still
+resolves to one synthesised state. Nothing in the character calls the setter
+from a hand. Power is `ULLKLanternComponent`'s on/off, bound in the plan to F.
+There is no shutter state.
+
+The function, when the module is clear. `Step(state, click)`:
+
+| Click | Result |
+| --- | --- |
+| Commit (left) | Spill stays as it was. Level index stays. Power stays. The step reports that a commit happened, and only if the spill is open. |
+| Shutter down (right held) | Power stays on. Spill closes. Hum stays on. Level index stays. |
+| Shutter up | Spill returns. No warm-up. Warm-up belongs to power. |
+| Power | Off kills spill and hum. A shutter release does not turn the cell back on. |
+| Hood next / prev | The only clicks that move the level index. With one level, they do nothing. |
+
+The test is `LLK.Lantern.Clicks`. It fails if a commit changes the hood, if a
+shutter clears the hum, or if a shutter release turns a powered-off cell back
+on. It does not pick radii. It does not subscribe to the Sweeper. Wiring the
+two mouse actions into `IMC_LLK` is a later card, and it is not folded into
+the seven.
+
 ### What this refuses
 
 A second flashlight in the inventory. A beacon that is a placed gadget with
