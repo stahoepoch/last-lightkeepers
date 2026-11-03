@@ -456,6 +456,37 @@ brings its own costs, and all of them are manageable if you check:
 - **Trace every measurement region too**, so you know what each sampling box is
   actually looking at. See `docs/TOOLING-TRAPS.md` 10.
 
+### Confirmed 2026-11-02, and the diagnostic is sharper than the warning
+
+The bullet above says the window must be visible and uncovered. That is right,
+and here is what it looks like from the inside, because the failure does not
+announce itself:
+
+**`CaptureEditorImage` returns a stale frame rather than failing.** With the
+editor window occluded, two genuinely different editor states returned a
+**byte-identical PNG** - same sha1, same size. Not a similar image: the same
+image. A run that does not hash its frames will read that as a stable
+measurement.
+
+The three symptoms, in the order they appeared, because the first two are
+ambiguous and only the third is a verdict:
+
+| # | Observation | What it could mean |
+| --- | --- | --- |
+| 1 | 0 cd and 5000 cd frames had **different file hashes but identical sampling boxes** to three decimals | either the light is not reaching the view, or the boxes are on the wrong pixels |
+| 2 | The frame showed **Bay A** while `GetCameraTransform` *and* `ScreenCoordsToWorld` both agreed the camera was in Bay C | the rendered viewport is not the viewport the tools reach |
+| 3 | After `FocusOnActors` on the Bay C spot, the capture was **byte-identical to the previous one** | **the window is not redrawing at all.** Two different editor states cannot produce one identical image |
+
+Only 3 is conclusive, and it is cheap: issue any command that must change the
+view, capture, and compare hashes. If the hash does not move, nothing after it
+is a measurement.
+
+**So the precondition is operational, not technical:** the Unreal editor window
+must be frontmost and unoccluded for the duration of a ladder. An agent driving
+the bridge from another application cannot satisfy that on its own - the person
+at the machine has to leave the editor on top. Worth stating plainly in a
+project where three parties share one editor.
+
 `CaptureViewport` remains useful for things that are not photometry — checking
 framing, confirming an actor is where you think, producing an annotated overlay
 of actor names. Just never read a brightness off it.

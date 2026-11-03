@@ -883,3 +883,42 @@ Two of the three legs are blocked on the straight line - P1 to P2 at 32.5 cm,
 P2 to P3 at 698 of 886 - and P3 to P1 is clear. That is ordinary for a room with
 gondola runs in it; nav paths around. Noted only so nobody later reads a blocked
 straight line as a blocked route.
+
+---
+
+## 2026-11-02 - Claude (MCP): check 4 blocked at step zero, which is step zero working
+
+Chris said run it, so the lab was loaded and Ladder 3 set up at the Bay C pose.
+**Not one rung was recorded, and that is the result.**
+
+The positive control failed. 0 cd and 5000 cd gave different file hashes and
+**identical sampling boxes** - 5.016, 48.405 and 0.396, to three decimals, in
+both. Ambiguous on its own: either the light was not reaching the view or the
+boxes were on the wrong pixels. Looking at the frame answered it - the viewport
+was showing **Bay A**, with `BayA_Card` and `BayA_PriceText` in the outliner,
+while `GetCameraTransform` *and* a `ScreenCoordsToWorld` trace both insisted the
+camera was in Bay C looking at the far wall at (900, -1000, 5).
+
+The verdict came from one more call. `FocusOnActors` on the Bay C spot, then
+capture: **byte-identical to the previous frame**, same sha1. Two different
+editor states cannot produce one identical image, so the window was not
+redrawing at all - it was occluded, which section 9 already warns about. The
+new part worth recording is that `CaptureEditorImage` **returns a stale frame
+rather than failing**, so a run that does not hash every frame reads a dead
+window as a stable measurement.
+
+That precondition is operational rather than technical: the editor window has to
+be frontmost and unoccluded for a whole ladder, and an agent driving the bridge
+from another application cannot arrange that for itself.
+
+**A prediction recorded before the measurement, so it cannot be fitted to the
+result afterwards.** M5 was opened on the worry that "25 cd at 72 deg" would not
+transfer to the authored 110 deg. In Unreal, candelas are luminous intensity
+*per steradian*, so widening the cone should not dim what is directly ahead - it
+should widen the lit region and leave the centre pool where it is. If that
+holds, M5 closes as a non-issue and opening it was my error, in the same family
+as the others this week: a number treated as suspect because a parameter changed
+around it, without checking whether that parameter is in the equation at all.
+
+The lab was left as found: intensity 0, cone untouched at 72 / 17.28, nothing
+saved.
