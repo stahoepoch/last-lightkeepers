@@ -384,6 +384,43 @@ for (const rel of [PURE_HEADER, PURE_IMPL, SUBSYSTEM_HEADER, SUBSYSTEM_IMPL, TES
   );
 }
 
+// The far side of the convergence chain, which these tests could not see.
+//
+// Rows 74 and 75 above guard the extraction subsystem's half: the rig plants
+// `AddOrRefreshDistressPulse` under one `RigLightSourceName()`. But that
+// pulse only converges anybody because the gameplay light field walks
+// DistressPulses alongside lanterns - and that loop lives in the STORM
+// subsystem, a file none of the checks above open.
+//
+// So the link that would silently end the climax of every run is the one
+// nothing was reading. Nothing in `Source/LLK/Private/Enemies/` consults the
+// extraction call at all; patrols come because the dock is lit. Drop the loop
+// and the rig still lights, every check above still passes, and no patrol
+// ever arrives.
+//
+// **Checked as one distinctive line rather than by slicing the function.**
+// Two earlier drafts of this passed with the link deliberately broken: the
+// first regex spanned the whole file and matched a `DistressPulses` belonging
+// to a different function, and the second tried to cut GetLitLightSources out
+// with a lazy `\n}` - but this file reads comment-stripped source, so the
+// brace it found was not the one the raw file has. The loop header below
+// occurs exactly once in the project and states the whole invariant on its
+// own.
+{
+  const storm = stripComments(
+    read("Source/LLK/Private/Storm/LLKZonePressureSubsystem.cpp") ?? "",
+  );
+
+  check(
+    "ROW 74: the light field still carries distress pulses to the enemies",
+    /for\s*\(\s*const\s+FLLKDistressPulse\s*&\s*\w+\s*:\s*DistressPulses\s*\)/.test(storm),
+    "the gameplay light field no longer walks DistressPulses, so an " +
+      "extraction's rig light exists and nothing can perceive it. Every " +
+      "run's twenty-second hold becomes standing still, with every other " +
+      "extraction check green",
+  );
+}
+
 console.log(`\n${checks - failures}/${checks} passed`);
 if (failures > 0) {
   console.log(`${failures} FAILED\n`);
