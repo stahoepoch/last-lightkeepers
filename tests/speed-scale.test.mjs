@@ -175,12 +175,32 @@ const sourceFiles = (() => {
 
 // Every cm/s figure the OLD scale produced. A literal matching one of these
 // is a copy that did not move when the data did.
+//
+// **These are HISTORY, not `authored x 2`.** They were derived that way until
+// 2026-11-04, which worked for exactly as long as the only change on record
+// was the halving. Then Chris raised sprint to 12.5 studs on its own, and the
+// derivation started hunting for `12.5 x 2 = 25` studs, 700 cm/s - a value
+// this project has never held. Sprint's superseded value is 23 studs, 644.
+//
+// It found 700 immediately, in `FallbackWardenPressureValue = 700.f`, which
+// is a pressure in storm units and has nothing to do with speed. So the guard
+// reported a stale speed that was not stale and not a speed, on the first
+// tuning change after it was written.
+//
+// The pre-retune scale is a fact about what this repository used to say, so it
+// is written down. Adding a future rescale means adding a row here, which is
+// the kind of edit that gets noticed.
+const SUPERSEDED_STUDS = [
+  ["walk", 16],
+  ["sprint", 23],
+  ["crouch", 9],
+];
+
 const stale = new Map();
-for (const [name, oldStuds] of [
-  ["walk", authored.walk * 2],
-  ["sprint", authored.sprint * 2],
-  ["crouch", authored.crouch * 2],
-]) {
+for (const [name, oldStuds] of SUPERSEDED_STUDS) {
+  // A value that is ALSO the current authored speed is not stale - it is
+  // correct, and flagging it would be the opposite of this guard's job.
+  if (oldStuds === authored[name]) continue;
   stale.set(cm(oldStuds), `${name} at the pre-7426625 scale (${oldStuds} studs)`);
 }
 
@@ -194,6 +214,16 @@ for (const file of sourceFiles) {
     // stale documentation rather than a stale computation.
     const code = line.replace(/\/\/.*$/, "").replace(/\/\*[\s\S]*?\*\//g, "");
     if (/^\s*\*/.test(line) || !code.trim()) return;
+    // The line must be ABOUT a speed, not merely contain a number that one of
+    // the old speeds happened to equal. Added 2026-11-04 with the history
+    // above: a bare numeric match flagged a storm-pressure constant, and a
+    // guard that cries wolf is one somebody eventually loosens. Division by
+    // the literal counts too, since `Speed / 448.f` is the exact defect this
+    // was built to catch and names no speed on the left.
+    const aboutSpeed = /speed|walk|sprint|crouch|velocity|cms|cm\/s/i.test(code)
+      || /\bSize2D\(\)|GetVelocity\(\)/.test(code);
+    if (!aboutSpeed) return;
+
     for (const [value, why] of stale) {
       const literal = new RegExp(`(?<![\\d.])${value}(\\.\\d*)?f?(?![\\d.])`);
       if (literal.test(code)) {

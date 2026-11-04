@@ -58,10 +58,12 @@
 
   "movement": {
     "walkSpeed": 8,
-    "sprintSpeed": 11.5,
+    "sprintSpeed": 12.5,
     "crouchSpeed": 4.5,
     "_note": "Movement is a readability and route-choice tool, not a stamina minigame. Sprint gets you to an exit or away from a Sweeper; crouch gives players a deliberate slow mode for tight shops and careful approach. Neither changes zone pressure.",
     "_retuneNote": "Chris's call, 2026-11-04, after the dressing pass (d399e40) gave real racking to judge speed against: every value here HALVED, from 16/23/9. The old walk was 448 cm/s - 4.48 m/s, 3.2x a human walk - and crossing the 28 m store took 6.2 seconds, which is why the room read as too small. It was not too small; you crossed it like a car. Now walk 224 cm/s (2.24 m/s, brisk), sprint 322 (3.08 m/s, a jog), crouch 126 (1.26 m/s, a creep). Ratios are preserved exactly at k=0.5, so sprint/walk stays 1.4375 and crouch/walk stays 0.5625 - the feel of the gear change is unchanged, only the scale moved. Fractional studs are deliberate: at these speeds one stud is 9% of sprint, so integers are too coarse to hold the escape margin. See docs/PROPOSAL-MOVEMENT-RETUNE.md for the invariant these have to satisfy and the arithmetic behind the Sweeper's matching change.",
+    "_sprintRaisedNote": "Chris's call, 2026-11-04, after walking the dressed circuit at the halved scale: 'it feels better, running could be a little faster.' Sprint 11.5 > 12.5 studs, 322 > 350 cm/s, 3.22 > 3.50 m/s. Walk is untouched, so this DELIBERATELY breaks the ratio the rescale preserved: sprint/walk goes 1.4375 > 1.5625. That is the point - he asked for more separation between walking and running, not for everything to speed up, so the gear change is now wider than it was before the retune as well. tests/movement.test.mjs asserted the old ratio and failed on this, which is the guard doing its job; its expectation moved with a dated note rather than being loosened. Safe for the escape invariant in the easy direction: raising sprint LOWERS the Sweeper's fraction of it, from 0.522 to 0.480 against a ceiling of 0.616, and the worst legal state (stumbled, three relics) clears by 1.28x instead of 1.18x. If it still reads slow the next stop is 13.5 (378 cm/s); walk is the one to leave alone, since 2.24 m/s is what finally made the store feel like a room.",
+
     "_crouchIsNotEscape": "Crouch at 126 cm/s is SLOWER than a Sweeper at 168. That is deliberate and it is not a balance oversight: crouch is for not being noticed, not for getting away. If you are seen while crouched the answer is to stand up and sprint, which is the decision the two speeds exist to pose."
   }
 }

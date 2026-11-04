@@ -71,7 +71,35 @@ struct FLLKExtractionReadout
 	UPROPERTY(BlueprintReadOnly, Category = "LLK|Extraction")
 	bool bUrgent = false;
 
-	bool HasAnything() const { return !ZonePrompt.IsEmpty() || !Centre.IsEmpty(); }
+	/**
+	 * Where to take what you are carrying. Empty unless you are carrying
+	 * something and are not already standing at an exit.
+	 *
+	 * **Why this is a third field and not `Centre`.** Chris, 2026-11-04, after
+	 * walking the dressed circuit: *"i still don't know how to extract."* He
+	 * was right, and nothing was broken - the zone prompt works, and it only
+	 * ever appears once you are already standing in the bay. So the game told
+	 * you how to extract exactly when you no longer needed telling, and never
+	 * told you the dock existed.
+	 *
+	 * `Centre` is deliberately silent while the run is idle: an idle run has
+	 * no climax, and `tests/extraction.test.mjs` guards that branch against
+	 * writing one. That rule is right and this is not an exception to it - a
+	 * keeper holding a relic with nowhere to put it is not a climax, it is an
+	 * errand. So it gets its own field, and the HUD places it quietly.
+	 *
+	 * It is gated on carrying because extraction REFUSES an empty-handed
+	 * call, and a line telling you to do something the rules forbid is worse
+	 * than no line. Before you are carrying, the objective is to find
+	 * something, which is a different sentence nobody has written yet.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "LLK|Extraction")
+	FString Objective;
+
+	bool HasAnything() const
+	{
+		return !ZonePrompt.IsEmpty() || !Centre.IsEmpty() || !Objective.IsEmpty();
+	}
 };
 
 namespace LLKExtractionReadout
@@ -85,8 +113,24 @@ namespace LLKExtractionReadout
 	 * the snapshot - above all `bHoldStalled`, which a client could not work
 	 * out for itself because only the server knows who is in the bay.
 	 */
+	/**
+	 * `CarriedCount` and `NearestExitId` are what the objective line needs,
+	 * and both are local facts like `bAtZone`: what you are holding, and which
+	 * authored exit is closest to you. Defaulted so every existing caller and
+	 * test keeps compiling and keeps getting exactly the readout it got
+	 * before - an unsupplied exit means no objective line rather than a line
+	 * naming nowhere.
+	 */
 	LLK_API FLLKExtractionReadout Describe(
-		const FLLKExtractionSnapshot& Snapshot, bool bAtZone);
+		const FLLKExtractionSnapshot& Snapshot, bool bAtZone,
+		int32 CarriedCount = 0, FName NearestExitId = NAME_None);
+
+	/**
+	 * `LoadingDock` -> `Loading Dock`, for a line a player reads rather than
+	 * types. The ids are authored in `data/loot.json` and are the same strings
+	 * `LLK.CallExtraction` takes, so this only ever changes presentation.
+	 */
+	LLK_API FString HumaniseExitId(FName ExitId);
 
 	/** `0:08`, the way a countdown reads. Rounds up, so a running clock never shows 0:00. */
 	LLK_API FString FormatSeconds(float Seconds);

@@ -320,8 +320,36 @@ void ALLKDebugHUD::DrawExtraction()
 		&& Interactor->GetFocusedCasualty() == nullptr
 		&& Interactor->GetFocused() == nullptr;
 
-	const FLLKExtractionReadout Readout =
-		LLKExtractionReadout::Describe(GameState->GetExtractionSnapshot(), bAtZone);
+	// **The nearest authored exit, for the objective line.** Found here rather
+	// than passed through the snapshot, because which exit is closest is a
+	// fact about where THIS keeper is standing - the same reason `bAtZone` is
+	// answered locally. Zones that name an exit nothing authored already
+	// report themselves at BeginPlay, so an id reaching this point is one
+	// `data/loot.json` knows.
+	const int32 CarriedCount = Interactor != nullptr ? Interactor->GetCarriedCount() : 0;
+	FName NearestExitId = NAME_None;
+	if (CarriedCount > 0 && Character != nullptr)
+	{
+		const FVector From = Character->GetActorLocation();
+		float NearestSquared = TNumericLimits<float>::Max();
+		for (TActorIterator<ALLKExtractionZone> It(const_cast<UWorld*>(World)); It; ++It)
+		{
+			if (It->ExtractionPointId.IsNone())
+			{
+				continue;
+			}
+
+			const float DistanceSquared = FVector::DistSquared(It->GetActorLocation(), From);
+			if (DistanceSquared < NearestSquared)
+			{
+				NearestSquared = DistanceSquared;
+				NearestExitId = It->ExtractionPointId;
+			}
+		}
+	}
+
+	const FLLKExtractionReadout Readout = LLKExtractionReadout::Describe(
+		GameState->GetExtractionSnapshot(), bAtZone, CarriedCount, NearestExitId);
 	if (!Readout.HasAnything())
 	{
 		return;
@@ -377,6 +405,28 @@ void ALLKDebugHUD::DrawExtraction()
 		FCanvasTextItem Item(FVector2D(CentreX - W * 0.5f, Y),
 			FText::FromString(Readout.Centre), Font,
 			Readout.bUrgent ? ColourUrgent : ColourCause);
+		Item.Scale = FVector2D(S, S);
+		Item.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.95f));
+		Canvas->DrawItem(Item);
+	}
+
+	// ---- the errand, low and quiet --------------------------------------
+	//
+	// Bottom-centre and at the zone prompt's size rather than the centre
+	// line's, because this is a standing reminder and not an event. It is in
+	// the lower third so it does not compete with the crosshair or the shelf
+	// brackets, and it leaves centre screen free for the climax that `Centre`
+	// is reserved for.
+	if (!Readout.Objective.IsEmpty())
+	{
+		float W = 0.f;
+		float H = 0.f;
+		const float S = 1.2f * Scale;
+		Canvas->TextSize(Font, Readout.Objective, W, H, S, S);
+
+		FCanvasTextItem Item(
+			FVector2D(Canvas->SizeX * 0.5f - W * 0.5f, Canvas->SizeY * 0.86f),
+			FText::FromString(Readout.Objective), Font, ColourQuiet);
 		Item.Scale = FVector2D(S, S);
 		Item.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.95f));
 		Canvas->DrawItem(Item);

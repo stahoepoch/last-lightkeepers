@@ -30,7 +30,33 @@ namespace LLKExtractionReadout
 		return FString::Printf(TEXT("%d:%02d"), Whole / 60, Whole % 60);
 	}
 
-	FLLKExtractionReadout Describe(const FLLKExtractionSnapshot& Snapshot, const bool bAtZone)
+	FString HumaniseExitId(const FName ExitId)
+	{
+		if (ExitId.IsNone())
+		{
+			return FString();
+		}
+
+		// A space before each capital that follows a lower-case letter, which
+		// turns LoadingDock into Loading Dock and leaves an already-spaced or
+		// single-word id alone.
+		const FString Raw = ExitId.ToString();
+		FString Out;
+		Out.Reserve(Raw.Len() + 4);
+		for (int32 Index = 0; Index < Raw.Len(); ++Index)
+		{
+			const TCHAR Ch = Raw[Index];
+			if (Index > 0 && FChar::IsUpper(Ch) && FChar::IsLower(Raw[Index - 1]))
+			{
+				Out.AppendChar(TEXT(' '));
+			}
+			Out.AppendChar(Ch);
+		}
+		return Out;
+	}
+
+	FLLKExtractionReadout Describe(const FLLKExtractionSnapshot& Snapshot, const bool bAtZone,
+		const int32 CarriedCount, const FName NearestExitId)
 	{
 		FLLKExtractionReadout Readout;
 
@@ -53,6 +79,20 @@ namespace LLKExtractionReadout
 			if (bAtZone)
 			{
 				Readout.ZonePrompt = FString::Printf(TEXT("Hold [E]%scall Lanternhold"), Dash);
+				return Readout;
+			}
+
+			// Not at an exit, but holding something that needs one. This is
+			// the answer to "i still don't know how to extract": the offer
+			// above is only visible from inside the bay, so a keeper with a
+			// relic and no idea where the bay is was being told nothing at
+			// all. See `FLLKExtractionReadout::Objective` for why this is not
+			// a centre line.
+			if (CarriedCount > 0 && !NearestExitId.IsNone())
+			{
+				Readout.Objective = FString::Printf(
+					TEXT("Carrying %d%sreach the %s and hold [E]"),
+					CarriedCount, Dash, *HumaniseExitId(NearestExitId));
 			}
 			return Readout;
 

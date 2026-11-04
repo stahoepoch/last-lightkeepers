@@ -280,7 +280,9 @@ protected:
 	float FallbackWalkStuds = 8.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Data", meta = (ClampMin = "0"))
-	float FallbackSprintStuds = 11.5f;
+	// 12.5 since 2026-11-04: Chris, after walking it, "running could be a
+	// little faster." Walk deliberately held, so the gear change widened.
+	float FallbackSprintStuds = 12.5f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Data", meta = (ClampMin = "0"))
 	float FallbackCrouchStuds = 4.5f;
