@@ -1,10 +1,18 @@
 # Finding — the gameplay light anchor may be one capsule half-height too high
 
-> **Status: OPEN, 2026-11-04. High confidence, not confirmed.** One editor read
-> settles it and the editor is open but unreachable (no MCP bridge, Chris
-> remote). **Nothing was changed.** The fix is one line and *which* line is a
-> decision for whoever owns the lantern, which is why no test asserts a choice
-> yet.
+> **Status: OPEN, 2026-11-04. Confirmed by elimination; one runtime read would
+> make it direct.** **Nothing was changed.** The fix is one line and *which*
+> line is a decision for whoever owns the lantern, which is why no test asserts
+> a choice yet.
+>
+> The capsule is UE's default 88/34 because **nothing in the project can
+> override it**: `LLKTestGameMode.cpp:111` sets
+> `DefaultPawnClass = ALLKCharacter::StaticClass()` — a C++ class with no
+> Blueprint subclass anywhere in `Content/` — and the only
+> `GetCapsuleComponent()` call in the whole of `Source/` is
+> `LLKSweeper.cpp:70`, which sets a collision *response*, not a size. No
+> `SetCapsuleSize`, no `InitCapsuleSize`, no BP default. So half-height 88
+> stands, and the anchor lands at 240.
 
 Found while speccing the retail-floor swap in
 `FINDINGS-BOSWELLS-READS-AS-STOCKROOM.md`. It is not an art finding; it
@@ -112,15 +120,27 @@ value reaches the anchor, and that is a different claim from the anchor being
 in the right place. The guarantee is about *purity*, not *position*, and it
 holds either way.
 
-## What would settle it, in one editor read
+## What is confirmed, and what a runtime read would still add
 
-1. `GetCapsuleComponent()->GetScaledCapsuleHalfHeight()` on a possessed keeper.
-   If it is 88, the arithmetic above is confirmed.
+**Confirmed from source:** the pawn is `ALLKCharacter`, it has no Blueprint
+subclass, and nothing anywhere sizes its capsule — so half-height is the engine
+default 88, the constant 152 is `88 + 64`, and the anchor is at 240. The
+arithmetic needs no editor.
+
+**A runtime read would still be worth having**, because it measures rather than
+deduces, and one of these could surprise:
+
+1. `GetCapsuleComponent()->GetScaledCapsuleHalfHeight()` on a possessed keeper
+   — direct confirmation of the 88.
 2. `GetActorLocation().Z` on that keeper standing on a known floor, and the
-   `PlayerStart`'s own Z in `LLK_Boswells_FirstRun`.
-3. `GameplayLightPosition(...)` against the floor under it.
+   `PlayerStart`'s own Z in `LLK_Boswells_FirstRun`. This is the one that could
+   change the conclusion for `LLKMapReadiness`: if the map's PlayerStarts are
+   authored at floor level rather than sitting on it, the harness's eye is
+   already right and only the light is wrong.
+3. `GameplayLightPosition(...)` traced against the floor under it.
 
-If half-height is 88, the anchor is 240 and the finding stands.
+It needs the in-editor MCP bridge, so it needs `ModelContextProtocol.StartServer`
+typed into the editor console — which is why it has not been done.
 
 ## Two fixes, and the choice is not mine
 

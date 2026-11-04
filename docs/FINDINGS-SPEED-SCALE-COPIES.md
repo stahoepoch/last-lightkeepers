@@ -1,14 +1,19 @@
 # Four copies of the scale are fixed. The fifth is the one the player feels.
 
-> **Status: updated 2026-11-04, after `a766711`, `1751090` and `d663596`.**
+> **Status: CLOSED 2026-11-04, 15:32.** All five copies now agree. The editor
+> was closed and `Tools/import_unreal_data.ps1` re-ran: **`DA_Lantern.uasset`
+> carries sprint 12.5 at offset 2236 and 11.5 is gone from the file.** The
+> importer reported 7 DataTables and 4 DataAssets, `Success - 0 error(s)`, so
+> its own verifier compared sprint and crouch and every enemy `moveSpeed` on
+> the way through.
+>
+> `npm test` exits **0** with the whole chain running through for the first
+> time today: `movement.test.mjs` 24/24 (was 23/24 on this exact check) and
+> `speed-scale.test.mjs` 16/16.
+>
 > Written against `7426625` (the halving), when four source constants still
 > held the old scale and the editor-side asset had never been regenerated.
-> **All four are now fixed and the guard is green.** What remains open is the
-> fifth copy, which is not source at all: `Content/Data/DA_Lantern.uasset`
-> holds `sprintSpeed` 11.5 while `data/lantern.json` authors 12.5.
->
-> `tests/speed-scale.test.mjs` is this file's executable form: **16/16.**
-> `tests/movement.test.mjs` is the one that is red, on the asset, correctly.
+> Kept because *why each copy existed* is the part worth not relearning.
 
 ## What changed since this file was first written
 
@@ -62,21 +67,30 @@ That is cosmetic, but **the log line cannot confirm a fractional value** — 350
 and 350.4 print identically. It is still the right confirmation that
 `DA_Lantern` resolved at all.
 
-## The fifth copy, which is the open one
+## The fifth copy, which was the last one open
 
-The same byte scan that proves 4.5 survived also proves the sprint did not:
+The same byte scan that proved 4.5 survived also proved the sprint had not.
+Before the re-import, with the asset at 10:08:23 and `data/lantern.json` at
+10:42:13 — the asset 34 minutes behind the change:
+
+```
+PRESENT  sprint 11.5 (old)       float32 at 2236
+ABSENT   sprint 12.5 (authored)
+```
+
+**So the live game sprinted at 322 cm/s — the value Chris asked to raise —
+while the JSON, the declared fallback, the importer's verifier and
+`speed-scale.test.mjs` all agreed on 350.** After the re-import, same scan,
+same offset:
 
 ```
 PRESENT  walk 8.0                float32 at 139, 1193, 2207
-PRESENT  sprint 11.5 (old)       float32 at 2236
-ABSENT   sprint 12.5 (authored)
+ABSENT   sprint 11.5 (old)
+PRESENT  sprint 12.5 (authored)  float32 at 2236
 PRESENT  crouch 4.5              float32 at 2265
 ```
 
-`DA_Lantern.uasset` is timestamped 10:08:23; `data/lantern.json` is 10:42:13.
-The asset predates the sprint change by 34 minutes. **So the live game sprints
-at 322 cm/s — the value Chris asked to raise — while the JSON, the declared
-fallback, the importer's verifier and `speed-scale.test.mjs` all agree on 350.**
+The old value is not merely shadowed, it is **absent from the file**.
 
 Four of the five copies were brought into line and the fifth is the only one
 the player's thumb can feel. Every green check in this repository was green
@@ -157,21 +171,40 @@ And the deepest one, which is why this file is retitled: four source copies
 were corrected, the guard went green, `npm test` passed, and **the player still
 ran a sprint nobody authored.** Authoring a number is not shipping it.
 
-## Still blocked on the editor
+## What the closed editor also unblocked
 
-The editor is currently **open** (Chris is playing, and is remote), which is
-what blocks these — and the open editor is also why the build target refuses.
+The editor had been open since the morning, which is what held all of this.
+Chris was remote and authorised closing it. Its log showed **zero**
+`MarkPackageDirty` or `SavePackage` lines and four hours of nothing but hourly
+DerivedDataCache maintenance, so nothing was dirty and nothing was lost; it was
+closed by `WM_CLOSE` rather than killed, and it exited with no save prompt,
+which is the second confirmation.
 
-1. **Re-run `Tools/import_unreal_data.ps1`** with the editor closed, so sprint
-   12.5 reaches the asset. `movement.test.mjs` goes green on its own when it
-   does, and it should be fixed that way and never by touching the test.
-   `d663596` also compiled HUD and extraction-readout changes that reach the
-   game by the same route.
-2. **Confirm `DA_Lantern` took** from the possession log — bearing in mind the
-   `%.0f` caveat above cannot distinguish 350 from 350.4.
-3. **Play the dressed circuit at the new speed.** The 28 m room should take
-   about 12.5 s rather than 6.2. This is what the dressing pass could not be
-   judged without, and the central aisle is 573 cm — see
-   `FINDINGS-BOSWELLS-DRESSING-PASS.md`. Note that
-   `FINDINGS-BOSWELLS-READS-AS-STOCKROOM.md` is the live objection to that
-   pass, and it is about the art pack rather than the measurements.
+- **Import:** 7 DataTables, 4 DataAssets, `Success - 0 error(s)`.
+- **Editor build:** `Result: Succeeded` in 17.9 s, genuinely compiling five
+  files including `LLKExtractionReadout.cpp` and `LLKDebugHUD.cpp` — the HUD
+  and objective-line work from `d663596`, which had never reached the editor
+  binary. **So "reach the Loading Dock and hold [E]" now exists in the build**,
+  not just in the source.
+- **Automation:** 35 `Result={Success}`, 0 failures. The DLL is stamped
+  15:33:27 and the automation log 15:34:08, so the suite ran against the new
+  binary rather than a stale one — trap 3's check, done the right way round.
+- **`npm test`:** exit 0, full chain.
+
+## Still not done, and it needs a human at the machine
+
+**Play the dressed circuit at the new speed.** The 28 m room should take about
+12.5 s rather than 6.2, and sprint is now genuinely 350. This is what the
+dressing pass could not be judged without, and the central aisle is 573 cm —
+see `FINDINGS-BOSWELLS-DRESSING-PASS.md`.
+
+Closing the editor traded PIE away to get the above, which was the right trade
+while Chris was remote: the in-editor MCP bridge needs
+`ModelContextProtocol.StartServer` typed into the editor console, so PIE was
+unreachable either way.
+
+Two things to read against when that playtest happens:
+`FINDINGS-BOSWELLS-READS-AS-STOCKROOM.md` is the live objection to the dressing
+and is about the art pack rather than the measurements, and
+`FINDINGS-LANTERN-ANCHOR-ORIGIN.md` has the keeper's light possibly sitting
+88 cm too high, which would change how that circuit reads.

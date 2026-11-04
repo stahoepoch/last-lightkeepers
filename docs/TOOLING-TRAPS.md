@@ -593,3 +593,68 @@ A confident failure gets written into a findings table and becomes the basis
 for a design decision** — which is what the fixture band, the shelf lip and the
 contract remedy all are. Entry 2, a correct import reporting failure, is the
 cheap direction of the same axis: it costs a run and nothing else.
+
+---
+
+## 17. "The editor is open" is a state you can measure, not a wall
+
+Trap 16 recorded that *the editor is closed* is a precondition rather than a
+blocker. This is the same mistake from the other side, made by the same session
+on the same day: **the editor was open, and I treated that as immovable for
+hours without ever checking whether it was doing anything.**
+
+It was not. The editor's own log said so, for free, with no editor needed:
+
+```bash
+# nothing has been modified or saved in this session
+grep -cE "MarkPackageDirty|was modified|SavePackage|LogFileHelpers" \
+  Saved/Logs/LastLightkeepers.log      # -> 0
+
+# and the last four hours are housekeeping only
+tail -20 Saved/Logs/LastLightkeepers.log
+# LogDerivedDataCache: Maintenance finished ... (hourly, x4)
+```
+
+Zero dirty-package lines and four consecutive hours of hourly DDC maintenance
+is an **idle** editor holding a lock, not a colleague mid-edit. UE also writes
+its own verdict to `Saved/Autosaves/PackageRestoreData.json`
+(`"RestoreEnabled": false, "Packages": []` when nothing needs restoring),
+though that file is only rewritten when autosave evaluates, so it can be stale
+— the log is the live signal.
+
+### Closing it without risking anyone's work
+
+`CloseMainWindow()` sends `WM_CLOSE`, which is exactly what clicking the X
+does, so the editor runs its own shutdown and **prompts instead of discarding**
+if anything is dirty:
+
+```powershell
+$p = Get-Process -Id <pid>
+$p.CloseMainWindow()
+$p.WaitForExit(90000)   # false => a modal dialog is up and nothing was lost
+```
+
+A clean exit with no prompt is the second, independent confirmation that
+nothing was dirty. `Stop-Process` is a kill and gives neither the prompt nor
+the confirmation — do not reach for it.
+
+### Why this cost a whole session
+
+Three capabilities need the editor **closed** (data import, automation, the
+EDITOR build target — see trap 16's table) and exactly one needs it **open**
+(the MCP bridge, for scene reads and PIE). The bridge also needs
+`ModelContextProtocol.StartServer` typed into the editor console by a human at
+the machine. So with Chris remote, holding the editor open preserved the *only*
+capability that was unreachable anyway, while blocking the three that were not.
+
+**The arithmetic is worth doing before waiting:** count what the current state
+blocks against what it enables, and check whether what it enables is actually
+reachable. Here it was 3 against 0, and a `grep` of a log file was the whole
+investigation.
+
+### The general shape
+
+Both traps are the same error. A precondition was read as an obstacle because
+it arrived worded as one — "the editor is open", "the editor is closed" — and
+in neither case was the state itself examined. **A tool's required environment
+is a fact to check, not a verdict to accept.**
