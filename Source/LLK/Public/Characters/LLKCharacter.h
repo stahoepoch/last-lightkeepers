@@ -373,7 +373,7 @@ protected:
 	 *   ground - real, and survivable.
 	 */
 	/**
-	 * **0.65, and the floor under it is a hard constraint, not a preference.**
+	 * **0.70, and the floor under it is a hard constraint, not a preference.**
 	 *
 	 * Chris, 2026-11-02, overruling a 0.55 that went too far: **sprint must
 	 * always work.** That is consistent with what he asked for at the start -
@@ -382,32 +382,57 @@ protected:
 	 * and route-choice tool, not a stamina minigame. Sprint gets you to an
 	 * exit or away from a Sweeper."*
 	 *
-	 * **The floor is 392 / 644 = 0.6087** - the Sweeper's speed over the
-	 * keeper's sprint. At or below it a stumbled sprint cannot outrun a
-	 * Sweeper, and Chris has ruled that out. Any future tuning stays above
-	 * it; that is the number to check, not the one below.
+	 * **Raised from 0.65 to 0.70 on 2026-11-04, because 0.65 was below the
+	 * real floor and the rule was being enforced against the wrong number.**
 	 *
-	 * At 0.65, against the authored 448 walk / 644 sprint / 252 crouch and
-	 * the Sweeper's 392:
+	 * This comment used to say the floor was `392 / 644 = 0.6087`, the
+	 * Sweeper's speed over the keeper's sprint. That is the floor for an
+	 * **empty-handed** keeper, and an empty-handed keeper is not who this
+	 * rule exists to protect. The two penalties COMPOUND - see
+	 * `LLKCharacter.cpp:572`, where the burden multiplier and this one are
+	 * multiplied together and the product applied to sprint - so the state
+	 * that decides the rule is stumbled **and** carrying, and the floor is
 	 *
-	 *   - a stumbled **walk** is 291, losing 101 cm/s - over 1.2s that is
-	 *     121 cm of ground, nearly the whole 140 cm contact range. Walking it
-	 *     off is not an option.
-	 *   - a stumbled **sprint** is 419, gaining 27 cm/s. It works, and not by
-	 *     much, which is the tension without the trap.
+	 *     Sweeper / (sprint x minBurdenMultiplier)
 	 *
-	 * **What the stumble actually costs, now that escape is guaranteed:** not
-	 * the chase, but the gap you had built and the choice to keep walking.
-	 * Three contacts take roughly 360 cm off a walker - more than twice
-	 * contact range - so the ladder still escalates. It just never makes
-	 * getting away impossible, which was the point.
+	 * At the old speeds that was `392 / (644 x 0.88) = 0.692`, and 0.65 sat
+	 * **beneath** it: a keeper stumbled while carrying three relics sprinted
+	 * at 368 cm/s against the Sweeper's 392 and was run down with no
+	 * recourse, in precisely the state the game is about. Nobody met it
+	 * because nobody had ever carried a relic to the dock.
 	 *
-	 * Against the first pass of 0.7 for 1.0s: a walker loses 121 cm instead
-	 * of 78, and a sprinter gains 32 instead of 59. Strictly more bite, with
-	 * the escape intact.
+	 * At 0.70, against the retuned 224 walk / 322 sprint / 126 crouch and the
+	 * Sweeper's 168:
+	 *
+	 *   - a stumbled **walk** is 157, which is SLOWER than the Sweeper.
+	 *     Walking it off is not an option, and now decisively so.
+	 *   - a stumbled **sprint** is 225, gaining 57 cm/s.
+	 *   - a stumbled sprint **carrying three relics** is 198, gaining 30.
+	 *     This is the row that matters, and it is the row that used to be
+	 *     negative.
+	 *
+	 * The floor is now `168 / (322 x 0.88) = 0.593`, cleared by 0.107. Check
+	 * that number when tuning, not the unburdened one; `tests/movement.test.mjs`
+	 * asserts it in the worst state so authoring past it fails the suite
+	 * rather than a playtest.
+	 *
+	 * **What the stumble costs now, and the one honest loss in this change:**
+	 * ground. At 0.65 and the old speeds a stumbled walker lost 188 cm over
+	 * 1.2s, more than the 140 cm contact range. At 0.70 and the new speeds it
+	 * is **81 cm**, about 58% of contact range. The stumble bites less than it
+	 * did, in centimetres.
+	 *
+	 * That is not fixable here. The multiplier is floor-bound by the
+	 * invariant above, so **duration is the only free lever** - and it is
+	 * bounded in turn by the contact-recovery window, since a stumble
+	 * outlasting recovery becomes a permanent slow. Restoring the old 188 cm
+	 * would need about 2.8s, which does not fit under the live 2.5s recovery
+	 * and would fit comfortably under 5.0s. Recovery lives in
+	 * `LLKSweeperBrain.cpp` and is Codex's; the two numbers have to move
+	 * together or not at all. See `docs/PROPOSAL-MOVEMENT-RETUNE.md`.
 	 */
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Data", meta = (ClampMin = "0", ClampMax = "1"))
-	float FallbackStumbleMultiplier = 0.65f;
+	float FallbackStumbleMultiplier = 0.70f;
 
 	/**
 	 * 1.2s, still safely under the 1.5s contact cooldown.
@@ -420,6 +445,17 @@ protected:
 	 *
 	 * The duration is doing the work the multiplier is no longer allowed to:
 	 * with escape guaranteed, length is how a contact costs ground.
+	 *
+	 * **Corrected 2026-11-04: the 1.5s above is the authored value and it
+	 * governs nothing.** `LLKSweeperBrain.cpp:390` sets
+	 * `ContactRecoverySecondsRemaining` from `FallbackPatrolDwellSeconds`
+	 * (`:61`, **2.5s**), so the live window is 2.5s and the "0.3s of full
+	 * speed between contacts" is really 1.3s. The bound is still satisfied -
+	 * 1.2 < 2.5 - so nothing here is unsafe, but it is satisfied by accident
+	 * rather than by the number this comment cites. Left at 1.2 deliberately:
+	 * raising it is the lever for the ground the retune cost (see the
+	 * multiplier above), and it cannot move until recovery is settled, which
+	 * is Codex's.
 	 */
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Data", meta = (ClampMin = "0"))
 	float FallbackStumbleSeconds = 1.2f;

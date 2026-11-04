@@ -4,7 +4,8 @@
   "type": "module",
   "description": "Portable data checks for Last Lightkeepers, an Unreal Engine 5 game. Engine-independent by design: Node and Python only, no dependencies, no install.",
   "scripts": {
-    "test": "python Tools/import_data.py && python Tools/test_import_data.py && python Tools/test_startup_config.py && node tests/units.test.mjs && node tests/balance.test.mjs && node tests/curriculum.test.mjs && node tests/escalation.test.mjs && node tests/enemies.test.mjs && node tests/cues.test.mjs && node tests/map-readiness.test.mjs && node tests/light-authority.test.mjs && node tests/extraction.test.mjs && node tests/burden.test.mjs && node tests/telemetry.test.mjs && node tests/asset-deps.test.mjs",
+    "test": "python Tools/import_data.py && python Tools/test_import_data.py && python Tools/test_startup_config.py && node tests/units.test.mjs && node tests/balance.test.mjs && node tests/curriculum.test.mjs && node tests/escalation.test.mjs && node tests/enemies.test.mjs && node tests/cues.test.mjs && node tests/map-readiness.test.mjs && node tests/light-authority.test.mjs && node tests/extraction.test.mjs && node tests/burden.test.mjs && node tests/movement.test.mjs && node tests/telemetry.test.mjs && node tests/asset-deps.test.mjs",
+    "test:movement": "node tests/movement.test.mjs",
     "test:balance": "node tests/balance.test.mjs",
     "test:units": "node tests/units.test.mjs",
     "test:curriculum": "node tests/curriculum.test.mjs",
