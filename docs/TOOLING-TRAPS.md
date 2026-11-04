@@ -409,6 +409,59 @@ game target is not a licence to claim `LLK.Enemies.SweeperBrain` passes - that
 still needs the editor closed, and trap 14 still applies to how you read the
 result.
 
+## 16. "The editor is closed" is a precondition, not a blocker
+
+Mine, 2026-11-04, and it cost a whole requested task.
+
+Asked to regenerate `DA_Lantern.uasset` and `DT_Enemies.uasset` after the
+movement rescale, I checked for a running editor, found none, and reported the
+work blocked. It was not blocked. `Tools/import_unreal_data.ps1` runs
+**`UnrealEditor-Cmd.exe -run=LLKImportData`** — a headless commandlet — and its
+line 22 is:
+
+```
+if (Get-Process UnrealEditor ...) {
+    throw 'Unreal Editor is open. Close it before importing generated data assets.'
+}
+```
+
+**No editor running is the required condition.** The task I called impossible
+took 0.26 seconds and wrote 7 DataTables and 4 DataAssets.
+
+The same is true of `Tools/run_automation.ps1`, which drives the same
+`UnrealEditor-Cmd` binary. So the class of work I had written off covers data
+regeneration and the entire automation suite — most of what this project
+actually verifies.
+
+**What makes this worth an entry is that the doc already said so.** Trap 2 is
+about this very script. Trap 15 ends *"that still needs the editor closed."*
+The fact was recorded twice. I did not fail to have the information; I failed
+to ask the question it answers, because I had collapsed two different things
+into one:
+
+| The question I answered | The question I was asked |
+| --- | --- |
+| Is the MCP bridge reachable? | Can this Unreal work be done? |
+
+The bridge needs a **live editor with a loaded level**, because it manipulates
+actors in an open world. A commandlet needs the opposite. Treating "no editor"
+as one state produced a confident, wrong blocker — the same shape as every
+entry above, with the instrument's absence standing in for a reading, except
+here the absent instrument was the only one that *could not* do the job.
+
+**So the rule: before reporting Unreal work blocked, name the binary it
+needs.** If the answer is `UnrealEditor-Cmd.exe`, a closed editor is the
+green light. The three capabilities and their opposite requirements:
+
+| Capability | Binary | Editor must be |
+| --- | --- | --- |
+| Scene reads/writes, actor placement, PIE | MCP bridge in `UnrealEditor.exe` | **open**, with the right level loaded |
+| Data asset regeneration | `UnrealEditor-Cmd.exe -run=LLKImportData` | **closed** |
+| Automation tests | `UnrealEditor-Cmd.exe` via `run_automation.ps1` | **closed** |
+| C++ build | `Build.bat` / `build_editor.ps1`, editor target | **closed** (trap 15) |
+
+Only the first row is what "the editor is closed, do what you can" rules out.
+
 ## The pattern, stated once
 
 Each of these is a true answer to the wrong question. The build tool answered
