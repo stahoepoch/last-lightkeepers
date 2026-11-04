@@ -43,11 +43,32 @@ namespace LLKLanternFeelTestFixture
 		return FLLKLanternFeelRules();
 	}
 
+	/**
+	 * A walk, expressed as a RELATIONSHIP rather than as the authored number.
+	 *
+	 * This said `Input.SpeedCm = 448.f; // the authored walk speed` until
+	 * 2026-11-04, when the retune halved the walk to 224 and left the comment
+	 * asserting something false. The fixture then described a keeper moving
+	 * at twice walking pace while calling it a walk - and because the
+	 * production literal it was testing against had rotted the same way, the
+	 * test and the code agreed with each other and both were wrong.
+	 *
+	 * So: one constant, used both as the speed and as the denominator it is
+	 * measured against. `SpeedFraction` is then 1.0 at a walk by construction,
+	 * whatever the authored scale becomes, and a future rescale cannot make
+	 * this fixture lie.
+	 */
+	constexpr float WalkCm = 224.f;
+
+	/** Sprint/walk, which the retune preserved at 11.5 / 8. */
+	constexpr float SprintOverWalk = 1.4375f;
+
 	FLLKLanternFeelInput Walking(float DeltaSeconds)
 	{
 		FLLKLanternFeelInput Input;
 		Input.DeltaSeconds = DeltaSeconds;
-		Input.SpeedCm = 448.f; // 16 studs/s, the authored walk speed
+		Input.SpeedCm = WalkCm;
+		Input.ReferenceWalkSpeedCm = WalkCm;
 		Input.FreeDistanceCm = 1000.f; // nothing in the way
 		return Input;
 	}
@@ -237,7 +258,7 @@ bool FLLKLanternFeelTest::RunTest(const FString& Parameters)
 		for (int32 Frame = 0; Frame < 120; ++Frame)
 		{
 			FLLKLanternFeelInput Run = Walking(1.f / 60.f);
-			Run.SpeedCm = 644.f; // 23 studs/s, the authored sprint speed
+			Run.SpeedCm = WalkCm * SprintOverWalk; // a sprint, at any scale
 			Run.bSprinting = true;
 			Sprinting = LLKLanternFeel::AdvanceFeel(Sprinting, Run, R);
 			SprintPeak = FMath::Max(SprintPeak, Sprinting.OffsetCm.Size());

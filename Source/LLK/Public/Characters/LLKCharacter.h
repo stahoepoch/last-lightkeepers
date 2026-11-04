@@ -267,14 +267,23 @@ protected:
 	// are declared rather than hidden: GetSpeedSource() reports when they are
 	// in use, and the log says so at BeginPlay. A copy nobody can detect is
 	// the problem; a copy that announces itself is a fallback.
+	// Halved 2026-11-04 with the retune, from 16/23/9. These lagged the
+	// authored values by one commit - `7426625` edited
+	// `FallbackStumbleMultiplier` in this same file and left these three
+	// declaring the old scale - and because `DA_Lantern` has not been
+	// regenerated yet, this IS the live path. So the loud warning beside them
+	// was confidently naming 448/644/252 as the declared fallback at the same
+	// moment nothing in the project intended those numbers any more. A
+	// fallback that announces itself is only better than a hidden copy while
+	// what it announces is true.
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Data", meta = (ClampMin = "0"))
-	float FallbackWalkStuds = 16.f;
+	float FallbackWalkStuds = 8.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Data", meta = (ClampMin = "0"))
-	float FallbackSprintStuds = 23.f;
+	float FallbackSprintStuds = 11.5f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Data", meta = (ClampMin = "0"))
-	float FallbackCrouchStuds = 9.f;
+	float FallbackCrouchStuds = 4.5f;
 
 	/**
 	 * Jump launch speed in STUDS/s, and the gravity it falls under.

@@ -4,6 +4,7 @@
 #include "Engine/Scene.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Characters/LLKCharacter.h"
 #include "LLK.h"
 #include "LLKUnits.h"
 
@@ -97,7 +98,25 @@ void ULLKLanternLightComponent::TickFeel(float DeltaSeconds)
 	{
 		if (const UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
 		{
-			Input.bSprinting = Input.SpeedCm > LLKUnits::SpeedFromStuds(18.f);
+			// **Was `Input.SpeedCm > SpeedFromStuds(18.f)` until 2026-11-04,
+			// and that threshold had become unreachable.** 18 studs is 504
+			// cm/s: it sat between the old walk of 16 and sprint of 23, so it
+			// worked as a midpoint. The retune halved sprint to 11.5 studs
+			// (322 cm/s), which put the entire speed range BELOW the
+			// threshold - so `bSprinting` was false forever and
+			// `Rules.SprintSwayCm` became dead. A wider sway that can never
+			// occur is worse than no sprint sway at all, because the tuning
+			// value is still there inviting someone to tune it.
+			//
+			// Asking the keeper instead of inferring from speed: it is the
+			// same fact without a scale in it, so no rescale can reach it.
+			// Threshold inference also lied in both directions - downhill
+			// momentum read as sprinting, and sprinting into a wall did not.
+			if (const ALLKCharacter* Keeper = Cast<ALLKCharacter>(Character))
+			{
+				Input.bSprinting = Keeper->IsSprinting();
+				Input.ReferenceWalkSpeedCm = Keeper->GetWalkSpeed();
+			}
 
 			// A landing is an edge, not a state: airborne last frame and not
 			// this one. Read here rather than from ACharacter::Landed so this

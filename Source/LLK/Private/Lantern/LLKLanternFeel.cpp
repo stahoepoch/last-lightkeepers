@@ -132,8 +132,14 @@ namespace LLKLanternFeel
 		// with their feet. A time-driven sway on a stationary player is the
 		// thing that reads as a wobbling camera rather than as a body.
 		const float Hertz = FMath::Max(0.1f, Finite(Rules.SwayHertz, 1.6f));
-		const float WalkSpeedCm = 448.f; // 16 studs/s, data/lantern.json movement.walkSpeed
-		const float SpeedFraction = FMath::Clamp(Speed / WalkSpeedCm, 0.f, 2.f);
+		// The denominator is an INPUT, not a literal. See
+		// `FLLKLanternFeelInput::ReferenceWalkSpeedCm` for why: the literal
+		// that used to live here was the authored walk speed, and it stopped
+		// being so without anything noticing.
+		const float WalkSpeedCm = Input.ReferenceWalkSpeedCm;
+		const float SpeedFraction = WalkSpeedCm > 0.f
+			? FMath::Clamp(Speed / WalkSpeedCm, 0.f, 2.f)
+			: 1.f;
 		Next.SwayPhase = FMath::Fmod(
 			State.SwayPhase + Delta * Hertz * SpeedFraction * 2.f * PI, 2.f * PI);
 

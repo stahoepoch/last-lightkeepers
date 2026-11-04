@@ -198,6 +198,28 @@ struct FLLKLanternFeelInput
 	bool bSprinting = false;
 
 	/**
+	 * The keeper's authored walk speed in cm/s - the denominator `SpeedCm` is
+	 * read as a fraction of.
+	 *
+	 * **An input rather than a constant, because it is gameplay data and this
+	 * layer is pure.** It was `const float WalkSpeedCm = 448.f` inside
+	 * `Advance()` until 2026-11-04, with a comment citing
+	 * `data/lantern.json movement.walkSpeed` as its source - true when
+	 * written, and false the moment the retune halved the walk to 224. The
+	 * sway then ran at half phase rate AND half amplitude for a walking
+	 * keeper, which presents as "the lantern stopped feeling like a carried
+	 * object" and is not a symptom anyone would trace to a literal.
+	 *
+	 * Zero or negative means nobody supplied it. The sway then holds at full
+	 * fraction rather than silently halving, so a missing wire reads as a
+	 * lantern swaying while you stand still - wrong in a way you notice
+	 * immediately, which is the point. Compare `ELLKVisibility::Unknown`:
+	 * an unanswered question must not default to the plausible answer.
+	 */
+	UPROPERTY(BlueprintReadWrite, Category = "LLK|Feel")
+	float ReferenceWalkSpeedCm = 0.f;
+
+	/**
 	 * Downward speed at the instant of landing, in cm/s. Zero on every other
 	 * frame.
 	 */

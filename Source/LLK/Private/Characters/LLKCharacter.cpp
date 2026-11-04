@@ -219,7 +219,16 @@ void ALLKCharacter::Tick(float DeltaSeconds)
 	}
 
 	LanternPresentationSeconds += DeltaSeconds;
-	const float Speed01 = GetVelocity().Size2D() / 448.f;
+
+	// Against the keeper's OWN walk speed, not a literal. This read `/ 448.f`
+	// until 2026-11-04, which was the authored walk at the time it was
+	// written and became half of it the moment the retune halved the scale -
+	// so a walking keeper produced 0.5 where this expects 1.0 and the
+	// lantern's bob ran at half amplitude. `WalkSpeedCms` is already resolved
+	// from `DA_Lantern` (or the declared fallback) at BeginPlay, so this now
+	// cannot drift from the number it is a fraction of.
+	const float WalkReference = FMath::Max(1.f, WalkSpeedCms);
+	const float Speed01 = GetVelocity().Size2D() / WalkReference;
 	const float Amount = FMath::Clamp(Speed01, 0.f, 1.f);
 	const float Side = FMath::Sin(LanternPresentationSeconds * 7.f) * 1.2f * Amount;
 	const float Lift = FMath::Abs(FMath::Cos(LanternPresentationSeconds * 7.f)) * 1.6f * Amount;
