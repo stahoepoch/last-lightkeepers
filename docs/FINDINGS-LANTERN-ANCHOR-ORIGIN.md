@@ -90,7 +90,7 @@ rather than through the feel struct, which is the one input anybody thought to
 fence.
 
 **Ruled on, 2026-11-04: it is not a defect and it stays.** Chris, now
-`DECISIONS.md` row 80 — *"if a lantern moves and it's supposed to move then it
+`DECISIONS.md` row 81 — *"if a lantern moves and it's supposed to move then it
 moves… Everything moves you kind of shift around. That's the name of the game."*
 The arguments either way are kept below because they are what the ruling decided
 between, and because the third one is now an open question rather than a

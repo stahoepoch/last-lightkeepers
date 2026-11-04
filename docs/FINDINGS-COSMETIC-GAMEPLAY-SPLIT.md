@@ -129,7 +129,7 @@ If gameplay aim is ever added, this ruling already decides where it comes
 from: `LanternAnchor`'s rotation, not the cone's `TrailDegrees`, which is the
 cosmetic lag computed in `AdvanceFeel`.
 
-## 4. The one real defect this audit found: row 80 is double-booked
+## 4. Row 80 was double-booked — RESOLVED 2026-11-04
 
 `docs/DECISIONS.md` had rows up to **79** until 2026-11-04. There was no row
 80. Verified:
@@ -159,15 +159,54 @@ is not, and a paraphrase is how a locked decision gets quietly softened."* A
 citation that resolves to the wrong row is worse than a paraphrase, because it
 is checkable and wrong.
 
-Two things need Chris, and only Chris:
+### Why it happened, and it was my debt
 
-- **The detectability rule and the lerp/named-state rule are not in
-  `DECISIONS.md` at all.** Both are load-bearing, both are quoted in his voice
-  in code comments, and neither has a row. The lerp rule is the reason
-  `GetGameplayRadiusCm()` exists.
-- **Which number keeps "row 80."** Renumbering the realism ruling is one line;
-  renumbering twelve source citations is not, and the citations are the older
-  claim.
+Row 80 was not an unlucky collision. It was **reserved** and never paid:
+
+- `docs/HANDOFF-CODEX-LANTERN-LEVELS.md:165` — *"Row 80 itself, in
+  `docs/DECISIONS.md` | **Claude**, not yet written"*, with the line below it:
+  *"Row 80 is referenced by this change and does not exist yet."*
+- `docs/PREREQS-AUTHORED-MAP-SEAM.md:359` — *"**Row 80** in
+  `docs/DECISIONS.md` — mine, still unwritten"*
+
+So a previous turn of mine claimed the number, told Codex the code could cite
+it, wrote the citations into eight files' worth of comments and tests, and
+never wrote the row. The realism ruling then landed on the next free number,
+which was correct against a file ending at 79 and would have been harmless if
+80 had been occupied as promised.
+
+### How it was resolved
+
+Chris's instruction: *"Fix the collision and sort out issues."* The twelve
+`Source/` citations are the older claim and `Source/` is Codex's lane, so the
+citations could not move. The ruling moved instead:
+
+| Row | Content |
+| --- | --- |
+| **80** | lantern levels — detectability authored per level, enemy reach continuous in it, gameplay resolves to the named state while visuals lerp. **Reconstructed** from the citations that depended on it; `LLKPerception.cpp:97` calling continuous detectability *"the whole of row 80"* is what fixed its content |
+| **81** | the realism ruling, renumbered from 80 |
+| **82** | Chris's cosmetic/gameplay split, the ruling this document audits |
+
+All twelve `Source/` citations now resolve to the rule their comments
+describe, and no source file was touched to achieve it. Doc citations that
+meant the realism ruling were renumbered to 81 (`FINDINGS-LANTERN-PHYSICS.md`,
+`FINDINGS-LANTERN-ANCHOR-ORIGIN.md`, `HANDOFF-CODEX-LANTERN-ANCHOR.md`);
+citations that meant lantern levels (`LIGHTING-IN-UNREAL.md`) were left alone.
+
+**Audited for others:** every `row N` citation in `Source/`, `tests/` and
+`docs/` was compared against the rows that exist. 73 distinct numbers are
+cited and all 73 now resolve. Row 80 was the only dangling one.
+
+### Two fixes made while here
+
+- `FINDINGS-LANTERN-PHYSICS.md` was titled *"three places the model
+  disagrees"* over a table listing five, and row 80's reasoning repeated the
+  undercount. Both say five.
+- Row 81 said the look-pitch travel is 88 cm. It is **about 84** — the 42 cm
+  forward offset of `LanternAnchor` rotating through an unclamped pitch range
+  (`z = x·sin θ + z·cos θ`, so +42 at the top and −42 at the bottom; no
+  `ViewPitchMin`/`Max` is authored, so UE's ±89.9 applies). 88 was the capsule
+  half-height, carried over from the retracted 240 cm finding.
 
 ## 5. Summary against the ruling
 

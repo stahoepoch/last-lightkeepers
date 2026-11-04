@@ -151,5 +151,45 @@ check(
   "guarantee 1: the cone trails the look and the look trails nothing",
 );
 
+// ---- 7. every source in the field uses the gameplay reach -----------
+//
+// **Added 2026-11-04. One check of three; the other two ship with the fix.**
+//
+// The pre-commit hook refuses a commit while this file is red, and it is right
+// to: a red guard in `&&` also hides every suite after it. So the two checks
+// that catch the live defect could not land here ahead of the one-word change
+// they demand. They are written out verbatim in
+// `docs/HANDOFF-CODEX-REVIVE-PULSE.md`, to paste in with it.
+//
+// Row 80 moved `GetLitLightSources` off `Light->AttenuationRadius` and onto
+// `GetGameplayRadiusCm()`, because the attenuation radius is a value a lantern
+// level crossfade is allowed to lerp - Chris's rule is that transitions lerp
+// visually while gameplay resolves to the named state. Sections 1 and 2 above
+// guard the POSITION seam at that call site. Nothing guarded the RADIUS seam,
+// and nothing guarded the second place a source is built.
+//
+// `LLKInteractorComponent` builds the Anchor Revive's distress pulse, which
+// enters the field at `Detectability` 1.0 to wake the room. It still reads
+// `Light->AttenuationRadius`. `LLKLanternLevelTest.cpp:287-292` establishes
+// that the attenuation radius can sit at a quarter of the gameplay reach, so a
+// revive landing mid-crossfade can under-reach by 4x - which inverts row 9's
+// whole point, that a solo player gets back up but wakes the room.
+//
+// The fix is one word, in Codex's lane: `docs/HANDOFF-CODEX-REVIVE-PULSE.md`.
+//
+// What IS guarded here and was not before: the radius seam at the call site
+// row 80 already fixed. Nothing asserted it, so the same regression that is
+// live in the interactor could have returned to the storm subsystem freely.
+
+check(
+  "GetLitLightSources reads the gameplay reach, not the attenuation radius",
+  storm.includes("Light->GetGameplayRadiusCm()")
+    && !/RadiusCm\s*=\s*Light->AttenuationRadius/.test(storm),
+  "the attenuation radius is what a visual crossfade moves. Matched as an "
+    + "ASSIGNMENT, not a mention: the comment above that line names the value it "
+    + "stopped reading, and a substring test would fail on the comment that "
+    + "explains the fix",
+);
+
 console.log(`\n${checks} checks, ${failures} failed`);
 process.exit(failures === 0 ? 0 : 1);

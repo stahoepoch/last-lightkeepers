@@ -162,9 +162,9 @@ The rule layer is in. The body is not:
 | Replicated level state on `ULLKLanternComponent`, and a key to cycle it | **Claude** |
 | The visual crossfade between levels | **Claude**, in `TickFeel` beside the sway |
 | `PostProcessVolume` exposure clamp | **Codex** — and still first, per `docs/LIGHTING-IN-UNREAL.md` |
-| **Row 80 itself, in `docs/DECISIONS.md`** | **Claude**, not yet written |
+| **Row 80 itself, in `docs/DECISIONS.md`** | **Claude**, written 2026-11-04 |
 
-**Row 80 is referenced by this change and does not exist yet.** The code
+**Row 80 was referenced by this change and did not exist for weeks; it was written on 2026-11-04, reconstructed from the twelve `Source/` citations that had been relying on it. The realism ruling briefly occupied 80 and moved to 81.** The code
 comments, `LIGHTING-IN-UNREAL.md` and this file all cite it as the row that
 ratifies named lantern levels and authored detectability; 79 is the highest row
 in the log. It is unwritten for a lane reason rather than an oversight:

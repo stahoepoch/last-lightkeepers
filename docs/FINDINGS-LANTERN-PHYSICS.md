@@ -1,8 +1,8 @@
-# Finding — what a carried lantern actually does, and three places the model disagrees
+# Finding — what a carried lantern actually does, and five places the model disagrees
 
 > **Status: OPEN, 2026-11-04. Nothing was changed** — the feel model is gameplay
 > code and fenced off from this writer. Written on Chris's ruling, now
-> `DECISIONS.md` row 80: *"We're going for realism so if a lantern moves and
+> `DECISIONS.md` row 81: *"We're going for realism so if a lantern moves and
 > it's supposed to move then it moves. We ought to find out what the real
 > physics is of these things."*
 >
@@ -160,9 +160,9 @@ for free), and it makes the sprint/walk relationship fall out instead of being
 tuned. `SwayHertz` then stops being a sway rate and becomes the lantern's natural
 frequency, which is a property of the object rather than of the animation.
 
-## 6. The thing worth deciding, and it follows from row 80 rather than from physics
+## 6. The thing worth deciding, and it follows from row 81 rather than from physics
 
-Row 80 says that if the lantern moves, what it lights moves. **Today the
+Row 81 says that if the lantern moves, what it lights moves. **Today the
 opposite split is in force, and it is the reverse of what the physics would
 choose:**
 
@@ -182,7 +182,7 @@ than a defect:** does the sway join the gameplay anchor, or does the pitch trave
 leave it? There is a third answer and it may be the best one — let gameplay read
 the lantern's *physical* position, sway and all, and keep the fence where it
 belongs, around the purely decorative part (the trail, the cone lag). That
-honours row 80 exactly: the physics moves gameplay, the animation does not.
+honours row 81 exactly: the physics moves gameplay, the animation does not.
 
 **Chris's call.** The cost of the first is that enemy perception starts moving
 10–15 cm laterally at 1 Hz while walking, which is small next to the 88 cm the
@@ -199,7 +199,7 @@ cost of the second is losing the thing he just ratified.
   should be scaled for legibility is a feel decision, not a physics one: a
   lantern that swings its true 15 cm may simply be unpleasant to look at in first
   person, and that is a legitimate reason to keep a number that physics does not
-  pick. Row 80 says derive first, not ship the derivation blind.
+  pick. Row 81 says derive first, not ship the derivation blind.
 - **Nothing here touches the light field's own rules**, the gameplay radius, or
   `data/lantern.json`.
 

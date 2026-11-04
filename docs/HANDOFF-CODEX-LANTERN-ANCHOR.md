@@ -77,11 +77,11 @@ through the parent transform instead of through the feel struct, which is the
 door that was watched.
 
 **Decision 1 is made. The travel stays.** Chris, 2026-11-04, now
-`DECISIONS.md` row 80 — *"if a lantern moves and it's supposed to move then it
+`DECISIONS.md` row 81 — *"if a lantern moves and it's supposed to move then it
 moves… if you get knocked down a little bit your hand moves your lantern moves.
 Everything moves you kind of shift around. That's the name of the game."* **Do
 not fence it out, and do not move `LanternAnchor`** — that pose is approved art.
-The travel is now a ratified property of the game, and row 80 makes physical
+The travel is now a ratified property of the game, and row 81 makes physical
 derivation the standard the rest of the feel model is judged against.
 
 That turns this item from a bug into **item 1b**, below, which is the larger
@@ -90,7 +90,7 @@ piece of work.
 ### 1b. The feel model is a model of the hand with no lantern in it
 
 `FINDINGS-LANTERN-PHYSICS.md` is the full derivation with sources; this is the
-work it implies, and row 80 is the mandate for it.
+work it implies, and row 81 is the mandate for it.
 
 A kerosene hand lantern on a bail is a compound pendulum with a natural
 frequency of **~1.05 Hz** (0.9–1.25 Hz across the whole plausible geometry — the
@@ -131,7 +131,7 @@ Two cautions:
   existing rail would clip the real amplitude. Whether the rail rises or the
   amplitude is scaled for legibility is a feel call and Chris's, not a physics
   one — a lantern swinging its true 15 cm may simply be unpleasant in first
-  person. Row 80 says derive first; it does not say ship the derivation blind.
+  person. Row 81 says derive first; it does not say ship the derivation blind.
 
 ### What is latent, and this part is unambiguously a defect
 
@@ -272,8 +272,8 @@ check stops being load-bearing. You own this file.
 ## 5. Chris's, not yours
 
 - ~~Whether the 88 cm of pitch travel stays.~~ **Answered 2026-11-04: it stays.**
-  `DECISIONS.md` row 80.
-- **Does the sway join the gameplay anchor?** Row 80 says what moves, moves — but
+  `DECISIONS.md` row 81.
+- **Does the sway join the gameplay anchor?** Row 81 says what moves, moves — but
   today the 88 cm pitch lever reaches gameplay and the sway, which is the actual
   pendulum and the larger real motion, does not. That split is the reverse of
   what the physics would pick. §6 of `FINDINGS-LANTERN-PHYSICS.md` lays out the

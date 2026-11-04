@@ -356,8 +356,10 @@ whoever owns it next.
   has never seen un-layered. Needs the bridge started and `LLK_DockBay` open.
 - **Nav bounds against the playable floor, and the dock's box half-extents.**
   Editor reads, deferred again rather than inferred.
-- **Row 80** in `docs/DECISIONS.md` — mine, still unwritten, the file still
-  dirty from another writer.
+- **Row 80** in `docs/DECISIONS.md` — mine, and it was the blocker here that
+  outlived the reason for it. **Written 2026-11-04**, reconstructed from the
+  twelve `Source/` citations that had been depending on it while it did not
+  exist.
 
 **One correction to Part 1's closing claim:** requirement 15 /
 `GeometryServerOnly` is **no longer missing.** It landed in `5f604c9` with
