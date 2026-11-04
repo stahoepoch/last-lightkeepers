@@ -213,6 +213,16 @@ for (const [name, family] of families) {
     "audioTelegraphSeconds is Chris's number, per family (row 55)",
   );
 
+  // A trip must create an exit, not a collision wall in a slightly different
+  // form. The contact branch enters Search, and the first part of that search
+  // holds the Sweeper still while ContactRecoverySecondsRemaining counts down.
+  // Search may work LastKnown only after that physical reset is spent.
+  check(
+    "a Sweeper contact creates a stationary escape window before it searches",
+    /ContactRecoverySecondsRemaining\s*>\s*0\.f[\s\S]{0,500}?Step\.Move\s*=\s*ELLKSweeperMove::Hold/.test(brain),
+    "a last-known move in the recovery window drives back into the same aisle overlap",
+  );
+
   // The brain's telegraph is only a decision. The pawn has to turn that
   // decision into a real, spatial cue or a player gets the old failure mode:
   // a warning in the log / HUD and no information about where the machine is.

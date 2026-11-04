@@ -295,6 +295,8 @@ bool FLLKSweeperBrainTest::RunTest(const FString& Parameters)
 			Step.Mind.ContactRecoverySecondsRemaining, 2.5f, 0.001f);
 		TestEqual(TEXT("a contact breaks pursuit rather than body-blocking the keeper"),
 			FString(LLKSweeperBrain::NameOf(Step.Mind.State)), FString(TEXT("Search")));
+		TestEqual(TEXT("the contact frame itself stops rather than driving deeper into the overlap"),
+			FString(LLKSweeperBrain::NameOf(Step.Move)), FString(TEXT("Hold")));
 
 		// A visible keeper must not make it instantly re-acquire. The contact
 		// cooldown is the escape window as well as the hit-rate limiter.
@@ -302,8 +304,17 @@ bool FLLKSweeperBrainTest::RunTest(const FString& Parameters)
 			LLKSweeperBrain::Advance(Step.Mind, Seen(0.1f, 4.f), Def, Rules);
 		TestEqual(TEXT("a visible keeper gets the authored contact cooldown to leave"),
 			FString(LLKSweeperBrain::NameOf(Recovering.Mind.State)), FString(TEXT("Search")));
-		TestEqual(TEXT("and the Sweeper works the last known position during that window"),
-			FString(LLKSweeperBrain::NameOf(Recovering.Move)), FString(TEXT("LastKnown")));
+		TestEqual(TEXT("and the Sweeper holds still so the clipped keeper can physically separate"),
+			FString(LLKSweeperBrain::NameOf(Recovering.Move)), FString(TEXT("Hold")));
+
+		// The holding period is a reset, not a permanent pacify. Once it is
+		// spent, Search uses the already-authored last-known position.
+		FLLKSweeperMind ResetSpent = Recovering.Mind;
+		ResetSpent.ContactRecoverySecondsRemaining = 0.f;
+		const FLLKSweeperStep Searching =
+			LLKSweeperBrain::Advance(ResetSpent, Unseen(0.1f), Def, Rules);
+		TestEqual(TEXT("after the reset, Search works the last known position"),
+			FString(LLKSweeperBrain::NameOf(Searching.Move)), FString(TEXT("LastKnown")));
 
 		// The hit cooldown is shorter than the recovery. A keeper that remains
 		// visible must still be able to sprint through the escape window rather

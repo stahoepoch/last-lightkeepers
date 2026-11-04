@@ -98,8 +98,15 @@ if ($failureLines.Count -gt 0) {
     exit 1
 }
 
-if ($logText -notmatch "LLK automation harness reached RunTest") {
-    Write-Error "LLK automation did not prove that the test body ran. Check '$log'."
+# A clean editor exit is not a passing suite: this toolchain has returned 0
+# for a reported failure. The checks above reject reported failures and an
+# empty selection. This is the positive proof: AutomationController records
+# one completed, successful test body. Do not require a project-specific log
+# marker here; ordinary IMPLEMENT_SIMPLE_AUTOMATION_TEST bodies do not emit
+# one, and treating their real Result={Success} as a failure makes the runner
+# lie in the opposite direction.
+if ($logText -notmatch "LogAutomationController: Display: Test Completed\. Result=\{Success\}") {
+    Write-Error "LLK automation did not prove that any requested test body completed successfully. Check '$log'."
     exit 1
 }
 

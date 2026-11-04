@@ -340,6 +340,40 @@ namespace LLKDataImport
 		return true;
 	}
 
+	/**
+	 * Row names prove a table exists. They do not prove its gameplay values
+	 * survived JSON conversion. Enemy speed is the first value players feel
+	 * immediately, so verify it explicitly after the generated table has been
+	 * saved and reloaded.
+	 */
+	bool VerifyEnemyMoveSpeeds(const TSharedPtr<FJsonObject>& Enemies)
+	{
+		UDataTable* Table = ::LoadObject<UDataTable>(nullptr, TEXT("/Game/Data/DT_Enemies.DT_Enemies"));
+		if (!Table) return Fail(TEXT("Could not reload generated table DT_Enemies."));
+
+		for (const TPair<FString, TSharedPtr<FJsonValue>>& Pair : Enemies->Values)
+		{
+			const TSharedPtr<FJsonObject> Source = Pair.Value->AsObject();
+			double ExpectedMoveSpeed = 0.0;
+			if (!Source.IsValid() || !Source->TryGetNumberField(TEXT("moveSpeed"), ExpectedMoveSpeed))
+			{
+				return Fail(FString::Printf(TEXT("Enemy payload row %s has no numeric moveSpeed."), *Pair.Key));
+			}
+
+			const FLLKEnemyDef* Generated = Table->FindRow<FLLKEnemyDef>(FName(Pair.Key), TEXT("VerifyEnemyMoveSpeeds"));
+			if (!Generated)
+			{
+				return Fail(FString::Printf(TEXT("DT_Enemies is missing generated row %s."), *Pair.Key));
+			}
+			if (!FMath::IsNearlyEqual(Generated->MoveSpeed, static_cast<float>(ExpectedMoveSpeed)))
+			{
+				return Fail(FString::Printf(TEXT("DT_Enemies row %s moveSpeed is %g; expected %g."),
+					*Pair.Key, Generated->MoveSpeed, static_cast<float>(ExpectedMoveSpeed)));
+			}
+		}
+		return true;
+	}
+
 	bool VerifyRuleAssets(const TSharedPtr<FJsonObject>& Storm, const TSharedPtr<FJsonObject>& Lantern, const TSharedPtr<FJsonObject>& Loot, const TSharedPtr<FJsonObject>& Workshop)
 	{
 		ULLKZonePressureData* StormAsset = ::LoadObject<ULLKZonePressureData>(nullptr, TEXT("/Game/Data/DA_ZonePressure.DA_ZonePressure"));
@@ -356,16 +390,22 @@ namespace LLKDataImport
 			|| !GetObject(Light, TEXT("warmColor"), WarmColor) || !GetObject(Loot, TEXT("extraction"), Extraction)
 			|| !GetArray(Workshop, TEXT("currency"), Currency)) return false;
 		double WalkSpeed = 0.0;
+		double SprintSpeed = 0.0;
+		double CrouchSpeed = 0.0;
 		double RadiusStuds = 0.0;
 		double Intensity = 0.0;
 		double WarmRed = 0.0;
-		if (!Movement->TryGetNumberField(TEXT("walkSpeed"), WalkSpeed)) return false;
+		if (!Movement->TryGetNumberField(TEXT("walkSpeed"), WalkSpeed)
+			|| !Movement->TryGetNumberField(TEXT("sprintSpeed"), SprintSpeed)
+			|| !Movement->TryGetNumberField(TEXT("crouchSpeed"), CrouchSpeed)) return false;
 		if (!Light->TryGetNumberField(TEXT("radiusStuds"), RadiusStuds)
 			|| !Light->TryGetNumberField(TEXT("intensity"), Intensity)
 			|| !WarmColor->TryGetNumberField(TEXT("r"), WarmRed)) return false;
 		if (!FMath::IsNearlyEqual(StormAsset->BaselineRatePerSecond, static_cast<float>(Baseline))
 			|| StormAsset->Thresholds.Num() != Thresholds->Num()
 			|| !FMath::IsNearlyEqual(LanternAsset->Movement.WalkSpeed, static_cast<float>(WalkSpeed))
+			|| !FMath::IsNearlyEqual(LanternAsset->Movement.SprintSpeed, static_cast<float>(SprintSpeed))
+			|| !FMath::IsNearlyEqual(LanternAsset->Movement.CrouchSpeed, static_cast<float>(CrouchSpeed))
 			|| !FMath::IsNearlyEqual(LanternAsset->Light.RadiusStuds, static_cast<float>(RadiusStuds))
 			|| !FMath::IsNearlyEqual(LanternAsset->Light.Intensity, static_cast<float>(Intensity))
 			|| !FMath::IsNearlyEqual(LanternAsset->Light.WarmColor.R, static_cast<float>(WarmRed))
@@ -592,7 +632,8 @@ int32 ULLKImportDataCommandlet::Main(const FString& Params)
 		|| !LoadObject(FPaths::Combine(UnrealDir, TEXT("lantern.json")), Lantern)) return 1;
 
 	TArray<TSharedPtr<FJsonValue>> Rows;
-	if (!BuildObjectRows(Enemies, Rows, true) || !ImportTable<FLLKEnemyDef>(TEXT("DT_Enemies"), Rows)) return 1;
+	if (!BuildObjectRows(Enemies, Rows, true) || !ImportTable<FLLKEnemyDef>(TEXT("DT_Enemies"), Rows)
+		|| !VerifyEnemyMoveSpeeds(Enemies)) return 1;
 	Rows.Reset();
 	TSharedPtr<FJsonObject> Tiers;
 	if (!GetObject(Loot, TEXT("tiers"), Tiers) || !BuildObjectRows(Tiers, Rows)) return 1;

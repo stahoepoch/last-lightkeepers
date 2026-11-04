@@ -304,6 +304,9 @@ namespace LLKSweeperBrain
 				Step.Mind.State = ELLKSweeperState::Search;
 				Step.Mind.SearchSecondsRemaining =
 					Def.LosesTargetAfterSeconds.Get(LLKSweeperBrainDetail::FallbackSearchSeconds);
+				// This is an ordinary lost sighting, not a contact. It goes to
+				// the last place it saw the keeper; only a physical contact earns
+				// the anti-pin recovery hold in the Search state below.
 				Step.Move = Step.Mind.bHasLastKnown
 					? ELLKSweeperMove::LastKnown : ELLKSweeperMove::Hold;
 			}
@@ -384,8 +387,10 @@ namespace LLKSweeperBrain
 					LLKSweeperBrainDetail::FallbackPatrolDwellSeconds;
 				Step.Mind.SearchSecondsRemaining =
 					LLKSweeperBrainDetail::FallbackPatrolDwellSeconds;
-				Step.Move = Step.Mind.bHasLastKnown
-					? ELLKSweeperMove::LastKnown : ELLKSweeperMove::Hold;
+				// Stop immediately on contact. A movement request here is made
+				// after the hit has already landed, so it can only push further
+				// into the same occupied aisle before recovery starts next tick.
+				Step.Move = ELLKSweeperMove::Hold;
 			}
 			break;
 
@@ -407,6 +412,16 @@ namespace LLKSweeperBrain
 
 			if (Step.Mind.SearchSecondsRemaining > 0.f)
 			{
+				if (Step.Mind.ContactRecoverySecondsRemaining > 0.f)
+				{
+					// Contact recovery is a physical reset, not a pursuit in
+					// disguise. See the contact branch above: holding here
+					// prevents an overlap capsule from turning narrow retail
+					// geometry into a trap.
+					Step.Move = ELLKSweeperMove::Hold;
+					break;
+				}
+
 				Step.Move = Step.Mind.bHasLastKnown
 					? ELLKSweeperMove::LastKnown : ELLKSweeperMove::Hold;
 				break;

@@ -143,11 +143,11 @@ for (const field of ["walkSpeed", "sprintSpeed", "crouchSpeed"]) {
 
 const enemyVerify = /bool VerifyTable\([\s\S]*?\n\t\}/.exec(commandlet)?.[0] ?? "";
 check(
-  "VerifyTable compares at least one field value, not only row names",
-  /MoveSpeed|IsNearlyEqual|FindRow/.test(enemyVerify),
-  "VerifyTable counts rows and checks their names. Every moveSpeed in " +
-    "DT_Enemies could be zero and it would still pass — which is why " +
-    "tests/enemies.test.mjs has to scan the .uasset bytes from outside",
+  "VerifyEnemyMoveSpeeds reloads DT_Enemies and compares every moveSpeed",
+  /bool VerifyEnemyMoveSpeeds\([\s\S]*?FindRow<FLLKEnemyDef>[\s\S]*?Generated->MoveSpeed[\s\S]*?ExpectedMoveSpeed/.test(
+    commandlet,
+  ),
+  "row names alone do not prove the generated MoveSpeed values survived JSON conversion",
 );
 
 // ---- 3. no hardcoded copy of the scale may diverge from the data ---------
