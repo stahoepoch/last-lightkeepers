@@ -89,8 +89,12 @@ the look direction never was, because it arrives through the parent transform
 rather than through the feel struct, which is the one input anybody thought to
 fence.
 
-**Whether this is a defect is a design call, not a measurement**, and it is why
-nothing here was changed:
+**Ruled on, 2026-11-04: it is not a defect and it stays.** Chris, now
+`DECISIONS.md` row 80 — *"if a lantern moves and it's supposed to move then it
+moves… Everything moves you kind of shift around. That's the name of the game."*
+The arguments either way are kept below because they are what the ruling decided
+between, and because the third one is now an open question rather than a
+complaint — see `FINDINGS-LANTERN-PHYSICS.md` §6.
 
 - It is arguably *right*. A keeper raising a lantern to look at a high shelf
   really does lift the light, and a held lamp really does swing with the arm.
@@ -102,9 +106,11 @@ nothing here was changed:
   project's own rule is that light makes the keeper legible; it does not say
   that glancing at the floor makes them 28 cm less so.
 
-The cheapest honest answer, if it is unwanted, is to keep `LanternAnchor` for
-presentation and give gameplay a yaw-only sibling — the same split that already
-exists between `LanternAnchor` and `RemoteLanternAnchor`, applied one level up.
+What the ruling leaves open is the *other* half: the sway, which is the real
+pendulum and the larger real motion, is still fenced out of gameplay while this
+rigid lever is inside it. That is the reverse of what physics would choose, and
+it is now a question rather than a defect. `FINDINGS-LANTERN-PHYSICS.md` has the
+numbers and the three ways to answer it.
 
 ## The second thing, which is latent rather than live
 

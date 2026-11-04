@@ -76,15 +76,62 @@ parent — that comment is correct and holds), but the look direction arrives
 through the parent transform instead of through the feel struct, which is the
 door that was watched.
 
-**Decision 1, and it is a design call so it may be Chris's rather than yours:**
-is that travel wanted? A keeper raising a lantern really does lift the light. But
-42 cm was picked to stop a placeholder mesh reading as a helmet lamp, not to set
-how much a light should move, so the magnitude is a side effect. If it is
-unwanted, the cheap shape is a **yaw-only gameplay sibling** of `LanternAnchor`,
-leaving the presentation anchor exactly where it is — the same split that already
-exists between `LanternAnchor` and `RemoteLanternAnchor`, applied one level up.
-Do not simply move `LanternAnchor`: that is a visible art change to a pose Chris
-approved.
+**Decision 1 is made. The travel stays.** Chris, 2026-11-04, now
+`DECISIONS.md` row 80 — *"if a lantern moves and it's supposed to move then it
+moves… if you get knocked down a little bit your hand moves your lantern moves.
+Everything moves you kind of shift around. That's the name of the game."* **Do
+not fence it out, and do not move `LanternAnchor`** — that pose is approved art.
+The travel is now a ratified property of the game, and row 80 makes physical
+derivation the standard the rest of the feel model is judged against.
+
+That turns this item from a bug into **item 1b**, below, which is the larger
+piece of work.
+
+### 1b. The feel model is a model of the hand with no lantern in it
+
+`FINDINGS-LANTERN-PHYSICS.md` is the full derivation with sources; this is the
+work it implies, and row 80 is the mandate for it.
+
+A kerosene hand lantern on a bail is a compound pendulum with a natural
+frequency of **~1.05 Hz** (0.9–1.25 Hz across the whole plausible geometry — the
+period goes as a square root, so the result is robust). A walking body drives the
+hand **laterally at ~0.95 Hz** and **vertically at ~1.9 Hz**. Running that
+through a base-driven pendulum's response gives three things that hold for any
+damping:
+
+- a walk sits at 0.90 of resonance, so the lantern **amplifies** the hand's
+  lateral motion **4–5×, nearly in phase**;
+- every gait drives the vertical axis well above resonance, so the real arc is
+  **~1/10 as tall as it is wide**, not the hardcoded 1/2 — nearly flat;
+- a sprint crosses above resonance: the ratio collapses to ~1.1× and inverts, so
+  **sprinting swings the lantern less than walking does**, which is the opposite
+  of `SprintSwayCm` 5.2 against `WalkSwayCm` 2.4.
+
+So four of the current rules disagree with the physics: `SwayHertz` 1.6 is
+**1.68× too fast** (1.6 strides/s is a 3.2 steps/s jog cadence, applied at a
+walk), the vertical ratio is ~5× too tall, sprint and walk are reversed, and the
+landing kick is a non-oscillating downward offset recovering in τ ≈ 0.35 s where
+a struck pendulum rings at ~1 Hz for 1.5–3 s.
+
+**The minimal honest change is one second-order state per axis** — angle and
+angular velocity, driven by the hand's acceleration, with `f₀` and `Q` as the two
+authored numbers — replacing the direct `FMath::Sin` in `AdvanceFeel`. About
+fifteen lines. It **subsumes the landing kick** (an impulse becomes an initial
+angular velocity and rings down for free, which is also exactly Chris's
+knocked-down case) and it makes the sprint/walk relationship *fall out* rather
+than be tuned. `SwayHertz` stops being an animation rate and becomes the
+lantern's natural frequency — a property of the object.
+
+Two cautions:
+
+- **`Q` is the one number that cannot be derived.** Film a real lantern and count
+  the swings; until then it is a range, and the three conclusions above do not
+  depend on it.
+- **`MaxOffsetCm` is 12 cm and a physically true walk sway is 10–15 cm**, so the
+  existing rail would clip the real amplitude. Whether the rail rises or the
+  amplitude is scaled for legibility is a feel call and Chris's, not a physics
+  one — a lantern swinging its true 15 cm may simply be unpleasant in first
+  person. Row 80 says derive first; it does not say ship the derivation blind.
 
 ### What is latent, and this part is unambiguously a defect
 
@@ -224,7 +271,18 @@ check stops being load-bearing. You own this file.
 
 ## 5. Chris's, not yours
 
-- **Whether the 88 cm of pitch travel stays.** Decision 1 above.
+- ~~Whether the 88 cm of pitch travel stays.~~ **Answered 2026-11-04: it stays.**
+  `DECISIONS.md` row 80.
+- **Does the sway join the gameplay anchor?** Row 80 says what moves, moves — but
+  today the 88 cm pitch lever reaches gameplay and the sway, which is the actual
+  pendulum and the larger real motion, does not. That split is the reverse of
+  what the physics would pick. §6 of `FINDINGS-LANTERN-PHYSICS.md` lays out the
+  three answers and recommends the third: let gameplay read the lantern's
+  *physical* position, sway included, and keep the fence around the decorative
+  part only (the trail, the cone lag). It is his call because it changes how
+  legibility reads to an enemy.
+- **Whether `MaxOffsetCm` rises to fit a physically true sway**, or the amplitude
+  is scaled down for first-person comfort.
 - **The retail floor: central island or re-zoning.** The recommended 55 cm wall
   run plus a 110 cm double-sided island gives two aisles of 282.5 cm, but it
   doubles the routes through the room and makes avoiding a Sweeper positional —
