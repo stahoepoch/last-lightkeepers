@@ -1,3 +1,8 @@
+// FROZEN PROTOTYPE. This file checks the archived Roblox build under
+// src/ and default.project.json, NOT the shipping Unreal game. It is
+// deliberately outside `npm test`; run it with `npm run test:prototype`.
+// See tests/prototype/README.md.
+//
 // Lighting guard.
 //
 // The lighting in this game has been broken and re-broken several times, each
@@ -15,7 +20,7 @@ import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
-const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 let failures = 0;
 let checks = 0;

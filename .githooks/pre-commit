@@ -5,13 +5,13 @@
 # This does.
 #
 # Bypass only if you genuinely mean to change the lighting contract, and update
-# DONTFUCKUPTHELIGHTS.md and tests/lighting.test.mjs in the same commit:
+# DONTFUCKUPTHELIGHTS.md and tests/prototype/lighting.test.mjs in the same commit:
 #   git commit --no-verify
-if ! node tests/lighting.test.mjs >/dev/null 2>&1; then
+if ! node tests/prototype/lighting.test.mjs >/dev/null 2>&1; then
 	echo ""
 	echo "COMMIT BLOCKED: the lighting guard failed."
 	echo ""
-	node tests/lighting.test.mjs 2>&1 | grep FAIL
+	node tests/prototype/lighting.test.mjs 2>&1 | grep FAIL
 	echo ""
 	echo "Read DONTFUCKUPTHELIGHTS.md. Ambient must be 0,0,0 and"
 	echo "EnvironmentDiffuseScale at or near 0 - these are flat fills that"

@@ -1,3 +1,8 @@
+// FROZEN PROTOTYPE. This file checks the archived Roblox build under
+// src/ and default.project.json, NOT the shipping Unreal game. It is
+// deliberately outside `npm test`; run it with `npm run test:prototype`.
+// See tests/prototype/README.md.
+//
 // Map contracts that are easy to regress during a procedural rebuild.
 //
 // This does not own gameplay routing logic. It makes the physical map keep
@@ -8,7 +13,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const path = join(root, "src", "map", "GalleriaBuilder.luau");
 
 let failures = 0;

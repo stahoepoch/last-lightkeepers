@@ -1,3 +1,8 @@
+// FROZEN PROTOTYPE. This file checks the archived Roblox build under
+// src/ and default.project.json, NOT the shipping Unreal game. It is
+// deliberately outside `npm test`; run it with `npm run test:prototype`.
+// See tests/prototype/README.md.
+//
 // Static wiring checks for the Luau.
 //
 // The project has no Luau toolchain, so nothing here is typechecked. These
@@ -18,7 +23,7 @@ import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join, basename, sep } from "node:path";
 
-const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 let failures = 0;
 let checks = 0;
