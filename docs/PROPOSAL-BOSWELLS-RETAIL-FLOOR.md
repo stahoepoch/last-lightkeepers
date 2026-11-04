@@ -94,14 +94,31 @@ stockroom finding makes that point about rack frames and it cuts the same way
 here. A floor of 137 cm gondolas is a room where you can see something coming
 and still not see what it is.
 
-**Blocked on a prerequisite.** All of the above assumes the keeper's light sits
-where the keeper's eyes do. It may not —
-`FINDINGS-LANTERN-ANCHOR-ORIGIN.md` has the gameplay anchor landing at 240 cm
-rather than 152, one capsule half-height high. At 240 the light clears *every*
-gondola in the table while the keeper sees over almost none of them. **That
-question should be settled before this pass runs, not after**, or the lighting
-on a new sales floor will be wrong in a way that looks like the dressing's
-fault.
+**Not blocked, and an earlier version of this file said it was.** That
+paragraph claimed the pass could not run until the gameplay light anchor was
+settled, on the grounds that it sat at 240 cm. **It does not** —
+`FINDINGS-LANTERN-ANCHOR-ORIGIN.md` has since been corrected: the live anchor is
+**133 cm** standing level, 19 cm below the eye by deliberate design, and it
+travels between **106 and 194 cm with look pitch alone**, because
+`LanternAnchor` hangs 42 cm forward of a camera that rotates.
+
+That makes the floor read *better* rather than worse, and it changes what shelf
+height buys:
+
+| Shelf | eye, 152 | light level, 133 | light looking up |
+| --- | --- | --- | --- |
+| 48" / 122 cm | sees over | clears | clears |
+| **54" / 137 cm** | **sees over, just** | **blocked** | **clears** |
+| 60" / 152 cm | eye level | blocked | clears |
+| 72" / 183 cm | blocked | blocked | clears above 72° |
+| 78" / 198 cm | blocked | blocked | never clears |
+
+At 137 cm the keeper reads the shape of the floor without lighting it, and
+raising the lantern to look at the far wall spills light over every shelf in
+between — a legible cost the player can learn and choose. **137 cm is now the
+recommendation rather than merely the interesting case.** Whether the pitch
+travel should be that large is a separate design question in that finding, and
+it does not gate this pass either way.
 
 ## What the pack can do today, with no purchase
 

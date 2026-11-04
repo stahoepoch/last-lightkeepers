@@ -206,5 +206,6 @@ unreachable either way.
 Two things to read against when that playtest happens:
 `FINDINGS-BOSWELLS-READS-AS-STOCKROOM.md` is the live objection to the dressing
 and is about the art pack rather than the measurements, and
-`FINDINGS-LANTERN-ANCHOR-ORIGIN.md` has the keeper's light possibly sitting
-88 cm too high, which would change how that circuit reads.
+`FINDINGS-LANTERN-ANCHOR-ORIGIN.md` has the keeper's gameplay light anchor
+travelling 88 cm vertically with look pitch alone, which changes how that
+circuit reads and is worth watching for in play.

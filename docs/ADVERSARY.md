@@ -243,6 +243,43 @@ looks like through `git apply -3`. `HasReachingSense` is at
 I wrote a stale label and it cost somebody else a cycle to discover. The rule
 above is not advice for other people.
 
+## The dead branch — the sibling of the wrong vintage
+
+"The wrong vintage" is a correct analysis of a world that stopped existing.
+**This is a correct analysis of code that does not run**, and it has the same
+property that makes the first one dangerous: there is no reasoning error in it
+anywhere, so thinking harder does not help.
+
+Its instance is `FINDINGS-LANTERN-ANCHOR-ORIGIN.md`, 2026-11-04, mine.
+`GetGameplayLightLocation()` was read from the bottom. The function's last
+statement adds a 152 cm eye height to `GetActorLocation()`, which on a
+`ACharacter` is the capsule centre — a genuine double-count landing at 240 cm,
+in the one position four systems judge from. Every step after that was sound,
+including a deliberate elimination proof that nothing in the project could move
+the capsule off UE's default 88: no Blueprint subclass, no `SetCapsuleSize`, the
+only `GetCapsuleComponent()` call in `Source/` setting a collision response.
+
+**Six lines above the statement there is an `if (GetAttachParent())` that always
+takes.** `ALLKCharacter` attaches the component in its constructor, so the
+analysed branch is unreachable in a running game, and the live anchor is 133 cm.
+
+Two things made it convincing, and both are worth distrusting on sight:
+
+- **The elimination proof.** *"I have ruled out every way this number could be
+  different"* is easy to mistake for *"this number is the one in play."* The
+  first is a statement about the value; reachability is a different question and
+  the proof says nothing about it.
+- **The explanation offered for why nobody had noticed.** The file argued the
+  defect was invisible because 250 cm racking blocks both 240 and 152. A live
+  defect in a path four systems read, in a project with an automation suite and a
+  lighting audit, surviving on a coincidence of shelf height, is a *worse* story
+  than "the path isn't reached." **"Nobody noticed because of luck" should be the
+  last explanation reached for, not the first** — when it is the only thing
+  holding a finding up, the finding is usually about the wrong code.
+
+The defence costs one grep: **before reasoning about a function's body, find its
+callers, and read the early returns above the line you care about.**
+
 ## Standing checks worth re-running
 
 | Check | Why |
@@ -256,3 +293,5 @@ above is not advice for other people.
 | **Is the document you are acting on still true?** Date it, then measure its premise | `FINDINGS-ENEMY-OPTIONALS.md` had been closed for two days and still read as open. Nine seconds of measurement against a change nearly reverted as inert |
 | Does a finding you closed say so **where the finding lives**? | A closure that exists only in a commit message is invisible to whoever filed it. `docs/HANDOFFS.md` |
 | Does a test compare the container or the contents? | X2: `VerifyTable` compares `GetRowNames()` and nothing inside the rows, so the silent-drop class that `1ae1db9` fixed can land again. Handed to Codex |
+| **Is the line you are reasoning about reached?** Find the callers, then read the early returns above it | The lantern anchor, 2026-11-04: a sound double-count analysis of a branch an `if (GetAttachParent())` six lines up makes unreachable. "The dead branch", above |
+| Is "nobody noticed because of luck" doing load-bearing work in your argument? | Same finding. It was the only thing holding it up, and it was holding up the wrong code |
