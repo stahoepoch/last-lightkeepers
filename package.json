@@ -2,13 +2,10 @@
   "name": "last-lightkeepers",
   "private": true,
   "type": "module",
-  "description": "Portable data checks for Last Lightkeepers. Engine-independent by design: Node and Python only, no dependencies, no install. `npm test` covers the shipping Unreal game; the frozen Roblox prototype's checks live under tests/prototype and run with `npm run test:prototype`.",
+  "description": "Portable data checks for Last Lightkeepers, an Unreal Engine 5 game. Engine-independent by design: Node and Python only, no dependencies, no install.",
   "scripts": {
     "test": "python Tools/import_data.py && python Tools/test_import_data.py && python Tools/test_startup_config.py && node tests/units.test.mjs && node tests/balance.test.mjs && node tests/curriculum.test.mjs && node tests/escalation.test.mjs && node tests/enemies.test.mjs && node tests/cues.test.mjs && node tests/map-readiness.test.mjs && node tests/light-authority.test.mjs && node tests/extraction.test.mjs && node tests/burden.test.mjs && node tests/telemetry.test.mjs",
     "test:balance": "node tests/balance.test.mjs",
-    "test:wiring": "node tests/prototype/wiring.test.mjs",
-    "test:lighting": "node tests/prototype/lighting.test.mjs",
-    "test:map-contract": "node tests/prototype/map-contract.test.mjs",
     "test:units": "node tests/units.test.mjs",
     "test:curriculum": "node tests/curriculum.test.mjs",
     "test:escalation": "node tests/escalation.test.mjs",
@@ -18,7 +15,6 @@
     "test:light-authority": "node tests/light-authority.test.mjs",
     "test:extraction": "node tests/extraction.test.mjs",
     "test:burden": "node tests/burden.test.mjs",
-    "test:telemetry": "node tests/telemetry.test.mjs",
-    "test:prototype": "node tests/prototype/wiring.test.mjs && node tests/prototype/lighting.test.mjs && node tests/prototype/map-contract.test.mjs"
+    "test:telemetry": "node tests/telemetry.test.mjs"
   }
 }

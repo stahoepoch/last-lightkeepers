@@ -4,18 +4,29 @@
 # to read did not hold; a test nobody is obliged to run did not hold either.
 # This does.
 #
-# Bypass only if you genuinely mean to change the lighting contract, and update
-# DONTFUCKUPTHELIGHTS.md and tests/prototype/lighting.test.mjs in the same commit:
+# Retargeted 2026-11-03, when the Roblox prototype was retired. Until then
+# this hook ran tests/lighting.test.mjs, which guarded Ambient and
+# EnvironmentDiffuseScale in default.project.json -- Roblox Lighting service
+# properties that do not exist in Unreal. So every commit to an Unreal game
+# was gated on the renderer of a frozen prototype, and the real lighting law
+# was guarded by nothing. It now runs the Unreal guard.
+#
+# Bypass only if you genuinely mean to change the lighting contract, and
+# update docs/LIGHTING-IN-UNREAL.md, docs/FIXTURE-LIGHT-CONTRACT.md and
+# tests/light-authority.test.mjs in the same commit:
 #   git commit --no-verify
-if ! node tests/prototype/lighting.test.mjs >/dev/null 2>&1; then
+if ! node tests/light-authority.test.mjs >/dev/null 2>&1; then
 	echo ""
 	echo "COMMIT BLOCKED: the lighting guard failed."
 	echo ""
-	node tests/prototype/lighting.test.mjs 2>&1 | grep FAIL
+	node tests/light-authority.test.mjs 2>&1 | grep FAIL
 	echo ""
-	echo "Read DONTFUCKUPTHELIGHTS.md. Ambient must be 0,0,0 and"
-	echo "EnvironmentDiffuseScale at or near 0 - these are flat fills that"
-	echo "ignore every light in the game, and raising them whites the world out."
+	echo "Read docs/LIGHTING-IN-UNREAL.md, then"
+	echo "docs/FIXTURE-LIGHT-CONTRACT.md, which is LOCKED. The invariant most"
+	echo "often broken by accident: lantern intensity is a visual knob, and the"
+	echo "gameplay light field is read separately through GetGameplayRadiusCm,"
+	echo "not AttenuationRadius. Changing one expecting the other to follow is"
+	echo "a silent rebalance."
 	echo ""
 	exit 1
 fi

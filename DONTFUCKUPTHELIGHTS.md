@@ -1,5 +1,21 @@
 # DON'T FUCK UP THE LIGHTS
 
+> **RETIRED 2026-11-03. This document is about the Roblox prototype, which is
+> over.** `Ambient`, `OutdoorAmbient`, `EnvironmentDiffuseScale`, `ClockTime`
+> and `Brightness` are Roblox Lighting service properties and **do not exist
+> in Unreal**. The code it governs — `src/`, `default.project.json` — has been
+> removed from the tree and is addressable at the tag
+> `roblox-prototype-final`.
+>
+> **It is kept, and not deleted, because it is cited as the ancestor of
+> `docs/LIGHTING-IN-UNREAL.md`, which carries its thesis forward unchanged:**
+> the lighting has been broken and re-broken several times, each time by
+> someone changing one number in good faith. That is still true, and it is
+> still the reason the guard exists. For anything you can act on today, read
+> `docs/LIGHTING-IN-UNREAL.md` and the LOCKED
+> `docs/FIXTURE-LIGHT-CONTRACT.md` instead. Nothing below is enforced by any
+> test any more.
+
 This game is about carrying a lantern into a dark place. If the dark stops
 being dark, there is no game. The lighting has been broken and re-broken
 several times, each time by someone changing one number in good faith.
