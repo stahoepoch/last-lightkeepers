@@ -18,8 +18,6 @@
     "test:light-authority": "node tests/light-authority.test.mjs",
     "test:extraction": "node tests/extraction.test.mjs",
     "test:burden": "node tests/burden.test.mjs",
-    "test:telemetry": "node tests/telemetry.test.mjs",
-    "audit:drift": "node tests/drift-audit.mjs",
-    "audit:drift:run": "node tests/drift-audit.mjs --run"
+    "test:telemetry": "node tests/telemetry.test.mjs"
   }
 }
