@@ -74,3 +74,11 @@ Saved/Logs/
 
 # Local Codex attachment cache. It is tooling scratch, never project source.
 /.codex-remote-attachments/
+
+# Licensed marketplace art, re-downloadable from Chris's Fab library.
+# 302 of its 330 MB is 4K texture sets for a greybox store lit at 2 candelas;
+# versioning that would undo most of the 19 GB LFS reclaim of 2026-11-03 and
+# make every clone pull it. See docs/ASSET-DEPENDENCIES.md, and
+# tests/asset-deps.test.mjs, which tells you when it is missing or half-copied
+# instead of letting the map render null props in silence.
+/Content/Warehouse_Big_Pack/
