@@ -92,3 +92,42 @@ case exiting 0 with instructions, the partial case exiting 1.
   `Drums+Jerrycans`. The roof and ceiling-panel sets are the obvious next
   candidates, because Boswell's currently has **three** ceiling surfaces at
   z 586, 604 and 614 and no agreement about which is real.
+
+## The gap the dev check does not cover: packaged builds
+
+Raised by Chris on 2026-11-03, and he called it correctly — **a shipping
+concern, and explicitly not a reason to block the Boswell's dressing pass.**
+Recorded here so it is a known gate rather than a discovery.
+
+`tests/asset-deps.test.mjs` answers the question *"is the pack on this
+machine?"* That is the right question for a developer clone, and it is not the
+question a release build asks.
+
+Once Boswell's hard-references `/Content/Warehouse_Big_Pack/`, the map is only
+fully playable where the dependency is installed. In a packaged build the pack
+is cooked **into** the build, so the failure mode changes shape:
+
+- A reference that resolved on the packaging machine ships fine.
+- A reference that did **not** resolve produces the same silence Unreal always
+  produces — no mesh, no error, no log line a player would see — except now it
+  is baked and there is no `git status` to compare against.
+
+So the dev check tests presence, and a release needs the stricter claim:
+**every asset referenced by a shipping map resolves at cook time.** Those are
+different assertions, and presence does not imply the second one — a half-
+retargeted actor can point at a mesh that exists in a folder the cook does not
+include.
+
+What that gate wants, when someone builds it:
+
+- Run against the **cooked** output, or against the cook log, not the working
+  tree. The working tree is what the current check already covers.
+- Fail on any unresolved reference from a map in the shipping set, naming the
+  actor and the missing asset — the thing Unreal declines to tell you.
+- Treat "resolved to the default/placeholder mesh" as a failure too, since
+  that is how a missing reference presents once it has been cooked.
+
+This is the same trap as `HANDOFFS.md` row X3 one layer further out: the
+dependency is still invisible when absent, and the thing that depends on it
+still reports success. The dev check closed the clone case. The cook case is
+open.
