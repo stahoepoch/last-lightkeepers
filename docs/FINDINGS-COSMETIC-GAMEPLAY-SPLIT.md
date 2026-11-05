@@ -235,7 +235,7 @@ The audit itself changed no code, data or test file. The single defect it
 found was fixed in the commit immediately after, together with the two checks
 that fail without it - so nothing here is a finding waiting on someone.
 
-## Addendum, 2026-11-04 — how much the ruling is worth, in centimetres
+## Addendum, 2026-11-04 — how much the ruling is worth, in centimetres (and it held)
 
 Added by a second writer; the audit above is untouched.
 
@@ -263,3 +263,11 @@ swing against a ~100 cm reach test is a coin-flip, and the aim arm and a future
 infrastructure "Present" are exactly that shape. `DECISIONS.md` O10 and §6 of
 `FINDINGS-LANTERN-PHYSICS.md` carry the numbers and the reconciliation offered
 to Chris — a rule by outcome shape rather than by motion.
+
+**Closed the same day. Row 82 stands as written**, re-confirmed by Chris against
+the measurement rather than in ignorance of it: *"it buys 1.5 cm of invisible
+behavior while creating two meanings for 'lantern position'. That's not worth
+another seam or exception… No code change. Put the pendulum work into making the
+lantern feel carried, not into a behavior difference nobody can perceive."* Every
+*holds* in the table above therefore stands, and the one open item — gameplay aim
+with no direction on `FLLKLightSource` — is unchanged. `DECISIONS.md` O10.

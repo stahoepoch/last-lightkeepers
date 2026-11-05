@@ -46,7 +46,7 @@ down, not yet ratified. `OPEN` — named, undecided, waiting on someone.
 | 32 | The hall's four rooms cost **1 / 3 / 6 / 10** crates - a first-session door, then a widening gap | LOCKED | Chris, 2026-10-27 | "Keep the 1/3/6/10 room costs for now." Claude's proposal of 2026-10-26, read and kept rather than ratified by default. "For now" is his: a playtest may move them, and only he moves them. `data/ledger.json` |
 | 80 | **A lantern has named levels. Detectability is authored per level, enemy reach is continuous in it, and gameplay resolves to the named state while the visuals lerp between them** | LOCKED | Chris, before 2026-11-04; transcribed 2026-11-04 | *"Transitions smoothly lerp visually, while gameplay resolves to the named state."* **This row was reconstructed, not written.** Twelve places in `Source/` cited "row 80" while `DECISIONS.md` ended at 79, so the rule the code has obeyed for weeks had no row; `LLKPerception.cpp:97` calls continuous detectability *"the whole of row 80"*, which is what fixes its content. Three consequences, all already built and tested. `FLLKKeeperSenses::Detectability` replaced `Brightness` in candelas, because a threshold derived from intensity cancels and a keeper's own lantern sits at distance zero, so every lit keeper cleared the bar at any brightness and a hooded setting could not mean anything. A Sweeper's authored `aggroRadiusDark` 12 and `aggroRadiusLit` 38 became the ends of a range, `Lerp(Dark, Lit, Detectability)`, with the ends unchanged. And `GetLitLightSources` reads `GetGameplayRadiusCm()` rather than `AttenuationRadius`, because the attenuation radius is a value a cosmetic crossfade is allowed to move - the reason `GetGameplayRadiusCm()` exists at all. `LLKLanternLevelTest.cpp:287-292` proves the seam by shoving the attenuation radius to a quarter and asserting the gameplay reach does not follow. **Row 82 is the same principle, stated for position instead of reach** |
 | 81 | **Physical honesty over authored feel.** If a thing would move in reality, it moves — the keeper's hand, and so the lantern, and so what the lantern lights. A number that exists only because it felt right is a worse answer than the real one | LOCKED | Chris, 2026-11-04; renumbered from 80 on 2026-11-04 | *"We're going for realism so if a lantern moves and it's supposed to move then it moves. We ought to find out what the real physics is of these things. I mean I don't want it to be all fake. Looking like if you get knocked down a little bit your hand moves your lantern moves. Everything moves you kind of shift around. That's the name of the game."* Ratifies the look-pitch travel in the gameplay light anchor (`FINDINGS-LANTERN-ANCHOR-ORIGIN.md`) rather than fencing it out - about **84 cm**, being the 42 cm forward offset of `LanternAnchor` swinging through an unclamped pitch range, not the 88 cm first reported, which was the capsule half-height carried over from the retracted 240 cm finding - and sets the standard the feel model is now measured against. `FINDINGS-LANTERN-PHYSICS.md` does the measuring: the real numbers disagree with five of the current ones. **This row is a licence to derive, not a licence to invent.** Authored values stay Chris's; what this row changes is that a derived physical number now beats a hand-picked one, provided its derivation is written down beside it |
-| 82 | **The pendulum is cosmetic; the stable mount is gameplay.** The visual arc drives mesh, visible source, cone, trail and landing ring. The mount drives gameplay radius, detection, relic inspection and infrastructure interactions. The pitch/aim arm drives gameplay direction | LOCKED | Chris, 2026-11-04 | *"Keep pendulum sway cosmetic. Use the lantern's stable hand/mount anchor for gameplay origin and aim, but never let its 1 Hz visual arc pulse relic reach or enemy notice. A player shouldn't become detectable - or lose a valid 'Present' interaction - because the bail happened to be at one end of a swing."* Bounds row 81: physical honesty governs what the player sees, never what the game adjudicates. `FINDINGS-COSMETIC-GAMEPLAY-SPLIT.md` audits the code against it. **Mostly already true, and structurally rather than by convention:** cosmetic sway is written to the light component's relative offset, one level BELOW `LanternAnchor`, so the attachment order is what prevents it reaching `GetGameplayLightLocation()`. Detection is queried at the keeper's position, not the lantern's; relic legibility adds a visibility trace and a two-sample debounce; "Present" consults no light at all. Two gaps the audit found, one now closed. `LLKInteractorComponent.cpp` built the Anchor Revive's distress pulse from `Light->AttenuationRadius`, the cosmetic value - the same defect row 80 fixed in `GetLitLightSources` and missed here, and it mattered because the pulse enters the field at `Detectability` 1.0 to wake the room; fixed 2026-11-04 at `:467` and guarded by two checks in section 7 of `tests/light-authority.test.mjs`. Still open: `FLLKLightSource` carries **no direction**, so the aim clause governs a mechanism that does not exist yet: gameplay light is a sphere while the visible cone is 110 degrees, which means a keeper is detectable, and can read relics, in directions they cannot see |
+| 82 | **The pendulum is cosmetic; the stable mount is gameplay.** The visual arc drives mesh, visible source, cone, trail and landing ring. The mount drives gameplay radius, detection, relic inspection and infrastructure interactions. The pitch/aim arm drives gameplay direction | LOCKED | Chris, 2026-11-04 | *"Keep pendulum sway cosmetic. Use the lantern's stable hand/mount anchor for gameplay origin and aim, but never let its 1 Hz visual arc pulse relic reach or enemy notice. A player shouldn't become detectable - or lose a valid 'Present' interaction - because the bail happened to be at one end of a swing."* Bounds row 81: physical honesty governs what the player sees, never what the game adjudicates. `FINDINGS-COSMETIC-GAMEPLAY-SPLIT.md` audits the code against it. **Mostly already true, and structurally rather than by convention:** cosmetic sway is written to the light component's relative offset, one level BELOW `LanternAnchor`, so the attachment order is what prevents it reaching `GetGameplayLightLocation()`. Detection is queried at the keeper's position, not the lantern's; relic legibility adds a visibility trace and a two-sample debounce; "Present" consults no light at all. Two gaps the audit found, one now closed. `LLKInteractorComponent.cpp` built the Anchor Revive's distress pulse from `Light->AttenuationRadius`, the cosmetic value - the same defect row 80 fixed in `GetLitLightSources` and missed here, and it mattered because the pulse enters the field at `Detectability` 1.0 to wake the room; fixed 2026-11-04 at `:467` and guarded by two checks in section 7 of `tests/light-authority.test.mjs`. **Re-confirmed the same day against a measurement that invited the opposite** (O10): a physically honest sway in the gameplay light would have moved detectability by 0.21%, worth 1.5 cm of a Sweeper's 12-to-38 stud aggro radius, and Chris declined it on cost rather than physics - *"it buys 1.5 cm of invisible behavior while creating two meanings for 'lantern position'. That's not worth another seam or exception."* So this row is not a cautious default; it is the cheaper of two measured options. Still open: `FLLKLightSource` carries **no direction**, so the aim clause governs a mechanism that does not exist yet: gameplay light is a sphere while the visible cone is 110 degrees, which means a keeper is detectable, and can read relics, in directions they cannot see |
 
 ## Content
 
@@ -454,7 +454,33 @@ are all studs too.
 to keep the conversion and leave `data/` portable, but the question is worth
 settling before M2 spreads the tax across six enemies rather than one pawn.
 
-### O10. Does the sway move the gameplay light? — **two answers, 1.5 cm apart**
+### O10. Does the sway move the gameplay light? — **CLOSED 2026-11-04, row 82 stands**
+
+**Chris, 2026-11-04, on the reconciliation offered below:**
+
+> Row 82 stands as written. The hybrid rule is clever, but it buys 1.5 cm of
+> invisible behavior while creating two meanings for "lantern position." That's
+> not worth another seam or exception.
+>
+> - Visual pendulum: full physical motion.
+> - Gameplay light origin, aim, reads, and notice: stable mount.
+>
+> No code change. Put the pendulum work into making the lantern feel carried,
+> not into a behavior difference nobody can perceive.
+
+**So the measurement below argued itself out of its own conclusion**, and that is
+the useful part of it: 1.5 cm is not a reason to act, it is a reason not to. The
+rule that got rejected was not wrong about the physics — it was wrong about the
+cost, because a second meaning for "where the lantern is" is a permanent tax on
+every future reader of that position, paid to buy an effect no player can
+perceive. **Row 81 is not weakened by this.** Physical honesty governs what the
+player sees, in full; it was never a mandate to add a seam. `MaxOffsetCm` is
+therefore a pure comfort call with no gameplay consequence at all, which is
+simpler than it looked this morning.
+
+The question as it was posed, and the measurement that closed it, are kept below.
+
+---
 
 **Chris answered this twice on 2026-11-04, oppositely, and the measurement
 says it barely matters.** Row 82 is his considered answer, written with its
@@ -491,20 +517,15 @@ cannot lose an interaction at all: legibility is **sticky**
 paid for"*) and `bCurrentlyLit` has a two-equal-sample debounce, so a wobble can
 only grant a read a fraction of a second early, never revoke one.
 
-**The reconciliation on offer, which needs one word from Chris.** Both answers
-hold if the rule is stated by *outcome shape* rather than by motion: **the sway
+**The reconciliation that was offered, and declined.** Both answers would have
+held if the rule were stated by *outcome shape* rather than by motion — the sway
 may move anything gameplay resolves continuously, and may not move anything
-gameplay resolves to a yes or no.** That is row 80's own principle — gameplay
-resolves to the named state while the visuals lerp — applied to position instead
-of reach. Under it the light-field source position may carry the sway (one line,
-one caller, 1.5 cm of consequence), while any future near-field threshold check
-— the aim arm, an infrastructure "Present", a reach test at arm's length — takes
-the stable mount, where a 15 cm swing against a 100 cm reach really would be a
-coin-flip. The honest alternative is to leave it exactly as row 82 has it and
-accept that the one real pendulum in the game is invisible to the simulation;
-that costs nothing today and is the status quo.
+gameplay resolves to a yes or no, which is row 80's principle applied to
+position instead of reach. Chris rejected it on cost rather than on physics, in
+the quote at the top: one line of change, but two meanings for "lantern
+position" forever, bought for 1.5 cm nobody can feel.
 
-**Not actioned either way.** No gameplay code was touched. If Chris confirms the
-reconciliation it is a one-line change at
-`LLKZonePressureSubsystem.cpp:345` plus a test, specced in
-`HANDOFF-CODEX-LANTERN-ANCHOR.md`.
+**Nothing was actioned, and that is now the settled state rather than a pause.**
+No gameplay code was touched at any point. The pendulum work goes where he sent
+it — into the cosmetic model, `HANDOFF-CODEX-LANTERN-ANCHOR.md` §1b — where it
+has no gameplay consequence to fence and therefore needs no new seam.

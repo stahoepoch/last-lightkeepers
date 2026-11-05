@@ -92,6 +92,16 @@ piece of work.
 `FINDINGS-LANTERN-PHYSICS.md` is the full derivation with sources; this is the
 work it implies, and row 81 is the mandate for it.
 
+**This is where the pendulum work goes, and as of 2026-11-04 it is the only place
+it goes.** Chris closed O10 by re-confirming row 82 and said so directly: *"Put
+the pendulum work into making the lantern feel carried, not into a behavior
+difference nobody can perceive."* That makes this section easier rather than
+harder. The second-order state lives below `LanternAnchor`, in the light
+component's own relative offset, exactly where the sway already lives — so it
+reaches no gameplay reader, needs no new fence, and carries no balance question.
+Every number below is a feel number, free to be tuned by eye against the
+derivation rather than defended as a gameplay value.
+
 A kerosene hand lantern on a bail is a compound pendulum with a natural
 frequency of **~1.05 Hz** (0.9–1.25 Hz across the whole plausible geometry — the
 period goes as a square root, so the result is robust). A walking body drives the
@@ -132,6 +142,8 @@ Two cautions:
   amplitude is scaled for legibility is a feel call and Chris's, not a physics
   one — a lantern swinging its true 15 cm may simply be unpleasant in first
   person. Row 81 says derive first; it does not say ship the derivation blind.
+  **Since O10 closed, this is comfort only**: whichever way it goes, no enemy,
+  relic or light-field reader can tell the difference.
 
 ### What is latent, and this part is unambiguously a defect
 
@@ -273,30 +285,21 @@ check stops being load-bearing. You own this file.
 
 - ~~Whether the 88 cm of pitch travel stays.~~ **Answered 2026-11-04: it stays.**
   `DECISIONS.md` row 81.
-- ~~Does the sway join the gameplay anchor?~~ **Asked and answered twice, in
-  opposite directions, on 2026-11-04 — and then measured, which settled how much
-  it matters.** Row 82 is the considered answer (*"Keep pendulum sway cosmetic…
-  A player shouldn't become detectable, or lose a valid 'Present' interaction,
-  because the bail happened to be at one end of a swing"*), and it stands; a
-  later two-word *"Sway moves gameplay"* in another session does not overturn a
-  ruling that came with its own argument, a code fix and two tests. **Nothing
-  was changed.** `DECISIONS.md` O10 and §6 of `FINDINGS-LANTERN-PHYSICS.md`
-  carry the measurement: the soft falloff `1/(1 + d²/R²)` with R = 840 cm, and
-  an anchor 66.4 cm from the keeper's own sample point, mean a physically true
-  15 cm sway would move detectability by **0.21%** — **1.5 cm** of the Sweeper's
-  12→38 stud aggro radius — and could never revoke a relic read, because
-  legibility is sticky and debounced. The reconciliation offered to Chris is a
-  rule by outcome shape rather than by motion: *the sway may move what gameplay
-  resolves continuously, and may not move what gameplay resolves to a yes or no.*
-  **If and only if he confirms it**, the change is one line —
-  `LLKZonePressureSubsystem.cpp:345` takes the lantern's physical position
-  instead of `GetGameplayLightLocation()`, which means the component needs a
-  second accessor rather than a loosened fence, since `GetGameplayLightLocation`
-  is itself the guarantee row 82 relies on — plus a check in
-  `tests/light-authority.test.mjs` asserting that the *near-field* readers still
-  take the stable mount. Do not pre-build it.
+- ~~Does the sway join the gameplay anchor?~~ **CLOSED 2026-11-04: it does not,
+  and there is nothing to build.** Row 82 stands as written, re-confirmed by
+  Chris against the measurement rather than in ignorance of it: *"it buys 1.5 cm
+  of invisible behavior while creating two meanings for 'lantern position'.
+  That's not worth another seam or exception… No code change. Put the pendulum
+  work into making the lantern feel carried, not into a behavior difference
+  nobody can perceive."* The one-line change previously specced here is
+  **withdrawn — do not build it**, and `GetGameplayLightLocation()` keeps its
+  single meaning. `DECISIONS.md` O10 has the measurement that closed it (0.21%
+  of detectability, 1.5 cm of a Sweeper's 12→38 stud aggro radius, and a relic
+  read that cannot be revoked because legibility is sticky and debounced).
 - **Whether `MaxOffsetCm` rises to fit a physically true sway**, or the amplitude
-  is scaled down for first-person comfort.
+  is scaled down for first-person comfort. **Purely a comfort call since O10
+  closed** — the sway reaches no gameplay reader, so there is no balance
+  consequence on either side of it.
 - **The retail floor: central island or re-zoning.** The recommended 55 cm wall
   run plus a 110 cm double-sided island gives two aisles of 282.5 cm, but it
   doubles the routes through the room and makes avoiding a Sweeper positional —

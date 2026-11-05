@@ -106,11 +106,18 @@ complaint — see `FINDINGS-LANTERN-PHYSICS.md` §6.
   project's own rule is that light makes the keeper legible; it does not say
   that glancing at the floor makes them 28 cm less so.
 
-What the ruling leaves open is the *other* half: the sway, which is the real
-pendulum and the larger real motion, is still fenced out of gameplay while this
-rigid lever is inside it. That is the reverse of what physics would choose, and
-it is now a question rather than a defect. `FINDINGS-LANTERN-PHYSICS.md` has the
-numbers and the three ways to answer it.
+**The other half is now settled too, and in the other direction.** The sway —
+the real pendulum, and the larger real motion — stays fenced out of gameplay
+while this rigid lever stays inside it. That looks like the reverse of what
+physics would choose, and it was put to Chris as exactly that; he kept it, having
+seen the measurement. `DECISIONS.md` row 82 and O10: a physically honest sway in
+the gameplay light moves detectability by 0.21%, worth 1.5 cm of a Sweeper's
+12-to-38 stud aggro radius, *"invisible behavior while creating two meanings for
+'lantern position'."*
+
+So the asymmetry in this file is deliberate and stated rather than accidental:
+**the arm the player aims is a gameplay input, and the pendulum they only watch
+is not.** `FINDINGS-LANTERN-PHYSICS.md` has the numbers behind both halves.
 
 ## The second thing, which is latent rather than live
 

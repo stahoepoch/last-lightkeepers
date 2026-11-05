@@ -160,7 +160,7 @@ for free), and it makes the sprint/walk relationship fall out instead of being
 tuned. `SwayHertz` then stops being a sway rate and becomes the lantern's natural
 frequency, which is a property of the object rather than of the animation.
 
-## 6. The thing worth deciding — asked, answered twice, and worth 1.5 cm
+## 6. The thing worth deciding — **CLOSED 2026-11-04: it stays cosmetic**
 
 Row 81 says that if the lantern moves, what it lights moves. Today the opposite
 split is in force:
@@ -210,30 +210,39 @@ interaction at all: legibility is **sticky** (`LLKRelicComponent.cpp:240-244` �
 a two-equal-sample debounce, so a wobble can grant a read a fraction of a second
 early and can never revoke one.
 
-**The reconciliation, which is what should go to Chris rather than a re-ask of
-the same question.** Both answers hold if the rule is stated by *outcome shape*
-instead of by motion:
+**The reconciliation was offered and declined, and the reason is better than the
+proposal was.** The rule on offer was one of outcome shape rather than motion —
+*the sway may move anything gameplay resolves continuously, and may not move
+anything gameplay resolves to a yes or no*, which is row 80's principle applied
+to position instead of reach. Chris, 2026-11-04:
 
-> The sway may move anything gameplay resolves **continuously**, and may not
-> move anything gameplay resolves to a **yes or no**.
+> Row 82 stands as written. The hybrid rule is clever, but it buys 1.5 cm of
+> invisible behavior while creating two meanings for "lantern position." That's
+> not worth another seam or exception.
+>
+> - Visual pendulum: full physical motion.
+> - Gameplay light origin, aim, reads, and notice: stable mount.
+>
+> No code change. Put the pendulum work into making the lantern feel carried,
+> not into a behavior difference nobody can perceive.
 
-That is row 80's own principle — gameplay resolves to the named state while the
-visuals lerp — restated for position instead of reach. Under it the light-field
-source position carries the sway (one line, one caller, 1.5 cm of consequence,
-and row 81 satisfied), while every near-field threshold takes the stable mount,
-because that is where row 82's objection has teeth: 15 cm of swing against a
-~100 cm reach test genuinely is a coin-flip, and the aim arm and any future
-infrastructure "Present" are exactly that shape. `FLLKLightSource` carries no
-direction today, so the aim half still governs a mechanism that does not exist.
+**So the measurement argued against the thing it was gathered to support**, which
+is the part of this section worth keeping. 1.5 cm is not a reason to act; it is a
+reason not to. The cost that decided it is not in the one changed line — it is
+that "where the lantern is" would have had two answers from then on, and every
+future reader of that position would have had to know which one it wanted. That
+is a permanent tax bought with an imperceptible effect.
 
-**The honest alternative is the status quo**: leave row 82 exactly as it is and
-accept that the one real pendulum in the game is invisible to the simulation. It
-costs nothing today, it is already built and tested, and the measurement above
-is the reason it is defensible rather than merely convenient — what row 81 would
-buy here is 1.5 cm.
+**Row 81 survives intact, and so does everything in §1–§5.** Physical honesty
+governs what the player sees, in full; it was never a mandate to add a seam. The
+derivation above is therefore the spec for the *cosmetic* model and nothing else,
+which makes it simpler rather than smaller: a second-order pendulum below the
+anchor has no gameplay consequence to fence, so `MaxOffsetCm` becomes a pure
+first-person comfort call with no balance question attached to it.
 
-**Nothing was actioned either way.** `DECISIONS.md` O10 records the conflict and
-this measurement; no gameplay code was touched.
+**And the pitch lever stays in gameplay**, ratified by row 81, unchanged by this.
+The asymmetry in the table above is now deliberate and stated: the rigid arm the
+player aims is a gameplay input, and the pendulum they merely watch is not.
 
 ## 7. What this does not claim
 
