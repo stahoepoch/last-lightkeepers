@@ -31,14 +31,25 @@ candidates are both about the room rather than the code.
 
 ## The two candidates that are left
 
-**1. The zone's box is a guess, and the dock was built afterwards.** The extents
-come from the constructor — 9 x 6 x 4 studs of half-extent, so a 504 x 336 x 224
-cm volume — and `BoxExtent` appears **zero** times in the map package, meaning
-nothing overrode it when the dock was greyboxed. The class comment predicted
-exactly this: *"It is a default on an unplaced actor rather than a tuned value —
-the real extents come with the greybox's dock."* They never came. If the box does
-not cover the floor a player naturally stands on at the dock, there is no prompt
-and no hold, and nothing is logged, because an un-entered zone is not an error.
+**1. The zone's box is a guess, and the dock was built afterwards.** The
+constructor authors 9 x 6 x 4 studs of half-extent, a 504 x 336 x 224 cm volume.
+**The map's serialized value decodes to (252, 168, 112) — the constructor default
+to the centimetre**, so the dressing pass did not retune it. The class comment
+predicted exactly this: *"It is a default on an unplaced actor rather than a
+tuned value — the real extents come with the greybox's dock."* They never came.
+If the box does not cover the floor a player naturally stands on at the dock,
+there is no prompt and no hold, and nothing is logged, because an un-entered zone
+is not an error.
+
+> **Corrected 2026-11-05, same day.** This paragraph first argued the same
+> conclusion from *"`BoxExtent` appears zero times in the map package, meaning
+> nothing overrode it."* That reasoning was wrong: the property name is in the
+> package's name table rather than inline, so a literal-string count cannot see
+> an override at all, and the test would have read the same on a zone someone
+> had resized. The replacement evidence is the serialized number itself, and it
+> is stronger — it says the value *is* the default rather than guessing that
+> nothing wrote one. Right answer, wrong instrument, and the instrument is the
+> part worth correcting.
 
 **2. The 20-second hold has no authored feedback.** The beat is: stand in the
 zone, hold 1 s (`CallHoldSeconds`), extraction is called, then **20 more seconds
@@ -66,6 +77,28 @@ to extract, then run it:
 
 `LLK.CheckMap` is the other half, since it reports map readiness and already
 exists for this class of confusion.
+
+### What I tried next, and why it is not in this file
+
+The obvious follow-up is to read the zone's **placed transform** out of the
+package and compare it to the dock, which would settle candidate 1 without the
+editor. I tried it and **the result is withdrawn.** A first decode put the zone
+at `(-360, 620, 100)`, which was specific enough to act on. A second pass over
+the same label returned `(-120, 690)` and `(-1050, 560)`, because the search
+window was wide enough to catch neighbouring actors' blobs, and nothing in the
+method distinguished them. Two runs, three answers, no way to tell which actor
+each belonged to.
+
+**The distinction against `M6`, which used the same tool successfully.** That
+scan searched for a **known** triple — `(450, 450, 50)` — and carried a control,
+the crate's authored `(300, 250, 90)`, which is what caught it reading float32
+when the data was double. Searching for a known value with a control is a
+measurement. Searching for an **unknown** value with no control is a guess that
+produces coordinates, which is worse than producing nothing, because coordinates
+look like findings. `TOOLING-TRAPS.md` trap 19 records the general shape.
+
+So the zone's placement stays unknown until someone opens the map, and candidate
+1 is still a candidate rather than a conclusion.
 
 ## What this is not
 

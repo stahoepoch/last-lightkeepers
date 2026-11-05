@@ -658,3 +658,45 @@ Both traps are the same error. A precondition was read as an obstacle because
 it arrived worded as one — "the editor is open", "the editor is closed" — and
 in neither case was the state itself examined. **A tool's required environment
 is a fact to check, not a verdict to accept.**
+
+## 19. A byte scan answers "is this value here", never "what value is here"
+
+`M6` read a transform out of a `.umap` with a byte scan and it worked. On
+2026-11-05 the same tool, pointed at the same package, produced three different
+coordinates for one actor across two passes. The tool did not change. The
+question did.
+
+**The scan that worked asked a closed question.** It searched for the bay's
+**known** authored triple, `(450, 450, 50)`, and it carried a control: the
+crate's `(300, 250, 90)`, which was expected to be found and was. When the first
+attempt found neither, the control said why — it had searched float32 against
+double-precision data — and the finding was a corrected method rather than a
+false loss. A hit is evidence the value is present. A miss with a live control is
+evidence it is absent.
+
+**The scan that failed asked an open one.** *"Where is `ALLKExtractionZone_0`?"*
+has no expected answer, so there is nothing for a control to control. The method
+used proximity to the actor's name as the link between a name and a number, and
+proximity in a serialized package is not ownership: the window caught
+neighbouring actors' data, and three plausible triples came back with no way to
+rank them. Widening or narrowing the window changes the answer, which is the tell
+that the method has no ground truth in it.
+
+| Question | Sound? | Why |
+| --- | --- | --- |
+| Is `LLK.StockBay` still in this package? | **Yes** | Presence of a known string, and absence is meaningful |
+| Is the bay still at `(450, 450, 50)`? | **Yes, with a control** | Known value, and a second known value proves the scan can see its own data type |
+| Does this actor's `ExtractionPointId` read `LoadingDock`? | **Yes** | One authored string, and the set of legal values is tiny and known |
+| What is this actor's transform? | **No** | Open question. Nothing links the number to the name except proximity, and proximity is not ownership |
+| Was this property overridden in the map? | **No** | A literal-string count cannot see the name table, so it reads the same whether or not an override exists |
+
+**The rule.** Use a byte scan to confirm or refute something you can already
+state. The moment the output is a number you did not bring with you, you are
+reading tea leaves in hex, and the output is worse than nothing because
+coordinates look like findings. Open the editor, or say it is unknown.
+
+That last row is its own small lesson: the first draft of
+`FINDINGS-EXTRACTION-NEVER-COMPLETES.md` argued from `BoxExtent` appearing zero
+times in the package. It reached the right conclusion through an instrument that
+could not have reached any other one.
+

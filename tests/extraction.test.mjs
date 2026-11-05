@@ -33,9 +33,9 @@
 //
 //   node tests/extraction.test.mjs
 
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { dirname, join, sep } from "node:path";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -60,6 +60,17 @@ const read = (rel) => {
   if (!existsSync(full)) return null;
   return readFileSync(full, "utf8");
 };
+
+// Section 6 walks the runtime module rather than naming files, because the
+// caller it is looking for does not exist yet and so has no name to name.
+function walkCpp(dir, out = []) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) walkCpp(full, out);
+    else if (entry.name.endsWith(".cpp")) out.push(full);
+  }
+  return out;
+}
 
 const PURE_HEADER = "Source/LLK/Public/Run/LLKExtraction.h";
 const PURE_IMPL = "Source/LLK/Private/Run/LLKExtraction.cpp";
@@ -382,6 +393,88 @@ for (const rel of [PURE_HEADER, PURE_IMPL, SUBSYSTEM_HEADER, SUBSYSTEM_IMPL, TES
     "row 74 gave this its reason - a full recovery operation is the largest " +
       "light-and-motion event of the night",
   );
+}
+
+// ---- 6. an authored requirement needs a way to be satisfied -------------
+//
+// **The defect this exists for, found 2026-11-05.** `ULLKExtractionSubsystem::
+// SetRequirementSatisfied` has exactly one caller in the whole project and it
+// is the console command `LLK.Extraction.Satisfy`. So `FreightLift`, which
+// authors `requires: SubBasementBreakerRestored`, refuses forever with
+// `RequirementNotMet` and there is no path through the game that clears it.
+// Section 5 above checks that an exit authors a hold and a payout; nothing
+// checked that its gate can ever open, which is the difference between an exit
+// that costs something and an exit that is not there.
+//
+// **Why an allowlist rather than a plain assertion.** The defect is real and
+// open as `HANDOFFS.md` row M14, and Chris has not decided whether the second
+// exit belongs in the first slice at all - so a bare check would land a red
+// suite and gate every commit on a design decision that is his. The shape
+// `cues.test.mjs` already uses is the honest one: a known gap is listed WITH
+// its reason, so the silence is a recorded decision, and **the list itself
+// fails when it goes stale** in either direction.
+//
+// Three ways this goes red, which is what makes it worth having:
+//
+//   1. A new exit authors `requires` and nobody listed it. That is the next
+//      `FreightLift`, caught at authoring time instead of in a playtest.
+//   2. A listed exit becomes satisfiable - somebody built the interaction and
+//      the entry is now a lie about the code.
+//   3. A listed exit stops authoring `requires`, or stops existing. Deleting
+//      the `requires` is the tempting wrong fix, because the 1.6x payout is
+//      priced against that cost, so this notices it.
+{
+  const UNSATISFIABLE = new Map([
+    [
+      "FreightLift",
+      "HANDOFFS.md M14. Nothing in the run can restore the sub-basement " +
+        "breaker; the fiction has no mechanism yet. Closed by building that " +
+        "interaction or by Chris ruling the deep exit out of the first slice " +
+        "- NOT by deleting the requires, which is what the 1.6x pays for",
+    ],
+  ]);
+
+  const loot = JSON.parse(readFileSync(join(root, "data/loot.json"), "utf8"));
+  const exits = loot.extraction ?? {};
+
+  // Any gameplay caller at all, which is deliberately coarser than "a caller
+  // that sets THIS requirement": the flag is an `FName` assembled at runtime,
+  // so tying a call site to an exit by inspection would be a guess. One real
+  // caller outside the subsystem is the thing that is false today, and it is
+  // the thing whose arrival should prune this list.
+  const OWNER = "LLKExtractionSubsystem.cpp";
+  const callers = walkCpp(join(root, "Source/LLK/Private"))
+    .filter((f) => !f.includes(`${sep}Tests${sep}`) && !f.endsWith(OWNER))
+    .filter((f) => /SetRequirementSatisfied\s*\(/.test(stripComments(readFileSync(f, "utf8"))))
+    .map((f) => f.slice(f.indexOf("Source")));
+
+  const gated = Object.keys(exits).filter((id) => typeof exits[id].requires === "string");
+
+  check(
+    "every gated exit is either satisfiable or listed as not",
+    gated.every((id) => callers.length > 0 || UNSATISFIABLE.has(id)),
+    `${gated.filter((id) => callers.length === 0 && !UNSATISFIABLE.has(id)).join(", ")} ` +
+      "authors a `requires` that no gameplay code can satisfy, and is not on " +
+      "the known-gap list. An exit whose gate cannot open is not an exit",
+  );
+
+  check(
+    "and the known-gap list has not gone stale against the code",
+    !(callers.length > 0 && UNSATISFIABLE.size > 0),
+    `SetRequirementSatisfied now has gameplay callers (${callers.join(", ")}), ` +
+      "so the entries in UNSATISFIABLE are a lie about the code. Re-check " +
+      "each gated exit by hand and prune the list",
+  );
+
+  for (const id of UNSATISFIABLE.keys()) {
+    check(
+      `and ${id} is still a gated exit`,
+      typeof exits[id]?.requires === "string",
+      `${id} no longer authors a requires, so this entry describes nothing. ` +
+        "If the gate was deleted rather than built, that is the wrong fix: " +
+        "read the entry's own reason",
+    );
+  }
 }
 
 // The far side of the convergence chain, which these tests could not see.
