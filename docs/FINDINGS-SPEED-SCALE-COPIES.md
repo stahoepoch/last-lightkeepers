@@ -292,3 +292,41 @@ One stale cross-reference inside the same block was already retracted on the
 board itself: the 240 cm fallback paragraph. That is now
 `FINDINGS-LANTERN-ANCHOR-ORIGIN.md`, where the live anchor is 133 and the 240
 path is unreachable.
+
+### Copy 6 is closed — `35d73c2`, 2026-11-05
+
+Chris's instruction was two words: *"you fix it."* The board was clean, not
+dirty, so the earlier reason for leaving it alone was wrong. Every speed on it
+is now `HEAD`, under the board's own falsifier 4 — *"any number in this section
+that disagrees with `data/` at `HEAD` loses."* That rule was written on
+2026-11-02 against a single stale Sweeper figure; this is the first time it had
+to be run across a whole section.
+
+Two readings were rewritten rather than renumbered, because the retune changed
+what they argue, not just what they cite:
+
+- The pain row's "the machine is faster for that window" became the inversion:
+  a stumbled sprint escapes at 192.5 against 168, so the beat is now *the
+  machine is faster than you unless you spend the sprint.*
+- The "make the walk real" reading's warning did not come true. It predicted
+  that moving toward the metabolic band would make the cleaner faster than a
+  walking keeper. The walk came most of the way there and the margin held at
+  56 cm/s, because the ratios moved together. The gear that landed inside the
+  human band is the crouch, 1.26 m/s — the one you choose when hiding.
+
+Both are kept with their old numbers quoted in the past tense. An argument that
+was acted on is worth more as a record than as a correction, and deleting it
+would hide that the board's conclusion is what Chris played against.
+
+Falsifiers 2 and 3 were stale in the other direction and are marked resolved:
+the anchor pose `(42, 25, -19)` and `data/lantern.json` are both committed, so
+the board no longer has to warn against being quoted for them.
+
+**What this copy taught that the five literals did not.** A stale number in
+prose does not announce itself. The five copies in code were found by a test, a
+compile, or a grep that had a reason to run. This one was found only because
+the board was checked against `data/` on purpose, two days after the retune,
+and the thing that made it findable was the board having written down its own
+falsifier. The lesson is not "check the docs" — it is that a doc full of
+numbers should carry the rule that decides between it and the data, in the doc,
+where the next reader will hit it.
