@@ -43,6 +43,7 @@ const storm = read("Source", "LLK", "Private", "Storm", "LLKZonePressureSubsyste
 const feelHeader = read("Source", "LLK", "Public", "Lantern", "LLKLanternFeel.h");
 const feelImpl = read("Source", "LLK", "Private", "Lantern", "LLKLanternFeel.cpp");
 const lightImpl = read("Source", "LLK", "Private", "Lantern", "LLKLanternLightComponent.cpp");
+const interactor = read("Source", "LLK", "Private", "Loot", "LLKInteractorComponent.cpp");
 
 // ---- 1. the storm asks for the honest anchor ---------------------------
 check(
@@ -153,33 +154,32 @@ check(
 
 // ---- 7. every source in the field uses the gameplay reach -----------
 //
-// **Added 2026-11-04. One check of three; the other two ship with the fix.**
-//
-// The pre-commit hook refuses a commit while this file is red, and it is right
-// to: a red guard in `&&` also hides every suite after it. So the two checks
-// that catch the live defect could not land here ahead of the one-word change
-// they demand. They are written out verbatim in
-// `docs/HANDOFF-CODEX-REVIVE-PULSE.md`, to paste in with it.
+// **Added 2026-11-04, with the one-word fix these checks demand.**
 //
 // Row 80 moved `GetLitLightSources` off `Light->AttenuationRadius` and onto
 // `GetGameplayRadiusCm()`, because the attenuation radius is a value a lantern
 // level crossfade is allowed to lerp - Chris's rule is that transitions lerp
 // visually while gameplay resolves to the named state. Sections 1 and 2 above
 // guard the POSITION seam at that call site. Nothing guarded the RADIUS seam,
-// and nothing guarded the second place a source is built.
+// and nothing guarded the second place in the project a source is built.
 //
 // `LLKInteractorComponent` builds the Anchor Revive's distress pulse, which
-// enters the field at `Detectability` 1.0 to wake the room. It still reads
-// `Light->AttenuationRadius`. `LLKLanternLevelTest.cpp:287-292` establishes
-// that the attenuation radius can sit at a quarter of the gameplay reach, so a
-// revive landing mid-crossfade can under-reach by 4x - which inverts row 9's
-// whole point, that a solo player gets back up but wakes the room.
+// enters the field at `Detectability` 1.0 to wake the room. It read
+// `Light->AttenuationRadius` until this section landed.
+// `LLKLanternLevelTest.cpp:287-292` establishes that the attenuation radius
+// can sit at a QUARTER of the gameplay reach, so a revive landing mid-crossfade
+// could under-reach by 4x - which inverts row 9's whole point, that a solo
+// player gets back up but wakes the room.
 //
-// The fix is one word, in Codex's lane: `docs/HANDOFF-CODEX-REVIVE-PULSE.md`.
+// Two properties worth keeping if these are ever reworked:
 //
-// What IS guarded here and was not before: the radius seam at the call site
-// row 80 already fixed. Nothing asserted it, so the same regression that is
-// live in the interactor could have returned to the storm subsystem freely.
+//   - They passed on the call site row 80 had already fixed and failed on the
+//     one it missed, so the set is break-tested by construction rather than by
+//     assertion. Observed red before the fix: `90 checks, 2 failed`.
+//   - Every one matches an ASSIGNMENT, `/RadiusCm\s*=\s*Light->AttenuationRadius/`,
+//     never a substring. A substring test fails on the comment that explains
+//     the fix - the first version of the storm check did exactly that, which is
+//     the same false-positive class this file exists to catch in the game.
 
 check(
   "GetLitLightSources reads the gameplay reach, not the attenuation radius",
@@ -189,6 +189,20 @@ check(
     + "ASSIGNMENT, not a mention: the comment above that line names the value it "
     + "stopped reading, and a substring test would fail on the comment that "
     + "explains the fix",
+);
+
+check(
+  "the distress pulse reads the gameplay reach too",
+  !/RadiusCm\s*=\s*Light->AttenuationRadius/.test(interactor),
+  "a revive mid-crossfade would wake the room by however far the visual lerp "
+    + "had got, which is row 9's price going unpaid only sometimes - the "
+    + "hardest version of this to ever notice from play",
+);
+check(
+  "and it reads the gameplay radius explicitly",
+  interactor.includes("Light->GetGameplayRadiusCm()"),
+  "the comment above that line already says the reach is the keeper's own "
+    + "lantern's. GetGameplayRadiusCm is what that sentence means",
 );
 
 console.log(`\n${checks} checks, ${failures} failed`);

@@ -457,7 +457,14 @@ void ULLKInteractorComponent::ServerAnchorRevive_Implementation()
 					Owner->FindComponentByClass<ULLKLanternLightComponent>())
 			{
 				Intensity = Light->GetResolvedRules().Intensity;
-				RadiusCm = Light->AttenuationRadius;
+				// The gameplay reach, not the attenuation radius. Row 80 lets a
+				// lantern-level crossfade lerp the visual radius, and
+				// LLKLanternLevelTest pins it as low as a QUARTER of the gameplay
+				// value mid-fade - so a pulse read off it would wake the room by
+				// however far the fade had got, and stop charging row 9's price
+				// silently and only sometimes. Same seam GetLitLightSources was
+				// moved across at row 80; this was the call site it missed.
+				RadiusCm = Light->GetGameplayRadiusCm();
 			}
 
 			// Deliberately not defaulted when the keeper has no light

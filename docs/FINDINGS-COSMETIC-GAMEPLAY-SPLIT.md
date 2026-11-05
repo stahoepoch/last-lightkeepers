@@ -62,7 +62,7 @@ The "Present" interaction itself consults no light at all, so it cannot be
 lost to a swing. But one infrastructure interaction does read the lantern, and
 it reads the wrong value.
 
-## 2b. The live violation: the revive pulse reads the cosmetic radius
+## 2b. The one violation: the revive pulse read the cosmetic radius — FIXED 2026-11-04
 
 `LLKInteractorComponent.cpp:456-461`, building the distress pulse that an
 Anchor Revive puts into the light field:
@@ -71,6 +71,9 @@ Anchor Revive puts into the light field:
 Intensity = Light->GetResolvedRules().Intensity;
 RadiusCm  = Light->AttenuationRadius;        // <-- cosmetic
 ```
+
+Now `RadiusCm = Light->GetGameplayRadiusCm();`. The rest of this section is the
+reasoning that was written before the fix and is left as it stood.
 
 `AttenuationRadius` is the value a lantern-level crossfade is allowed to lerp.
 The gameplay-correct reach is `GetGameplayRadiusCm()`, which derives from the
@@ -92,9 +95,17 @@ serve: *"A solo player gets back up, but wakes up the room."* A pulse at a
 quarter reach does not wake the room.
 
 The comment directly above the defect states the correct intent - *"the
-brightness and reach are the keeper's own lantern's"* - so this is a one-word
-fix to match a stated intention, not a design question. `Source/` is Codex's
-lane; it belongs in the lantern-anchor handoff.
+brightness and reach are the keeper's own lantern's"* - so this was a one-word
+fix to match a stated intention, not a design question.
+
+**How it was closed.** `Source/` is Codex's lane under `FLEET.md`, so this went
+out as `docs/HANDOFF-CODEX-REVIVE-PULSE.md` with the fix, the two guard checks
+written out to paste, and the reasoning above. Chris then ruled the fix into my
+lane and asked for it landed atomically with its protection rather than the
+explanation shipping a release ahead of it. Section 7 of
+`tests/light-authority.test.mjs` now holds all three checks: the storm call
+site row 80 had fixed, and the two that were red on this one. 90 checks, 0
+failed.
 
 ## 3. Aim — the ruling's second half has no subject
 
@@ -214,10 +225,12 @@ cited and all 73 now resolve. Row 80 was the only dangling one.
 | --- | --- |
 | pendulum stays cosmetic | holds by attachment order, not by convention |
 | gameplay origin from the stable mount | holds (`GetGameplayLightLocation`) |
-| gameplay radius from the stable mount | holds in the light field; **violated** in the revive pulse (2b) |
+| gameplay radius from the stable mount | holds in the light field and, since 2026-11-04, in the revive pulse (2b) |
 | detection unaffected by the swing | holds; queried at the keeper's position |
 | relic inspection unaffected | holds, plus a two-sample debounce |
-| infrastructure interactions | "Present" reads no light; the revive pulse is the violation |
+| infrastructure interactions | "Present" reads no light; the revive pulse was the one violation and is fixed |
 | gameplay aim from the pitch arm | no gameplay aim exists to govern |
 
-No code, data or test file was changed by this audit.
+The audit itself changed no code, data or test file. The single defect it
+found was fixed in the commit immediately after, together with the two checks
+that fail without it - so nothing here is a finding waiting on someone.
