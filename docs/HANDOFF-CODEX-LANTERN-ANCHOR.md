@@ -273,14 +273,28 @@ check stops being load-bearing. You own this file.
 
 - ~~Whether the 88 cm of pitch travel stays.~~ **Answered 2026-11-04: it stays.**
   `DECISIONS.md` row 81.
-- **Does the sway join the gameplay anchor?** Row 81 says what moves, moves — but
-  today the 88 cm pitch lever reaches gameplay and the sway, which is the actual
-  pendulum and the larger real motion, does not. That split is the reverse of
-  what the physics would pick. §6 of `FINDINGS-LANTERN-PHYSICS.md` lays out the
-  three answers and recommends the third: let gameplay read the lantern's
-  *physical* position, sway included, and keep the fence around the decorative
-  part only (the trail, the cone lag). It is his call because it changes how
-  legibility reads to an enemy.
+- ~~Does the sway join the gameplay anchor?~~ **Asked and answered twice, in
+  opposite directions, on 2026-11-04 — and then measured, which settled how much
+  it matters.** Row 82 is the considered answer (*"Keep pendulum sway cosmetic…
+  A player shouldn't become detectable, or lose a valid 'Present' interaction,
+  because the bail happened to be at one end of a swing"*), and it stands; a
+  later two-word *"Sway moves gameplay"* in another session does not overturn a
+  ruling that came with its own argument, a code fix and two tests. **Nothing
+  was changed.** `DECISIONS.md` O10 and §6 of `FINDINGS-LANTERN-PHYSICS.md`
+  carry the measurement: the soft falloff `1/(1 + d²/R²)` with R = 840 cm, and
+  an anchor 66.4 cm from the keeper's own sample point, mean a physically true
+  15 cm sway would move detectability by **0.21%** — **1.5 cm** of the Sweeper's
+  12→38 stud aggro radius — and could never revoke a relic read, because
+  legibility is sticky and debounced. The reconciliation offered to Chris is a
+  rule by outcome shape rather than by motion: *the sway may move what gameplay
+  resolves continuously, and may not move what gameplay resolves to a yes or no.*
+  **If and only if he confirms it**, the change is one line —
+  `LLKZonePressureSubsystem.cpp:345` takes the lantern's physical position
+  instead of `GetGameplayLightLocation()`, which means the component needs a
+  second accessor rather than a loosened fence, since `GetGameplayLightLocation`
+  is itself the guarantee row 82 relies on — plus a check in
+  `tests/light-authority.test.mjs` asserting that the *near-field* readers still
+  take the stable mount. Do not pre-build it.
 - **Whether `MaxOffsetCm` rises to fit a physically true sway**, or the amplitude
   is scaled down for first-person comfort.
 - **The retail floor: central island or re-zoning.** The recommended 55 cm wall

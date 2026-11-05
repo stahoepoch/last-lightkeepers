@@ -453,3 +453,58 @@ are all studs too.
 **Chris's call**, since every value in those files is. The recommendation is
 to keep the conversion and leave `data/` portable, but the question is worth
 settling before M2 spreads the tax across six enemies rather than one pawn.
+
+### O10. Does the sway move the gameplay light? — **two answers, 1.5 cm apart**
+
+**Chris answered this twice on 2026-11-04, oppositely, and the measurement
+says it barely matters.** Row 82 is his considered answer, written with its
+reasoning and already audited in `FINDINGS-COSMETIC-GAMEPLAY-SPLIT.md`: *"Keep
+pendulum sway cosmetic… A player shouldn't become detectable — or lose a valid
+'Present' interaction — because the bail happened to be at one end of a swing."*
+Later the same day, asked the question cold in another session, he answered
+**"Sway moves gameplay."** Row 82 is LOCKED and stays locked; nothing here was
+changed on the strength of the second answer, because a two-word reply to a
+question cannot overturn a ruling that came with its own argument, and because
+row 82 has a code fix and two tests behind it already.
+
+**What the measurement found, and it is why this is a footnote rather than a
+crisis.** `GetGameplayLightLocation()` has exactly one caller outside its own
+file — `LLKZonePressureSubsystem.cpp:345`, setting `FLLKLightSource::Position`.
+Everything downstream samples the *field*, not the lantern: the Sweeper reads
+`DetectabilityAt(sources, Senses.KeeperPosition)` and a relic reads
+`BrightnessAtVisible(sources, relic position)`. The falloff is soft —
+`1/(1 + d²/R²)`, not inverse square — and `radiusStuds` 30 makes R 840 cm. The
+anchor sits 66.4 cm from the keeper's own sample point. A physically true 15 cm
+lateral sway therefore moves
+
+| quantity | effect of putting the sway in gameplay |
+| --- | --- |
+| detectability at the keeper's own position | 0.99452 → 0.99242, a **0.21%** swing |
+| the Sweeper's lerped aggro radius (12→38 studs) | **1.5 cm**, oscillating at ~1 Hz, on a 10.6 m radius |
+| brightness at a relic 1 m away | **0.83%** swing |
+
+**So row 82's feared mechanism is real in principle and about a centimetre and a
+half in magnitude.** Nobody becomes detectable because the bail was at one end
+of a swing; they become detectable 1.5 cm sooner or later. And the relic case
+cannot lose an interaction at all: legibility is **sticky**
+(`LLKRelicComponent.cpp:240-244`, *"Identity is knowledge the player already
+paid for"*) and `bCurrentlyLit` has a two-equal-sample debounce, so a wobble can
+only grant a read a fraction of a second early, never revoke one.
+
+**The reconciliation on offer, which needs one word from Chris.** Both answers
+hold if the rule is stated by *outcome shape* rather than by motion: **the sway
+may move anything gameplay resolves continuously, and may not move anything
+gameplay resolves to a yes or no.** That is row 80's own principle — gameplay
+resolves to the named state while the visuals lerp — applied to position instead
+of reach. Under it the light-field source position may carry the sway (one line,
+one caller, 1.5 cm of consequence), while any future near-field threshold check
+— the aim arm, an infrastructure "Present", a reach test at arm's length — takes
+the stable mount, where a 15 cm swing against a 100 cm reach really would be a
+coin-flip. The honest alternative is to leave it exactly as row 82 has it and
+accept that the one real pendulum in the game is invisible to the simulation;
+that costs nothing today and is the status quo.
+
+**Not actioned either way.** No gameplay code was touched. If Chris confirms the
+reconciliation it is a one-line change at
+`LLKZonePressureSubsystem.cpp:345` plus a test, specced in
+`HANDOFF-CODEX-LANTERN-ANCHOR.md`.

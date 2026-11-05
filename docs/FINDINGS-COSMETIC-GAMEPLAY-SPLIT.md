@@ -234,3 +234,32 @@ cited and all 73 now resolve. Row 80 was the only dangling one.
 The audit itself changed no code, data or test file. The single defect it
 found was fixed in the commit immediately after, together with the two checks
 that fail without it - so nothing here is a finding waiting on someone.
+
+## Addendum, 2026-11-04 — how much the ruling is worth, in centimetres
+
+Added by a second writer; the audit above is untouched.
+
+Asked the bare question *"does the sway move the gameplay light?"* in another
+session the same day, Chris answered **"Sway moves gameplay"** — the opposite of
+the ruling at the top of this file. **Row 82 was left standing and no code was
+changed**, because the ruling here arrived with its own reasoning, a fix and two
+tests, and a two-word reply does not overturn that.
+
+What came out of it is a measurement, which this file's conclusions can now be
+read against. `GetGameplayLightLocation()` has exactly one caller outside its own
+file, so the sway's whole potential reach into gameplay is
+`FLLKLightSource::Position`. The falloff is soft — `1/(1 + d²/R²)` with
+R = 840 cm from `radiusStuds` 30 — and the anchor is 66.4 cm from the keeper's
+own sample point, so a physically true 15 cm sway would move detectability by
+**0.21%**, worth **1.5 cm** of the Sweeper's 12→38 stud aggro radius. *"A player
+shouldn't become detectable because the bail happened to be at one end of a
+swing"* is therefore right in principle and worth a centimetre and a half in
+practice — which is what makes the ruling defensible rather than merely cautious.
+The two rows in the table above that say *holds* for detection and relic
+inspection would still read *holds* at that magnitude.
+
+Where the objection has real teeth is any **near-field yes/no** check: 15 cm of
+swing against a ~100 cm reach test is a coin-flip, and the aim arm and a future
+infrastructure "Present" are exactly that shape. `DECISIONS.md` O10 and §6 of
+`FINDINGS-LANTERN-PHYSICS.md` carry the numbers and the reconciliation offered
+to Chris — a rule by outcome shape rather than by motion.

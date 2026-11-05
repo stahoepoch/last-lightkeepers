@@ -160,34 +160,80 @@ for free), and it makes the sprint/walk relationship fall out instead of being
 tuned. `SwayHertz` then stops being a sway rate and becomes the lantern's natural
 frequency, which is a property of the object rather than of the animation.
 
-## 6. The thing worth deciding, and it follows from row 81 rather than from physics
+## 6. The thing worth deciding — asked, answered twice, and worth 1.5 cm
 
-Row 81 says that if the lantern moves, what it lights moves. **Today the
-opposite split is in force, and it is the reverse of what the physics would
-choose:**
+Row 81 says that if the lantern moves, what it lights moves. Today the opposite
+split is in force:
 
 | motion | magnitude | reaches gameplay? |
 | --- | --- | --- |
-| look pitch, through `LanternAnchor`'s 42 cm lever arm | **88 cm vertical** | **yes** |
+| look pitch, through `LanternAnchor`'s 42 cm lever arm | **~84 cm vertical** | **yes** |
 | the sway — the actual pendulum, 4.9× amplified at a walk | ~10–15 cm lateral | **no** |
 
-The sway is deliberately sealed out: feel writes `LanternLight`'s *relative*
-offset and gameplay reads the parent, which is a correct and well-commented
-guarantee. The pitch travel reaches gameplay only because it arrives through the
-parent transform instead of the feel struct. So the one motion that is a real
-pendulum is excluded, and the one that is a rigid lever on a camera is included.
+The sway is sealed out structurally: feel writes `LanternLight`'s *relative*
+offset and gameplay reads the parent, so the attachment order is the guarantee.
+The pitch travel reaches gameplay only because it arrives through the parent
+transform instead of the feel struct. The one motion that is a real pendulum is
+excluded; the one that is a rigid lever on a camera is included.
 
-**Both are now ratified as "it moves", which makes this a real question rather
-than a defect:** does the sway join the gameplay anchor, or does the pitch travel
-leave it? There is a third answer and it may be the best one — let gameplay read
-the lantern's *physical* position, sway and all, and keep the fence where it
-belongs, around the purely decorative part (the trail, the cone lag). That
-honours row 81 exactly: the physics moves gameplay, the animation does not.
+**Chris answered this twice on 2026-11-04 and the answers point opposite ways.**
+Row 82 is the considered one, with its reasoning attached — *"Keep pendulum sway
+cosmetic… A player shouldn't become detectable, or lose a valid 'Present'
+interaction, because the bail happened to be at one end of a swing"* — and
+`FINDINGS-COSMETIC-GAMEPLAY-SPLIT.md` has already audited the code against it
+and fixed one violation. Asked the bare question in another session later the
+same day, he answered **"Sway moves gameplay."** Row 82 stands; a two-word reply
+does not overturn a ruling that arrived with an argument and a test behind it.
 
-**Chris's call.** The cost of the first is that enemy perception starts moving
-10–15 cm laterally at 1 Hz while walking, which is small next to the 88 cm the
-pitch already contributes and would make a walking keeper's legibility pulse. The
-cost of the second is losing the thing he just ratified.
+**Then the question got measured, and it is smaller than either answer assumes.**
+`GetGameplayLightLocation()` has exactly one caller outside its own file:
+`LLKZonePressureSubsystem.cpp:345`, which sets `FLLKLightSource::Position`.
+Nothing downstream reads the lantern; everything samples the *field*. The
+Sweeper takes `DetectabilityAt(sources, Senses.KeeperPosition)`
+(`LLKSweeper.cpp:326`) and a relic takes `BrightnessAtVisible(sources, relic
+position)`. The falloff is **soft** — `1/(1 + d²/R²)`, not inverse square
+(`LLKLightField.cpp:19-20`) — and `radiusStuds` 30 at 28 cm a stud makes
+R **840 cm**, while the anchor is only 66.4 cm from the keeper's own sample
+point. So a physically true 15 cm lateral sway, moved into gameplay, buys:
+
+| quantity | with the sway in gameplay |
+| --- | --- |
+| detectability at the keeper's own position | 0.99452 → 0.99242 — a **0.21%** swing |
+| the Sweeper's lerped aggro radius, 12→38 studs | **1.5 cm** at ~1 Hz, on a 10.6 m radius |
+| brightness at a relic 1 m from the lantern | **0.83%** swing |
+
+Row 82's feared mechanism is real in principle and about a centimetre and a half
+in magnitude. Nobody becomes detectable because the bail was at one end of a
+swing; they become detectable 1.5 cm sooner. The relic case cannot lose an
+interaction at all: legibility is **sticky** (`LLKRelicComponent.cpp:240-244` —
+*"Identity is knowledge the player already paid for"*) and `bCurrentlyLit` runs
+a two-equal-sample debounce, so a wobble can grant a read a fraction of a second
+early and can never revoke one.
+
+**The reconciliation, which is what should go to Chris rather than a re-ask of
+the same question.** Both answers hold if the rule is stated by *outcome shape*
+instead of by motion:
+
+> The sway may move anything gameplay resolves **continuously**, and may not
+> move anything gameplay resolves to a **yes or no**.
+
+That is row 80's own principle — gameplay resolves to the named state while the
+visuals lerp — restated for position instead of reach. Under it the light-field
+source position carries the sway (one line, one caller, 1.5 cm of consequence,
+and row 81 satisfied), while every near-field threshold takes the stable mount,
+because that is where row 82's objection has teeth: 15 cm of swing against a
+~100 cm reach test genuinely is a coin-flip, and the aim arm and any future
+infrastructure "Present" are exactly that shape. `FLLKLightSource` carries no
+direction today, so the aim half still governs a mechanism that does not exist.
+
+**The honest alternative is the status quo**: leave row 82 exactly as it is and
+accept that the one real pendulum in the game is invisible to the simulation. It
+costs nothing today, it is already built and tested, and the measurement above
+is the reason it is defensible rather than merely convenient — what row 81 would
+buy here is 1.5 cm.
+
+**Nothing was actioned either way.** `DECISIONS.md` O10 records the conflict and
+this measurement; no gameplay code was touched.
 
 ## 7. What this does not claim
 
