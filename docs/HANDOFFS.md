@@ -139,7 +139,7 @@ the claim that has cost this project the most.
 
 | | Item | Evidence | Proof of closure |
 | --- | --- | --- | --- |
-| **X1** | **`run_automation.ps1:101` fails a green run on any narrowed filter.** It requires a marker only `LLKHarnessTest.cpp:36` emits, so `-TestFilter LLK.Enemies.SweeperBrain` exits 1 while the log says `Result={Success}`, `1 tests performed` | Handed over 2026-11-02 in `NOTES-FOR-CODEX.md`, with the log | That command exits 0 on a green run, and still exits 1 when no test reports at all |
+| ~~**X1**~~ | **CLOSED 2026-11-04, struck here 2026-11-05.** The marker requirement is gone from `run_automation.ps1` and a comment stands where it was saying not to reintroduce it. Both halves of this row's own proof were executed: `-TestFilter LLK.Enemies.SweeperBrain` exits **0** with exactly one `Result={Success}`, and `-TestFilter LLK.Enemies.NoSuchTestAtAll` still exits **1** with `No automation tests matched` and its evidence saved. Original: **`run_automation.ps1:101` fails a green run on any narrowed filter.** It required a marker only `LLKHarnessTest.cpp:36` emits, so a narrowed filter exited 1 while the log said `Result={Success}`, `1 tests performed` | `docs/HANDOFF-CODEX-LANTERN-ANCHOR.md` §2, which has the two runs in a table. It asked whoever next committed this file to strike the row and cite it, because `HANDOFFS.md` was dirty under another writer at the time — row 27, one writer per lane | **Closed.** A narrowed green filter exits 0; a filter that matches nothing still exits 1 with the reason named. The second run is the half that matters: a green exit code is only worth having if the failing case still fails |
 | **X2** | **Value verification at import time.** `1ae1db9` fixed the instance; the *class* is still undetected. `VerifyTable` compares `Table->GetRowNames()` against expected row names and nothing inside the rows, which is why `DT_Enemies` could verify clean while 17 of 32 numbers were missing | `LLKImportDataCommandlet.cpp:331`, and §4 of `FINDINGS-ENEMY-OPTIONALS.md` asked for exactly this | A deliberately dropped field fails the import, not a later test. Proven red before it is called done |
 | ~~**X4**~~ | **BUILT 2026-11-02, unverified in play.** The keeper now stumbles: `ALLKCharacter::ApplyStumble` is server-authoritative, replicated via `bStumbling` so an owning client is not corrected, on a timer rather than Tick because the presentation Tick early-returns for remote pawns, and composed into `ApplyMovementSpeed` as `Burden * Stumble` so all three speeds pay it. A repeat contact restarts the window instead of stacking; a downed keeper does not stumble. No impulse, because the movement component's own push may already be the shove and a scripted one is Chris's call. Game target `Result: Succeeded`, `tests/cues.test.mjs` now asserts the pawn acts on `bStumbleLanded` and was proved red by unwiring it. **Still Chris's: the two numbers** (`FallbackStumbleMultiplier` 0.7, `FallbackStumbleSeconds` 1.0, declared on `ALLKCharacter` in the house fallback pattern and reasoned against burden's 0.12 and the authored 1.5 s cooldown) **and whether there is a shove at all.** The row's own proof of closure needs PIE. Original: **The keeper-side stumble.** `8d6793f` builds trip-then-alert: the brain emits `bStumbleLanded` on every landed contact and the pawn logs it, but nothing applies it to the keeper. The seam is `ALLKCharacter::ApplyMovementSpeed`, whose own comment calls it *"the single function that assigns a speed, so there is no path to a movement value that forgot about the haul"* — a stumble multiplier composes there exactly as `Burden` does, on all three speeds for the same reason (you must not sprint out of a cost you took). The downed early-return is correct and should stay: a downed keeper does not stumble. **Rule: it costs distance and tempo, never input** — no camera lock, no input suppression, nothing to wait out; a control-removal the player cannot act through is a knockdown with a shorter timer. Reaching the keeper is `Target->...` from the pawn, which already calls `Target->GoDown` on the containment branch | `docs/PROPOSAL-SWEEPER-CONTACT.md`; seam at `LLKCharacter.cpp:506-529`. Left to Codex because that file has been uncommitted and actively edited all evening — splitting it would have been the `8196893` mistake again. **That reason expired 2026-11-02:** `bb50592` committed `LLKCharacter.cpp` and the tree is clean, so the file is no longer being edited under anyone. `ALLKCharacter::ApplyMovementSpeed` is `Source/LLK`, which is this lane, so the seam is mine to build the moment the number exists. **What it is actually blocked on is one value from Chris**, not ownership: this row already says duration and severity are his, and whether there is a shove at all is his, against burden's `0.04` / `0.12` as the scale reference. Inventing one is the thing the scope forbids | Two contacts visibly cost speed and line without ever taking the stick away, and the third still alerts the floor rather than stumbling. Duration and severity are **Chris's**, against burden's `0.04`/`0.12` as the scale reference. **Whether there is a shove at all is also his — and the movement research says one may already exist**, since the CMC ships physics push on with a large push factor, so capsule contact likely already displaces the keeper. Check that in PIE before adding an impulse |
 | **X3** | **The scan cannot run in CI.** `Content/Data/` is gitignored, so on a fresh checkout `tests/enemies.test.mjs` reports that it compared nothing | Stated limit, same §4 | Either CI generates the assets before the scan, or X2 makes the scan redundant. X2 is the better fix and subsumes this |
@@ -147,6 +147,19 @@ the claim that has cost this project the most.
 Codex also owns, from the responsibility table and not yet started: the
 performance budget, crash reporting, and build/packaging for a tester who
 cannot launch the editor.
+
+### Grok
+
+Lane ratified 2026-11-05, `DECISIONS.md` row 83. Rows here are how a story beat
+asks for a rule: name what the fiction needs to be true, and the owner of the
+mechanism decides how it is built, or that it is not. **Not a number, not a
+`data/` edit, not a C++ change.**
+
+| | Item | Evidence | Proof of closure |
+| --- | --- | --- | --- |
+| **G1** | **The spend side of the loop, and it is the lane's first assignment.** `PROGRESSION-GAP.md` has been open since 2026-10-26: a finished run pays out and there is nothing to spend it on, while materials have accumulated in every profile since banking landed | The file itself, unanswered for ten days. It is the gap between a loop and a game, it is pure design, and it needs no engine — which is why it is the right first question for a lane that cannot press Play | A written answer to what the materials buy, in `PROGRESSION-GAP.md`. If the answer needs a rule it arrives as a row here; if it needs a number the number is Chris's. **A season, a streak, a battle pass or a fifth counter is the pattern `WORLD-SYSTEMS-BOARD.md` already refuses** — that refusal is the one piece of the board a new owner should read before writing |
+| **G2** | **Nothing in the six files is ratified, and three of them have been quoted as though they were.** Row 83 handed over a writer, not an authority. `QUESTS.md`, `CAMPAIGN-SHAPE.md`, `PROGRESSION-GAP.md`, `REWARDS.md`, `SPINE.md` and `THE-WORK.md` are 1,149 lines of proposed design between them | The lane table before 2026-11-05 made these Claude's files, so some of their content is Claude's drafting and some is Grok's musing, and the files do not say which is which | A status line on each, in the shape `M3` put on every `FINDINGS-*.md`: what is proposed, what a `DECISIONS` row has ratified, and what is somebody's note. Until then no row in any of them may be cited as a decision |
+| **G3** | **`WORLD-SYSTEMS-BOARD.md` is a Claude file holding Grok's research, which is two writers in one file.** The hard-run section is Grok's work; the file is in Claude's half of `docs/**` | Live rather than hypothetical: on 2026-11-05 Claude rewrote every speed figure in that section against `data/` at `HEAD`, under the board's own falsifier 4 (`35d73c2`). That is correct under the current table and a breach under one of the two fixes below | **Chris's call, two options.** Either the hard-run section moves into Grok's set as its own file, and Claude files findings against it as rows here; or the board stays Claude's and Grok's research arrives as handoff rows that Claude transcribes. The first costs a move and gives Grok maintenance of its own numbers. The second keeps one voice in the file and makes every correction a round trip. **Row 83 declined to pick, because a lane change is his** |
 
 ### Claude
 
@@ -284,7 +297,7 @@ press Play.
 
 ---
 
-## Grok, and the lane that does not exist yet
+## Grok's lane — RATIFIED 2026-11-05, `DECISIONS.md` row 83
 
 Chris, 2026-11-02: *"grok is basically musing with quests, and story and
 progression."*
@@ -297,7 +310,10 @@ file, which is the rule the whole table exists to enforce. Grok appears nowhere
 in `LANES.md`, `FLEET.md` or the README; the only trace of it in the repo is as
 the author of two files under `research_notes/`.
 
-**Proposal, needing Chris's ratification, because a lane change is his:**
+**Chris ratified this on 2026-11-05 — *"Ratify the lane"* — and `DECISIONS.md`
+row 83 is LOCKED.** `LANES.md` now carries Grok in the table, in the
+responsibility list and in the handoff rules. What was proposed, and is now the
+rule:
 
 - **Carve the narrative set out of `docs/**` and give it to Grok**: `QUESTS.md`,
   `CAMPAIGN-SHAPE.md`, `PROGRESSION-GAP.md`, `REWARDS.md`, `SPINE.md`,
@@ -315,8 +331,24 @@ the author of two files under `research_notes/`.
 
 **And a fourth party breaks the notes pattern.** Three parties needed three
 `NOTES-FOR-*.md` files; four need six, and nobody will keep six current. This
-file is the replacement: one ledger, owners in columns. If Grok gets a lane,
-its handoffs are rows here rather than a seventh file.
+file is the replacement: one ledger, owners in columns. Grok's handoffs are rows
+here rather than a seventh file — see **Grok** under "Live items, by owner".
+
+**What the ratification deliberately did not do.** It granted a writer, not an
+authority. Nothing already written in those six files became a decision by being
+handed over, and the hard-run section of `WORLD-SYSTEMS-BOARD.md` is still
+proposed. Row 83 says so in as many words, for the same reason `docs/**` being
+Claude's has never made Claude the owner of a balance value.
+
+**The one seam it left open, as G3 below.** `WORLD-SYSTEMS-BOARD.md` is a Claude
+file containing Grok's research. That is two writers in one file, which is the
+exact thing this table forbids, and it was not resolved on ratification because
+both resolutions are Chris's: either the hard-run section moves into Grok's set,
+or Grok's findings arrive as handoff rows and Claude transcribes them. It is
+already live rather than hypothetical — on 2026-11-05 Claude rewrote every speed
+figure in that section against `data/` at `HEAD`, under the board's own
+falsifier 4, which is the correct action under the current table and would be a
+lane breach under one of the two resolutions.
 
 ### Check Grok's board before treating it as the build — 2026-11-02
 

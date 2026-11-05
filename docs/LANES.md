@@ -6,8 +6,9 @@ codex. Keep specific lanes. And responsibility. Everything accounted for."
 This **replaces `COORDINATION.md`** for all Unreal work. That file still governs
 the frozen Roblox archive and nothing else (`docs/DECISIONS.md` rows 1, 33).
 
-Three parties. One owner per path, no exceptions, and the reason is harsher in
-Unreal than it was in Roblox — see the next section before reading the table.
+Four parties since 2026-11-05, when Chris ratified a lane for Grok (row 83);
+three before that. One owner per path, no exceptions, and the reason is harsher
+in Unreal than it was in Roblox — see the next section before reading the table.
 
 ---
 
@@ -57,14 +58,16 @@ Three consequences, and they shape every lane below:
 | `data/*.json` | **Claude** schema, **Chris** values | Unchanged from the Roblox project and deliberately so. See "The data pipeline" |
 | `tests/**` | **Claude** | Data and schema tests that need no engine |
 | `Source/LLK/Private/Tests/**` | **Claude** | Unreal automation tests for gameplay rules. `Private/Tests`, not `Tests` - the table named a directory that has never existed, corrected 2026-10-29 |
-| `docs/**` | **Claude** | Design docs, the decision log, this file. Chris ratifies; Codex reads |
+| `docs/**` — except the narrative set below | **Claude** | Design docs, findings, traps, the decision log, `HANDOFFS.md`, this file. Chris ratifies; Codex reads |
+| `docs/QUESTS.md`, `CAMPAIGN-SHAPE.md`, `PROGRESSION-GAP.md`, `REWARDS.md`, `SPINE.md`, `THE-WORK.md` | **Grok** | The narrative set, carved out of `docs/**` on 2026-11-05 by row 83. Quests, story, progression, rewards. **A story that needs a rule files a handoff row, never a number and never a C++ change** — values stay in `data/*.json`, Chris's. The story may ask for a mechanic; it does not get to specify one |
 | `*.uproject` | **Codex** | It is text, it is build configuration, and it must have exactly one owner |
 | `.gitignore`, `.gitattributes`, LFS config | **Codex** | One owner, because getting this wrong commits 40GB of cache |
 | `src/**`, `default.project.json`, `COORDINATION.md` | **nobody** | Frozen Roblox archive. Row 33. Read for reference, never edit |
 
 **If you need a change outside your lane, write it down for the owner rather
 than making it.** That rule survived the platform change intact because it is
-the only reason three parties have been able to work in one repo at all.
+the only reason three parties were able to work in one repo at all, and the
+only reason a fourth could be added without renegotiating anything else.
 
 **Breached 2026-10-29, by Claude, in `Tools/**`.** Reviewing Codex's
 `collect_playtest_diagnostics.ps1` turned up four real gaps, and I fixed them
@@ -110,6 +113,7 @@ deliberately exhaustive, because every one of these has sunk a small project.
 | **Playtest instrumentation** | Claude | Row 3's question answered with opinions instead of data. The Roblox A1 slice was written for this and never built |
 | **Store page, copy, capsule art** | Chris | Nobody else can; it is published under his publisher account |
 | **The decision log** | Claude | The reason this platform change cost two days of docs instead of two weeks of argument |
+| **The spend side of the loop** | Grok | Row 83's first assignment. `PROGRESSION-GAP.md` has been open since 2026-10-26 — a finished run pays out and there is nothing to spend it on, while materials accumulate in every profile. That is the gap between a loop and a game, it is pure design, and it needs no engine |
 
 ---
 
@@ -194,9 +198,15 @@ not live in C++ constants. One source, one owner, one diff.
   findings were found still reading as live weeks or days after they were
   fixed, one of them a 170-line document whose title had become false. The open
   items and their proofs of closure now live in one place:
-  **`docs/HANDOFFS.md`**. That file also carries the lane question a fourth
-  party raises - Grok, on quests, story and progression, which currently
-  collides with `docs/**`.
+  **`docs/HANDOFFS.md`**. Four parties is also why it is one ledger rather than
+  a `NOTES-FOR-*.md` per pair: three parties needed three files, four would need
+  six, and nobody keeps six current.
+- **Grok → Claude, and the rule that bounds the new lane.** A quest, reward or
+  story beat that needs a *rule* is a row in `HANDOFFS.md` under Grok, naming
+  what the fiction needs to be true. It is not a number, not a `data/` edit and
+  not a C++ change. Added 2026-11-05 with row 83. This is the same shape as
+  Claude → Chris: the party that wants the thing describes it, and the owner of
+  the mechanism decides how it is built, or that it is not.
 
 ---
 
