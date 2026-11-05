@@ -64,6 +64,7 @@ Proposed. The pattern is: **one active writer per artifact**, which is
 | `tests/` | the author of the system under test | add a test that fails |
 | `docs/DECISIONS.md` | Chris | propose a row |
 | `docs/WORLD-SYSTEMS-BOARD.md` | append-only, anyone | never rewrite another's entry |
+| the narrative set: `docs/QUESTS.md`, `CAMPAIGN-SHAPE.md`, `PROGRESSION-GAP.md`, `REWARDS.md`, `SPINE.md`, `THE-WORK.md`, `THE-HARD-RUN.md` | **Grok** (`DECISIONS.md` row 83) | read, and file a finding as a row under Grok in `HANDOFFS.md`. **Never an edit** — this row exists because the board rule above was ambiguous about exactly that, and the ambiguity was live |
 | Everything else in `docs/` | anyone, append-first | correct with a dated banner, not a deletion |
 
 **Balance values are Chris's and always have been.** `data/lantern.json`

@@ -217,7 +217,7 @@ it is for: *"Try to break a number against UE 5.8 source or against `data/` at
 `HEAD`."* **The engine numbers all hold. The speed numbers are all one retune
 behind**, and that is this file's subject, so the check lands here.
 
-`docs/WORLD-SYSTEMS-BOARD.md` — *"Being there is a body"*, *"The verb list"* —
+`docs/THE-HARD-RUN.md` — *"Being there is a body"*, *"The verb list"* (both were sections of `WORLD-SYSTEMS-BOARD.md` until the file moved on 2026-11-05) —
 was written 2026-11-02, before the halving landed on 2026-11-04. **It is not
 edited here: it is another writer's file and it is dirty at the time of writing.**
 This is the row for whoever owns it.

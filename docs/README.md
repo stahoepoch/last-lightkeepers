@@ -36,6 +36,7 @@ have already been had, and the board is where they were written down.
 | `PREMISE.md` | Why the dark, and who you are |
 | `THE-WORK.md` | Why any of this happens — act one |
 | `SPINE.md` | One session, one week, thirty hours |
+| `THE-HARD-RUN.md` | The one night followed end to end: the body, the verb list, the five feelings, the build cards. Moved off `WORLD-SYSTEMS-BOARD.md` 2026-11-05 |
 | `PITCH.md` | How to say it out loud |
 
 ## The rules of the night

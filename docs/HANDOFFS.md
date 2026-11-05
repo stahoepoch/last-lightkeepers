@@ -159,7 +159,7 @@ mechanism decides how it is built, or that it is not. **Not a number, not a
 | --- | --- | --- | --- |
 | **G1** | **The spend side of the loop, and it is the lane's first assignment.** `PROGRESSION-GAP.md` has been open since 2026-10-26: a finished run pays out and there is nothing to spend it on, while materials have accumulated in every profile since banking landed | The file itself, unanswered for ten days. It is the gap between a loop and a game, it is pure design, and it needs no engine — which is why it is the right first question for a lane that cannot press Play | A written answer to what the materials buy, in `PROGRESSION-GAP.md`. If the answer needs a rule it arrives as a row here; if it needs a number the number is Chris's. **A season, a streak, a battle pass or a fifth counter is the pattern `WORLD-SYSTEMS-BOARD.md` already refuses** — that refusal is the one piece of the board a new owner should read before writing |
 | **G2** | **Nothing in the six files is ratified, and three of them have been quoted as though they were.** Row 83 handed over a writer, not an authority. `QUESTS.md`, `CAMPAIGN-SHAPE.md`, `PROGRESSION-GAP.md`, `REWARDS.md`, `SPINE.md` and `THE-WORK.md` are 1,149 lines of proposed design between them | The lane table before 2026-11-05 made these Claude's files, so some of their content is Claude's drafting and some is Grok's musing, and the files do not say which is which | A status line on each, in the shape `M3` put on every `FINDINGS-*.md`: what is proposed, what a `DECISIONS` row has ratified, and what is somebody's note. Until then no row in any of them may be cited as a decision |
-| **G3** | **`WORLD-SYSTEMS-BOARD.md` is a Claude file holding Grok's research, which is two writers in one file.** The hard-run section is Grok's work; the file is in Claude's half of `docs/**` | Live rather than hypothetical: on 2026-11-05 Claude rewrote every speed figure in that section against `data/` at `HEAD`, under the board's own falsifier 4 (`35d73c2`). That is correct under the current table and a breach under one of the two fixes below | **Chris's call, two options.** Either the hard-run section moves into Grok's set as its own file, and Claude files findings against it as rows here; or the board stays Claude's and Grok's research arrives as handoff rows that Claude transcribes. The first costs a move and gives Grok maintenance of its own numbers. The second keeps one voice in the file and makes every correction a round trip. **Row 83 declined to pick, because a lane change is his** |
+| ~~**G3**~~ | **CLOSED 2026-11-05 by Chris: *"Move the section"*.** The board's hard-run section is now `docs/THE-HARD-RUN.md` and it is Grok's — moved byte-identical, which the commit proves, and `LANES.md` and `FLEET.md` both carry it. Original: **`WORLD-SYSTEMS-BOARD.md` is a Claude file holding Grok's research, which is two writers in one file** | It was live rather than hypothetical: on 2026-11-05 Claude rewrote every speed figure in that section against `data/` at `HEAD` under the board's own falsifier 4 (`35d73c2`). **And a rule nobody had cited made it sharper** — `FLEET.md` already said the board is *"append-only, anyone; never rewrite another's entry"*, so that commit was correct under the lane table and a rewrite of another's entry under the board rule, by substitution rather than a dated banner | **Closed, and the cost is now the standing rule.** The numbers in `THE-HARD-RUN.md` are Grok's to maintain. A finding against them is a row here under Grok — symptom, evidence, file and line — and the owner decides; Claude does not edit it to fix it, exactly as with `Tools/**`. Falsifier 4 still stands inside that file, so a stale number there still loses to `data/`; what changed is that fixing one is a handoff. **The cheaper option lost on a real argument rather than a preference:** leaving the research in a Claude file kept two live rules pointing opposite ways, and `35d73c2` had already done the thing they disagreed about |
 
 ### Claude
 
@@ -340,22 +340,23 @@ handed over, and the hard-run section of `WORLD-SYSTEMS-BOARD.md` is still
 proposed. Row 83 says so in as many words, for the same reason `docs/**` being
 Claude's has never made Claude the owner of a balance value.
 
-**The one seam it left open, as G3 below.** `WORLD-SYSTEMS-BOARD.md` is a Claude
-file containing Grok's research. That is two writers in one file, which is the
-exact thing this table forbids, and it was not resolved on ratification because
-both resolutions are Chris's: either the hard-run section moves into Grok's set,
-or Grok's findings arrive as handoff rows and Claude transcribes them. It is
-already live rather than hypothetical — on 2026-11-05 Claude rewrote every speed
-figure in that section against `data/` at `HEAD`, under the board's own
-falsifier 4, which is the correct action under the current table and would be a
-lane breach under one of the two resolutions.
+**The one seam it left open was closed the same day.** `WORLD-SYSTEMS-BOARD.md`
+was a Claude file containing Grok's research — two writers in one file, the exact
+thing this table forbids, and live rather than hypothetical, since `35d73c2` had
+rewritten every speed figure in that section. Ratification declined to pick a fix
+because a lane change is Chris's. He picked the same day: *"Move the section"*.
+The hard-run section is now `docs/THE-HARD-RUN.md`, Grok's, moved byte-identical,
+and **G3** records what that costs — corrections to it are handoff rows, not
+edits.
 
 ### Check Grok's board before treating it as the build — 2026-11-02
 
 Chris asked for the research to be committed and for the other sessions to be
-able to check it. The writing is on `docs/WORLD-SYSTEMS-BOARD.md`, inside **The
-hard run**. It is proposed. It is not a `DECISIONS` row, and it does not ratify
-the lane above.
+able to check it. The writing was on `docs/WORLD-SYSTEMS-BOARD.md`, inside **The
+hard run**; since 2026-11-05 it is **`docs/THE-HARD-RUN.md`**, Grok's own file,
+and the "Where" column below names sections inside it rather than on the board.
+It is proposed. It is not a `DECISIONS` row, and it does not ratify the lane
+above — the lane was ratified separately, by row 83.
 
 | Block | Where | What a check is for |
 | --- | --- | --- |
