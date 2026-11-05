@@ -1456,3 +1456,60 @@ a defense, **something it was defending against is a system too.**
 **Status: parked.** Neither is built, neither is canon, and neither enters
 `DECISIONS.md`. Both are act-three-or-later questions and rows 3, 28 and 34
 all say the store comes first.
+
+## The Galleria shell — 2026-11-03
+
+Chris: build the Johnstown Galleria, anchors and all, as a massive first
+level. The measured project is `docs/THE-MALL-IS-STILL-TRADING.md`. The order is
+section 11. Sections 8 through 10 are the ingredients.
+Proposed. Not a decision. The lease plan stays out of the repo. Real tenant
+names stay out of the level (row 19).
+
+```text
+Idea:                 The whole Galleria roof is the first level's shell.
+                      Four anchors at the plan's adjacencies, plus the
+                      never-built slot filled on the land between the Sears
+                      end and the food court. One of them is furnished.
+Place / former job:   A mall still running its retail calendar. The concourse
+                      is the lit public walk. The stores are the dark stock.
+What the system mistakes the keeper for:
+                      A customer who looked, and then took. Looking is free.
+                      Taking through the front is the alarm.
+Immediate physical consequence:
+                      The grille is down. The concourse is visible and sealed.
+                      The dock is the way the goods already move.
+Player counterplay (without killing it):
+                      Scout the gate. Leave with nothing, and the building
+                      does not mind. Leave with something, and the route is
+                      the choice.
+What the player brings home or learns:
+                      The store has a back, and the back opens onto a building
+                      that is still trading.
+First slice it could appear in:
+                      Not this aisle. Section 11 is the cook's order. The
+                      greybox is docs/reference/galleria/. The level, when
+                      Content is open, is LLK_Galleria_Shell. Boswell's stays
+                      LLK_Boswells_FirstRun.
+Status:               proposed
+```
+
+The shell does not retire the sealed-store rule. Row 28 is how this level
+starts: one anchor playable, the other volumes shut. The numbers and the
+conflicts are in section 8. Section 9 adds the upper floor. The food court
+and the center court are upstairs. The second-floor concourse is a high arch
+under the glass spine, on Chris's witness and on the sister mall's skylit
+section. York Galleria is the inspiration for that vault, the rail, and the
+daylight. It is a different building, smaller, and its pastel stays out of
+our concourse. Section 10 reads the live directory model. The upper walk is a
+balcony with three openings: the food-court escalator, the center well with
+the one elevator, and a pair of escalators on the far wing. The lower plate
+also fills the long-wing anchor, and the upper walk stops at that face. One
+end box in the model has no lease name. The fourth built anchor is absent
+from the file and stays in the shell from the 2016 plan. No foot comes from
+the model. Bays 172 and 178 still match the 2016 areas in ratio, so the
+inline outlines are that lease grid. Title frames from 2018 and 2023 show
+the arch as a glass and steel truss over that well. The 18 ft figure is a
+stand-in for the lower floor-to-floor only. It is not the arch. `StudsToCm`
+does not convert this building. The cook's order and the three seats are
+section 11 and the Galleria block in `docs/HANDOFFS.md`. The mesh is
+`docs/reference/galleria/`.

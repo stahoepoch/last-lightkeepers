@@ -332,6 +332,7 @@ the lane above.
 | The build | "The build", same hard-run section | Two active cards, both Chris's: seven measured lines from one sitting, and one sound on `OnStockInterrupted`. The vault opens only if the landed counter is above the 56 cm hop. Later rows are the full scale and are inactive. |
 | The instrument | "The instrument, in parts" | One lamp. Hooded / Working / Open are flashlight, lantern, beacon. The stick and setting the lamp down are the flare. Left click commits the light. Right click shutters it, and only after a machine can hear. Not the aisle's next card, and not two extra actions stuffed into the seven. |
 | Grok's slice | "The slice that can be coded" | Pure `Step` for the clicks, test `LLK.Lantern.Clicks`, no actor. Blocked while the Sweeper brain files are dirty in `Source/LLK`. Not a second writer in that module. |
+| The Galleria shell | `THE-MALL-IS-STILL-TRADING.md` §11, with §8–§10 behind it, the greybox in `docs/reference/galleria/`, and "The Galleria shell" on the board | The cook's order. The first level is the whole roof, blocked in, as a new level `LLK_Galleria_Shell`. The furnished night is still one anchor (row 28), still `LLK_Boswells_FirstRun`. Import the OBJ at scale 1 and read `REF_100FT` (3,048 cm) before trusting a wall. TLP-1's 100 ft bar wins a disagreement. A foot from the directory model's units fails. A York square footage used as a Johnstown wall fails. The blend name Casino is not a tenant. `FreightLift` is not an exit of this building. Real tenant names do not enter the level. Seats are below. |
 
 Checked against `HEAD` after `bb50592` and `bd7c300`, and two of the old
 misreads are retracted in the board rather than left as warnings:
@@ -353,6 +354,43 @@ misreads are retracted in the board rather than left as warnings:
 
 The active card for the other sessions to unblock is the seven lines. Until
 they exist, a vault, a climb, and a footstep sensor are early.
+
+### The Galleria shell — seats, 2026-11-04
+
+Chris asked for the mall research turned into a plan the other two can cook
+from. The plan is section 11 of `docs/THE-MALL-IS-STILL-TRADING.md`. The
+prepared mesh and the marker list are `docs/reference/galleria/`. Proposed.
+Not a decision. Not a release to open the editor on a new level. Content
+stays Chris's until he says the level is open.
+
+**Claude.** No `Source/LLK` change for this shell. The zone actor, the id,
+and the hold already exist. Do not add an extraction id, do not place
+`FreightLift` (it wants a sub-basement this building's plans do not have),
+and do not put a Sweeper in the shell until `docs/MAP-READINESS.md` passes
+on that level. `LLK_Boswells_FirstRun` stays the night. A check is a length:
+anything sized from the leasing glTF's raw units, from `StudsToCm`, or from
+York's floor area, fails. The Casino blend-name used as a tenant, or as the
+way to pick the closed end anchor, fails.
+
+**Codex.** No tool and no ini for this until Chris opens the level. When he
+does, the editor job is the import and the scale check, not a new system.
+The OBJ is centimeters on Unreal's axes. Scale 1. `REF_100FT` must be
+3,048 cm. **File > Import Into Level** takes glTF, GLB, and FBX, so this
+file comes in as a mesh. Do not point that command at the Verge3D scene.
+Emergency lights are ordinary fixtures on the marker list. Exit signs may
+emit. They stay out of `LLKLightField` (`docs/FIXTURE-LIGHT-CONTRACT.md`).
+No candela is authored in the plan. Do not dim the whole concourse to get
+there. The old mall went milky that way.
+
+**Chris.** Name which real end is Boswell's. Until that, the extract
+candidate stays on the Boscov's outer face and the other two dock faces are
+marked so the fix is a move. The new level is `LLK_Galleria_Shell`. The
+fourth anchor is traced from TLP-1, because the greybox does not contain
+it. The fifth pad stays an unmeasured tag on the grass. One
+`ALLKExtractionZone`, `ExtractionPointId` = `LoadingDock`, on the service
+face he named, sized to the bay mouth the way `docs/MAP-READINESS.md`
+already says. Grilles down on the other three. Row 28 is the furnished
+night, and it is still the store that already exists.
 
 ---
 

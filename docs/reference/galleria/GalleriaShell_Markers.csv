@@ -1,0 +1,20 @@
+name,ue_x_cm,ue_y_cm,ue_z_cm,kind,note
+DOCK_ANCHOR_BOSCOVS,-13952,-3443,0,dock_face,service face away from the walk; night-one extract is whichever anchor is Boswell's
+DOCK_ANCHOR_LONGWING,-2014,-11567,0,dock_face,service face away from the walk; night-one extract is whichever anchor is Boswell's
+DOCK_ANCHOR_FAREND_UNNAMED,15543,2211,0,dock_face,service face away from the walk; night-one extract is whichever anchor is Boswell's
+EXIT_L2_FOOD,-4513,-627,762,exit_light,upper public door, food-court side
+EXIT_L2_LONGWING,2794,-7172,762,exit_light,upper public door at the long-wing anchor
+EXIT_L1_CROOK,-6806,-6238,280,exit_light,lower public door in the crook
+EXIT_L1_FAREND,10476,-2165,280,exit_light,lower public door at the far end
+LIGHT_ESC_FOOD,-4504,-4049,280,escalator_end,food-court escalator; put a fitting at both floors
+LIGHT_ESC_PAIR_A,6805,-1902,280,escalator_end,far-wing pair; both floors
+LIGHT_ESC_PAIR_B,5690,-2640,280,escalator_end,far-wing pair; both floors
+LIGHT_COURT_ELEVATOR,1420,-3627,280,court,center well; the clock-tower candidate
+LIGHT_STAIRWELL_004,10974,-1546,280,stair_light,both floors; fire stair
+LIGHT_STAIRWELL_003,-5838,-6837,280,stair_light,both floors; fire stair
+LIGHT_STAIRWELL_002,-7702,-1083,280,stair_light,both floors; fire stair
+LIGHT_STAIRWELL_001,1037,-1046,280,stair_light,both floors; fire stair
+LIGHT_STAIRWELL,898,-7919,280,stair_light,both floors; fire stair
+LIGHT_STAIRWELL_006,1289,-4231,280,stair_light,both floors; fire stair
+LIGHT_STAIRWELL_005,8518,2150,280,stair_light,both floors; fire stair
+EXTRACT_LOADINGDOCK_CANDIDATE,-13952,-3443,0,extract,data id LoadingDock; move onto the anchor Chris names Boswell's
