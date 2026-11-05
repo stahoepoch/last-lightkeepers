@@ -209,3 +209,86 @@ and is about the art pack rather than the measurements, and
 `FINDINGS-LANTERN-ANCHOR-ORIGIN.md` has the keeper's gameplay light anchor
 travelling 88 cm vertically with look pitch alone, which changes how that
 circuit reads and is worth watching for in play.
+
+## The sixth copy, 2026-11-04 — and it is prose, not a literal
+
+Chris asked for Grok's board to be looked at. `HANDOFFS.md` says what a check of
+it is for: *"Try to break a number against UE 5.8 source or against `data/` at
+`HEAD`."* **The engine numbers all hold. The speed numbers are all one retune
+behind**, and that is this file's subject, so the check lands here.
+
+`docs/WORLD-SYSTEMS-BOARD.md` — *"Being there is a body"*, *"The verb list"* —
+was written 2026-11-02, before the halving landed on 2026-11-04. **It is not
+edited here: it is another writer's file and it is dirty at the time of writing.**
+This is the row for whoever owns it.
+
+| Claim on the board | At `HEAD` |
+| --- | --- |
+| walk 16 studs/s, **448 cm/s**, "it is a run" | 8 studs, **224 cm/s**, 2.24 m/s |
+| sprint 23 studs/s, **644 cm/s** | 12.5 studs, **350 cm/s** |
+| crouch 9 studs/s, **252 cm/s** | 4.5 studs, **126 cm/s** |
+| Sweeper 14 studs/s, **392 cm/s** | 6 studs, **168 cm/s** |
+| stumble: walk ≈246, sprint ≈354, "both under the Sweeper's 392" | **123 and 192.5 against 168** |
+| brake: walk dies in ≈0.22 s, sprint ≈0.31 s | **0.109 s and 0.171 s** |
+| "the Sweeper at 3.92 m/s beside a 4.48 m/s walk" | 1.68 beside 2.24 |
+
+**Two of its conclusions are now obsolete rather than wrong.** The board argues
+at length that 4.48 m/s is past the walk-to-run transition and is therefore a
+run — correct, and Chris acted on exactly that two days later, halving the scale
+with the reasoning in `lantern.json`'s `_retuneNote`: *"It was not too small;
+you crossed it like a car."* And its closing line — *"The number stays Chris's,
+and it gets played, not pasted in from a paper"* — is what happened: he walked
+the dressed circuit and then raised sprint again by hand.
+
+**One claim survives by coincidence and is worth keeping.** *"The walk still
+beats the Sweeper, by 56 cm/s."* 448 − 392 = 56, and 224 − 168 = 56. The margin
+was preserved exactly, which is the retune note's whole point about ratios.
+
+**One inverts, and it is the one a designer would act on.** The board says a
+stumble makes the machine faster "for that window" without distinguishing the
+gears. At `HEAD` a stumbled *walk* is 123 against 168 and still loses, but a
+stumbled *sprint* is 192.5 against 168 and **escapes** — that is the authored
+invariant (`enemies.json`'s Sweeper note takes a further stud off for it, 7 → 6,
+to clear the worst legal state by 21.7 cm/s). So the stumble is no longer "the
+machine is faster than you," it is "the machine is faster than you unless you
+spend the sprint." That is a better beat than the board describes.
+
+### The thing nobody has flagged: the jump did not halve
+
+`JumpStuds` is **13.2 and unchanged** (`LLKCharacter.h:334`), so every jump
+figure on the board is still right — apex **55.8 cm**, airtime **0.603 s**, and
+stock Unreal's 90 cm for comparison. Height is not the problem. **Horizontal
+reach is**, because it is airtime × ground speed and only one of those moved:
+
+| | before the retune | at `HEAD` |
+| --- | --- | --- |
+| jump height | 55.8 cm | 55.8 cm |
+| running jump, from a walk | 270 cm | **135 cm** |
+| running jump, from a sprint | 388 cm | **211 cm** |
+
+**So any gap between about 211 and 388 cm that a sprint-jump used to clear is
+now uncrossable**, and the hop is relatively twice the obstacle it was: 56 cm of
+height now costs a quarter-second of walking distance instead of an eighth. This
+bears on the greybox's four measured heights and on the Galleria shell, neither
+of which has been built yet — which is the good news, since nothing authored has
+to be re-cut. It is recorded here because it is a consequence of the retune that
+the retune's own proposal does not mention: `PROPOSAL-MOVEMENT-RETUNE.md`
+reasons about chase ratios and escape margins, and jumping is neither.
+
+### What held, checked and not re-litigated
+
+The engine-default table on the board is right against UE 5.8: `MaxStepHeight`
+45, `AirControl` 0.05, `MaxAcceleration` and walking brake 2048, 
+`bEnablePhysicsInteraction` true, `WalkableFloorZ` 0.71 (≈45°), capsule 34 / 88
+with crouched half-height 40, and camera FOV unset so 90°. Its one override
+claim is true and in the source: `bCanWalkOffLedgesWhenCrouching = true` at
+`LLKCharacter.cpp:205`, against an engine default of false. The retail-height
+block (ADA 96.5 / 91 cm, a 15 cm GMA pallet deck under the 45 cm step, 69 cm
+knee clearance against an 80 cm crouched capsule) is unaffected by the retune
+because none of it is a speed. And the lantern's 9° trail cap matches
+`MaxTrailDegrees`.
+
+One stale cross-reference inside the same block was already retracted on the
+board itself: the 240 cm fallback paragraph. That is now
+`FINDINGS-LANTERN-ANCHOR-ORIGIN.md`, where the live anchor is 133 and the 240
+path is unreachable.
