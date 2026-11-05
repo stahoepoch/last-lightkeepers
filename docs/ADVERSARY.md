@@ -326,3 +326,33 @@ no reading of the game that could produce 84 — it could only come from arithme
 | Does this correction's reason belong to a *different* bug? | A familiar mechanism is a hypothesis, not evidence. Re-derive on this number. |
 | Does the label match the number? | "Unclamped" and 84 cannot both be true. A mismatch between a value and its own description is the cheapest contradiction there is. |
 | Is the extremum at an endpoint? | For anything of the form `a·sin + b·cos`, it usually is not. Differentiate before taking the ends. |
+
+## The measurement you already had and did not use
+
+A derivation whose inputs are estimated while the file it lives in **already
+contains the measured value**, two sections up, in a table the same author
+wrote. Not a missing source — an unused one.
+
+**The case, 2026-11-04.** `FINDINGS-LANTERN-PHYSICS.md` derived a carried
+lantern's natural frequency by pivoting it at the bail *ears*, estimating
+ear-to-centre-of-mass at 0.15–0.22 m, and got 1.05 Hz. But a keeper carries the
+thing by the bail, so the pivot is the hand and the bail's own height belongs in
+the lever arm — and the finding's own §1 table carried the museum record *"8¾″
+body, 14″ with the bail up"*, which measures that height at 13.3 cm. Using it
+gives 0.87 Hz. The headline survived (still about 1 Hz) but the walk's drive at
+0.95 Hz moved from *below* the natural frequency to *above* it, which inverts
+the phase — the one consequence that depended on which side it fell.
+
+**Why it is worth its own entry.** This is not the "correct analysis of the
+wrong branch" failure and not the "endpoints of a non-monotonic function" one.
+Both of those were wrong *reasoning* over right inputs. This was right
+reasoning over an input chosen by estimate while the measurement sat in the same
+document. The estimate looked like diligence, which is what made it invisible.
+
+**Standing checks worth re-running**
+
+| Check | Why |
+| --- | --- |
+| Does the file already measure what the calculation is estimating? | A table of real specs two sections above a derivation is either an input to it or a thing to rule out in writing. Nothing in between. |
+| Is the pivot where the hand is, or where the drawing is? | Model the object as it is *used*. A lantern pivots at the grip, not at the hinge nearest the body. |
+| Which conclusions would survive the input being 30% off? | The ones that do are the findings. The ones that do not need the measurement before anyone builds on them. |

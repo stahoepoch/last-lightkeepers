@@ -53,9 +53,85 @@ centre of mass. The fount is the heavy part and it sits at the base, so for a
 | 0.25 | 0.11 | 1.096 s | 0.91 Hz |
 
 **A carried lantern's natural frequency is about 1 Hz, and the whole plausible
-range is 0.9–1.25 Hz.** It is a flat result: the period goes as the square root,
+range is 0.9–1.25 Hz.** (**Superseded by §2b**: this table pivots at the bail
+ears and omits the bail’s own 13 cm, so the figures below run high. The working
+number is **0.87 Hz**, not 1.05.) It is a flat result: the period goes as the square root,
 so even a 2× error in `d` moves the frequency by 40%. Take **1.05 Hz** as the
 working number and treat it as solid.
+
+## 2b. Correction, 2026-11-04 — the pivot is the hand, not the ears
+
+**§2 above pivots the pendulum at the bail ears, and that is wrong whenever the
+keeper carries the lantern by the bail rather than by the ears.** A bail is a
+wire hoop rising above the body; the hand grips it at the top of the arc, so the
+hand is the pivot and the bail's own height is part of `d`. The published `d` of
+0.15–0.22 m is ear-to-centre-of-mass and omits it.
+
+**The omitted length was already in §1's own table.** The museum record for a
+Dietz #999 reads *"8¾″ body, 14″ with the bail up"* — so **the bail adds 5¼″,
+13.3 cm, above the body.** That number was sitting two sections above the
+derivation that needed it and went unused, which is the whole of this mistake.
+
+So `d` runs **0.25–0.35 m** rather than 0.15–0.22:
+
+| d (m) | k (m) | frequency |
+| --- | --- | --- |
+| 0.25 | 0.09 | 0.94 Hz |
+| **0.28** | **0.09** | **0.90 Hz** |
+| 0.30 | 0.10 | 0.86 Hz |
+| 0.35 | 0.10 | 0.81 Hz |
+
+**Take 0.87 Hz as the working figure, not 1.05.** The headline is unharmed — a
+lantern on a bail still swings at about 1 Hz — but it moves the one thing that
+mattered, because the walk's lateral drive is 0.95 Hz and the lantern has just
+moved from *below* it to *above* it.
+
+| drive | r at 1.05 Hz | r at 0.87 Hz | Q=10 before | Q=10 after | phase |
+| --- | --- | --- | --- | --- | --- |
+| **walk, lateral (0.95 Hz)** | 0.90 | **1.09** | 4.9× | **4.5×** | **in phase → inverted** |
+| walk, vertical (1.90 Hz) | 1.81 | 2.18 | 0.44× | **0.26×** | inverted |
+| **sprint, lateral (1.45 Hz)** | 1.38 | 1.67 | 1.09× | **0.56×** | inverted |
+| sprint, vertical (2.90 Hz) | 2.76 | 3.33 | 0.15× | **0.10×** | inverted |
+
+**Two of §4's three conclusions get stronger and one changes character.**
+
+- **(b) and (c) strengthen.** Vertical suppression goes from 0.44× to 0.26×, so
+  the arc is flatter still — about **1/17** as tall as it is wide rather than
+  1/10. And a sprint now transmits **0.56×**, so it does not merely fail to beat
+  the walk: the lantern is actively *quieter* at a run than the hand driving it.
+  §5's verdict that `SprintSwayCm` 5.2 against `WalkSwayCm` 2.4 is backwards
+  becomes less arguable, not more.
+- **(a) changes character, and this is the interesting part.** The walk is not
+  comfortably below resonance at r 0.90; it is **essentially at resonance**,
+  within about 10% on either side. The amplification hardly moves (4.9× → 4.5×),
+  so "a walking keeper's lantern is the largest motion in the scene" survives
+  intact. What flips is the **phase**: above resonance the lantern swings
+  *against* the body rather than with it.
+
+**Which side of resonance you are on is set by the grip, and that is a real
+physical detail rather than a hedge.** Choke up and hold the bail near the ears
+and `d` shrinks toward 0.2, putting f₀ back above the drive — in phase. Hold the
+bail at the top of its arc and `d` is 0.3 and you are below the drive —
+anti-phase. A keeper's hand is also not a frictionless pivot, and a loose fist
+lets the bail rotate within it, which is strictly a two-link system whose lower
+mode is what is modelled here. **So the honest spec for `f₀` is 0.85–0.90 Hz
+with the phase left to fall out of whatever `f₀` is authored**, which the
+second-order model in §5 does automatically — it is one more reason to let the
+model produce the relationship instead of authoring the relationship directly.
+
+**What this does to §5's table.** `SwayHertz` 1.6 against a 0.95 Hz drive is
+unchanged (that comparison never used `f₀`), but if `SwayHertz` is to become the
+lantern's natural frequency, the target is **~0.87, not 1.05 — so 1.6 is 1.84×
+too fast rather than 1.68×.** Ring-down lengthens a little: `τ = Q/(π·f₀)` gives
+**1.8 s at Q=5, 3.7 s at Q=10, 7.3 s at Q=20**, so "visibly swinging for two to
+three seconds" becomes two to four.
+
+**How this was got wrong, and it is the morning's shape again.** The derivation
+was correct, the arithmetic was correct, and the input was a measurement of the
+wrong length — taken from the right object. The check that would have caught it
+is the one `ADVERSARY.md` now carries in a different form: a figure quoted two
+sections above the calculation that needs it should be *used* by that
+calculation or explicitly ruled out, and "14″ with the bail up" was neither.
 
 ## 3. The driver: what a walking body does to the hand
 
@@ -83,7 +159,9 @@ The lantern is a filter, not a follower. A base-driven pendulum's response is
 amplitude ratio = 1 / √( (1 − r²)² + (r/Q)² )  ,  r = f_drive / f_natural
 ```
 
-Against `f_natural = 1.05 Hz`:
+Against `f_natural = 1.05 Hz` — **corrected to 0.87 Hz in §2b, which flips the
+walk’s phase and strengthens (b) and (c); the table below is kept because it is
+what the three conclusions were first drawn from**:
 
 | drive | r | Q=5 | Q=10 | Q=20 | phase |
 | --- | --- | --- | --- | --- | --- |
@@ -137,11 +215,11 @@ a grip changes most.
 
 | Rule | Now | Physics says | Verdict |
 | --- | --- | --- | --- |
-| `SwayHertz` | **1.6** | lateral drive is ~0.95 Hz | **1.68× too fast.** 1.6 strides/s is 3.2 steps/s, a jog cadence, applied at a walk |
-| vertical : horizontal | **0.5** (hardcoded in the sway vector) | **~0.09** | the arc is about **five times too tall** |
-| `WalkSwayCm` | 2.4 cm | hand drives ~3 cm, lantern amplifies ~4.9× → **~10–15 cm** at the lantern | far too small, *and* `MaxOffsetCm` is 12, so the real amplitude does not fit in the rail — a pure comfort call since O10, with no gameplay consequence either way |
-| `SprintSwayCm` | **5.2 cm** | less than walk, and inverted in phase | **backwards** |
-| landing kick | downward offset, `KickRecoveryPerSecond` 0.94 → τ ≈ 0.35 s, no oscillation | ~1 Hz ring-down over 1.5–3 s | wrong shape *and* ~5× too fast |
+| `SwayHertz` | **1.6** | lateral drive is ~0.95 Hz; as a natural frequency, **0.87** (§2b) | **1.68× too fast** as a drive rate, **1.84×** as an `f₀`. 1.6 strides/s is 3.2 steps/s, a jog cadence, applied at a walk |
+| vertical : horizontal | **0.5** (hardcoded in the sway vector) | **~0.058** (§2b; was ~0.09 at the old `f₀`) | the arc is about **nine times too tall** |
+| `WalkSwayCm` | 2.4 cm | hand drives ~3 cm, lantern amplifies ~4.5× (§2b) → **~10–14 cm** at the lantern | far too small, *and* `MaxOffsetCm` is 12, so the real amplitude does not fit in the rail — a pure comfort call since O10, with no gameplay consequence either way |
+| `SprintSwayCm` | **5.2 cm** | **0.56×** of its own drive and inverted (§2b) — quieter than the hand, far quieter than a walk | **backwards** |
+| landing kick | downward offset, `KickRecoveryPerSecond` 0.94 → τ ≈ 0.35 s, no oscillation | **0.87 Hz** ring-down over **1.8–3.7 s** (§2b) | wrong shape *and* 5–10× too fast |
 
 **None of this is sloppiness and the file should be read generously.** It is a
 kinematic model of a *hand* — and as a model of the hand it is right, including

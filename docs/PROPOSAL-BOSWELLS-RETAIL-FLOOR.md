@@ -110,7 +110,7 @@ height buys:
 | 48" / 122 cm | sees over | clears | clears |
 | **54" / 137 cm** | **sees over, just** | **blocked** | **clears** |
 | 60" / 152 cm | eye level | blocked | clears |
-| 72" / 183 cm | blocked | blocked | clears above 72° |
+| 72" / 183 cm | blocked | blocked | clears above 66.6° |
 | 78" / 198 cm | blocked | blocked | never clears |
 
 At 137 cm the keeper reads the shape of the floor without lighting it, and
@@ -184,3 +184,68 @@ Items 1 and 2 answer Chris's sentence. Items 3 and 4 are polish.
   decide 573 was. Only a dressed circuit at the authored speed answers that,
   and that playtest has still never happened.
 - **It proposes no purchase.** The list is a list.
+
+## Addendum, 2026-11-04 — the sightline table, re-derived exactly
+
+The table above was right about every *blocked* and *clears* except one, and
+coarse in a way that hid the most useful thing in it. Both are fixed here. Still
+a proposal; nothing was built.
+
+**The correction.** The table above said 183 cm "clears above 72°". It clears
+above **66.6°**, and the table has been corrected in place. The anchor's world
+Z is `152 + 42·sin(p) − 19·cos(p)`, which is
+`152 + 46.10·sin(p − 24.33°)`, so the pitch at which it reaches a height *h* is
+`asin((h − 152) / 46.10) + 24.33°`. For 183 that is 66.6°.
+
+**The sharpening, which matters more.** "Clears" and "blocked" answer a yes/no
+question when the interesting number is *how far the keeper has to look up*:
+
+| Shelf | a 152 cm eye | lantern at level (133) | lantern clears the top from |
+| --- | --- | --- | --- |
+| 48" / 122 cm | sees over by 30 | **clears** | **−16.3°** — clears even looking somewhat down |
+| **54" / 137 cm** | sees over by 15 | blocked by 4 | **+5.4°** |
+| 60" / 152 cm | exactly eye level | blocked by 19 | **+24.3°** |
+| 72" / 183 cm | blocked | blocked | **+66.6°** |
+| 78" / 198 cm | blocked | blocked | **never** — the ceiling of the travel is 193.97 |
+
+**This splits the recommendation, and the two criteria do not agree.** The
+argument for 137 is an *eye* argument and it survives: 15 cm of clearance means
+heads and lantern glow cross the floor while bodies do not, which is the read
+the pass is for. But as a *light* height, 137 is the weakest of the three live
+options, because **+5.4° is not a decision.** It is inside the noise of ordinary
+looking around — a keeper walking and glancing will cross it constantly without
+ever learning that they did. The "legible cost the player can learn and choose"
+is, at 137, a cost of about five degrees.
+
+**152 cm is the height where that cost becomes real** (+24.3° is a deliberate
+look up, and the keeper would notice making it), and it is the height the
+proposal above says to avoid — on the grounds that its *eye* read is knife-edge
+and moves with floor slope or a crouch. Both of those are true at once. So the
+honest statement is:
+
+- **137 cm** buys the best floor legibility and gives away the light trade.
+- **152 cm** buys the sharpest light trade and gives away floor legibility.
+- **122 cm** gives away both: a lantern at level already clears it, so there is
+  no trade at all, and the floor reads completely.
+
+Nothing here decides it. What it does is stop 137 being recommended for a reason
+it does not actually deliver, which is the version of this table that would have
+reached the dressing pass.
+
+**Crouch, with numbers, since the proposal invokes it.** Nothing in `Source/`
+sets `CrouchedHalfHeight`, so it is UE's default **40** — this is an engine
+default read from the absence of an override, not an authored value, and one
+line in `LLKCharacter` would change it. That puts a crouched eye at **104 cm**
+and the lantern at **85 cm** level, reaching at most **146 cm** fully pitched up.
+So crouched behind the *shortest* gondola the keeper is both hidden and blind,
+and their light can still be thrown over a 122 or a 137 but never over a 152.
+That is the first time in this project that crouch has had an authored job —
+against 250 cm racking a standing keeper was already fully hidden — and it is a
+second argument for a low floor independent of the sightline one.
+
+**One thing the table does not model and does not need to.** The anchor also
+moves horizontally with pitch: the forward offset is `42·cos(p) + 19·sin(p)`,
+which runs 42 cm at level, peaks at 46.1 cm at +24.3°, and falls to 19.1 cm
+looking straight up. It never leaves roughly half a metre in front of the
+keeper, so no shelf that blocks the keeper at a given height fails to block the
+lantern for horizontal reasons.

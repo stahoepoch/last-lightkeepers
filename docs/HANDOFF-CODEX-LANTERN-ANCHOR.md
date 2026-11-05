@@ -103,19 +103,27 @@ Every number below is a feel number, free to be tuned by eye against the
 derivation rather than defended as a gameplay value.
 
 A kerosene hand lantern on a bail is a compound pendulum with a natural
-frequency of **~1.05 Hz** (0.9–1.25 Hz across the whole plausible geometry — the
-period goes as a square root, so the result is robust). A walking body drives the
+frequency of **~0.87 Hz** (0.81–0.94 Hz across the whole plausible geometry — the
+period goes as a square root, so the result is robust). **Corrected from 1.05 Hz
+on 2026-11-04**, §2b: the first derivation pivoted at the bail ears and left out
+the bail's own ~13 cm, which a museum record in the same finding had already
+measured. **Author `f₀` at 0.85–0.90, not 1.05.** A walking body drives the
 hand **laterally at ~0.95 Hz** and **vertically at ~1.9 Hz**. Running that
 through a base-driven pendulum's response gives three things that hold for any
 damping:
 
-- a walk sits at 0.90 of resonance, so the lantern **amplifies** the hand's
-  lateral motion **4–5×, nearly in phase**;
+- a walk sits **essentially at resonance** (r ≈ 1.09 against a 0.95 Hz lateral
+  drive), so the lantern **amplifies** the hand's lateral motion **~4.5×**. Which
+  side of resonance it lands on is set by the grip — choke up near the ears and
+  it is in phase, hold the bail at the top of its arc and it is anti-phase — so
+  **do not author the phase; let it fall out of `f₀`**, which the model below
+  does for free;
 - every gait drives the vertical axis well above resonance, so the real arc is
-  **~1/10 as tall as it is wide**, not the hardcoded 1/2 — nearly flat;
-- a sprint crosses above resonance: the ratio collapses to ~1.1× and inverts, so
-  **sprinting swings the lantern less than walking does**, which is the opposite
-  of `SprintSwayCm` 5.2 against `WalkSwayCm` 2.4.
+  **~1/17 as tall as it is wide**, not the hardcoded 1/2 — effectively flat;
+- a sprint is well above resonance: the ratio falls to **~0.56×** and inverts, so
+  the lantern is **quieter at a run than the hand driving it**, and emphatically
+  quieter than at a walk — the opposite of `SprintSwayCm` 5.2 against
+  `WalkSwayCm` 2.4.
 
 So **five** of the current rules disagree with the physics, which is the count
 `DECISIONS.md` row 81 gives and the five rows of §5's table: `SwayHertz` 1.6 is
@@ -123,8 +131,8 @@ So **five** of the current rules disagree with the physics, which is the count
 walk); the vertical ratio is ~5× too tall; `WalkSwayCm` 2.4 is far too small,
 since a ~3 cm hand drive amplified 4.9× arrives at the lantern as 10–15 cm;
 sprint and walk are reversed; and the landing kick is a non-oscillating downward
-offset recovering in τ ≈ 0.35 s where a struck pendulum rings at ~1 Hz for
-1.5–3 s.
+offset recovering in τ ≈ 0.35 s where a struck pendulum rings at ~0.87 Hz for
+1.8–3.7 s.
 
 **The minimal honest change is one second-order state per axis** — angle and
 angular velocity, driven by the hand's acceleration, with `f₀` and `Q` as the two
@@ -133,7 +141,8 @@ fifteen lines. It **subsumes the landing kick** (an impulse becomes an initial
 angular velocity and rings down for free, which is also exactly Chris's
 knocked-down case) and it makes the sprint/walk relationship *fall out* rather
 than be tuned. `SwayHertz` stops being an animation rate and becomes the
-lantern's natural frequency — a property of the object.
+lantern's natural frequency — a property of the object. Against **0.87** rather
+than 1.05, the current 1.6 is **1.84× too fast**.
 
 Two cautions:
 

@@ -181,9 +181,18 @@ corrected numbers are more interesting than the alarming ones:
 | 48" / 122 cm | sees over | clears | clears | **blocked** |
 | 54" / 137 cm | sees over, just | **blocked** | clears | blocked |
 | 60" / 152 cm | eye level | blocked | clears | blocked |
-| 72" / 183 cm | blocked | blocked | clears above 72° | blocked |
+| 72" / 183 cm | blocked | blocked | clears above 66.6° | blocked |
 | 78" / 198 cm | blocked | blocked | **never clears** | blocked |
 | racking, 250 cm | blocked | blocked | blocked | blocked |
+
+**Corrected 2026-11-04: 183 cm clears above 66.6°, not 72°.** Z is
+`152 + 46.10·sin(p − 24.33°)`, so the pitch that reaches a height *h* is
+`asin((h − 152)/46.10) + 24.33°`. The same formula gives the whole column
+exactly, and the exact angles are the part worth having:
+**122 → −16.3°, 137 → +5.4°, 152 → +24.3°, 183 → +66.6°, 198 → never.**
+`PROPOSAL-BOSWELLS-RETAIL-FLOOR.md`'s addendum draws the design consequence —
+at 137 the light trade costs five degrees, which is inside ordinary looking
+around, so it is not a trade the player can learn.
 
 So on a 137 cm sales floor the keeper can see across the room while their light
 cannot — they read the shape of the floor without lighting it, and raising the
