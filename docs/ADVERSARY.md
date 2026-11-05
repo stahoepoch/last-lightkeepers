@@ -295,3 +295,34 @@ callers, and read the early returns above the line you care about.**
 | Does a test compare the container or the contents? | X2: `VerifyTable` compares `GetRowNames()` and nothing inside the rows, so the silent-drop class that `1ae1db9` fixed can land again. Handed to Codex |
 | **Is the line you are reasoning about reached?** Find the callers, then read the early returns above it | The lantern anchor, 2026-11-04: a sound double-count analysis of a branch an `if (GetAttachParent())` six lines up makes unreachable. "The dead branch", above |
 | Is "nobody noticed because of luck" doing load-bearing work in your argument? | Same finding. It was the only thing holding it up, and it was holding up the wrong code |
+
+## The correction that borrows the last bug's explanation
+
+A number gets corrected, and the reason given for the correction is *the
+mechanism of a bug that was already found and retracted nearby*. It is the most
+persuasive shape a wrong correction can take, because the explanation is already
+familiar, already believed, and already written down.
+
+**The case, 2026-11-04.** The gameplay light anchor's look-pitch travel was
+corrected from 88 cm to "about 84 cm", on the grounds that the 88 was *"the
+capsule half-height carried over from the retracted 240 cm finding."* That is a
+real failure mode and it had really happened on that exact number that morning.
+It was also not what happened here. World Z is `152 + 42·sin(p) − 19·cos(p)`,
+which is **not monotonic in pitch**: 84.00 is precisely `z(+89.9) − z(−89.9)`,
+the two endpoints, and it misses the interior minimum at `p = −atan(42/19) =
+−65.66°`. The travel is 88.06. The capsule's 88 and the travel's 88.06 are a
+coincidence — the file being corrected said so in those words — and the
+coincidence is what made the wrong diagnosis available.
+
+**Two tells, both cheap.** The claim's own label disagreed with its number: it
+said "unclamped," and genuinely unclamped is `2·√(42² + 19²)` = 92.20, not 84.
+And nothing in `Source/` or `Config/` authors a pitch clamp at all, so there was
+no reading of the game that could produce 84 — it could only come from arithmetic.
+
+**Standing checks worth re-running**
+
+| Check | Why |
+| --- | --- |
+| Does this correction's reason belong to a *different* bug? | A familiar mechanism is a hypothesis, not evidence. Re-derive on this number. |
+| Does the label match the number? | "Unclamped" and 84 cannot both be true. A mismatch between a value and its own description is the cheapest contradiction there is. |
+| Is the extremum at an endpoint? | For anything of the form `a·sin + b·cos`, it usually is not. Differentiate before taking the ends. |

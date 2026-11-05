@@ -125,9 +125,11 @@ no longer describe the game:
 
 `LanternAnchor` is attached to `FirstPersonCamera`, which has
 `bUsePawnControlRotation = true`, so the anchor carries full look pitch and
-its authored `(42, 25, -19)` offset travels about **84 cm** vertically across
-the pitch range. That is now correct by row 82 — the mount is what gameplay
-reads and the *pendulum* is what must stay out. What the comments should say
+its authored `(42, 25, -19)` offset travels **88 cm** vertically across the
+pitch range (corrected from 84 on 2026-11-04 — the Z function is not monotonic
+in pitch, so its minimum is interior at −65.66° rather than at the −89.9°
+endpoint; `DECISIONS.md` row 81 has the working). That is now correct by row 82
+— the mount is what gameplay reads and the *pendulum* is what must stay out. What the comments should say
 is that the anchor is stable against **cosmetic sway**, which it is, and by
 attachment order rather than by convention: sway is written to the light
 component's relative offset, one level below the anchor.

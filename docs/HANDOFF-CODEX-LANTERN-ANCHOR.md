@@ -117,11 +117,14 @@ damping:
   **sprinting swings the lantern less than walking does**, which is the opposite
   of `SprintSwayCm` 5.2 against `WalkSwayCm` 2.4.
 
-So four of the current rules disagree with the physics: `SwayHertz` 1.6 is
+So **five** of the current rules disagree with the physics, which is the count
+`DECISIONS.md` row 81 gives and the five rows of §5's table: `SwayHertz` 1.6 is
 **1.68× too fast** (1.6 strides/s is a 3.2 steps/s jog cadence, applied at a
-walk), the vertical ratio is ~5× too tall, sprint and walk are reversed, and the
-landing kick is a non-oscillating downward offset recovering in τ ≈ 0.35 s where
-a struck pendulum rings at ~1 Hz for 1.5–3 s.
+walk); the vertical ratio is ~5× too tall; `WalkSwayCm` 2.4 is far too small,
+since a ~3 cm hand drive amplified 4.9× arrives at the lantern as 10–15 cm;
+sprint and walk are reversed; and the landing kick is a non-oscillating downward
+offset recovering in τ ≈ 0.35 s where a struck pendulum rings at ~1 Hz for
+1.5–3 s.
 
 **The minimal honest change is one second-order state per axis** — angle and
 angular velocity, driven by the hand's acceleration, with `f₀` and `Q` as the two

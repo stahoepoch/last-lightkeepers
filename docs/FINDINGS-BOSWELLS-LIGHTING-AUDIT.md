@@ -110,3 +110,72 @@ good for is deciding that this is worth a camera, and what they are not good
 for is choosing the replacement number. The honest next step is the fixture
 ladder re-run in the real room — which needs the editor window frontmost, per
 `LIGHTLAB-PROTOCOL.md` section 9, and that is the same thing blocking check 4.
+
+## Addendum, 2026-11-04 — the one correction available without a camera
+
+**Still OPEN; the headline survived.** This is editor-free work on the audit's
+own self-flagged weakness. Two things came out of it: the arithmetic above
+reproduces exactly, and the model was missing a term that only ever cuts
+downward — but not enough to change any conclusion.
+
+**First, the numbers check.** Recomputing `E = I/d²` independently from the
+inventory gives 0.238, 0.085, 2.392, 4.211 and 0.641 lux — the audit's five
+figures to three decimal places. Whatever is wrong with the comparison, it is
+not the arithmetic.
+
+**Second, the missing term: UE's attenuation-radius windowing.** The audit says
+it is "inverse-square only." That is not quite the engine's model. A UE local
+light with inverse-squared falloff multiplies the inverse-square term by a
+window that drives the contribution to **zero at `AttenuationRadius`**, not just
+to something small:
+
+```
+Falloff = saturate(1 − (d/R)⁴)²
+```
+
+This matters here because **the two sides of the comparison sit at very
+different fractions of their own radius.** The lab troffer has R 2000 and works
+at 243–290 cm, which is d/R ≈ 0.12–0.15 — the window is 0.999, i.e. absent. The
+Boswell's aisle spots have R **1000** and light a floor **560** below them, which
+is d/R 0.56, where the window is 0.813. So the correction is almost entirely
+one-sided:
+
+| | audit's lux | windowed | ratio before → after |
+| --- | --- | --- | --- |
+| lab orientation floor (2 cd, 290 cm, R 2000) | 0.238 | 0.238 (−0.1%) | — |
+| lab inspection ceiling (0.5 cd, 243 cm, R 2000) | 0.085 | 0.085 (−0.0%) | — |
+| **aisle spot on the floor** | 2.392 | **1.944** (−18.7%) | 10.1× → **8.2×** |
+| **aisle spot on a shelf label** | 4.211 | **3.949** (−6.2%) | 50× → **47×** |
+| emergency point on the floor | 0.641 | 0.631 (−1.5%) | 2.7× → 2.7× |
+
+**So the conclusion stands and is now better grounded than it was.** 8.2× is not
+10× and it is not in band either; the three emergency points stay where the
+audit put them. What changed is that the headline is no longer resting on a
+model the engine does not use.
+
+**That the windowing applies at all is an inference, and here is its basis.** UE
+exposes physical light units only on lights using inverse-squared falloff —
+switch the falloff off and intensity becomes unitless. The audit read *"All
+local lights are pinned to Candelas"* off the live components, and this project's
+own code pins the same unit explicitly (`LLKLanternLightComponent.cpp:41`,
+`LLKCharacter.cpp:164`). A light reporting candelas is therefore a light using
+inverse-squared falloff, so the window is on every one of the nine. **No project
+code sets `bUseInverseSquaredFalloff` or `IntensityUnits` on a map light** — the
+map authors those — so this is reasoned from the engine's unit rule rather than
+read, and a camera would settle it in one frame.
+
+**One thing the flat ratio hides, and it cuts toward the audit's case rather
+than against it.** Because the window grows with d/R, the aisle floor is not
+uniformly 8.2×. The spots sit at x −900/−300/300/900, so a floor point midway
+between two of them is 635 cm from the nearer one, where the window is 0.701
+against 0.813 directly beneath. The pools under the fixtures are therefore about
+**16% brighter relative to the gaps** than the naive model says — more pooled,
+more gradient, a stronger dark edge. For a horror level that is arguably the
+good direction, and it is also exactly the *"hard dark edge at the attenuation
+radius"* that `FINDINGS-FIXTURE-LIGHT-BAND.md` recorded at 250 cd. Choosing the
+replacement number still needs the camera; this only sharpens what it will find.
+
+**What this addendum does not touch.** No map, no data, no light actor, and not
+the orphan `WL_TEMP_OVERLIT_GEOMETRY_RIG`, which is still somebody else's rig and
+still inert. Check 4 and the fixture-ladder re-run are still blocked on an
+editor window, per `LIGHTLAB-PROTOCOL.md` §9.

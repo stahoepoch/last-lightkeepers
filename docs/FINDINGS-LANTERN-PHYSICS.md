@@ -139,7 +139,7 @@ a grip changes most.
 | --- | --- | --- | --- |
 | `SwayHertz` | **1.6** | lateral drive is ~0.95 Hz | **1.68× too fast.** 1.6 strides/s is 3.2 steps/s, a jog cadence, applied at a walk |
 | vertical : horizontal | **0.5** (hardcoded in the sway vector) | **~0.09** | the arc is about **five times too tall** |
-| `WalkSwayCm` | 2.4 cm | hand drives ~3 cm, lantern amplifies ~4.9× → **~10–15 cm** at the lantern | far too small, *and* see §6 — `MaxOffsetCm` is 12, so the real amplitude does not fit in the rail |
+| `WalkSwayCm` | 2.4 cm | hand drives ~3 cm, lantern amplifies ~4.9× → **~10–15 cm** at the lantern | far too small, *and* `MaxOffsetCm` is 12, so the real amplitude does not fit in the rail — a pure comfort call since O10, with no gameplay consequence either way |
 | `SprintSwayCm` | **5.2 cm** | less than walk, and inverted in phase | **backwards** |
 | landing kick | downward offset, `KickRecoveryPerSecond` 0.94 → τ ≈ 0.35 s, no oscillation | ~1 Hz ring-down over 1.5–3 s | wrong shape *and* ~5× too fast |
 
@@ -167,7 +167,7 @@ split is in force:
 
 | motion | magnitude | reaches gameplay? |
 | --- | --- | --- |
-| look pitch, through `LanternAnchor`'s 42 cm lever arm | **~84 cm vertical** | **yes** |
+| look pitch, through `LanternAnchor`'s 42 cm lever arm | **88 cm vertical** | **yes** |
 | the sway — the actual pendulum, 4.9× amplified at a walk | ~10–15 cm lateral | **no** |
 
 The sway is sealed out structurally: feel writes `LanternLight`'s *relative*
@@ -240,7 +240,10 @@ which makes it simpler rather than smaller: a second-order pendulum below the
 anchor has no gameplay consequence to fence, so `MaxOffsetCm` becomes a pure
 first-person comfort call with no balance question attached to it.
 
-**And the pitch lever stays in gameplay**, ratified by row 81, unchanged by this.
+**And the pitch lever stays in gameplay**, ratified by row 81, unchanged by this. Its
+magnitude is **88.06 cm**, re-derived 2026-11-04: `152 + 42·sin(p) − 19·cos(p)` is not
+monotonic, so the minimum is interior at `p = −65.66°` (105.90) rather than at the −89.9°
+endpoint (109.97) — taking the endpoints is what produced a passing figure of 84.
 The asymmetry in the table above is now deliberate and stated: the rigid arm the
 player aims is a gameplay input, and the pendulum they merely watch is not.
 
