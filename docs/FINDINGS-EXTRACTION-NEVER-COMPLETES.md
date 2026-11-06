@@ -60,6 +60,46 @@ whole 21 seconds is carried by debug-HUD text. Walking out pauses the hold —
 A player who calls it and steps away to deal with the Sweeper has not failed
 anything; he has stalled something he cannot hear.
 
+## M13 IS DISPROVEN — measured in the live editor, 2026-11-05
+
+Chris opened the editor. The zone is **`(0, 780, 100)`**, labelled
+`BSW_LOADING_DOCK_EXIT`, sitting on the central aisle centre line; the player
+start is `(0, -750, 100)` on the same line. With the map's serialized extents
+of `(252, 168, 112)` its box spans **x -252…252, y 612…948, z -12…212**. A
+standing capsule walking the aisle to the dock passes straight through it, and
+the floor is at z 0, so the box clears a 176 cm body with room above.
+
+And the running game says the rest out loud:
+
+```
+LogLLK: Extraction zone registered for LoadingDock: LLKExtractionZone_0.
+```
+
+**So the trigger is correctly placed, correctly sized and correctly
+registered.** Candidate 1 is dead. That was the leading candidate and the one I
+would have bet on, and it cost nothing to kill, because the measurement was two
+minutes once the editor was open. It is also the measurement trap 19 says a
+byte scan must never be used to make — the same question, asked of the right
+instrument, answered immediately and without ambiguity.
+
+Candidate 3 is weakened too, for the same reason. The three relics sit at
+`(-520, -40, 130)`, `(300, 250, 90)` and `(400, 620, 90)`, and **none is inside
+the box**. The nearest, `BSW_SERVICE_TAG`, is 431 cm from the zone centre, well
+outside any interaction reach, so a focused relic cannot be stealing the prompt
+at the dock as the map stands today. `C13` remains a real design gap — the bay
+is still the only focus that can go silent — but it is not the explanation here.
+
+**What was observed and is not yet explained.** Spawning the keeper inside the
+box with `StartPIE`'s transform override, at `(0, 740, 100)` and again at
+`(0, 760, 120)` facing both ways, produced **no prompt on screen** either time.
+That is suspicious and it is **not yet evidence**, because nothing in the
+capture proves the spawn override put the pawn where it was asked to go: the
+annotation pass reads the editor world, so it found no pawn to confirm against.
+A blank screen is consistent with a keeper standing somewhere else entirely.
+**Do not promote this to a finding without a position for the pawn** — that is
+exactly the mistake the withdrawn transform above was. The cheap way to settle
+it is a human standing in the dock, which is check 5.
+
 ## Candidate 2 is weaker than it looked, and a third one is better
 
 Read the display path afterwards, which I should have done before ranking them.
