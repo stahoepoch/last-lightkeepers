@@ -441,6 +441,47 @@ face he named, sized to the bay mouth the way `docs/MAP-READINESS.md`
 already says. Grilles down on the other three. Row 28 is the furnished
 night, and it is still the store that already exists.
 
+### Boswell's sales floor — trestleboard, 2026-11-06
+
+Chris asked for the measured night checked, walked, and handed over. The
+plan is `docs/reference/boswells/`. The drawing is
+`BoswellsSalesFloor_Plan.svg`. Proposed. Not a decision. Not a release to
+open the editor. `LLK_Boswells_FirstRun` stays the night. The full anchor
+plate is still the larger building. This plan furnishes the measured
+2800 × 1800 cm room only.
+
+The script refuses a solid in the patrol spine and in the LoadingDock
+volume, and it walks a 68 cm disc from the customer door to every aisle,
+to the three patrol points, and to the dock mouth. West aisles are 209 cm.
+East aisles are 206 cm. The cross at y = 0 is 200 cm. Regenerate with
+`py docs/reference/boswells/make_salesfloor.py`. A run that prints those
+widths and exits 0 is the check.
+
+**Claude.** No `Source/LLK` change. Do not retune the patrol, the capsule,
+or the extract id to match these boxes. The boxes were built around the
+patrol that already exists. A later edit that seals y = 0, or that puts a
+solid in |x| < 180 between the south patrol point and the dock, fails the
+finding this plan was built to fix.
+
+**Codex.** No import until Chris opens the level. When he does, the OBJ is
+centimeters, Unreal axes, scale 1. Collision stays off until a patrol
+trace in the editor says the Sweeper still fits. Do not stack these
+fixtures on the gondolas already in the night. The OBJ is one mesh, not a
+set of actors. `Content/LLK_Boswells_Anchor.umap` is already on disk,
+untracked, and this handoff does not take it.
+
+**Chris.** The west wall run is jewelry and perfume on one counter. The
+east wall run is shoes. The islands are clothing. Which island is juniors,
+mens, or ladies is not set. Secret saver stays off a sign. Whether the
+fountain throws water, and which end of the mall is Boswell's, stay open.
+Checkout tops are 90 cm, over the hop, and the vault stays closed.
+Outside kits he liked on 2026-11-06 stay reference: the clothing-rail pack
+is close and it is marked AI-generated, the modular shelf is a grocery
+unit for some areas, and Poly Haven's television, security camera, and
+portable searchlight are CC0. Innerscene is off the list. The searchlight
+is close to the lantern's feel. The lantern is still ours, because
+changing it changes the mesh. Nothing in this commit is imported.
+
 ---
 
 ## Keeping this current

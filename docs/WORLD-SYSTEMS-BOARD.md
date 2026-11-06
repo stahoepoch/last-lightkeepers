@@ -1144,4 +1144,7 @@ criss-cross, clothes and the CRT teens wall on the lower floor,
 candy and the services and home and furniture on the upper,
 glass ceiling mirrors, neon. The court had a circular fountain
 and a clock-tower elevator. The dress is that era, full. The
-night stays a night. No foot was set.
+night stays a night. No foot was set. The sales-floor fixtures for
+that measured room, checked with a 68 cm walk, are
+`docs/reference/boswells/`. The seats are the trestleboard in
+`docs/HANDOFFS.md` (2026-11-06).
