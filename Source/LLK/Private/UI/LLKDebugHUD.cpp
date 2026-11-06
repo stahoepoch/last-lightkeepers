@@ -328,7 +328,15 @@ void ALLKDebugHUD::DrawExtraction()
 	// `data/loot.json` knows.
 	const int32 CarriedCount = Interactor != nullptr ? Interactor->GetCarriedCount() : 0;
 	FName NearestExitId = NAME_None;
-	if (CarriedCount > 0 && Character != nullptr)
+	FVector NearestExitLocation = FVector::ZeroVector;
+
+	// **Searched whether or not the keeper is carrying anything.** It used to
+	// be gated on `CarriedCount > 0`, which is why a keeper who had just
+	// spawned was told nothing: no relic, no search, no exit, no line. The
+	// gate's stated reason - that extraction refuses an empty-handed call -
+	// is not in `ELLKExtractionRefusal`, which has seven reasons and none
+	// about carrying.
+	if (Character != nullptr)
 	{
 		const FVector From = Character->GetActorLocation();
 		float NearestSquared = TNumericLimits<float>::Max();
@@ -344,12 +352,43 @@ void ALLKDebugHUD::DrawExtraction()
 			{
 				NearestSquared = DistanceSquared;
 				NearestExitId = It->ExtractionPointId;
+				NearestExitLocation = It->GetActorLocation();
 			}
 		}
 	}
 
+	// ---- which way, not just where -------------------------------------
+	//
+	// A name is only navigation to someone who already knows the building.
+	// The bearing is relative to where this keeper is LOOKING rather than to
+	// the world, and it is computed here because the view rotation lives
+	// here - `LLKExtractionReadout` stays a pure function of numbers.
+	//
+	// Horizontal distance deliberately. The dock header sits at 260-300 cm
+	// and a keeper's eye at 152, so the straight-line distance to a zone
+	// overhead reads longer than the walk, and the walk is the thing being
+	// described.
+	float ExitDistanceCm = -1.f;
+	float ExitBearingDegrees = 0.f;
+	if (!NearestExitId.IsNone() && Character != nullptr)
+	{
+		const FVector To = NearestExitLocation - Character->GetActorLocation();
+		ExitDistanceCm = To.Size2D();
+
+		// `GetBaseAimRotation` rather than the controller's control rotation:
+		// it resolves to exactly that for a locally controlled pawn, needs no
+		// null check and no extra include, and it is also correct for a pawn
+		// this machine does not control - which the split-screen and
+		// spectator cases would otherwise get wrong in a way nobody would
+		// see until someone tried them.
+		const float ViewYaw = Character->GetBaseAimRotation().Yaw;
+		ExitBearingDegrees = FRotator::NormalizeAxis(
+			FMath::RadiansToDegrees(FMath::Atan2(To.Y, To.X)) - ViewYaw);
+	}
+
 	const FLLKExtractionReadout Readout = LLKExtractionReadout::Describe(
-		GameState->GetExtractionSnapshot(), bAtZone, CarriedCount, NearestExitId);
+		GameState->GetExtractionSnapshot(), bAtZone, CarriedCount, NearestExitId,
+		ExitDistanceCm, ExitBearingDegrees);
 	if (!Readout.HasAnything())
 	{
 		return;

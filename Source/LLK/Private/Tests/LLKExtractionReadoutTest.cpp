@@ -187,6 +187,99 @@ bool FLLKExtractionReadoutTest::RunTest(const FString& Parameters)
 			LLKExtractionReadout::FormatSeconds(90.f), FString(TEXT("1:30")));
 	}
 
+	// ---- 8. the errand line, and the direction on it -------------------
+	//
+	// Chris, 2026-11-06: *"i still can't extract or know where to go or what
+	// to do."* Two separate faults. The line only existed while carrying, so
+	// a keeper who had just spawned was told nothing; and when it did appear
+	// it named the exit without saying which way that was.
+	{
+		const FLLKExtractionSnapshot Idle = Published(ELLKExtractionPhase::Idle);
+
+		// **Empty-handed is the case that said nothing at all.** Its old gate
+		// was justified by extraction refusing an empty-handed call, which
+		// ELLKExtractionRefusal does not do.
+		const FLLKExtractionReadout Empty = LLKExtractionReadout::Describe(
+			Idle, false, 0, FName(TEXT("LoadingDock")), 1800.f, 0.f);
+		TestTrue(TEXT("empty-handed, the game now states the goal"),
+			Empty.Objective.Contains(TEXT("Find something worth carrying")));
+		TestTrue(TEXT("and names the way out"),
+			Empty.Objective.Contains(TEXT("Loading Dock")));
+		TestTrue(TEXT("and still says nothing centre screen"), Empty.Centre.IsEmpty());
+
+		// Carrying: the same line with the key on it.
+		const FLLKExtractionReadout Carrying = LLKExtractionReadout::Describe(
+			Idle, false, 2, FName(TEXT("LoadingDock")), 1800.f, 0.f);
+		TestEqual(TEXT("carrying two names the count, the key and the way"),
+			Carrying.Objective,
+			FString(TEXT("Carrying 2  14 hold [E] at the Loading Dock, 18 m ahead")));
+
+		// **At the zone the prompt speaks instead.** The two never both talk,
+		// which is the whole of Chris's restraint instruction.
+		const FLLKExtractionReadout AtZone = LLKExtractionReadout::Describe(
+			Idle, true, 2, FName(TEXT("LoadingDock")), 400.f, 0.f);
+		TestTrue(TEXT("and at the dock the errand line is silent"),
+			AtZone.Objective.IsEmpty());
+
+		// An exit nobody supplied is not a line naming nowhere.
+		const FLLKExtractionReadout NoExit =
+			LLKExtractionReadout::Describe(Idle, false, 2, NAME_None, 1800.f, 0.f);
+		TestTrue(TEXT("no known exit means no errand line"), NoExit.Objective.IsEmpty());
+
+		// A caller that cannot measure still answers "where to".
+		const FLLKExtractionReadout NoDistance = LLKExtractionReadout::Describe(
+			Idle, false, 2, FName(TEXT("LoadingDock")), -1.f, 0.f);
+		TestTrue(TEXT("an unmeasured exit is still named"),
+			NoDistance.Objective.Contains(TEXT("Loading Dock")));
+		TestFalse(TEXT("and carries no distance it does not have"),
+			NoDistance.Objective.Contains(TEXT(" m")));
+	}
+
+	// ---- 9. the bearing, by sector -------------------------------------
+	//
+	// Eight sectors of 45 degrees centred on the cardinals. A wider "ahead"
+	// is the version that walks a keeper into a gondola while the HUD insists
+	// the dock is in front of them.
+	{
+		TestEqual(TEXT("straight ahead"),
+			LLKExtractionReadout::BearingPhrase(0.f), FString(TEXT("ahead")));
+		TestEqual(TEXT("and 22.5 is the last of ahead"),
+			LLKExtractionReadout::BearingPhrase(22.5f), FString(TEXT("ahead")));
+		TestEqual(TEXT("just past it turns"),
+			LLKExtractionReadout::BearingPhrase(23.f), FString(TEXT("ahead and right")));
+		TestEqual(TEXT("and the mirror of it"),
+			LLKExtractionReadout::BearingPhrase(-45.f), FString(TEXT("ahead and left")));
+		TestEqual(TEXT("square right"),
+			LLKExtractionReadout::BearingPhrase(90.f), FString(TEXT("to your right")));
+		TestEqual(TEXT("square left"),
+			LLKExtractionReadout::BearingPhrase(-90.f), FString(TEXT("to your left")));
+		TestEqual(TEXT("over the shoulder"),
+			LLKExtractionReadout::BearingPhrase(135.f), FString(TEXT("behind you, right")));
+		TestEqual(TEXT("and straight back"),
+			LLKExtractionReadout::BearingPhrase(180.f), FString(TEXT("behind you")));
+
+		// **350 is not ahead-right.** A bearing arrives unnormalised from
+		// somewhere eventually, and 350 degrees is ten to the LEFT.
+		TestEqual(TEXT("an unnormalised 350 is ten degrees left, not 350 right"),
+			LLKExtractionReadout::BearingPhrase(350.f), FString(TEXT("ahead")));
+	}
+
+	// ---- 10. metres, floored -------------------------------------------
+	{
+		TestEqual(TEXT("eighteen metres"),
+			LLKExtractionReadout::FormatMetres(1800.f), FString(TEXT("18 m")));
+
+		// **Floored, not rounded.** This is distance still to walk: 18.9 m
+		// reading as 19 overstates the progress, and nearly-there is exactly
+		// the wrong thing to tell someone being hunted.
+		TestEqual(TEXT("and 18.99 is still eighteen, because it is not walked yet"),
+			LLKExtractionReadout::FormatMetres(1899.f), FString(TEXT("18 m")));
+		TestEqual(TEXT("half a metre is 1 m rather than 0 m"),
+			LLKExtractionReadout::FormatMetres(50.f), FString(TEXT("1 m")));
+		TestTrue(TEXT("nothing measured is no string"),
+			LLKExtractionReadout::FormatMetres(-1.f).IsEmpty());
+	}
+
 	return true;
 }
 

@@ -55,8 +55,54 @@ namespace LLKExtractionReadout
 		return Out;
 	}
 
+	FString BearingPhrase(const float RelativeYawDegrees)
+	{
+		if (!FMath::IsFinite(RelativeYawDegrees))
+		{
+			return FString();
+		}
+
+		// Normalised here as well as by the caller. A bearing is the kind of
+		// value that arrives as 350 rather than -10 from somewhere nobody
+		// remembered, and 350 would land in the last sector and say "ahead
+		// right" for something slightly to the left.
+		const float Yaw = FRotator::NormalizeAxis(RelativeYawDegrees);
+		const float Magnitude = FMath::Abs(Yaw);
+		const bool bRight = Yaw > 0.f;
+
+		if (Magnitude <= 22.5f)
+		{
+			return TEXT("ahead");
+		}
+		if (Magnitude <= 67.5f)
+		{
+			return bRight ? TEXT("ahead and right") : TEXT("ahead and left");
+		}
+		if (Magnitude <= 112.5f)
+		{
+			return bRight ? TEXT("to your right") : TEXT("to your left");
+		}
+		if (Magnitude <= 157.5f)
+		{
+			return bRight ? TEXT("behind you, right") : TEXT("behind you, left");
+		}
+		return TEXT("behind you");
+	}
+
+	FString FormatMetres(const float Centimetres)
+	{
+		if (!FMath::IsFinite(Centimetres) || Centimetres <= 0.f)
+		{
+			return FString();
+		}
+
+		const int32 Metres = FMath::Max(1, FMath::FloorToInt(Centimetres / 100.f));
+		return FString::Printf(TEXT("%d m"), Metres);
+	}
+
 	FLLKExtractionReadout Describe(const FLLKExtractionSnapshot& Snapshot, const bool bAtZone,
-		const int32 CarriedCount, const FName NearestExitId)
+		const int32 CarriedCount, const FName NearestExitId,
+		const float ExitDistanceCm, const float ExitBearingDegrees)
 	{
 		FLLKExtractionReadout Readout;
 
@@ -82,17 +128,34 @@ namespace LLKExtractionReadout
 				return Readout;
 			}
 
-			// Not at an exit, but holding something that needs one. This is
-			// the answer to "i still don't know how to extract": the offer
-			// above is only visible from inside the bay, so a keeper with a
-			// relic and no idea where the bay is was being told nothing at
-			// all. See `FLLKExtractionReadout::Objective` for why this is not
-			// a centre line.
-			if (CarriedCount > 0 && !NearestExitId.IsNone())
+			// Not at an exit. The offer above is only visible from inside the
+			// bay, so until this line existed a keeper who did not already
+			// know where the bay was got nothing at all - which is what
+			// "i still can't extract or know where to go or what to do"
+			// was. See `FLLKExtractionReadout::Objective` for why this is not
+			// a centre line, and for why it is no longer gated on carrying.
+			if (!NearestExitId.IsNone())
 			{
-				Readout.Objective = FString::Printf(
-					TEXT("Carrying %d%sreach the %s and hold [E]"),
-					CarriedCount, Dash, *HumaniseExitId(NearestExitId));
+				// Name, then direction when the caller knows one. The two are
+				// built separately so a caller that cannot answer "which way"
+				// still answers "where to", rather than the line degrading
+				// into a bearing with nothing attached to it.
+				const FString Metres = FormatMetres(ExitDistanceCm);
+				const FString Bearing = BearingPhrase(ExitBearingDegrees);
+				const FString Where = (Metres.IsEmpty() || Bearing.IsEmpty())
+					? HumaniseExitId(NearestExitId)
+					: FString::Printf(TEXT("%s, %s %s"),
+						*HumaniseExitId(NearestExitId), *Metres, *Bearing);
+
+				// Two errands, and the keeper is always on one of them. The
+				// empty-handed sentence names the goal the game had never
+				// stated anywhere: that a relic is the point, and that the
+				// way out exists.
+				Readout.Objective = CarriedCount > 0
+					? FString::Printf(TEXT("Carrying %d%shold [E] at the %s"),
+						CarriedCount, Dash, *Where)
+					: FString::Printf(TEXT("Find something worth carrying%sthe way out is the %s"),
+						Dash, *Where);
 			}
 			return Readout;
 
