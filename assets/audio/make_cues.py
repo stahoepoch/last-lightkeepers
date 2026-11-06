@@ -160,6 +160,57 @@ def sweeper():
     return out
 
 
+def sweeper_stock_started():
+    """A cart has selected an item and begun its filing job.
+
+    Mechanism: a low relay clack followed by an uneven traction pulse.  This
+    needs to read as *work beginning*, not as an alert or a chase: the player
+    should be able to hear that the wrong crate is being taken before they can
+    necessarily see the machine around the gondola.
+    """
+    out = silence(1.05)
+    relay = env(mix(sine(118, 0.10), [0.35 * s for s in sine(236, 0.10)]), 0.002, 0.095)
+    out = at(out, 0.02, [0.65 * s for s in relay])
+
+    # Three traction catches establish direction without becoming a footstep.
+    for offset, gain in ((0.18, 0.45), (0.39, 0.52), (0.62, 0.58)):
+        pulse = env(lowpass(noise(0.13), 330), 0.009, 0.12)
+        motor = env(sweep(92, 128, 0.18), 0.012, 0.16)
+        out = at(out, offset, mix([gain * s for s in pulse], [0.26 * s for s in motor]))
+    return out
+
+
+def sweeper_stock_interrupted():
+    """A machine aborts a filing job because a keeper lit up.
+
+    Mechanism: a short brake scrape, then two descending status chirps.  The
+    descending pair is the important part: it is audibly a cancelled job, not
+    a success tone, and it gives the player a direct acknowledgement that the
+    light changed what the Sweeper was doing.
+    """
+    out = silence(0.82)
+    brake = env(mix(lowpass(noise(0.24), 900), [0.24 * s for s in sweep(310, 92, 0.24)]), 0.003, 0.22)
+    out = at(out, 0.0, [0.62 * s for s in brake])
+    for offset, f0, f1 in ((0.28, 780, 510), (0.48, 650, 360)):
+        chirp = env(sweep(f0, f1, 0.18), 0.008, 0.16)
+        out = at(out, offset, [0.38 * s for s in chirp])
+    return out
+
+
+def sweeper_stock_filed():
+    """The job completed: stock has reached the bay and settled.
+
+    Mechanism: a low dock thump followed by a quiet latch.  It is intentionally
+    less urgent than interruption; this is information about a consequence,
+    not another demand for immediate input.
+    """
+    out = silence(0.95)
+    thump = env(mix(sine(54, 0.50), [0.42 * s for s in sine(82, 0.50)], lowpass(noise(0.12), 190)), 0.003, 0.47)
+    out = at(out, 0.03, [0.72 * s for s in thump])
+    latch = env(mix(sine(310, 0.13), [0.30 * s for s in sine(620, 0.13)]), 0.001, 0.12)
+    return at(out, 0.52, [0.34 * s for s in latch])
+
+
 def stocker():
     """Slow, heavy, one source.
 
@@ -339,6 +390,12 @@ CUES = {
     "ficus-wake-v1.wav": ficus,
     "warden-approach-v1.wav": warden,
     "extraction-siren-v1.wav": extraction_siren,
+    # Keep new renders after the established sequence. The synthesis uses one
+    # seeded PRNG, so inserting a cue above would silently rerender unrelated
+    # shipped masters with a different random stream.
+    "sweeper-stock-started-v1.wav": sweeper_stock_started,
+    "sweeper-stock-interrupted-v1.wav": sweeper_stock_interrupted,
+    "sweeper-stock-filed-v1.wav": sweeper_stock_filed,
 }
 
 

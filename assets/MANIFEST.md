@@ -151,6 +151,9 @@ ear:
 | Cue | Identity | Mechanism |
 | --- | --- | --- |
 | `sweeper-telegraph-v1.wav` | A crowd, not a thing | Dozens of irregular filtered-noise grains; the tell is event *rate* |
+| `sweeper-stock-started-v1.wav` | A job beginning | Relay clack followed by uneven traction catches; work has started around the next aisle |
+| `sweeper-stock-interrupted-v1.wav` | A job cancelled | Brake scrape and two descending status chirps; the keeper's light changed the machine's decision |
+| `sweeper-stock-filed-v1.wav` | Stock put away | Low dock thump and quiet latch; consequence, not a fresh alarm |
 | `stocker-telegraph-v1.wav` | Weight, and singularity | One low impact plus a descending servo groan |
 | `glimmer-scan-v1.wav` | Time running out | A tone rising across exactly 2.0s with ticks that *accelerate*, so the closing window is audible |
 | `window-walker-wake-v1.wav` | Stillness breaking | Silence first, then a dry crack and a rigid creak |
