@@ -93,6 +93,13 @@ is not suppressed-but-visible, it is **absent**. There is no hint, no greyed
 line, nothing that says looking away is what calls the rig. The only way to
 discover the rule is to accidentally stop looking at the relic.
 
+**And the bay is the only focus that can go silent, which bounds this.** A
+focused casualty draws the casualty prompt and a focused relic draws the relic
+prompt — `LLKDebugHUD.cpp:713-719` returns early for each — so those two always
+show *something*. The bay is ranked last and its prompt is gated on all three
+being clear, so it is the one interaction whose unavailability is indistinguishable
+from its not existing. One instance, not a pattern.
+
 The dock is the one place in the run where a player is most likely to be looking
 at loot: it is where the misrouted crate goes. So the state *"standing in the
 dock, something in view, no idea extraction exists"* is not an edge case, it is

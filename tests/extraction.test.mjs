@@ -80,6 +80,7 @@ const TEST = "Source/LLK/Private/Tests/LLKExtractionTest.cpp";
 const ZONE_TEST = "Source/LLK/Private/Tests/LLKExtractionZoneTest.cpp";
 const READOUT_IMPL = "Source/LLK/Private/UI/LLKExtractionReadout.cpp";
 const HUD_IMPL = "Source/LLK/Private/UI/LLKDebugHUD.cpp";
+const INTERACTOR_IMPL = "Source/LLK/Private/Loot/LLKInteractorComponent.cpp";
 
 for (const rel of [PURE_HEADER, PURE_IMPL, SUBSYSTEM_HEADER, SUBSYSTEM_IMPL, TEST, ZONE_TEST, READOUT_IMPL, HUD_IMPL]) {
   check(`${rel} exists`, read(rel) !== null, "the guard names a file that is not there");
@@ -355,6 +356,64 @@ for (const rel of [PURE_HEADER, PURE_IMPL, SUBSYSTEM_HEADER, SUBSYSTEM_IMPL, TES
     "a casualty and a relic both outrank the bay, in the interactor and on " +
       "screen, or the prompt offers a key that lifts a brooch",
   );
+}
+
+// ---- 4c. the other half of that agreement, which was unguarded ---------
+//
+// **4b guards the screen; nothing guarded the key.** The check above asserts
+// the HUD's gate consults the casualty and the relic, and it works - unwiring
+// the HUD's relic term turns it red. But the invariant has two sides, and
+// `ULLKInteractorComponent::BeginInteract` is the side that decides what E
+// actually does. Deleting a term from *its* condition left the whole file
+// green, which is the asymmetry this section closes: the prompt could not lie
+// about the key, and the key could still fire where no prompt was ever drawn.
+//
+// The HUD's own comment states the rule for both: *"A prompt offering a key
+// that lifts a brooch instead is the bug this whole component was built to
+// avoid."*
+//
+// **This is not hypothetical drift.** The verb list in `THE-HARD-RUN.md`
+// proposes a fourth focus - *"Hands full when the carry is bulky, which blocks
+// mantle, revive, and tools until it is set down"* - and a fourth focus is
+// exactly the change that gets added at one site and forgotten at the other.
+//
+// **Checked on the branch's own condition, not on the file.** A file-wide
+// search for the field names passes on a version where the extraction branch
+// ignores them, because `FocusedCasualty` appears all over the component. The
+// slice is the `if (` immediately preceding the call.
+//
+// `C13` is the *designed* consequence of this agreement and a separate matter:
+// because the bay is ranked last, looking at loot at the dock hides the prompt
+// entirely, which is a wording decision for Chris. This only guards that the
+// two sites keep agreeing, whatever wording he picks.
+{
+  const interactor = stripComments(read(INTERACTOR_IMPL) ?? "");
+
+  const callAt = interactor.indexOf("ServerBeginExtractionCall");
+  const ifAt = callAt < 0 ? -1 : interactor.lastIndexOf("if (", callAt);
+  const branch = ifAt < 0 ? "" : interactor.slice(ifAt, interactor.indexOf(")", ifAt) + 1);
+
+  check(
+    "the call to extraction sits behind a condition this check can read",
+    branch.length > 0 && branch.startsWith("if ("),
+    "the extraction branch could not be sliced, so every assertion below " +
+      "would pass vacuously - which is the failure mode that matters most in " +
+      "a source guard",
+  );
+
+  for (const [label, field] of [
+    ["the body", "FocusedCasualty"],
+    ["the relic in view", "Focused"],
+    ["the bay underfoot", "FocusedZone"],
+  ]) {
+    check(
+      `and it consults ${label}`,
+      new RegExp(`\\b${field}\\b`).test(branch),
+      `BeginInteract calls extraction without consulting ${label}, so E can ` +
+        "fire where the prompt was never drawn. 4b would stay green: it reads " +
+        "the HUD, and this is the other side of the same rule",
+    );
+  }
 }
 
 // ---- 5. the authored exits still say what the rules assume -------------
