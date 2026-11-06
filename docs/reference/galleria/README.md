@@ -34,4 +34,6 @@ The level this belongs in is `LLK_Galleria_Shell`, and it does not exist
 yet. `LLK_Boswells_FirstRun` is not the file. The cook's order is section
 11 of `docs/THE-MALL-IS-STILL-TRADING.md`. The Boscov's box, as two
 selling floors, an office level, one elevator, and one escalator well,
-is section 12 of the same file. The seats are in `docs/HANDOFFS.md`.
+is section 12 of the same file. The 1990s department
+adjacency, the center criss-cross, and the court fountain and
+clock are section 13. The seats are in `docs/HANDOFFS.md`.

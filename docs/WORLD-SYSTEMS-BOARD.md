@@ -1138,5 +1138,10 @@ Boscov's and played as Boswell's, is section 12 of the same file
 (2026-11-06). Two selling floors, an office level, candy and a courtesy
 desk on the upper selling floor, one hydraulic elevator, one uncounted
 escalator well. The 101,300 and the 160,000 are left in conflict. The
-directory rectangle sits beside the smaller figure. No department plan
-was found, and none was borrowed.
+directory rectangle sits beside the smaller figure. Section 13
+is Chris's memory of the 1990s room (2026-11-06): one center
+criss-cross, clothes and the CRT teens wall on the lower floor,
+candy and the services and home and furniture on the upper,
+glass ceiling mirrors, neon. The court had a circular fountain
+and a clock-tower elevator. The dress is that era, full. The
+night stays a night. No foot was set.

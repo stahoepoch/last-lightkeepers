@@ -749,6 +749,8 @@ What stays blank:
 - A stair that lands on the candy counter was looked for and not found. Candy is on the second selling floor. The path to it is still open.
 - Gardners Candies is a mall shop on the second-floor corridor. Sweet Spot is a mall shop that opened into a walled-up food-court bay. Neither one is this counter.
 
+Section 13 is Chris's memory of this store in the 1990s, given 6 November 2026. It fills the department list and names the escalator as one center criss-cross. The Annville split stays out. His list is the one that enters.
+
 `THE-STORE.md` already locks mirrored ceiling islands as Boswell's signature, and it already wants an escalator well. Buda's memory is that room, in this building, from someone who later ran the floor. The 2022–23 remodel is the real store moving on. Boswell's keeps the older room.
 
 `THE-STORE.md` also stacks four sales floors, a basement, and a roof. That stack is the proposal of 26 October 2026. The witnesses on this building give two selling floors and an office level. This section does not retire that proposal. It is the pressure on it. A fourth sales floor, and a basement under this anchor, are filled inventions relative to what was found. `FreightLift` still wants a sub-basement these plans do not have.
@@ -770,10 +772,10 @@ The furnished night stays the room that already exists. `FINDINGS-BOSWELLS-GEOME
 Inside the existing Boscov's volume, when Content is open for `LLK_Galleria_Shell`:
 
 1. A lower selling plate.
-2. An upper selling plate. Candy and the courtesy desk belong to this floor. Their plan position is unknown, so they are tags, not walls.
+2. An upper selling plate. Candy and the courtesy desk belong to this floor. Section 13 names the rest of what Chris remembers on it. Plan positions are still unknown, so they are tags, not walls.
 3. An office level above them. It is shell. It is not a sales floor. Whether it is a full plate is unmeasured.
 4. One elevator shaft, three stops, serving the two selling floors and the office level. Schindler hydraulic. One car witnessed.
-5. One escalator well. The count is still open. Both ends are marked for a light.
+5. One escalator well in the center. Section 13 names it as a criss-cross. Both ends are marked for a light.
 6. The mall face, where the walk already stops.
 7. The lot face, where `EXTRACT_LOADINGDOCK_CANDIDATE` and `DOCK_ANCHOR_BOSCOVS` already sit. Chris still names which end is Boswell's. Until he does, this face stays the candidate.
 
@@ -788,3 +790,61 @@ The grilles stay down. Row 28 does not move. The night is still `LLK_Boswells_Fi
 **Falsifier.** A county card, or a scaled sheet, that shows one selling floor. A sheet that shows the 160,000 as the two-floor area of this rectangle. A panel with only two stops. A counted frame that shows two separate escalator wells, which would reopen the one-well block and still would not import another store's plan.
 
 **Upside down.** The office floor is the part of the anchor that is not the store. The mirrored ceiling is how the lower floor sees a light it does not own. The grille on the mall face is a bigger wall than a corridor over the roof.
+
+---
+
+## 13. The 1990s room, from Chris
+
+Status: **proposed**, 2026-11-06. Chris, this session. The store he is describing is the Johnstown Boscov's in the years it was full. The player sees Boswell's. This fills the department blank section 12 left open. It is his witness. It is not a measured plan, and it sets no foot.
+
+### Inside the anchor
+
+The escalator is one criss-cross in the center. Two runs, crossing, one well. Section 12 left the count open because the ride videos were not watched. His memory closes it for the room we build. A frame that shows two separated wells, or a parallel pair that does not cross, reopens it.
+
+Lower selling floor, in his order: juniors, jewelry, mens, perfume, ladies, shoes. The teens areas sit on this floor with the juniors. He said "teens areas," and he did not draw a separate teens box. The big CRT sets are there. Tube glass, no count, no screen size. They may glow. They do not join `LLKLightField`, and no candela is authored for them.
+
+Upper selling floor, in his order: candy, the services, kids (boys and girls), babies, toys, seasonal, beddings, curtains, home, the section he calls secret saver, appliances, and the furniture (bed, couch, recliner).
+
+The services on that upper floor, his list: hearing, optical, restrooms, gift wrapping, and the rest of that cluster. Hearing and optical were already current services, with no floor. The courtesy desk was already on the second floor in the 2019 WJAC piece. Gift wrapping and the store's own restrooms join that cluster, as tags. The mall's restrooms near the food court stay where section 10 put them. They are a second set.
+
+Candy on this floor agrees with Buda in 2022 and with the Remembering Retail caption in 2026. The stair that would land on the counter is still unfound. The criss-cross is the vertical he named.
+
+Secret saver is his name for that upstairs section. A chain department published under that spelling was not found. It stays his label in the plan. The words do not go on a sign until he says they do.
+
+The glass ceiling mirrors are his words for the same room Buda remembered, the chandelier and the mirrored ceiling, and they are already Boswell's locked signature in `THE-STORE.md`. The concourse vault is a different glass ceiling, steel and truss, over the mall. The anchor does not borrow it.
+
+Neon in the store is his memory of the 1990s room. The 2026 caption says the remodel took the neon down. The room we build keeps it.
+
+The office level is the plate he did not describe. patricknedz, published 9 August 2014, riding this store's car: the elevator serves three floors, the third is offices, and the first and second are retail. He dated the opening to 1991, which is the wrong year. The floors are the part that matches Grute in 2026. The office plate stays above the selling floors, and it stays unshopped. His department list does not put those offices on the upper sales floor.
+
+### The court
+
+The middle of the mall, his memory: a water fountain, and a clock-tower elevator.
+
+Pittsburgh Post-Gazette, 21 September 2026, Kris B. Mamula: the mall opened in 1992 "with a fountain and spiffy combo clock tower/elevator."
+
+Deadmalls, Jack Thomas, narration on the film shot in 2019: a center-court fountain greeted shoppers, and the circular fountain was removed at some point in the 2010s. A comment under a historical photograph of that fountain puts it at roughly 1992 to around 2008. Another comment remembers a small fountain by the rink, and says it barely compares. Tribune-Democrat, 27 November 2024, Russ O'Reilly: the current owner has repaired "the fountain." That sentence is not read as the circular court coming back.
+
+jaemre288, published 26 May 2025, title "Glass Schindler Hydraulic Elevator" at the Johnstown Galleria. A comment says installed 1992. That title is the mall car. The Boscov's car is the other one, and the rides do not describe it as glass. Chris and the Post-Gazette name the clock. The clock was not seen on a frame this turn, so it is not yet pinned to the cab versus the shaft around it.
+
+TLP-1 draws a stage in the court in front of the anchor. That sheet is 2016, after the circular fountain is remembered gone. The stage and the fountain stay two objects. The 1990s middle is the fountain. The stage is what a later sheet drew, and it may be the anchor's own court rather than center court.
+
+### The era
+
+Chris wants the mall to look like the 1990s, when it was in full swing.
+
+The proposed dress is 1992 through the late 1990s. Departments as he listed them. Neon. Mirrored ceiling. CRT glass in the teens area. The circular fountain in center court. The clock on the court elevator. Stock on the floor.
+
+The 2022–23 remodel, the removed fountain, and the later dead-mall walks are what the real building did afterwards. They are the record of the change. They are not the room.
+
+The night does not become a living mall. The grilles stay down. Emergency light stays the circuit the shell already has. One anchor is the furnished night. The swing is the merchandise and the architecture, present and then left. A crowd, open gates, and ordinary mall lighting would be a different game. Whether the fountain still throws water is unmade. The basin is the 1990s object. The water is the part that can have stopped.
+
+**Operand.** His two-floor adjacency, against the four sales floors in `THE-STORE.md`, and against any plan borrowed from Annville. Clothes below and home and kids above rhyme with that Annville review. He gave this list. Annville did not, and the rhyme is written down so the next reader does not cite the wrong store.
+
+**Floor.** A section with no wall position is a tag on the right plate. Juniors on the lower plate is a floor. A juniors bay with a drafted width is a filled invention. Secret saver with a printed chain logo is a name we did not find in print.
+
+**Clock.** His memory dates the era. It does not date a foot. The fountain's removal is "around 2008" in a comment and "the 2010s" in a narration. The two are left in conflict.
+
+**Falsifier.** A 1990s directory, or a photograph, that puts mens or shoes upstairs, or toys downstairs. A frame of these escalators that shows two wells or a parallel pair. A frame of the center court in the 1990s with no fountain. A clock that is a separate tower and not the elevator.
+
+**Upside down.** The mirrored ceiling is how the lower floor sees the neon it does not own. The criss-cross is the one cut where both selling floors see each other, which is the bright slot in a dark store. The fountain is the hole in the middle that used to throw water. The CRTs are lights with no program. The secret-saver corner is where the store already knew things were leaving. The clock keeps a time the building stopped keeping.

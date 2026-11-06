@@ -103,6 +103,8 @@ prop is broken and you cannot say what broke it, rebuild it intact.
 
 ## The floors
 
+> **6 November 2026.** Chris remembered this building in the 1990s, and the selling floors are two. The adjacency is section 13 of `docs/THE-MALL-IS-STILL-TRADING.md`. Lower: juniors, jewelry, mens, perfume, ladies, shoes, with the CRT sets in the teens area. Upper: candy, the services, kids, babies, toys, seasonal, bedding, curtains, home, furniture. The four sales floors below are the proposal of 26 October. They stay here as the ruin idea. They are no longer the adjacency for Boswell's.
+
 ### Basement — receiving, bargain, and the plant
 
 Receiving bay and the loading dock. The bargain basement. The boiler room, the
