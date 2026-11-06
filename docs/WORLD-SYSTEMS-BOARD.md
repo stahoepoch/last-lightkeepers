@@ -1133,4 +1133,10 @@ the arch as a glass and steel truss over that well. The 18 ft figure is a
 stand-in for the lower floor-to-floor only. It is not the arch. `StudsToCm`
 does not convert this building. The cook's order and the three seats are
 section 11 and the Galleria block in `docs/HANDOFFS.md`. The mesh is
-`docs/reference/galleria/`.
+`docs/reference/galleria/`. The first anchor, researched as the Johnstown
+Boscov's and played as Boswell's, is section 12 of the same file
+(2026-11-06). Two selling floors, an office level, candy and a courtesy
+desk on the upper selling floor, one hydraulic elevator, one uncounted
+escalator well. The 101,300 and the 160,000 are left in conflict. The
+directory rectangle sits beside the smaller figure. No department plan
+was found, and none was borrowed.

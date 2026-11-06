@@ -712,3 +712,79 @@ Still not on the bench: the arch rise in centimeters, the concourse width, which
 ### What this commit does not do
 
 It does not make the level. It does not set a candela, a concourse width, or which end is ours. It does not copy the leasing mesh, the lease PDF, or York's plan into the repo. Row 28 does not move. Row 19 does not move. `StudsToCm` does not convert this building.
+
+The first anchor's own section is section 12. It does not change this order.
+
+---
+
+## 12. The first anchor, as Boscov's, played as Boswell's
+
+Status: **proposed**, 2026-11-06. This is the first anchor. The real building is the Johnstown Boscov's at 570 Galleria Drive. The store the player sees is Boswell's. Real names stay labels. Row 19 does not move. Nothing here resizes `LLK_Boswells_FirstRun`, and nothing here is a foot.
+
+### What the building is
+
+It opened 19 September 1992, before the mall. The address is 570 Galleria Drive, Johnstown, Richland Township, Pennsylvania 15904. The directory unit is 570. The phone on the company's own page is (814) 266-4300.
+
+That page lists one elevator item, a wheelchair-accessible elevator, plus a wheelchair-accessible entrance and a wheelchair-accessible parking lot. The services it names are a military discount, Optical, a Hearing Aid Center, the online registry, and in-store and curbside pickup. Optical and hearing are rooms. Their floor was not found. The registry is a service, not a room that can be placed. A restaurant, a hair salon, and a travel desk turn up in aggregator "about" text and do not turn up on that services list. They stay out of the plan.
+
+The building is owned apart from the mall. Wikipedia's Galleria article says the Boscov's, the former Bon-Ton, and the former Sears buildings are independently owned. On 8 October 2022 Deanna Buda, assistant manager, told the Tribune-Democrat that the building is owned separately by the Boscov's company. On 10 February 2017 the same paper reported that Pax Mall Realty, then the owner of the store at 570 Galleria Drive, had appealed a $2.5 million assessment. The 2017 owner is not treated as the current owner. Ownership is not a wall.
+
+A public listing aggregator gives the lot at that address as about 2.2 acres, built in 1992. The county card's building square footage was not retrieved. The lot is not the floor plate. 2.2 acres is about 96,000 sq ft of land. A single floor of 160,000 sq ft would not sit on it. Two floors whose combined area is 160,000 would, on a plate of about 80,000. The lot does not decide between the two published areas below.
+
+### The section you can block
+
+Two selling floors, and a third level the riders call offices.
+
+- Buda, 8 October 2022 (Tribune-Democrat, Russ O'Reilly; the Yahoo reprint carries the quotes the paywall hides). The second floor had been under renovation since June and was due that November. "When it's finished, the candy counter will return." The first floor was to start the following spring. She remembers being a kid in this store, "looking at the chandelier, the mirrored ceiling, and going to the candy counter."
+- Remembering Retail, caption posted 4 May 2026. Sean Selznick filmed the candy counter in March 2026, on the second floor. The caption says the remodels took the chandeliers and the neon down, and the counter stayed. The caption was read. The footage was not watched.
+- WJAC, 2 July 2019, Sydney Jaxtheimer. The angel tree at the Johnstown store "is on the second floor by the courtesy desk." Store manager Rick Bausher is named. Wilkes-Barre puts a courtesy desk on a fourth floor, and Scranton puts a tree on a second floor of a different building. Those stores do not move this desk.
+- The elevator. elevaTUBE, filmed 12 October 2017, published 3 March 2020: "This is the only anchor that serves 3 floors, while the rest of the mall has 2." The same note wishes an auditorium onto the top floor beside the elevator and the executive offices. That is a wish. It is not a room that was found. Grute's Trains, Movies and Elevators, filmed 14 February 2026, published 2 March 2026: "This store is actually 2 floors as the third floor is offices." Both descriptions say the machine was installed in 1992, and a comment on jaemre288's ride of 25 May 2025 says the same. One car was ridden, across several visits. The company's page confirms an elevator and does not count the cars. The mall's center-well car is a different machine.
+- The name "RT 300A" is the riders' label. A comment on the 2017 ride says a 300A was not introduced until 1993. A hobby model guide dates that model to 1993–2004, and the same guide says its own pages are out of date. What holds is a Schindler hydraulic, with a 1992 install claimed by the people who rode it. The model number stays disputed.
+- A comment on the May 2025 ride says "The 3 button is a down button." The footage was not watched. The panel has a 3. Which plate that 3 is, is not read off the comment.
+- The escalators. Three rides, titles in the plural, all at this store. NEOH Escalators, filmed 14 January 2024. Bhedinskis717, 9 April 2023. Grute, filmed 14 February 2026, description "Installed in 1992." None of the descriptions count the machines. A plural title can be one criss-cross well. Two separate wells would be another store's plan, and Colonie Center's two escalator sets and two elevators do not cross over. Block one well. Count it when a frame is counted. Both ends take an emergency light once the well has a place, the same rule the concourse already uses.
+
+What stays blank:
+
+- No Johnstown department map was found. Men's, women's, shoes, home, toys, and jewellery are not assigned to a floor here. A review that puts children's, toys, home, and electronics upstairs, and clothing, perfume, and jewellery downstairs, is tagged Annville, Pennsylvania, on a page that also carries the Johnstown name. Annville is a different store. The split does not enter.
+- A stair that lands on the candy counter was looked for and not found. Candy is on the second selling floor. The path to it is still open.
+- Gardners Candies is a mall shop on the second-floor corridor. Sweet Spot is a mall shop that opened into a walled-up food-court bay. Neither one is this counter.
+
+`THE-STORE.md` already locks mirrored ceiling islands as Boswell's signature, and it already wants an escalator well. Buda's memory is that room, in this building, from someone who later ran the floor. The 2022–23 remodel is the real store moving on. Boswell's keeps the older room.
+
+`THE-STORE.md` also stacks four sales floors, a basement, and a roof. That stack is the proposal of 26 October 2026. The witnesses on this building give two selling floors and an office level. This section does not retire that proposal. It is the pressure on it. A fourth sales floor, and a basement under this anchor, are filled inventions relative to what was found. `FreightLift` still wants a sub-basement these plans do not have.
+
+The furnished night stays the room that already exists. `FINDINGS-BOSWELLS-GEOMETRY.md` measured it at 2,800 by 1,800 cm, about 5,400 sq ft. One plate of the box below is about nine times that room. This section does not stretch the night up to the box.
+
+### The numbers, and they disagree
+
+| Figure | What it is |
+| --- | --- |
+| 160,000 sq ft | Tribune-Democrat, 21 September 2017, Mark Pesto. The lede calls the 1992 store "the 160,000-square-foot store," the first store to open in the Galleria and the chain's first location west of Harrisburg. The body past that sentence was not read. |
+| 101,300 sq ft | Section 8's secondary writeup, in the same list as Sears 125,800 plus a 6,000 sq ft auto center, JCPenney 101,000, and Bon-Ton 81,200. Section 8 already says that list is not a set of demising dimensions. It was not re-measured off TLP-1. The anchor interiors on that sheet are blank. |
+| 49,389 sq ft | Section 10's bounding rectangle of the directory box, at the bay scale of 708.91 cm a unit. 200.55 ft by 246.27 ft. Two plates are 98,778. Three full plates are 148,167. The up-facing fan in the mesh is smaller, and it is not the floor. |
+
+98,778 sits beside 101,300. 148,167 does not reach 160,000. Three copies of the rectangle are still about 12,000 sq ft short of the newspaper, which is a quarter of one plate and not a reason to extrude a fourth. The two published areas stay in conflict. They are not averaged. TLP-1's 100 ft bar still wins if a wall disagrees with the bay scale. No square footage is authored into the level.
+
+### What the shell can mark
+
+Inside the existing Boscov's volume, when Content is open for `LLK_Galleria_Shell`:
+
+1. A lower selling plate.
+2. An upper selling plate. Candy and the courtesy desk belong to this floor. Their plan position is unknown, so they are tags, not walls.
+3. An office level above them. It is shell. It is not a sales floor. Whether it is a full plate is unmeasured.
+4. One elevator shaft, three stops, serving the two selling floors and the office level. Schindler hydraulic. One car witnessed.
+5. One escalator well. The count is still open. Both ends are marked for a light.
+6. The mall face, where the walk already stops.
+7. The lot face, where `EXTRACT_LOADINGDOCK_CANDIDATE` and `DOCK_ANCHOR_BOSCOVS` already sit. Chris still names which end is Boswell's. Until he does, this face stays the candidate.
+
+The grilles stay down. Row 28 does not move. The night is still `LLK_Boswells_FirstRun`.
+
+**Operand.** The two selling floors a crew can walk, against a third plate copied up and dressed as more store, and against the four sales floors plus a basement in `THE-STORE.md`.
+
+**Floor.** An office level you cannot shop is shell. A third sales floor is a filled invention. A basement under this box is the same invention until a sheet shows one. A department layout taken from Annville, Wilkes-Barre, York, Camp Hill, or Colonie falls on contact.
+
+**Clock.** The elevator rides date the section. They do not date the area. No new foot until the 100 ft bar is in the editor.
+
+**Falsifier.** A county card, or a scaled sheet, that shows one selling floor. A sheet that shows the 160,000 as the two-floor area of this rectangle. A panel with only two stops. A counted frame that shows two separate escalator wells, which would reopen the one-well block and still would not import another store's plan.
+
+**Upside down.** The office floor is the part of the anchor that is not the store. The mirrored ceiling is how the lower floor sees a light it does not own. The grille on the mall face is a bigger wall than a corridor over the roof.
