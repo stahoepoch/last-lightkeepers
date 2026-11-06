@@ -60,6 +60,45 @@ whole 21 seconds is carried by debug-HUD text. Walking out pauses the hold —
 A player who calls it and steps away to deal with the Sweeper has not failed
 anything; he has stalled something he cannot hear.
 
+## Candidate 2 is weaker than it looked, and a third one is better
+
+Read the display path afterwards, which I should have done before ranking them.
+
+**The called beat is unmissable, so candidate 2 is probably not the bug.**
+`LLKExtractionReadout.cpp:107-126` puts `HOLD THE DOCK — 0:20` centre screen
+with `bUrgent` set, counting down, and `RECOVERY HOLDING — return to the dock`
+when it stalls — deliberately with no timer, because *"a number frozen on screen
+reads as a broken HUD rather than as a paused hold."* `LLKDebugHUD.cpp:391-407`
+draws `Readout.Centre` at `SizeX * 0.5`, in the urgent colour. A player who had
+called extraction would have seen large centre-screen text counting down and
+would not describe it as nothing happening. **So the fault is almost certainly
+upstream of the call**, which halves the search: it is about never reaching
+`CallExtraction`, not about not perceiving it afterwards. Candidate 2 remains a
+real gap — none of it has a *sound*, which is `C9b` — but it is not what Chris is
+reporting.
+
+**Candidate 3: a relic in view at the dock hides the call prompt completely.**
+The interactor resolves three focuses and the zone is last on purpose.
+`LLKInteractorComponent.cpp:57-62` says why, and the reasoning is good:
+
+> *"Lowest priority of the three, and resolved last for that reason: a keeper
+> standing in the bay reaching for a brooch on the dock floor takes the brooch.
+> Looking away from it is how they call."*
+
+`BeginInteract` branches in the same order, so E does the right thing and the
+prompt never offers a key that would do something else. **That part is correct
+and should stay.** What nobody wrote down is the consequence: when a relic is in
+focus, `bAtZone` is false at `LLKDebugHUD.cpp:318-321`, so the extraction prompt
+is not suppressed-but-visible, it is **absent**. There is no hint, no greyed
+line, nothing that says looking away is what calls the rig. The only way to
+discover the rule is to accidentally stop looking at the relic.
+
+The dock is the one place in the run where a player is most likely to be looking
+at loot: it is where the misrouted crate goes. So the state *"standing in the
+dock, something in view, no idea extraction exists"* is not an edge case, it is
+the expected approach. **Whether the prompt should say so is a design call and
+not mine to invent** — filed as `C13`.
+
 ## The one line that separates them
 
 `LLK.Extraction.Status` already exists and prints phase, point, siren, hold
@@ -74,6 +113,11 @@ to extract, then run it:
 | `Holding`, climbing | Working, and slower than it feels | Candidate 2 |
 | `Secured` | **It already worked and said so only in debug text** | Candidate 2, and it is the more urgent half |
 | The `EXTRACTION CANNOT COMPLETE` warning | The zone is not registered at all | Not candidate 1 — the actor or its `BeginPlay` is the problem |
+
+**One thing to try before the console, now that candidate 3 exists:** stand in
+the dock, **look at the floor or the wall rather than at anything pickupable**,
+and press E. If the prompt appears when it did not before, it is candidate 3 and
+no map work is needed at all.
 
 `LLK.CheckMap` is the other half, since it reports map readiness and already
 exists for this class of confusion.
