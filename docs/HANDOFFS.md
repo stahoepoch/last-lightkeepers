@@ -215,8 +215,14 @@ anything:
 bAutoStartServer=True
 ```
 
-Checked 2026-11-02: that section is **absent**, which is why every session has
-started with a manual `StartServer`. The two plugins the server needs,
+~~Checked 2026-11-02: that section is absent.~~ **WRITTEN 2026-11-05, so step
+0 is retired.** The section was still absent; it is now in the file. This was
+safe for anyone to do and sat undone for three days because it looked like
+somebody's lane - `.gitignore:43` ignores
+`Saved/Config/WindowsEditor/EditorPerProjectUserSettings.ini`, so it is
+per-user, uncommittable, and costs nobody anything. **Takes effect on the next
+editor launch**, and the bridge should then answer `127.0.0.1:8000/mcp` without
+anybody typing into a console. The two plugins the server needs,
 `ModelContextProtocol` and `AllToolsets`, are already enabled in the
 `.uproject`, so this one setting is the whole of what is missing. It takes
 effect on the next editor launch.

@@ -217,8 +217,13 @@ not live in C++ constants. One source, one owner, one diff.
    **not an App ID.** Online Subsystem Steam needs the App ID, and so does
    every build that wants friends-invite to work. One number, from the
    Steamworks dashboard.
-2. **Unreal Engine is not installed on this machine.** Verified today: the
-   Epic Games Launcher is present, no `UE_5.*` is. Nothing in the roadmap's M0
-   can finish until it is. See `docs/ROADMAP.md`, task M0.1 — it is his, and it
-   is the only true blocker in the project right now.
+2. ~~**Unreal Engine is not installed on this machine.**~~ **RESOLVED, and
+   this item was stale for days while calling itself the project's only true
+   blocker.** `UE_5.8` is installed at `C:\Program Files\Epic Games\UE_5.8`,
+   confirmed against the launcher's own `LauncherInstalled.dat` rather than by
+   finding a folder. It had plainly been true for a while - the live editor
+   reads behind `M1`, `M6` and check 1 could not have happened otherwise - so
+   the item outlived its own evidence. **Worth keeping visible rather than
+   deleting:** an open item that names itself the only blocker is the one most
+   worth re-checking before anyone plans around it, and nobody did.
 3. **The singular/plural title**, still open from `docs/PLATFORM.md`.
