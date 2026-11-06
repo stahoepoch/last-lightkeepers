@@ -212,7 +212,7 @@ bool FLLKExtractionReadoutTest::RunTest(const FString& Parameters)
 			Idle, false, 2, FName(TEXT("LoadingDock")), 1800.f, 0.f);
 		TestEqual(TEXT("carrying two names the count, the key and the way"),
 			Carrying.Objective,
-			FString(TEXT("Carrying 2  14 hold [E] at the Loading Dock, 18 m ahead")));
+			FString(TEXT("Carrying 2 \x2014 hold [E] at the Loading Dock, 18 m ahead")));
 
 		// **At the zone the prompt speaks instead.** The two never both talk,
 		// which is the whole of Chris's restraint instruction.
