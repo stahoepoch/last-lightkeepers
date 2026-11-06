@@ -590,8 +590,9 @@ Recorded here because its absence was a defect in this contract, not an
 oversight in the data.
 
 **Run length did not exist in `data/` at all.** It lived only in
-`src/shared/Config.luau` as `targetMaxSeconds`, which is frozen Luau (row 33)
-and does not port — so the single most-argued-about number in the project was
+`src/shared/Config.luau` as `targetMaxSeconds` - frozen by row 33, then
+removed with `src/` by `947a84b` on 2026-11-03 and readable at the tag
+`roblox-prototype-final`, so it does not port — so the single most-argued-about number in the project was
 unreadable by the engine this contract exists to feed. A data layer that cannot
 express the run's length is not a portable layer.
 

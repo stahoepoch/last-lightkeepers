@@ -148,16 +148,24 @@ failed want to go again immediately.
 
 ## 5. One visible Lanternhold improvement
 
-**Half built, 2026-10-26.** Chris chose this over the first store rung, and the
-systems side is done: `src/server/services/LedgerService.luau` holds the hall's
-rooms and the ledger board, `data/ledger.json` holds four rooms at 1 / 3 / 6 /
-10 crates - Chris's figures, kept on review on 2026-10-27 - the costs are
-committed out of a keeper's credited
-crates without ever subtracting from the credit, and only the host's rooms show
-or open. **What is missing is geometry** - four sealed doorways tagged
-`HallRoom` and one board tagged `LedgerBoard`, which is the map lane's. The tag
-contract is in `COORDINATION.md`. Until it is tagged, the service is a no-op,
-like every other hall fixture without its part.
+**Half built, 2026-10-26 - and the half that was built was built on Roblox.**
+Chris chose this over the first store rung. The systems side was done in
+`src/server/services/LedgerService.luau`, which held the hall's rooms and the
+ledger board, committed a room's cost out of a keeper's credited crates without
+ever subtracting from the credit, and showed or opened only the host's rooms.
+**That file is gone** - `947a84b` removed `src/` on 2026-11-03, and it is
+addressable at the tag `roblox-prototype-final`. So this section describes a
+working Roblox feature and **not** anything the Unreal build can do today.
+
+What did carry across is the values: `data/ledger.json` still holds the four
+rooms at 1 / 3 / 6 / 10 crates, Chris's figures, kept on review on 2026-10-27,
+and `DT_LedgerRooms` and `DT_LedgerRungs` are generated from it. **What is
+missing is no longer only geometry.** It was four sealed doorways tagged
+`HallRoom` and one board tagged `LedgerBoard`, with the tag contract in
+`COORDINATION.md` - which row 33 froze along with the prototype. On Unreal the
+service itself has to be rebuilt in `Source/LLK` before geometry is the
+blocker, and the no-op rule is the thing worth carrying over verbatim: until
+the parts exist, the system does nothing rather than crashing.
 
 **What it was before today.** `HubService` managed the lamp wall, the relic
 plinths, the roll board and three landmark plates. **There were no rooms that

@@ -356,3 +356,45 @@ document. The estimate looked like diligence, which is what made it invisible.
 | Does the file already measure what the calculation is estimating? | A table of real specs two sections above a derivation is either an input to it or a thing to rule out in writing. Nothing in between. |
 | Is the pivot where the hand is, or where the drawing is? | Model the object as it is *used*. A lantern pivots at the grip, not at the hinge nearest the body. |
 | Which conclusions would survive the input being 30% off? | The ones that do are the findings. The ones that do not need the measurement before anyone builds on them. |
+
+## The authored gate whose only caller is a test
+
+Two instances found a day apart, which makes it a shape rather than a bug.
+
+| | The gate | Its callers | What it means |
+| --- | --- | --- | --- |
+| `M14` | `ULLKExtractionSubsystem::SetRequirementSatisfied` | one, and it is the console command `LLK.Extraction.Satisfy` | `FreightLift` authors `requires: SubBasementBreakerRestored` and no path through the game can ever clear it |
+| `COMBAT.md` | `FLLKEnemyDef::CanBeDamaged()` | two, and both are automation tests | Five enemies author health, nothing in `Source/` applies damage, and the predicate that would decide it is never asked in play |
+
+**Why this is hard to see.** Every ordinary signal reads green. The field is
+authored in `data/`, the contract test asserts its type, the predicate exists
+and is spelled correctly, and a grep for the symbol finds callers — so
+"is it wired?" answers yes. The question that catches it is narrower: *is it
+called from anywhere a player's action can reach?* A test caller and a console
+caller both prove the code compiles and behaves; neither proves the mechanic
+exists.
+
+**It is the mirror of the failure this file already records about tests.**
+`M7` found `OnInteractableChanged` and `OnLegibilityChanged` bound **only**
+inside `LLKRelicTest.cpp`, which a `.AddDynamic` grep reports as wired while a
+player hears nothing. Same arithmetic: a symbol's callers are not evidence of a
+mechanism when the callers are instruments.
+
+### The standing check
+
+| Ask | Not |
+| --- | --- |
+| Can a player's input reach this call? | Does this symbol have callers? |
+| Is the only caller a test, a console command, or a commandlet? | Does it compile and pass? |
+| If I deleted the gate, would any playtest notice? | Would the suite go red? |
+
+The cheap version is one grep with the instruments excluded: search for the
+symbol, then subtract `Private/Tests/`, `FAutoConsoleCommand` blocks and the
+file that declares it. What is left is the mechanic. If nothing is left, the
+feature is a value in a JSON file and a sentence in a design doc.
+
+**And both instances were found the same way** — not by reading the gate, but by
+asking what happens to a player who tries to use the thing it gates. Chris could
+not extract, and could not damage anything. The gates were found downstream of a
+symptom, which is the only direction that works here, because upstream
+everything looks fine.

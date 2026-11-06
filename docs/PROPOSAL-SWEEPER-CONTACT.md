@@ -37,9 +37,10 @@ This is mostly a wiring job. Two things exist and are consumed by nothing:
 | `sweeperContact` ladder | `contactRange 5`, `contactCooldownSeconds 1.5`, `hitsToKnockDown 3`, `hitDecaySeconds 6` | Fully implemented in `LLKSweeperBrain`, and now resolves to nothing |
 
 **The Roblox prototype did implement the swarm call.**
-`src/server/services/EnemyService.luau` carries `patrolsAlerted`, and when the
-floor is alerted a Sweeper's reach becomes
-`math.max(reach, def.swarmCallRadius)`. So "alert other sweepers" is not a new
+`src/server/services/EnemyService.luau` carried `patrolsAlerted`, and when the
+floor was alerted a Sweeper's reach became
+`math.max(reach, def.swarmCallRadius)`. That file was removed with `src/` by
+`947a84b` on 2026-11-03; read it at the tag `roblox-prototype-final`. So "alert other sweepers" is not a new
 idea — it is shipped prototype behaviour that did not survive the port. Third
 authored-and-dead key this week, after `attractedToDroppedLoot` and the four
 cue delegates.

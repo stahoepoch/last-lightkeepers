@@ -19,9 +19,12 @@ ornate."*
 
 **The building that exists is laid out round one central hall.** The
 floor-by-floor tables further down are a reading of Chris's drawings and are
-kept as reference for what the real temple contains; they are NOT the layout
-in `src/map/LanternholdBuilder.luau` and nothing should be built from them
-without checking here first.
+kept as reference for what the real temple contains; they were NOT the layout
+built by `src/map/LanternholdBuilder.luau`, and nothing should be built from
+them without checking here first. That builder was removed with `src/` by
+`947a84b` on 2026-11-03 and is at the tag `roblox-prototype-final`, so on
+Unreal there is no competing layout yet - which makes this page the only
+description of the hall, and the warning more load-bearing rather than less.
 
 Chris, on the version that did follow the drawings room for room: *"the lift's
 placement and the whole arrangement of those hallways are bad... why can't the

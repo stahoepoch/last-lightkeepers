@@ -190,10 +190,15 @@ The seam is deliberate - the character exposes `MoveInput`, `LookInput`,
 binding scheme can be built and rebuilt without touching movement.
 
 **And the units question it had to answer first - O9.** Every spatial number
-in `data/` is in Roblox studs; `walkSpeed: 16` is literally Roblox's default
-humanoid walk speed. Read straight into `MaxWalkSpeed` that is 16 cm/s, a
-tenth of walking pace, which would read as a broken character controller
-rather than wrong units. `Source/LLK/Public/LLKUnits.h` converts at the
+in `data/` is in studs, inherited from Roblox. `walkSpeed` was **16** when this
+was written, which is literally Roblox's default humanoid walk speed, and that
+is what raised the question in the first place. **It is 8 at `HEAD`** - Chris
+halved every movement value on 2026-11-04 - so the hazard is unchanged in kind
+and smaller in size: read straight into `MaxWalkSpeed`, 8 studs becomes 8 cm/s,
+a twentieth of walking pace, which would read as a broken character controller
+rather than as wrong units. The 16 is kept because the argument is historical:
+the number that made the unit seam visible was Roblox's default, and that is
+the point. `FINDINGS-SPEED-SCALE-COPIES.md` tracks this as copy 7. `Source/LLK/Public/LLKUnits.h` converts at the
 boundary with one documented constant. Whether `data/` should be re-authored
 in centimetres instead is Chris's, and wants settling before M2 spreads the
 same tax across six enemies' ranges.
@@ -601,6 +606,12 @@ milestone against its acceptance criteria before calling it green.
 - Done today: the platform decision and its paper trail (`86c5bb8`,
   `312ea8a`, `7cde823`), these lanes and this roadmap, and the UE-ready git
   hygiene that M0.3 hands to Codex.
-- The Roblox prototype's 490 tests still pass and will keep passing — 98 of
-  them are data assertions that survive the engine change and are the reason
-  `data/` is worth carrying across at all.
+- ~~The Roblox prototype's 490 tests still pass and will keep passing.~~
+  **Retracted 2026-11-05: they do not exist.** `947a84b` separated the engines
+  on 2026-11-03 (row M10) and removed 45 Luau and Rojo files; there are now
+  **zero** `.luau` files in the repo and no `src/`. Everything addressable at
+  the tag `roblox-prototype-final`. **The claim's load-bearing half survived
+  and is the reason it was worth writing:** the data assertions did carry
+  across the engine change, and the node suite now runs **645** checks against
+  `data/` and the C++ sources with no engine present. That is why `data/` was
+  worth carrying, which is what this bullet was really saying.

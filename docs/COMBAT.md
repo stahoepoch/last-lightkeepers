@@ -11,10 +11,22 @@ contradiction the project has been carrying since the handoff.
 ## The contradiction, stated plainly
 
 - **`data/enemies.json` gives five of the six enemies a health value** — 40,
-  160, 25, 80, 55 — and `src/server/services/EnemyService.luau` writes them
-  onto a real Humanoid in four places. **Nothing in the game can reduce them.**
+  160, 25, 80, 55 — and **nothing in the project can reduce any of them.**
   Every enemy in the build is walking around with a health bar nothing can
   touch.
+
+  *Re-grounded 2026-11-05, same conclusion, Unreal evidence.* This cited
+  `src/server/services/EnemyService.luau` writing onto a Humanoid, and that
+  file no longer exists — `947a84b` removed `src/` entirely. The contradiction
+  did not go with it; it got **sharper**. `FLLKEnemyDef::Health` is a
+  `TOptional<float>`, deliberately, so that *"the Warden has no health"* is
+  expressible rather than *"the Warden has zero health"*, which any damage
+  routine would read as already dead. `CanBeDamaged()` is the predicate that
+  answers the question — and its only two callers are
+  `LLKPerceptionTest.cpp:279` and `LLKPerceptionFailureTest.cpp:456`. There is
+  no damage application anywhere in `Source/`. So the gate is authored, tested,
+  and has no gameplay caller at all, which is the same shape as
+  `HANDOFFS.md` row **M14**.
 - **`data/loot.json` says a crate carrier `blocksCombatWhileCarried`**, with the
   note *"a carrier cannot fight normally."* That field describes a combat
   system, and it is the only mention of one.

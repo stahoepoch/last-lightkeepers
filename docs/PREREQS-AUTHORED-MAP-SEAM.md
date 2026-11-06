@@ -135,11 +135,16 @@ about this one:
 - **`tests/map-readiness.test.mjs`** (72 checks) is a prose-and-source
   agreement check between `LLKMapReadiness.h` and `docs/MAP-READINESS.md`. A
   substring scan, by design. It would pass against an empty map.
-- **`tests/map-contract.test.mjs`** (6 checks) reads
-  **`src/map/GalleriaBuilder.luau`** — the frozen Roblox prototype, last
-  touched `1dbcdd8` on 2026-10-22. It guards the Relay Annex of a build that is
-  no longer the game. It will pass forever regardless of what `LLK_DockBay`
-  does.
+- ~~**`tests/map-contract.test.mjs`** (6 checks) reads
+  **`src/map/GalleriaBuilder.luau`**.~~ **Resolved by deletion, noticed
+  2026-11-05.** Both files are gone: the test went in `9675b61` (*"draw the
+  engine boundary: npm test is the Unreal game again"*) and the builder with
+  `src/` in `947a84b`. The concern was real and is now moot - it guarded the
+  Relay Annex of a build that is no longer the game, and would have passed
+  forever regardless of what `LLK_DockBay` did. **Worth keeping as the record
+  of what a guard pointing at the wrong world looks like**, since that is the
+  failure this page exists to describe and the suite has since grown guards of
+  the same shape pointed at the right one.
 
 ### What the coverage gap actually is
 

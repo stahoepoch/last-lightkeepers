@@ -330,3 +330,39 @@ and the thing that made it findable was the board having written down its own
 falsifier. The lesson is not "check the docs" — it is that a doc full of
 numbers should carry the rule that decides between it and the data, in the doc,
 where the next reader will hit it.
+
+### Copy 7, 2026-11-05 — in the argument for why the units seam exists
+
+Found while separating the historical Roblox mentions in `docs/` from the ones
+still speaking in the present tense, which is the job row **M10** deliberately
+left behind.
+
+`ROADMAP.md`, in the O9 units argument: *"Every spatial number in `data/` is in
+Roblox studs; `walkSpeed: 16` is literally Roblox's default humanoid walk
+speed. Read straight into `MaxWalkSpeed` that is 16 cm/s."* `walkSpeed` is **8**
+at `HEAD`.
+
+**This copy is different from the six before it, and the difference is why it
+was left in place rather than replaced.** The other six were numbers being used
+as facts. This one is a number being used as *evidence for an argument about
+units* — and the argument needs the number that was there when the seam was
+noticed. 16 was Roblox's default humanoid speed, which is exactly what made the
+unit mismatch visible. Overwrite it with 8 and the sentence still parses but
+stops being true about Roblox and stops explaining why `LLKUnits.h` exists.
+
+So the fix was to date it: 16 when written, 8 at `HEAD`, and the hazard
+unchanged in kind and smaller in size — 8 studs read straight in is 8 cm/s, a
+twentieth of walking pace rather than a tenth. **The lesson for the next copy:
+ask what work the number is doing before correcting it.** A stale fact should be
+replaced. A stale number inside a historical argument should be dated, because
+replacing it destroys the argument it was there to support — and that is the
+same mistake, in the other direction, as leaving it alone.
+
+### One more thing the same sweep found, which is not a speed
+
+`ROADMAP.md` also claimed *"the Roblox prototype's 490 tests still pass and will
+keep passing."* They do not exist: `947a84b` removed 45 Luau and Rojo files on
+2026-11-03, and the repo now has zero `.luau` files and no `src/`. The
+load-bearing half of that claim survived, which is why it was worth writing in
+the first place — the data assertions did carry across the engine change, and
+the node suite now runs **645** checks with no engine present.
