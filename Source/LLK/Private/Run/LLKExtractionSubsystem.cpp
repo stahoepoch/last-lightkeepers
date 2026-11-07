@@ -368,9 +368,17 @@ void ULLKExtractionSubsystem::Tick(float DeltaTime)
 	const ULLKRunStateSubsystem* Run = GetRunState();
 	const bool bCrewWiped = Run != nullptr && Run->HasCrewWiped();
 
-	// Idle and nothing to report: no state machine, no snapshot, no cost.
+	// Idle and nothing to report: no state machine, no snapshot, no cost -
+	// after the first frame. The readout cannot describe a snapshot that has
+	// never been published, so an idle run that never published one left the
+	// HUD silent about extraction for the entire run, the dock's own prompt
+	// included. See `bEverPublished`.
 	if (State.Phase == ELLKExtractionPhase::Idle && !bCrewWiped)
 	{
+		if (!bEverPublished)
+		{
+			PublishSnapshot();
+		}
 		return;
 	}
 
@@ -574,6 +582,12 @@ void ULLKExtractionSubsystem::PublishSnapshot()
 	Snapshot.bPublished = true;
 
 	GameState->PublishExtractionSnapshot(Snapshot);
+
+	// Set here rather than at the call site, because every early return above
+	// is a frame where nothing was published and the idle path must try
+	// again next frame - a GameState that does not exist yet being the
+	// ordinary case on the first frame of a run.
+	bEverPublished = true;
 }
 
 // ---- console commands ----------------------------------------------------

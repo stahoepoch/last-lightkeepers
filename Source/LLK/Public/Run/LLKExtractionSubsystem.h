@@ -253,6 +253,29 @@ protected:
 	/** Logged once per call rather than once per frame. */
 	bool bWarnedAboutMissingZone = false;
 
+	/**
+	 * Whether a snapshot has ever reached the GameState this run.
+	 *
+	 * **The idle readout was unreachable without this.** `Tick` returned
+	 * early while idle - "no state machine, no snapshot, no cost" - so
+	 * `FLLKExtractionSnapshot::bPublished` stayed false for the whole of the
+	 * idle phase, which is the whole run until someone calls. And
+	 * `LLKExtractionReadout::Describe` refuses to say anything about an
+	 * unpublished snapshot, correctly: before the server has spoken, a
+	 * default snapshot and a genuine idle one are identical.
+	 *
+	 * So every line in the Idle branch was dead in play - the objective, and
+	 * the dock's own "Hold [E]" prompt with it. Chris reported not knowing how
+	 * to extract three times, each time against a HUD that could not speak.
+	 * Every test built a published idle snapshot by hand, so none of them
+	 * could see it.
+	 *
+	 * One publish, once, is all idle needs: the phase does not change while
+	 * nothing is happening, so there is nothing to keep republishing and the
+	 * early-out's reasoning still holds for every frame after the first.
+	 */
+	bool bEverPublished = false;
+
 	float SecondsSinceSnapshot = 0.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Extraction", meta = (ClampMin = "0.05"))

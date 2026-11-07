@@ -573,6 +573,61 @@ for (const rel of [PURE_HEADER, PURE_IMPL, SUBSYSTEM_HEADER, SUBSYSTEM_IMPL, TES
   );
 }
 
+// ---- 7. the idle readout has a snapshot to describe -------------------
+//
+// **The whole idle HUD was unreachable in play and every test passed.**
+// `Describe` refuses to speak about a snapshot with `bPublished` false, which
+// is right: before the server has spoken once, a default snapshot and a
+// genuine idle one are identical. But `Tick` returned early while idle -
+// "no state machine, no snapshot, no cost" - so nothing ever published one,
+// and `bPublished` stayed false for the whole run until somebody called
+// extraction. By then the phase is not Idle any more.
+//
+// So the objective line, and the dock own `Hold [E]` prompt with it, were
+// dead in the game while fully covered by tests - because section 4b and
+// `LLKExtractionReadoutTest` both construct a PUBLISHED idle snapshot by
+// hand. Chris reported not knowing how to extract three times, against a
+// HUD that structurally could not answer.
+//
+// Guarded from both ends: there are two ways to make this green and only
+// one of them is the fix.
+{
+  const subsystem = stripComments(read(SUBSYSTEM_IMPL) ?? "");
+  const readout = stripComments(read(READOUT_IMPL) ?? "");
+
+  // Sliced to the early-out own `return;` rather than searched file-wide:
+  // PublishSnapshot appears five other times here, every one on a path that
+  // is already underway.
+  const idleAt = subsystem.indexOf("ELLKExtractionPhase::Idle && !bCrewWiped");
+  const idleBlock = idleAt < 0
+    ? ""
+    : subsystem.slice(idleAt, subsystem.indexOf("return;", idleAt));
+
+  check(
+    "the idle early-out could be sliced",
+    idleBlock.length > 0,
+    "the condition this section reads has moved, so the assertion below " +
+      "would pass vacuously - which is how the bug it guards survived",
+  );
+  check(
+    "an idle run publishes a snapshot before it stops ticking",
+    idleBlock.includes("PublishSnapshot()"),
+    "without this the readout has nothing to describe, so the objective " +
+      "line and the dock prompt are both dead in play while every test " +
+      "that builds its own published snapshot stays green",
+  );
+
+  // **And the wrong fix stays closed.** Deleting the bPublished guard would
+  // also make the idle line appear - on a default-constructed snapshot,
+  // which is a prompt offering a key before the server agrees there is one.
+  check(
+    "and the readout still refuses an unpublished snapshot",
+    /if\s*\(\s*!\s*Snapshot\.bPublished\s*\)/.test(readout),
+    "the other way to turn this green is to stop checking whether the " +
+      "server has spoken, which trades a silent HUD for a lying one",
+  );
+}
+
 console.log(`\n${checks - failures}/${checks} passed`);
 if (failures > 0) {
   console.log(`${failures} FAILED\n`);
