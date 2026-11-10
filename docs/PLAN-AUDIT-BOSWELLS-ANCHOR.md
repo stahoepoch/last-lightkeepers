@@ -18,6 +18,43 @@ that most likely explain what he played — D1 and D2 below — are transform
 errors, and both are fixed by moving actors rather than by having a plan.
 The plan is for after that.
 
+## Phase 1 has landed, 2026-11-09
+
+Chris said *"fix the map."* `Tools/fix_anchor_map.py`, run headless through
+`Tools/run_editor_python.ps1` with no editor open, applied **B7 step 1** and
+saved: **22 re-seated, 2 moved, 6 deleted, 1 added.** The map went from 108
+actors to 103.
+
+| Defect | State |
+| --- | --- |
+| D1 every box floating | **closed** — all 22 now sit on their plate |
+| D2 the ramp into a solid slab | **closed by deletion** — B2 puts the well in the atrium |
+| D3 guardrails off the deck | **closed** — deleted with the ramp |
+| D5 two relics on one transform | **closed** — the radio moved to the teens block |
+| D6 patrol on the dock approach | **closed** — moved to (−1400, 2100) |
+| D7 no exit signage | **opened** — one red `EXIT` over the dock |
+| D8 three `_TEST` actors | **closed** — deleted |
+| D4, D9–D13 | **open** — phases 2 to 4, and B8 is Chris's |
+
+Verified three ways rather than once: the script logged each change, a second
+run reported `0 re-seated, 0 moved, 0 deleted` against the same map, and
+`Tools/read_map_transforms.py` decoded the saved file independently and
+agreed to the centimetre on all 22. `npm test` is 90/90.
+
+Two consequences of this pass worth stating plainly:
+
+- **`DEPT_LOADING_APPROACH`'s top is now z 40**, under the 45 cm step, so the
+  straight line from spawn to the exit is walkable for the first time.
+- **The upper floor has no route at all** until the escalator exists, which
+  it did not have before either — the ramp stopped a body at about z 461.
+  `ANCHOR_RELIC_TEDDY` is still up there and still unreachable. That is B7
+  step 2, not a regression.
+
+**The map is still untracked.** `Content/LLK_Boswells_Anchor.umap` has never
+been committed, so none of this is in version control and the only copy of
+the pre-fix file is a backup outside the repository. Whether that asset gets
+committed is Chris's call under row 24 and `LANES.md:108`.
+
 ## How this was read, and what it cannot say
 
 The map was not opened. Every number in Part A comes from decoding the

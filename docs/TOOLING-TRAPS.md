@@ -700,3 +700,69 @@ That last row is its own small lesson: the first draft of
 times in the package. It reached the right conclusion through an instrument that
 could not have reached any other one.
 
+
+---
+
+## 20. `unreal.log` does not reach stdout, and row 19's ban on reading transforms has one structural exception
+
+Both found on 2026-11-09, applying phase 1 of
+`docs/PLAN-AUDIT-BOSWELLS-ANCHOR.md` through
+`Tools/run_editor_python.ps1`, with no editor open.
+
+**The signal.** A headless `-run=pythonscript` run was piped to a log. The
+log contained the engine's own startup chatter and **not one line the script
+printed**. The obvious reading is that the script did nothing. It had
+re-seated 22 actors in memory and was about to save.
+
+`unreal.log`, `log_warning` and `log_error` go to
+`Saved/Logs/LastLightkeepers.log`. They do not go to stdout, even with
+`-stdout`, which forwards the engine's log categories and not the Python
+shim's. Every script in `Tools/` that runs this way now prints to both.
+
+**The near-miss beside it.** The first run exited **255** on a Python
+exception, so a non-zero code here is real - better than row 1's `Build.bat`.
+What is still not safe is reading **0** as success: a script that loads the
+wrong map, refuses its own precondition check, or applies every edit and then
+fails the save all exit 0. Read the line the script prints about whether it
+saved. `fix_anchor_map.py` prints `SAVED` with counts, or an error saying the
+edits were applied in memory and the file on disk is unchanged.
+
+### The exception to row 19, and why it is one
+
+Row 19 says a byte scan can confirm a value you brought with you and must
+never be asked *"what is this actor's transform?"*, because the only link
+between a name and a number is proximity, and proximity in a serialized
+package is not ownership. **That reasoning is correct about the method it
+describes and does not cover a structured record.**
+
+A saved non-partitioned level carries one descriptor per actor: a
+`path,class,base64,None` record whose decoded bytes are the actor's guid,
+its class name as a length-prefixed string, then **exactly ten doubles** -
+quaternion, translation, scale - then its editor label. The label and the
+numbers are inside one record of known layout. Nothing is inferred from
+distance. `Tools/read_map_transforms.py` reads this, and it is what produced
+the audit's part A.
+
+**It was validated rather than asserted.** The decoder predicted 22 specific
+wrong Z values; the editor, loading the same map through its own API,
+reported those same 22 values as it corrected them; the decoder then read the
+corrected map back and agreed with the editor's arithmetic to the centimetre
+on all 22. Three independent passes over one fact.
+
+Two limits stay, and they are the reason this is an exception and not a
+replacement for opening the editor:
+
+- **It reads the descriptor index, not the export table.** The descriptors
+  are written from the actors on save, so they agree on a map the editor
+  saved. A map written by anything that does not refresh them would read
+  stale here while being right in game.
+- **A transform is not collision and not bounds.**
+  `FINDINGS-BOSWELLS-GEOMETRY.md` already separates those two; this is a
+  third thing again, and all three can disagree. The audit's claim that a
+  body cannot climb the west ramp rests on `/Engine/BasicShapes/Cube`
+  carrying its default collision, which is an assumption a trace would
+  settle and a decode never can.
+
+**The rule, amended.** Ask a byte scan for a value you brought with you, or
+for a field inside a record whose layout you can state and whose name sits in
+the same record. Never ask it for a number you found by looking near a name.
