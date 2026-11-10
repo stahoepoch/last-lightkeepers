@@ -1,5 +1,34 @@
 # Handoff — Codex — X6, the LFS lock check: three things the filing does not have
 
+> **CLOSED. X6 closed on 2026-11-05 by `ea928d3`**, which carried the three
+> Sweeper cue wavs — *"Uploading LFS objects: 100% (3/3), 249 KB, done."* —
+> and that is the push this document asked for. `docs/HANDOFFS.md` row X6 has
+> the full closure. Nothing below is a live problem. It is kept as the record
+> of the diagnosis, because this file is **why** the closing test was changed
+> from a text-only push to one carrying a real object.
+>
+> **Further evidence, 2026-11-09.** `0c0c921` pushed
+> `Content/LLK_Boswells_Anchor.umap` — *"Uploading LFS objects: 100% (1/1),
+> 230 KB, done."* `git lfs push --dry-run` reports nothing outstanding and
+> `git lfs locks` exits 0 with no rows. So both the verify call and the
+> transfer path are working, now on two independent pushes.
+>
+> **And a correction I owe this file.** On 2026-11-09 I wrote, in
+> `0c0c921`'s own commit message and twice in conversation, that that push
+> was *"the first LFS object this repository has committed since X6"* and
+> that it closed X6's test. **Both are wrong.** `ea928d3` did it four days
+> earlier, X6 was already struck through in `docs/HANDOFFS.md`, and the row
+> says so in the sentence that closes it. I planned against a document
+> instead of reading the ledger that exists precisely so nobody does that —
+> which is, exactly, the failure `HANDOFFS.md`'s own preamble was written to
+> fix. The commit message is pushed and is not being rewritten; this is the
+> correction.
+>
+> **The live row is X8, not this one:** a fresh clone has none of the four
+> `git lfs install` hooks, because they are untracked. That is Codex's, it is
+> §2 below, and a second machine does not hit a loud failed push — it hits
+> LFS objects that silently never upload.
+
 **Status:** nothing changed. No config set, no hook touched, no `--no-verify`.
 **Lane:** LFS config, `.gitattributes` and `.gitignore` are yours. Everything
 below is read-only verification from this checkout.
@@ -131,7 +160,9 @@ question.
 
 ## Two commits waiting
 
-`d5f2943` and `53163bb` are on `master` in this shared checkout, two ahead of
-`origin/master`. They are not stranded on a branch — nobody needs to remember
-them. They go out with the next push from this directory that succeeds, by
-whoever makes it.
+~~`d5f2943` and `53163bb` are on `master` in this shared checkout, two ahead
+of `origin/master`.~~ **Both went out on 2026-11-05**, with `d183234` and
+`933d6cb`, on a retry with nothing changed — which is the evidence for the
+transient-fault reading in §1 over the config line git-lfs suggested. As of
+`0c0c921` the checkout is in sync with `origin/master` and there is nothing
+waiting.

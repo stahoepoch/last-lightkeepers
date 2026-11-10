@@ -61,5 +61,7 @@ a dark prop, it simply lights backwards.
 Nothing has been imported. `ASSET-INTAKE.md` step 4 requires Unreal's
 **Asset Actions → Migrate** into `/Game/ThirdParty/PolyHaven_Television_01/`,
 not a file copy, and step 7 says to check Git LFS before pushing — `*.fbx` and
-`*.tga` are LFS patterns and the LFS pre-push path is currently failing
-(`docs/HANDOFF-CODEX-LFS-LOCK-VERIFY.md`).
+`*.tga` are LFS patterns. ~~The LFS pre-push path is currently failing~~ —
+**no longer true: X6 closed 2026-11-05 by `ea928d3`, and `0c0c921` pushed a
+230 KB `.umap` clean on 2026-11-09.** The transfer path works.
+See `docs/HANDOFF-CODEX-LFS-LOCK-VERIFY.md`.
