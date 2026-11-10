@@ -1,5 +1,76 @@
 # The pivot deletes the loop and keeps the point, and the point is already written
 
+> ## CORRECTED the same day, and most of the correction is against me
+>
+> Chris's reply was four words: **"The mall doesn't go anywhere."** Checking
+> that sent me to five documents I had not read when I wrote this page, and
+> four of this page's claims do not survive them.
+>
+> **1. The mall goes somewhere, in three written directions.**
+> `docs/CAMPAIGN-SHAPE.md` opens: *"Chris has locked the structure: a
+> forward-moving story, one canon sequence, chapters that become replayable
+> afterwards, and a world that has moved every time you come back.
+> Lanternhold → the Galleria → the railyard → the Galleria changed."*
+> `docs/QUESTS.md` rung 5 opens *"the next mall section."* And
+> `data/loot.json`'s `SubBasementBreakerRestored` is a door down that
+> `THE-MALL-IS-STILL-TRADING.md` §12 already notes *"wants a sub-basement
+> these plans do not have"* — which is a problem for a real building and a
+> premise for a secret one.
+>
+> **2. The progression spine is not missing. I said the commit point was
+> "the one real hole." It is written.** `QUESTS.md` holds Chris's own opening
+> five rungs from 2026-10-26, each one a practical recovery job that opens a
+> route and wakes an enemy — *"The player is not simply leveling up — they
+> are rebuilding the tools needed to reach farther into a place that notices
+> it is being reopened."* `CAMPAIGN-SHAPE.md` adds the fantasy: *"You start
+> as a trespasser and end as something the mall half-recognises."* That is
+> an answer to his `??`, it is his, and it predates mine by two weeks.
+>
+> **3. "They all get taken" is LOCKED, with a contract.** Rows **49** and
+> **50**, `docs/CONTAINED-KEEPERS.md`, 2026-10-28: *"I would call them
+> contained keepers, not hostages... processed someone as a problem to be
+> moved, quarantined, secured, or held until an authority arrives that never
+> will."*
+>
+> **4. So my co-op idea is the specific thing a LOCKED row forbids.** Row
+> **50**: *"Co-op is never gated behind progression. Rescued keepers are the
+> fiction for why a crew exists; they are never the unlock that permits
+> one"* — and the row says it was written as its own row because the
+> opposite *"is a tidy progression design that someone would otherwise
+> build: keepers rescued → party slots unlocked."* That is, word for word,
+> what I proposed below. **Withdrawn.** What survives is the half row 50
+> permits: a rescued keeper may be a character or a capability, never a
+> permission, and three friends play together on the night they buy it.
+>
+> **And the robots are already better than "military vibes."**
+> `docs/THE-WORK.md`: *"This storm did not invent a villain. It woke every
+> system that never received a shutdown order... They contain, clear,
+> restock, lock, and wait for a supervisor who is not coming."* Row **47**
+> locks it. A secret base staffed by soldiers is a weaker idea than a
+> department store still trying to prevent loss.
+>
+> **What is actually new in his message, then, is the child.** That is one
+> decision, it is real, and it is the expensive one — see the sightline trap
+> below, which stands.
+>
+> **The withdrawn claim that matters most**: that the mall research is this
+> pivot's sunk cost. It is not. The ladder, the chapters, the valley
+> (`THE-VALLEY.md`, `VALLEY-TERRAIN.md`), the containment contract and the
+> relics are all setting-agnostic or already valley-shaped.
+>
+> **The real diagnosis.** The mall goes somewhere on paper and nowhere in
+> the build. There is no rung 1, no hub, one furnished room, and nothing that
+> opens a route. *That* is what "doesn't go anywhere" describes, and a pivot
+> does not fix it — building rung 1 does.
+>
+> **Three times in one day I planned against a document I wrote while a more
+> authoritative one sat unread**: X6 (closed four days earlier, in the
+> ledger), the progression hole (written in `QUESTS.md`), and row 50. The
+> instrument for this already exists and I did not use it —
+> `docs/HANDOFFS.md`'s own preamble is about exactly this failure. Read
+> `DECISIONS.md` and the index in `THE-WORK.md` **before** writing a design
+> page, not after a four-word reply.
+
 Status: **proposed**, 2026-11-09, from Chris's own message, which is the source
 for every intention below:
 
