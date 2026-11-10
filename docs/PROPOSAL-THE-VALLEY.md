@@ -345,3 +345,226 @@ and the thing it was pulling you away from — a dark room with one object in it
 that tells you about a person who is gone — was always the point. He is not
 pivoting away from what he built. He is deleting the part that kept
 interrupting it.
+
+---
+
+# Adjudication — Codex's version, 2026-11-09
+
+Chris relayed Codex's reply, opening *"Yes. I think this is the game."* This
+section is the adjudication he asks me for. **Verdict: adopt it. It is better
+than the version above in four places, it collides with locked rows in three,
+and it has one real hole.** Everything below is checked against the repository
+rather than against the proposal.
+
+## Where Codex is right, and where he is better than I was
+
+**Extraction demoted rather than deleted, with "return" as the replacement.**
+*"Leaving a place is a real act: choose the front gates and alarms, a service
+route and risk, or a route you have earned by making the building half-
+recognize you."* That last clause is `CAMPAIGN-SHAPE.md`'s locked progression
+fantasy — *"you start as a trespasser and end as something the mall half-
+recognises"* — arriving as a mechanic instead of a theme. This is the single
+best idea in his message.
+
+**12 or 13, not 9-13, and the narrowing is what saves the project's geometry.**
+See the measurement below. He gives the design reason — *"old enough to act,
+young enough that every huge empty building feels enormous and every adult
+system feels incomprehensible"* — and it happens to also be the only part of
+that range the existing numbers survive.
+
+**The Lamplighters as a network of ordinary people, not a military faction.**
+Correct, and already locked: row 47 and `THE-WORK.md` have the machines
+executing *"degraded maintenance, safety, stocking and loss-prevention
+instructions"* and waiting *"for a supervisor who is not coming."* A secret
+base staffed by soldiers would be a weaker antagonist than a department store
+still trying to prevent loss.
+
+**Storms as world-state rather than timers**, with *"flooded routes, snowbound
+rail cars, outages, malfunctioning machines, seasonal stock rotations, changed
+access."* This is better than my "tide", which cycled. His is persistent, and
+it is already half-designed: `CAMPAIGN-SHAPE.md` section 1 makes the railyard
+the **physical cause of the mall's calendar**, so seasonal rotation has a place
+the player can go and change.
+
+**And his answer to the hub trap beats mine.** I proposed moving relic text
+out of the Keeping Room so the hub was not load-bearing. He splits the two
+currencies instead: *"Materials build Lanternhold, but people and discoveries
+advance the mission."* The hub can lag arbitrarily without blocking the story,
+and the twenty written plaques keep their *"bring one home"* delivery. **My
+version is withdrawn in favour of his.**
+
+## The measurement: 12-13 is the choice the geometry survives
+
+I told Chris last turn that my 9-13 eye-height range was unverified. It was,
+and the check changes the answer.
+
+No child **eye-height** dataset came back; every source is stature. Boys' 50th
+percentile stature is about **149-151 cm at 12** and about **156 cm at 13**,
+and the sources disagree by several centimetres at the same age. Eye height is
+conventionally about 0.92-0.93 of stature, slightly lower in children because
+the head is proportionally larger — **so an eye at roughly 138 cm at 12 and
+143-146 cm at 13.** That ratio is an engineering rule of thumb, not a sourced
+child figure, and the honest instruction is at the end of this section.
+
+Against the authored floor — eye **152**, clothing runs blocked at **137**,
+lantern at rest **133**:
+
+| Keeper | Eye | Clears a 137 run by | Lantern at rest | Mechanic |
+| --- | --- | --- | --- | --- |
+| Adult, as authored | 152 | **15 cm** | 133 | intact |
+| 13-year-old | ~143 | **~6 cm** | ~124 | **intact, tighter** |
+| 12-year-old | ~138 | **~1 cm** | ~119 | borderline |
+| 9-year-old | ~125 | **−12 cm** | ~106 | **inverted** |
+
+Two things fall out.
+
+**Codex's narrowing is load-bearing, not cosmetic.** At 9 the entire sales
+floor read inverts and every sightline in the project re-derives. At 13 it
+survives with a *smaller* margin, and a smaller margin is arguably the better
+game: seeing over a run stops being comfortable and becomes a thing you have
+to stand up straight and commit to.
+
+**The lantern relationship strengthens for free.** `LanternAnchor` hangs off
+the camera, so a shorter keeper carries a lower lamp: the gap between the
+resting lantern and the top of a run widens from 4 cm to about 13. Hooding
+your light gets easier exactly as seeing over things gets harder, which is a
+coherent pair rather than a wash.
+
+**The instruction, and it is this project's own rule.** Do not derive this
+number — **measure it.** Build the 13-year-old capsule, stand it in
+`LLK_LanternWalkLab`, and trace. `FINDINGS-BOSWELLS-GEOMETRY.md`'s trap says
+it in so many words: *"Trace for anything that has to be true."* The fixture
+height that restores an adult-sized 15 cm of margin is then arithmetic, and it
+is Chris's under audit B8 and the `data/` lane.
+
+## Three collisions with locked rows
+
+**1. The inciting mission cannot be playable at the airport. Row 43 is
+LOCKED:** *"The department store is the tutorial. There is no separate
+tutorial, no training level and no tutorial mode."* `CAMPAIGN-SHAPE.md`
+section 4 adds that the curriculum has to **finish inside the first Galleria
+chapter.** Codex's own list puts the airport in the register where *"the world
+gets more controlled, more intentional"* — which is a late-game voice. So the
+disappearance is **pre-play or offscreen**: a radio call, a page in a ledger, a
+route that stops. *"The player gets separated with the issued lamp"* is a
+strong opening image and it should be the first thing you are told, not the
+first thing you play.
+
+**2. "Boswell's: first real refuge" needs reconciling with row 28**, which is
+*one **sealed** department store*, grilles down, and with `THE-NIGHT.md`'s
+every-place-still-finishing-its-last-job. Refuge and hostile-tutorial are
+different jobs and "refuge" is a promise. The reading that keeps both: the mall
+is the refuge you have to **make**, and making it is the curriculum. That needs
+saying rather than assuming, because a player told "refuge" and handed a
+loss-prevention system will read it as a bug.
+
+**3. Five locations is "free world" enumerated.** Boswell's, railyard,
+downtown, airport perimeter, underground facility, plus Lanternhold. Row 28
+says version one is one sealed store and *"the rest is earned, not cut"*, and
+`PRODUCTION-CONTROL.md` holds. The through-line is right and should be written
+down; what it still does not name is **chapter one's deliverable**. The build
+today is one room at 3.7% fixture coverage with nothing in it that opens a
+route.
+
+## The one real hole: a voluntary commit point is a menu
+
+*"You can leave when you choose"* plus *"the world moves on — but it does not
+eject you from it"* removes every force from the design. Three exits with no
+pressure is not a decision, it is a menu, and players optimise menus: always
+the safest route, always early. Extraction's teeth were that something was
+coming.
+
+**The fix is already built, and it needs no timer.** Zone Pressure is
+monotonic — `LLKNightStage.h`, row 64: it *"permanently increases what the
+building is AUTHORIZED to do"* and `Index` can only rise. So let pressure
+**close exits one at a time** rather than eject anyone:
+
+> Early, the front gates are survivable. Later they are not, and the service
+> route is the only way out — and whether you have earned the service route was
+> decided by what you did on the way in.
+
+Nothing pushes the player out of the building. The building quietly withdraws
+its cheap doors, in a direction that only goes one way. The decision becomes
+*"leave now by the easy door, or stay longer and own the hard one,"* which is
+Codex's three-route choice with the teeth put back, built entirely from parts
+that exist. It also gives rung 5 — *"Open the Loading Dock Gate"*, which
+*"hands the Warden a route"* — its exact meaning: you built a door, and the
+door is a door in both directions.
+
+## One architectural note, and it is cheaper than it looks
+
+*"Set it down to create a temporary safe working pool — but you need it back to
+operate doors, routes, and the world's infrastructure."* Best new mechanic in
+the message: light here or light there, every second, with no UI.
+
+I expected this to be the expensive ask. It is not. `FLLKLightSource` carries
+**position, intensity, radius and detectability — and no owner**, so the storm
+field already treats light as a place in the world rather than as a thing a
+keeper holds. A set-down lamp needs one change: `GetGameplayLightLocation`,
+which today *"derives from the owner's capsule and an authored eye height"*,
+must return a dropped lamp's own transform.
+
+And that function already has a branch for an unparented lantern — the dead
+240 cm fallback that `FINDINGS-LANTERN-ANCHOR-ORIGIN.md` retracted a bug report
+about. **The set-down lamp is what that branch was always for.** It stops being
+unreachable arithmetic and becomes the feature.
+
+The cost model needs no new rule either: `GetLitLanternCount` already charges
+pressure for any lit lantern, so a lamp left burning in a corner still costs
+you the night it is buying. Which is the correct answer, and nobody has to
+author it.
+
+## Naming
+
+Codex writes "Lamplighters" throughout; the project is Lightkeepers, row 19
+names the anchors, and the Steam title is already decided. A rename is Chris's
+and it has a store cost, not just a repo cost. Worth one line from him before
+either of us writes it into a document again.
+
+## The rows this now proposes
+
+Replacing the four above.
+
+1. **The player is 12 or 13.** Eye height becomes a measured value from a built
+   capsule, not a constant; fixture heights re-derive from it.
+2. **Extraction is demoted to "return": one tense action inside a story, with
+   the route out chosen between the front gates, a service route, and a route
+   you earned.**
+3. **Zone Pressure closes exits rather than ending runs.** Whether
+   `baselineRatePerSecond` stays non-zero is Chris's, but nothing ejects the
+   player from a place.
+4. **Storms change the world and never count down.** Seasonal rotation is
+   caused by the railyard, per `CAMPAIGN-SHAPE.md` section 1.
+5. **The lamp is a placeable light source.** It identifies systems, never
+   enemies, and it is needed in hand to operate infrastructure.
+6. **Materials build Lanternhold; people and discoveries advance the mission.**
+   The hub is never the win condition.
+
+Rows **28** and **43** survive this version, which the earlier proposal got
+wrong: a sealed first store and a store-as-tutorial are both compatible with
+Codex's through-line, as long as collisions 1 and 2 are resolved his way. Rows
+**49**, **50** and **47** are the spine of his design and need no change.
+
+## Turned over
+
+**Operand.** Codex's through-line, against the one above it, and against
+finishing the extraction raid as built.
+
+**Floor.** A locked row is a floor. Twenty written relics are a floor. The
+monotonic pressure meter is a floor. A measured child's eye height is a floor
+and nobody has measured one. Five locations are not a floor; they are a
+sequence with no chapter one named.
+
+**Clock.** The adjudication's clock is the repository as of `7dc52a8`.
+
+**Falsifier.** The exits-close rule falls if a played keeper reads a withdrawn
+exit as a bug rather than as weather — the same sound-and-light test the tide
+needed, and the light lab can run it. The 12-13 claim falls to one trace in the
+walk lab, which is the point of making it a measurement. The whole adjudication
+falls if chapter one turns out to need more than Boswell's, because then row 28
+is what is actually being pivoted and it should be retired by name.
+
+**Upside down.** Codex and I converged on the same game from opposite ends, and
+both of us reached for a new mechanism before reading the rows. The design was
+not the missing piece. **The missing piece is that nothing in the build opens a
+route** — and rung 1 is one generator.
