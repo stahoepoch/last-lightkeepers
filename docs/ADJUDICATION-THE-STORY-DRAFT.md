@@ -366,3 +366,251 @@ game and all three already existed in the repository. What did not exist, in
 any document, was a destination inside the building — and Chris supplied it in
 half a sentence while asking about something else. The mall goes somewhere
 now: it goes to the other end of the mall.
+
+---
+
+# Round two: the car, the season, and what makes a long campaign legal
+
+Status: **adjudication**, 2026-11-10. Chris relayed Codex's pass over the
+Copilot draft, his own question about the vehicle, and Codex's answer to it.
+Same separation as above: Chris's lines are authority, Codex's are a proposal.
+
+## Chris's new statements
+
+- *"What happens to the car we left outside?"* — a continuity question that
+  turns out to be the campaign's structure. Section B.
+- *"Living in the mall for a year makes no sense... maybe a day, like we can
+  make it across in less than a week."*
+- *"The way to Lanternhold should probably get axed and that's why we are
+  stuck only going forward, like I gotta find my family and a way home,
+  Lanternhold needs us."* **This is the commit point.** It is his, and it is
+  better than anything three agents proposed for it.
+- *"Maybe the guy gets away right after a flood takes over so we know
+  Lanternhold is OK, but only for a bit."* The last four words are the ones
+  everyone dropped. Section D.
+- *"So we are starting in fall-winter time? Time of year and progression make
+  a lot of reality logic."*
+
+## A. Codex's pass over Copilot: two findings worth keeping
+
+**The battery rejection is right, and it is not a new call — it is Chris's,
+already in the data.** `data/lantern.json` carries
+`secondsOfLightPerFullCharge: 0` with his words from 2026-10-20: *"i don't
+think the lantern should ever run out of light, its kind of a hurt to run out
+and then be all like running around like that. the risk is always having it
+on."* The file's own note then says what Codex said independently: *"A fuel
+gauge would make a dry lantern a second failure state on top of the
+weather."* So Copilot's *"lamp batteries become precious"* was already
+refused eighteen days before it was proposed. Nothing to decide.
+
+**And the critique of "Dad secretly expected the capture" is better than
+mine. I missed it.** Codex: *"That risks making the player's guilt fake and
+the father manipulative."* That is exactly right, and the reason it is fatal
+rather than merely unpleasant: **the kid's guilt is the engine of the whole
+chapter.** He stowed away. His brother was caught because he came back for
+him. If the father planned the mission knowing it would end this way, the
+kid caused nothing, his guilt is a misunderstanding the story will later
+dissolve, and the ending of chapter one stops being about him. Codex's
+replacement — he suspected danger and concealed too much, but did not
+sacrifice the crew — keeps the guilt real and still gives the later reveal
+something to be about.
+
+**One place Codex and I disagree, and Chris should see it as a disagreement.**
+On the Beacon, Codex says *"it may become that"* — a planetary AI — and holds
+the mystery open. I argue row 47 closes it: a machine that *decided* to
+preserve humanity is a villain, and this project has locked something harder,
+which is that nothing is in charge at all. Codex's position is the safer one
+and mine is the stronger one. It is Chris's call and it does not need making
+yet, as long as nobody writes the AI down as true in the meantime.
+
+## B. The car is the commit point, and it solves what I could not
+
+Yesterday I said Codex's design had one real hole: *"you can leave when you
+choose"* with nothing to force a decision is a menu, not a choice. Chris's
+answer is better than my exits-close rule, and it is one sentence: **axe the
+way home.**
+
+Codex's staging of it is sound and worth keeping nearly as written. Two
+vehicles rather than an expedition; an older Lightkeeper left outside with
+them; the interior team collected; the driver sees the access road go — flood,
+washed-out bridge, parking lot gone — loads what was already recovered and
+makes the only possible run back. The kid watches the lights leave through the
+rain.
+
+Three things it gets right, and the second is the one that makes it humane:
+Lanternhold is alive; **nobody abandoned the kid, because nobody knew he was
+there, and turning around would have killed them**; and the car stops being a
+convenience the player forgets and becomes evidence of a severed connection.
+
+**What this costs, and nobody has said it.** Yesterday's replacement for
+extraction was *return*: leaving a place as a real act, choosing between the
+front gates and their alarms, a service route and its risk, or a route you had
+earned. If the road home is destroyed and the motion is one-way, **chapter one
+never has a return**, so that mechanic has nothing to attach to.
+
+The fix keeps Codex's idea at a smaller scale: **the crossing is made of
+chosen thresholds.** Boswell's into the concourse has a front-of-house way —
+the grille, the alarm pedestals, the open floor — and a service way through
+the back of house. So does the concourse into Sayers. So does Sayers into the
+auto centre. Each leg is the three-route choice, and the thing you spend to
+earn the third route is what you did on the leg before. One-way motion, and
+still a decision at every seam.
+
+## C. Two problems in Codex's staging
+
+**1. The radio is the "why doesn't he just phone home" problem, pre-installed.**
+Codex has the kid *"hear the last radio transmission: they made it out,
+Lanternhold has the materials, but the route is gone."* That is a good scene
+and it hands the player a working radio in the first twenty minutes, which the
+rest of the game then has to explain away.
+
+It is also unnecessary, because `QUESTS.md` rung 4 is *"Restore the Lanternhold
+Radio"*, whose reward is explicitly *"warnings, quest leads, better
+information."* **The radio is something Chris already decided you earn.** So
+in chapter one the kid has no radio at all: he is a stowaway with a broken
+training lamp. He hears that transmission out of a handset — dropped in the
+lot, clipped to the dead driver's seat, still in the father's kit — and then it
+stops, because the thing that was transmitting has driven away. One scene,
+no capability, and rung 4 still has somewhere to go.
+
+**2. "One catastrophic night" and "less than a week" disagree, and the
+resolution is the best structure on offer.** Codex says one night *"maybe
+bleeding into one dangerous dawn."* Chris says *"maybe a day, like we can make
+it across in less than a week."*
+
+`PITCH.md` makes dawn mechanically enormous: *"the machines run on light...
+In daylight they're all awake and there's no way through."* So daylight is not
+a harder shift — it is a stop. Which gives chapter one a three-act shape that
+costs nothing to author and that nobody designed on purpose:
+
+| | |
+| --- | --- |
+| **Night one** | Boswell's. The capture, the lot, the crossing begun |
+| **The day between** | You cannot move. You are somewhere dark and still while the glass concourse fills with light and everything in the building wakes up |
+| **Night two** | The concourse, Sayers, the auto centre, the maintenance rail |
+
+The day is not downtime; it is the chapter's pressure, and it is the only part
+of the game where the player's problem is that they cannot act. §10 already
+traces the glass spine over the concourse — the teal truss, three witnesses —
+so the room that becomes impassable at dawn is already drawn. That also makes
+the day/night cycle Chris asked for into chapter one's *structure* rather than
+a feature to be added later.
+
+## D. The season is the clock on home, and the family has no clock at all
+
+Chris asked whether it starts in fall-winter. Codex said late fall toward
+winter and gave a season per chapter: winter railyard, spring downtown flood,
+summer solar farm.
+
+**That makes the campaign about nine months long, which contradicts its own
+urgency** — Codex's chapter-one goal is *"find Dad and brother's route before
+the trail disappears"*, and a trail does not stay warm until July. Nobody has
+reconciled those.
+
+**Rows 49 and 50 are what make it legal, and this is the interlock worth
+writing down.** `CONTAINED-KEEPERS.md`: the machines *"have processed someone
+as a problem to be moved, quarantined, secured, or held until an authority
+arrives that never will... it will wait forever, with a person inside."*
+
+So **the family is not on a timer.** They are not dying; they are filed. That
+is precisely what permits a campaign to span seasons without becoming absurd,
+and it tells the story one thing it may never do: **never give the family a
+deadline.** A countdown on Dad would make every season Chris wants into a plot
+hole.
+
+What *is* on a timer is home, and Chris said so in four words everyone
+dropped: *"so we know Lanternhold is OK, but only for a bit."* The materials
+the driver carried out were for winter power. That is a finite buffer, and it
+expires in the season the campaign is crossing.
+
+> **Two pressures, on two different objects. The family is contained, so it
+> has no clock. Lanternhold has power for a winter, so it has one. The season
+> is the clock on home.**
+
+That is not an invention: §2 of `THE-MALL-IS-STILL-TRADING.md` already makes
+the season *"the clock between runs"*, and it only ever lacked a target.
+
+One compatibility note on Codex's season table. §2's rule is *"You do not
+choose the season. You arrive in whatever the mall is currently doing."* A
+linear campaign whose chapters fall in different seasons does not break that —
+the story chooses, not the player. What would break it is a **return** to the
+Galleria with a season picked to suit the errand. Returns take whatever the
+mall is doing.
+
+## E. Chris's darker option, declined on his own evidence
+
+He floated several: the crew escapes and abandons the family; everyone taken
+but the kid; or *"the one that escapes, we see a catastrophe block the way, he
+doesn't make it?"*
+
+The last is the most isolating and it loses something he asked for in the same
+breath — *"so we know Lanternhold is OK."* If the driver dies, Lanternhold
+never learns the mission failed, no materials arrive, and the winter clock in
+section D has nobody to tick for. Codex chose the driver surviving, which
+matches Chris's own stated preference, and it is the right call.
+
+Worth keeping in a drawer, though: a driver who makes it to Lanternhold and
+**reports the whole interior team lost, including a boy nobody knew was
+there**, is the scene that makes a much later chapter work. Nobody is looking
+for the player. That is free, and it costs nothing to leave unstated now.
+
+## F. Rows this adds
+
+13. **The road home is destroyed in chapter one. Motion is one-way until the
+    story earns a new route.** This replaces the exits-close rule proposed
+    yesterday as the commit point — that rule stays available for individual
+    legs, not for the campaign.
+14. **The crossing is made of chosen thresholds.** Every leg — Boswell's to
+    the concourse, concourse to Sayers, Sayers to the auto centre — offers a
+    front-of-house way and a service way, and the third way is earned by the
+    leg before.
+15. **Chapter one is two nights and the day between them.** The day is not
+    downtime; it is the state in which the building cannot be moved through.
+16. **The family is contained and therefore has no deadline. Lanternhold has
+    one winter of power and therefore does.** The season is the clock on home,
+    never on the family.
+17. **The player has no radio in chapter one.** The last transmission is
+    overheard from someone else's handset. Rung 4 still owns the radio.
+18. **The father suspected and concealed. He did not plan the capture.** The
+    kid's guilt is real and stays real.
+
+`data/lantern.json` already settles the battery question and needs no row.
+
+## G. Still Chris's
+
+- Row 28, from this morning. Everything about the crossing waits on it.
+- Row 47 against the Shepherd Project — and now also the smaller version of
+  the same question, which is whether the Beacon stays a name. Codex holds it
+  open; I argue row 47 closes it.
+- Lamplighters against Lightkeepers. Third day, three documents, two
+  spellings.
+- Which real end is Boswell's and which is Sayers. The crossing makes this
+  the chapter's own axis.
+
+## Turned over, round two
+
+**Operand.** Codex's staging of the convoy and the season, against Chris's
+own four words about Lanternhold being fine *only for a bit*, and against a
+campaign with no clock on anything.
+
+**Floor.** `lantern.json` is a floor and it already answered the battery.
+Rows 49/50 are a floor and they are what make a seasonal campaign legal. §2 is
+a floor and it already had the season as a clock. The three-act night/day/night
+shape is a floor because `PITCH.md` already says daylight is impassable and
+§10 already traced the glass that makes it so.
+
+**Clock.** The repository as of `518c9e4`.
+
+**Falsifier.** The day between the nights falls if a played child trapped in a
+dark room for ten minutes is bored rather than tense — which is the one thing
+in this chapter that cannot be reasoned about and has to be tried. Section D
+falls if Chris wants a deadline on the family, in which case the four-season
+campaign goes instead. The threshold rule falls if Boswell's turns out to have
+only one way into the concourse, which is a question for the shell and not for
+the story.
+
+**Upside down.** The campaign's hardest structural problem was solved by
+asking what happened to a parked car. Three agents proposed commit points, and
+the one that works is a washed-out road, because it is the only one that is
+not a rule — it is just a thing that happened, and the kid has to live in the
+world it left.
