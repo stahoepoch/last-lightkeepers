@@ -23,6 +23,7 @@ and the lower one is stale.
 | `FLEET.md` | The four parties, lanes, handoff format, and the one rule: **uncommitted work does not exist** |
 | `ADVERSARY.md` | How the agents check each other. What counts as a claim, which arguments have already failed, retraction discipline |
 | `DRIFT.md` | The stale-concept register. **Section A is a contradiction between two LOCKED rows and only Chris can clear it** |
+| `AUDIT-THE-PIVOT-2026-11.md` | The whole design against the 2026-11-09 pivot, and both against the build. Finds 67 of 83 rows untouched, extraction a rename rather than a deletion, and co-op the one thing genuinely broken. **Proposes rows 84–91; none ratified** |
 | `LOG.md` | Append-only log: who was driving, why, what it cost |
 
 **Before proposing a mechanic, read tier 2.** Most good ideas about this game
