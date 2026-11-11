@@ -125,10 +125,26 @@ Asset Licensing Contract**, effective 2 June 2024. What it says:
   by cooking.
 - **Licences survive delisting**, which is the durability `DECISIONS.md` row
   23 cares about.
-- **A revenue cap appears on the Gumroad tiering** — *"for independent
-  developers with an annual revenue of up to $100,000"* — and whether the
-  Cosmos/Humble tier carries the same cap **was not established.** On a Steam
-  release that clause is the one that bites later rather than now.
+- **The revenue cap: asked and answered, in our favour.** A *"$100,000"*
+  ceiling appears on the Individual tier, and this file first recorded that
+  whether the Humble tier carried it was not established. Codex found the line
+  that settles it, and the FAQ confirms it verbatim: *"Humble Bundle's Bundles
+  are licensed under Studio License."* Studio is *"annual revenues under 2
+  million USD or has employees between 2 to 11."*
+- **And for a one-time pack purchase the ceiling does not bite on growth at
+  all.** The FAQ distinguishes subscriptions from pack purchases and says of
+  the latter: *"No, you do not need to upgrade your pack license or make any
+  additional payments once your revenue exceeds 2m."* The cap-on-success
+  objection applied to subscriptions, not to a bundle.
+- **The licence transfers with the game.** *"When you sell your game or your
+  entire company to a new owner, you can also transfer the license rights
+  associated with the game"*, on written notice to `info@leartesstudios.com`.
+  This is the clause row 24's *reason* actually cares about, and it is the one
+  CC0 and AI packs cannot offer at all.
+- **No AI/ML training use**, either of their assets or — they claim — in making
+  them: *"we do not use AI in our models and textures."* Relevant because
+  AI-generated content is the one category row 24 rules out on both the letter
+  and the reason.
 
 ### Why this is row 24's problem and not mine
 
@@ -142,7 +158,7 @@ before in this project:
 | --- | --- | --- |
 | CC0 (Poly Haven) | fails — unowned, not ours | weak: no counterparty, no indemnity |
 | AI-generated pack | fails — unownable | fails outright |
-| **Leartes, paid** | **fails — vendor says so explicitly** | **strongest yet**: named company, dated contract, commercial grant, invoice, survives delisting |
+| **Leartes, paid** | **fails — vendor says so explicitly** | **strongest yet**: named company, dated contract, commercial grant, invoice, survives delisting, Studio tier to $2m, **and transfers with the game if it is ever sold** |
 
 A paid commercial licence from a named vendor is the ordinary mitigation for
 the exposure row 24 was written about. It still is not ownership. **That
@@ -154,10 +170,12 @@ appears.
 
 `docs/ASSET-INTAKE.md` already has the process, and the Function Loops entry
 has the shape. Before anything is referenced by the build: save the Leartes
-contract text into `assets/props/licences/` with the date and URL; settle the
-revenue-cap question in writing; record per-item rows for the items actually
-used, not all 75; and remember the keys expire 2027-11-10, which is a real
-date on a third-party site rather than a Humble library entitlement.
+contract text into `assets/props/licences/` with the date and URL, **and save
+the FAQ's Humble/Studio line with it**, because that line is the only thing
+tying the $30 Humble purchase to the Studio tier and a FAQ page can be edited;
+record per-item rows for the items actually used, not all 75; and remember the
+keys expire 2027-11-10, which is a real date on a third-party site rather than
+a Humble library entitlement.
 
 ## What none of these do
 
@@ -187,10 +205,12 @@ be decided by one.
 
 **Falsifier.** The horror-score objection falls if the game turns out to want
 non-diegetic music at all — which is testable the first time anyone plays the
-crossing with and without. The Leartes recommendation falls on the revenue
-cap: if the Cosmos tier carries the $100,000 ceiling, a paid licence that
-expires on success is worse than no licence at all for a game meant to ship on
-Steam.
+crossing with and without. **The Leartes falsifier has now been run and it
+passed**: it was the revenue cap, and the FAQ puts Humble bundles on the Studio
+tier with no upgrade required on a pack purchase even past $2m. What is left to
+falsify is narrower — the cap lives on a FAQ page rather than in the signed
+contract, so the thing that would still kill it is the contract text itself
+contradicting the FAQ, which is why both get saved.
 
 **Upside down.** The cheapest audio in this project was free and is already
 the best: six synthesised cue designs whose master is a script that diffs,
