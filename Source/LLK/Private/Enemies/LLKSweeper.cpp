@@ -79,6 +79,12 @@ ALLKSweeper::ALLKSweeper()
 		TEXT("/Game/LLK/Materials/MI_LLK_LanternCore_Working.MI_LLK_LanternCore_Working"));
 	const ConstructorHelpers::FObjectFinder<USoundBase> TemporaryCue(
 		TEXT("/Engine/EngineSounds/1kSineTonePing.1kSineTonePing"));
+	const ConstructorHelpers::FObjectFinder<USoundBase> StockStartedCue(
+		TEXT("/Game/Audio/Sweeper/sweeper-stock-started-v1.sweeper-stock-started-v1"));
+	const ConstructorHelpers::FObjectFinder<USoundBase> StockInterruptedCue(
+		TEXT("/Game/Audio/Sweeper/sweeper-stock-interrupted-v1.sweeper-stock-interrupted-v1"));
+	const ConstructorHelpers::FObjectFinder<USoundBase> StockFiledCue(
+		TEXT("/Game/Audio/Sweeper/sweeper-stock-filed-v1.sweeper-stock-filed-v1"));
 
 	Chassis = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SweeperChassis_Temporary"));
 	Chassis->SetupAttachment(GetCapsuleComponent());
@@ -136,6 +142,18 @@ ALLKSweeper::ALLKSweeper()
 	if (TemporaryCue.Succeeded())
 	{
 		TemporaryCueSound = TemporaryCue.Object;
+	}
+	if (StockStartedCue.Succeeded())
+	{
+		StockStartedCueSound = StockStartedCue.Object;
+	}
+	if (StockInterruptedCue.Succeeded())
+	{
+		StockInterruptedCueSound = StockInterruptedCue.Object;
+	}
+	if (StockFiledCue.Succeeded())
+	{
+		StockFiledCueSound = StockFiledCue.Object;
 	}
 }
 
@@ -679,6 +697,16 @@ void ALLKSweeper::Act(const FLLKSweeperStep& Step)
 		}
 	}
 
+	if (Step.bSlowLanded && Target != nullptr)
+	{
+		if (ALLKCharacter* Keeper = Cast<ALLKCharacter>(Target->GetOwner()))
+		{
+			Keeper->ApplyStumble();
+		}
+
+		UE_LOG(LogLLK, Log, TEXT("%s clipped a keeper's feet: slow."), *GetName());
+	}
+
 	if (Step.bStumbleLanded && Target != nullptr)
 	{
 		// Wired 2026-11-02. This was a log line for long enough that
@@ -707,6 +735,20 @@ void ALLKSweeper::Act(const FLLKSweeperStep& Step)
 		UE_LOG(LogLLK, Log, TEXT("%s clipped a keeper's feet."), *GetName());
 	}
 
+	if (Step.bFallLanded && Target != nullptr)
+	{
+		if (ALLKCharacter* Keeper = Cast<ALLKCharacter>(Target->GetOwner()))
+		{
+			Keeper->ApplyFall();
+			if (APlayerController* PlayerController = Cast<APlayerController>(Keeper->GetController()))
+			{
+				PlayerController->ClientStartCameraShake(ULLKStumbleCameraShake::StaticClass());
+			}
+		}
+
+		UE_LOG(LogLLK, Log, TEXT("%s knocked a keeper down briefly, then disengaged."), *GetName());
+	}
+
 	if (Step.bKnockedDown && Target != nullptr)
 	{
 		// The authored three hits landed inside the decay window. The vitals
@@ -726,9 +768,12 @@ void ALLKSweeper::MulticastPlayCue_Implementation(
 		return;
 	}
 
-	// One neutral waveform, four deliberately distinguishable envelopes.  This
-	// is plumbing, not authored sound design: a future asset assignment replaces
-	// the source without changing the state-machine events or network route.
+	// The state machine owns when a sound happens.  These are spatial authored
+	// sounds that tell a player what committed, interrupted, or completed.
+	// The ping remains a deliberately plain fallback for telegraphing and for a
+	// missing imported asset; it must not make a missing content reference mute
+	// an otherwise readable encounter.
+	USoundBase* CueSound = TemporaryCueSound;
 	float Volume = 0.15f;
 	float Pitch = 0.40f;
 	switch (Cue)
@@ -738,21 +783,24 @@ void ALLKSweeper::MulticastPlayCue_Implementation(
 		Pitch = 0.36f;
 		break;
 	case ELLKSweeperCue::StockStarted:
+		CueSound = StockStartedCueSound != nullptr ? StockStartedCueSound : TemporaryCueSound;
 		Volume = 0.16f;
-		Pitch = 0.28f;
+		Pitch = 1.f;
 		break;
 	case ELLKSweeperCue::StockInterrupted:
+		CueSound = StockInterruptedCueSound != nullptr ? StockInterruptedCueSound : TemporaryCueSound;
 		Volume = 0.25f;
-		Pitch = 0.62f;
+		Pitch = 1.f;
 		break;
 	case ELLKSweeperCue::StockFiled:
+		CueSound = StockFiledCueSound != nullptr ? StockFiledCueSound : TemporaryCueSound;
 		Volume = 0.20f;
-		Pitch = 0.46f;
+		Pitch = 1.f;
 		break;
 	}
 
 	UGameplayStatics::PlaySoundAtLocation(
-		this, TemporaryCueSound, CueLocation, GetActorRotation(), Volume, Pitch,
+		this, CueSound, CueLocation, GetActorRotation(), Volume, Pitch,
 		0.f, CueAttenuation, nullptr, this);
 }
 

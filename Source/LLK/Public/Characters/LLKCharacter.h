@@ -171,6 +171,12 @@ public:
 	UFUNCTION(BlueprintPure, Category = "LLK|Movement")
 	bool IsStumbling() const { return bStumbling; }
 
+	/** Third Sweeper contact: a short automatic get-up, not a revive state. */
+	void ApplyFall();
+
+	UFUNCTION(BlueprintPure, Category = "LLK|Movement")
+	bool IsFallen() const { return bFallen; }
+
 	/**
 	 * The stumble's speed scale, composing with burden rather than replacing
 	 * it: a burdened keeper who is clipped pays both, which is the same
@@ -358,8 +364,14 @@ protected:
 	/** Clears the stumble and re-applies the speed. Server-side, on a timer. */
 	void EndStumble();
 
+	/** Clears the short Sweeper fall and returns control. */
+	void EndFall();
+
 	UFUNCTION()
 	void OnRep_Stumbling();
+
+	UFUNCTION()
+	void OnRep_Fallen();
 
 	/**
 	 * The stumble's two numbers, declared here rather than authored in
@@ -476,6 +488,15 @@ protected:
 	bool bStumbling = false;
 
 	FTimerHandle StumbleTimer;
+
+	/** A fall is deliberately brief: the Sweeper leaves before the keeper stands. */
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Data", meta = (ClampMin = "0"))
+	float FallbackFallSeconds = 2.f;
+
+	UPROPERTY(ReplicatedUsing = OnRep_Fallen)
+	bool bFallen = false;
+
+	FTimerHandle FallTimer;
 
 	UPROPERTY(VisibleAnywhere, Category = "LLK|Camera")
 	TObjectPtr<UCameraComponent> FirstPersonCamera;

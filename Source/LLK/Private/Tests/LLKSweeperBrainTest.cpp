@@ -338,8 +338,9 @@ bool FLLKSweeperBrainTest::RunTest(const FString& Parameters)
 			LLKSweeperBrain::Advance(Pursuing(), Seen(2.f, 9.f), Def, Rules);
 		TestFalse(TEXT("and nothing lands from outside contact range"), Far.bContactLanded);
 
-		// Three hits, with the cooldown respected between them, is the floor
-		// alert. The Sweeper may interrupt movement, but it never contains.
+		// Three hits, with the cooldown respected between them, is the brief
+		// fall and floor alert. The Sweeper may interrupt movement, but it never
+		// contains the keeper or sends them into the revive system.
 		FLLKSweeperMind Chase = Pursuing();
 		int32 Hits = 0;
 		bool bAlerted = false;
@@ -428,21 +429,26 @@ bool FLLKSweeperBrainTest::RunTest(const FString& Parameters)
 
 		const FLLKSweeperSenses Touching = LLKSweeperBrainTestFixture::Seen(0.1f, 1.f);
 
-		// Below the threshold: a stumble, nothing more.
+		// First rung: a slowdown, nothing more.
 		const FLLKSweeperStep One = LLKSweeperBrain::Advance(
 			LLKSweeperBrainTestFixture::Pursuing(), Touching, Def, Maintenance);
-		TestTrue(TEXT("a contact smacks your feet"), One.bStumbleLanded);
+		TestTrue(TEXT("the first contact slows"), One.bSlowLanded);
+		TestFalse(TEXT("the first contact is not yet the stumble"), One.bStumbleLanded);
 		TestFalse(TEXT("one hit does not alert the floor"), One.bFloorAlerted);
 		TestFalse(TEXT("and a maintenance machine never puts a keeper down"),
 			One.bKnockedDown);
 
-		// The third hit with knockdown off: it reports you instead.
+		// The third hit with knockdown off: it is a brief fall, reports the
+		// fault, and returns to route instead of standing over the keeper.
 		FLLKSweeperMind TwoLanded = LLKSweeperBrainTestFixture::Pursuing();
 		TwoLanded.HitAgesSeconds = {0.2f, 0.1f};
 		const FLLKSweeperStep Third =
 			LLKSweeperBrain::Advance(TwoLanded, Touching, Def, Maintenance);
+		TestTrue(TEXT("the third hit is the brief fall"), Third.bFallLanded);
 		TestTrue(TEXT("ROW 47: the third hit alerts the floor"), Third.bFloorAlerted);
 		TestFalse(TEXT("and still does not put the keeper down"), Third.bKnockedDown);
+		TestEqual(TEXT("and disengages to patrol rather than searches the fallen keeper"),
+			Third.Mind.State, ELLKSweeperState::Patrol);
 		TestEqual(TEXT("the ladder resets, so it does not re-alert on every hit"),
 			Third.Mind.HitsLanded(), 0);
 

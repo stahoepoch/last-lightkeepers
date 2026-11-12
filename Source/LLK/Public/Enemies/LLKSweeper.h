@@ -264,6 +264,18 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "LLK|Presentation")
 	TObjectPtr<USoundBase> TemporaryCueSound;
 
+	/** Authored work cue: the Sweeper has committed to filing misplaced stock. */
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Presentation")
+	TObjectPtr<USoundBase> StockStartedCueSound;
+
+	/** Authored response when a lit keeper interrupts that work. */
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Presentation")
+	TObjectPtr<USoundBase> StockInterruptedCueSound;
+
+	/** Authored cue at the stock bay when the misplaced item is filed away. */
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Presentation")
+	TObjectPtr<USoundBase> StockFiledCueSound;
+
 	/** The distance and spatialization contract shared by every temporary cue. */
 	UPROPERTY(VisibleAnywhere, Category = "LLK|Presentation")
 	TObjectPtr<USoundAttenuation> CueAttenuation;

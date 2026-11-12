@@ -261,6 +261,7 @@ void ALLKCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 	// with the server's for the length of the stumble and gets corrected;
 	// everyone else needs it because a crew reads each other's state.
 	DOREPLIFETIME(ALLKCharacter, bStumbling);
+	DOREPLIFETIME(ALLKCharacter, bFallen);
 }
 
 void ALLKCharacter::BeginPlay()
@@ -558,6 +559,37 @@ void ALLKCharacter::OnRep_Stumbling()
 	ApplyMovementSpeed();
 }
 
+void ALLKCharacter::ApplyFall()
+{
+	if (!HasAuthority() || IsDowned())
+	{
+		return;
+	}
+
+	// A fall replaces the second-rung stumble instead of inheriting it. When
+	// the keeper stands, they stand at their ordinary authored speed.
+	bFallen = true;
+	bStumbling = false;
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(StumbleTimer);
+		World->GetTimerManager().SetTimer(
+			FallTimer, this, &ALLKCharacter::EndFall, FallbackFallSeconds, false);
+	}
+	ApplyMovementSpeed();
+}
+
+void ALLKCharacter::EndFall()
+{
+	bFallen = false;
+	ApplyMovementSpeed();
+}
+
+void ALLKCharacter::OnRep_Fallen()
+{
+	ApplyMovementSpeed();
+}
+
 void ALLKCharacter::OnCarriedCountChanged(int32 CarriedCount)
 {
 	// The haul changed, so the speed has. Event-driven rather than polled:
@@ -581,13 +613,15 @@ void ALLKCharacter::ApplyMovementSpeed()
 		const float Burden = GetBurdenMultiplier() * GetStumbleMultiplier();
 		Movement->MaxWalkSpeedCrouched = CrouchSpeedCms * Burden;
 
-		if (IsDowned())
+		if (IsDowned() || bFallen)
 		{
 			// `downedWalkSpeed: 0` converted through LLKUnits like every other
 			// speed. At zero this is a keeper who cannot crawl, which is the
 			// authored value and the thing that pins a carried crate to a
 			// body (row 59).
-			Movement->MaxWalkSpeed = LLKUnits::SpeedFromStuds(Vitals->GetDownedWalkStuds());
+			Movement->MaxWalkSpeed = IsDowned()
+				? LLKUnits::SpeedFromStuds(Vitals->GetDownedWalkStuds())
+				: 0.f;
 			return;
 		}
 

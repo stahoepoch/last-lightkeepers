@@ -318,26 +318,35 @@ struct FLLKSweeperStep
 	/** It reached the keeper and the cooldown allowed it. One hit. */
 	bool bContactLanded = false;
 
-	/** That hit was the third. The keeper goes down. */
+	/** That hit reached the authored threshold for a containment enemy. */
 	bool bKnockedDown = false;
 
 	/**
-	 * It smacked your feet. Every landed contact below the threshold.
+	 * First contact: the keeper is slowed, but still fully steering and able
+	 * to sprint clear. This is the warning rung of the Sweeper's ladder.
+	 */
+	bool bSlowLanded = false;
+
+	/**
+	 * Second contact: the keeper stumbles. The pawn adds the visible camera
+	 * kick; the brain only says which rung was reached.
 	 *
 	 * **Costs distance and tempo, never input.** A brief speed penalty and a
-	 * shove off your line - no camera lock, no input suppression, no
-	 * animation to wait out. A control-removal the player cannot act through
-	 * is a knockdown with a shorter timer, and that is the thing that makes
-	 * people stop playing.
-	 *
-	 * Superseded by `bKnockedDown` when the enemy is a containment type: you
-	 * do not stumble and go down from the same hit.
+	 * shove off your line; it remains a recoverable warning rather than a
+	 * containment move.
 	 */
 	bool bStumbleLanded = false;
 
 	/**
-	 * The threshold hit, on a machine that does not contain people: **it
-	 * reports you.**
+	 * Third contact from a maintenance Sweeper: a brief fall, followed by an
+	 * automatic stand. This is not `bKnockedDown`: no revive, no loss of
+	 * lantern, and no stranded solo player. The pawn owns the short get-up.
+	 */
+	bool bFallLanded = false;
+
+	/**
+	 * The threshold hit, on a machine that does not contain people: it reports
+	 * the fault while the keeper takes the brief fall.
 	 *
 	 * `hitsToKnockDown` still names the count, because it is still the count
 	 * that matters - what changes is what happens when you reach it.

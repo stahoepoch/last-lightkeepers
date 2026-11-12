@@ -118,6 +118,18 @@ namespace LLKSweeperBrain
 		switch (Step.Mind.State)
 		{
 		case ELLKSweeperState::Patrol:
+			// The third rung is not a containment loop. For the same short
+			// interval the keeper spends getting up, the maintenance machine
+			// ignores them and returns to its route instead of hovering over the
+			// fall. This uses the existing contact-recovery clock: no second
+			// hidden timer and no opportunity for an instant re-acquire.
+			if (Step.Mind.ContactRecoverySecondsRemaining > 0.f)
+			{
+				Step.Move = Senses.bHasPatrolPoint.Get(false)
+					? ELLKSweeperMove::PatrolPoint : ELLKSweeperMove::Hold;
+				break;
+			}
+
 			if (bNoticed)
 			{
 				// **Row 16, and it is a build requirement rather than polish.**
@@ -343,12 +355,9 @@ namespace LLKSweeperBrain
 				Step.Mind.ContactCooldownRemaining =
 					FMath::Max(0.f, LLKSweeperBrainDetail::Finite(Contact.ContactCooldownSeconds));
 
-				// Every contact smacks your feet. It is a floor machine, and
-				// that is what being clipped by one is.
-				Step.bStumbleLanded = true;
-
 				const int32 Needed = FMath::Max(1, Contact.HitsToKnockDown);
-				if (Step.Mind.HitsLanded() >= Needed)
+				const int32 HitsLanded = Step.Mind.HitsLanded();
+				if (HitsLanded >= Needed)
 				{
 					// **The threshold means two things now, and
 					// `knockdownOnContact` is the switch.** True: a containment
@@ -364,6 +373,11 @@ namespace LLKSweeperBrain
 					}
 					else
 					{
+						// Chris's contact ladder: slow, stumble, fall, then the
+						// machine leaves the keeper alone long enough to stand. The
+						// floor still receives the fault report; it is not the sole
+						// consequence of three avoidable contacts.
+						Step.bFallLanded = true;
 						Step.bFloorAlerted = true;
 					}
 
@@ -372,6 +386,14 @@ namespace LLKSweeperBrain
 					// the floor again - which is row 9's bleed-out problem
 					// wearing a different hat.
 					Step.Mind.HitAgesSeconds.Reset();
+				}
+				else if (HitsLanded == 1)
+				{
+					Step.bSlowLanded = true;
+				}
+				else
+				{
+					Step.bStumbleLanded = true;
 				}
 
 				// A contact is a trip, not a containment grapple. The already
@@ -382,7 +404,10 @@ namespace LLKSweeperBrain
 				// same interval that already makes its route readable. It remains
 				// short enough for three contacts to fit inside the authored
 				// hit-decay window, so a machine can still report a repeated fault.
-				Step.Mind.State = ELLKSweeperState::Search;
+				// On the final rung, route away rather than search the keeper's
+				// body. The first two rungs retain their local search behaviour.
+				Step.Mind.State = Step.bFallLanded
+					? ELLKSweeperState::Patrol : ELLKSweeperState::Search;
 				Step.Mind.ContactRecoverySecondsRemaining =
 					LLKSweeperBrainDetail::FallbackPatrolDwellSeconds;
 				Step.Mind.SearchSecondsRemaining =

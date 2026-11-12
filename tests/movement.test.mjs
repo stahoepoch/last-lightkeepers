@@ -347,6 +347,78 @@ console.log("\nThe stumble cannot become permanent");
   );
 }
 
+// ---- the third rung, which is the one with no escape in it ---------------
+//
+// The contact ladder is slow, stumble, then a brief fall with an automatic
+// get-up. The first two rungs are protected by the invariant at the top of
+// this file: a stumbled keeper carrying a full haul still outruns a Sweeper,
+// so the player can always leave. **The third rung has no such protection.**
+// `ALLKCharacter::ApplyMovementSpeed` sets `MaxWalkSpeed` to 0 while
+// `bFallen`, so for the length of the fall the keeper cannot leave at any
+// speed, and the only thing standing between them and a second contact is
+// that the machine routed away: `LLKSweeperBrain.cpp` sends the fall rung to
+// `Patrol` instead of `Search` and holds its route for the recovery window.
+//
+// So the invariant for this rung is a race between two constants that live in
+// different files and were written for different reasons, and **neither one
+// mentions the other**. `FallbackFallSeconds` is `EditDefaultsOnly`, so a
+// Blueprint default can move it without a code change and without touching
+// this file.
+//
+// Worst legal state, per this file's own doctrine: a solo keeper. Under
+// proposed row 89 that is every keeper, and there is no crew coming.
+console.log("\nThe fall ends before the machine comes back");
+{
+  const fallSeconds = cppFloat(
+    characterHeader,
+    "FallbackFallSeconds",
+    "LLKCharacter.h",
+  );
+
+  check(
+    "a fallen keeper is standing before the Sweeper's route brings it back",
+    fallSeconds < recoverySeconds,
+    `the fall holds the keeper at zero speed for ${fallSeconds}s while the ` +
+      `machine routes away for ${recoverySeconds}s. At or above it the ` +
+      `Sweeper returns to a keeper who still cannot move, which is the pest ` +
+      `loop the ladder was built to remove`,
+  );
+
+  // Not "greater than zero". Standing up on the same frame the machine
+  // arrives satisfies the inequality and is not an escape anyone can execute.
+  // 25% of the fall, which at 2s is half a second.
+  const margin = recoverySeconds - fallSeconds;
+  check(
+    "and with enough of a gap to take one step first",
+    margin >= fallSeconds * 0.25,
+    `gap is ${margin.toFixed(2)}s against a fall of ${fallSeconds}s. The ` +
+      `keeper needs time to stand AND move, not just to stand`,
+  );
+
+  // Property 2's argument, applied to this rung: the arithmetic above is only
+  // the right model while the brain actually routes away on the fall. Change
+  // this line back to Search and both checks keep passing while describing a
+  // game where the machine searches the body of a keeper who cannot move.
+  check(
+    "and the brain still routes away on the fall rung rather than searching",
+    /bFallLanded\s*\n?\s*\?\s*ELLKSweeperState::Patrol/.test(sweeperBrain),
+    `LLKSweeperBrain.cpp no longer sends the fall rung to Patrol. The two ` +
+      `checks above assume it does, so they have stopped describing the game ` +
+      `rather than caught a bug in it`,
+  );
+
+  // Named, not asserted: zero speed for the length of the fall is the one
+  // place the ladder takes movement rather than tempo, and the comment it
+  // sits under says contact "costs distance and tempo, never input". A fall
+  // keeps the camera, so it is not a knockdown - but it is Chris's call
+  // whether 2s at zero is the ladder he meant, and a test asserting either
+  // answer would be this file inventing a rule.
+  console.log(
+    `  note the fall is ${fallSeconds}s at zero walk speed, camera retained. ` +
+      `Whether that is "tempo" or "input" is Chris's ruling, not this file's`,
+  );
+}
+
 console.log(`\n${checks - failures}/${checks} passed`);
 if (failures > 0) {
   console.log(`${failures} FAILED\n`);
