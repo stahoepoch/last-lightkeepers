@@ -24,6 +24,8 @@ and the lower one is stale.
 | `ADVERSARY.md` | How the agents check each other. What counts as a claim, which arguments have already failed, retraction discipline |
 | `DRIFT.md` | The stale-concept register. **Section A is a contradiction between two LOCKED rows and only Chris can clear it** |
 | `AUDIT-THE-PIVOT-2026-11.md` | The whole design against the 2026-11-09 pivot, and both against the build. Finds 65 of 83 rows untouched, extraction a rename rather than a deletion, and co-op the one thing genuinely broken — which Chris then answered with **no co-op**, retiring the only four LOCKED rows the pivot reaches. **Proposes rows 84–91; none ratified** |
+| `HANDOFF-CLAUDE-PRODUCT-PIVOT-AUDIT.md` | Codex's product audit: the promise is split, and one Boswell's-to-concourse segment is the first proof |
+| `ADJUDICATION-CODEX-PRODUCT-PIVOT-2026-11.md` | The review of it. Agrees on the diagnosis; finds the co-op row already answered, row 3's gate unanswerable as written, and **the lantern redundant because its only cost appears on the debug HUD alone** |
 | `LOG.md` | Append-only log: who was driving, why, what it cost |
 
 **Before proposing a mechanic, read tier 2.** Most good ideas about this game
