@@ -111,6 +111,30 @@ cause is in the build rather than in the fiction:**
    `LLKExtractionReadout.h/.cpp`. Zone Pressure appears in exactly one of
    them — **the debug HUD.**
 
+> **Corrected 2026-11-12, by Codex, and the correction is right.** Step 1
+> above is a misreading of its own citation. Row 10 is dated 2026-10-20 and
+> says the cost of light is *the meter rather than a fuel gauge*; rows 72 and
+> 73, dated 2026-10-29, then made that meter immune to light. **So after 72
+> and 73, row 10's "the meter" no longer names light's price**, and chaining
+> the three together to conclude that it does is exactly the error I charged
+> in §2.2 — citing a row whose later amendment changed what it refers to.
+>
+> Light's actual price is the local consequence, and it is authored and large:
+> `data/enemies.json` puts the Sweeper's notice at **12 studs dark and 38
+> lit** — **3.17×** — with counterplay named in the same block, *"kill lights,
+> move, or drop loot as a decoy."* **Building a meter would have been worse
+> than useless:** it would teach the rule row 72 deliberately retired, against
+> that row's own stated reason — *"the greybox should teach the correct rule,
+> not a rule we know we are retiring."*
+>
+> **What survives, and it is still the finding.** Light's cost is real, large,
+> paid every time, and **illegible** — not because a number is hidden behind a
+> debug panel, but because nothing in the machine's movement, light or sound
+> tells the player that switching on tripled the range at which it notices
+> them. The target is the Sweeper, not the HUD. §2.5's conclusion stands; its
+> mechanism was wrong, and the acceptance clause below is unaffected either
+> way.
+
 **So light's only cost is invisible unless a debug panel is open.** A player
 who cannot see what light costs is holding a tool with an upside and no
 downside, which is the definition of redundant. That is not a feel problem and

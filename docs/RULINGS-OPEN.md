@@ -46,8 +46,13 @@ and in `AUDIT-THE-PIVOT-2026-11.md`.
 | **RB7** | **90** | The player is 12 or 13; eye height is measured from a built capsule | **Lock** · amend · reject |
 | **RB8** | **91** | The season is the clock on home; no countdown on the family | **Lock** · amend · reject |
 
-**RB9 — or rule the block.** *"Lock 84–91"* is a legitimate answer and the
-fastest one. Each still gets its own line in the log.
+**RB9 — withdrawn 2026-11-12.** I offered *"lock 84–91"* as a single answer.
+Codex is right that it is the wrong shortcut: several of these rows carry
+mechanics that have not been chosen yet, and a blanket lock would ratify the
+open parts along with the settled ones. **RB2** (row 85) carries **RF1**, what
+losing a camp costs; **RB4** (row 87) carries **RC2**, row 28's clause. Answer
+them one at a time as the first slice gets built, and a row whose open part is
+still open can be locked in the half that is settled.
 
 **What section B unblocks.** RB2 releases the 3,169-line repoint of extraction to
 *making camp* (**me**, `Source/LLK`). RB4 releases the next large map pass,
