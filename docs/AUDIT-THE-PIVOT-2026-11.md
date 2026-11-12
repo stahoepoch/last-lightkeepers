@@ -44,11 +44,17 @@ row against the pivot as Chris and Codex have stated it:
 
 | | Rows | What happens |
 | --- | --- | --- |
-| **Untouched** | **67 of 83** | Every lantern row (5, 10, 12, 80, 81, 82), light authority, the telegraph rule (16), the enemy roster (13–15), the machines' premise (47), the Valley (57), Zone Pressure (72, 73), units (61), lanes and process (25–27, 39–42), monetisation (23, 24), relics (53, 62), traversal (63), escalation (64) |
+| **Untouched** | **65 of 83** | Every lantern row (5, 10, 12, 80, 81, 82), light authority, the telegraph rule (16), the enemy roster (13–15), the machines' premise (47), the Valley (57), Zone Pressure (72, 73), units (61), lanes and process (25–27, 39–42), monetisation (23, 24), relics (53, 62), traversal (63), escalation (64) |
 | **Amended** | 6 | 28, 43, 45, 48, 32, 64 |
 | **Superseded** | 6 | 8, 9, 59, 74, 75, 76 — all six are extraction |
 | **Retired** | 2 | 30, 31 — combat, and both only `PROPOSED` |
-| **Strained, unresolved** | 2 | 36, 51 — co-op's crew size. See 1.4 |
+| **Reversed by Chris, 2026-11-11** | 4 | 36, 50, 51, 52 — co-op, and **all four are LOCKED**. See 1.4 |
+
+The first four rows in that last line are the first LOCKED rows the pivot
+reaches. Everything else it does, it does to rows that were only `PROPOSED`,
+or by amendment. **This revision counts 65 untouched rather than the 67 the
+first pass counted**, because rows 50 and 52 were in the untouched column
+until Chris answered 1.4.
 
 **The expensive half of this project is the half the pivot does not touch.**
 Rows 80, 81 and 82 — named lantern levels, physical honesty, the
@@ -114,9 +120,14 @@ The pivot removes the hub. So it removes the project's largest unbuilt thing
 from the critical path, at the cost of needing a different answer to the same
 question. That answer is Part 2.
 
-### 1.4 Co-op is the one thing genuinely broken, and nobody has addressed it
+### 1.4 Co-op was the one thing genuinely broken. Chris answered it: no co-op
 
-This is the gap in the three documents written about the pivot so far, mine
+**Answered 2026-11-11, between this section being written and this revision:
+*"no co op."*** Reading (c) below, which I had argued against. The table is
+kept as written because it is the record of the choice, and because **the
+costing in it was wrong** — see under the table.
+
+This was the gap in the three documents written about the pivot, mine
 included. A twelve-year-old alone looking for his family is a single-player
 story. Against that:
 
@@ -130,18 +141,42 @@ story. Against that:
   `diminishing` switch (row 12), the 2.5× anchor, and the four-crew-size
   pacing table in `VERTICAL-SLICE.md`. `tests/balance.test.mjs` asserts it.
 
-Three readings, and this one is Chris's:
+Three readings. **Chris took (c).**
 
 | | Reading | Cost |
 | --- | --- | --- |
 | **a** | The kid is the campaign; co-op is a separate mode in the same world | Keeps every row, but then the co-op loop still needs the hub payoff it never had — **you would be building both games** |
 | **b** | **The kid is not alone.** The crew are the other apprentices; the family are the ones taken | **One sentence of fiction. Nothing in the build moves.** Rows 36/50/51/52 all survive |
-| **c** | Drop co-op | Reverses four locked rows, the replication mandate, row 12's curve and most of the balance suite |
+| **c** | **Drop co-op. Chosen** | Reverses four locked rows, the replication mandate, row 12's curve and most of the balance suite — **and two thirds of that sentence is wrong. See below** |
 
-**I recommend (b).** It also dissolves a mistake of mine from 2026-11-09: I
-proposed rescued keepers unlocking party slots, which is exactly what row 50
-forbids. Under (b) the brotherhood is who you *start* with, not what you earn,
-and row 50 needs no defending.
+**I recommended (b), and the cost I put on (c) does not survive being
+checked.** Row **89** carries the full correction; the short form is that the
+lantern curve was **already retired from runtime** — `tests/balance.test.mjs`
+asserts, as row 72's consequence, that *"the subsystem does not read the
+lantern curve"*, and `data/zone-pressure.json` keeps the block only *"for
+Chris to delete or keep"*. At one lantern that curve returns **exactly 2.5
+whichever curve is named**, so row 12's purpose holds with nothing left to be
+free, the only assertion that bites is the 2.5× one-lantern anchor, and that
+is the one that survives. **90 checks, 0 failed, with nothing touched.** The
+replication is not reversed either: it stays, because `LANES.md` argued the
+architecture and not the feature, and server authority is what makes a
+one-player build deterministic. So (c)'s real cost is four locked rows,
+`GAME-THESIS.md`'s claim sentence, `LANES.md` §Multiplayer and
+`CONTAINED-KEEPERS.md`'s crew half — prose, all of it, and **not the build**.
+
+I had the measurement available when I wrote the table and did not take it.
+By `ADVERSARY.md`'s own test — *"a measurement claim names four things.
+Missing any one, it is an impression"* — that cost was an impression wearing a
+measurement's clothes, in a document whose whole argument is that the project
+should measure before it re-scopes.
+
+**It dissolves my 2026-11-09 mistake by deletion.** I had proposed rescued
+keepers unlocking party slots, which row 50 forbids; with no party there are
+no slots. **And it creates one danger that (b) did not have:** with no second
+player the rescued keeper becomes the only other body in the game, which
+pulls row 49's contract toward the escort mission row 49 was written to
+avoid. Row 49's *or* is now load-bearing alone — restore a route and they
+leave by themselves.
 
 ### 1.5 The pivot resolves a contradiction the project has carried since the handoff
 
@@ -309,7 +344,7 @@ row 83's lane.
 | **86** | Adj 9 | Attacking a machine is fatal and alerts every machine | Retires **30**, **31**; closes `COMBAT.md` |
 | **87** | Adj 8 | Chapter one is the crossing, Boswell's to Sayers | Amends **28** into a build order (1.6) |
 | **88** | Adj 13, 14 | Motion is one-way within a chapter. Returns happen between chapters | Reconciles the pivot with `CAMPAIGN-SHAPE.md` §2 |
-| **89** | — | The crew are the other apprentices. Co-op is the fiction's own, not an unlock | Preserves **36**, **50**, **51**, **52** (1.4) |
+| **89** | — | **No co-op. One player, one lantern, and the boy is alone** | **Retires 36, 50, 51, 52 — the pivot's only locked rows** (1.4) |
 | **90** | Valley 1 | The player is 12 or 13, and eye height is **measured** from a built capsule | New measurement task |
 | **91** | Adj 16 | The season is the clock on home. The family is contained and has none | Amends **45**; bounds **73** |
 | 92–101 | Adj 7, 10, 11, 12, 15, 17, 18, Valley 4, 5, 6 | Narrative and lamp-fiction | **Not written as rows.** Row 83's lane, `HANDOFFS.md` **G2** |
@@ -367,10 +402,16 @@ contradiction outliving its one-line fix.
 and not only fiction. The real one: four re-scopes in 22 days and no
 playtest.
 
-**Falsifier.** The whole of Part 2 falls if Chris's answer to 1.4 is reading
-(a) or (c) — a single-player campaign with a separate co-op mode means the
-frontier is only half the design, and dropping co-op invalidates row 12's
-curve and most of `tests/balance.test.mjs`. The frontier itself falls if a
+**Falsifier — it fired, and half of it was wrong.** As written: *the whole of
+Part 2 falls if Chris's answer to 1.4 is reading (a) or (c).* He answered (c),
+so this is the rare case of a falsifier being run the day after it was set.
+**The half that was right:** (a) would have halved Part 2, because a separate
+co-op mode needs the hub payoff the frontier replaces. **The half that was
+wrong:** (c) does not touch Part 2 at all. The frontier rests on *no home* and
+*one-way motion* — rows 85 and 88 — and neither mentions how many people walk
+it. A camp that moves works for one. What (c) actually invalidated was the
+**cost** I put on it, which 1.4 now carries. So Part 2 stands, and stands on a
+narrower base than it was claimed to need. The frontier itself still falls if a
 camp turns out to be a save point with extra steps: the test is whether a
 player ever chooses **not** to make camp and pushes one more shop in the dark.
 If that choice is not real, the camp is a menu.
