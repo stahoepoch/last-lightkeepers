@@ -47,6 +47,11 @@ class Rect:
 
 PLATE = Rect(X0, Y0, X1, Y1)
 ATRIUM = Rect(-600, -900, 600, 900)
+SERVICE_WALLS = (
+    Rect(-4350, 2090, -3400, 2110),
+    Rect(-3000, 2090, 3000, 2110),
+    Rect(3400, 2090, 4350, 2110),
+)
 
 # These are reserved clear floor, not painted suggested walks. Any fixture
 # socket that intersects one fails generation. They form loops around the
@@ -62,10 +67,11 @@ ROUTES = {
     "middle cross aisle west": Rect(-4250, -150, -600, 150),
     "middle cross aisle east": Rect(600, -150, 4250, 150),
     "north cross aisle": Rect(-4250, 1150, 4250, 1450),
-    "service approach": Rect(-4250, 2050, 4250, 2350),
+    "service sales side": Rect(-4250, 1800, 4250, 2100),
     "south entry": Rect(-300, -2700, 300, -900),
-    "north spine": Rect(-300, 900, 300, 2350),
+    "north spine": Rect(-300, 900, 300, 1800),
 }
+LOWER_SERVICE_PASSAGE = Rect(-4250, 2130, 4250, 2430)
 
 
 @dataclass(frozen=True)
@@ -95,7 +101,7 @@ def build_sockets() -> list[Socket]:
     # turn each socket into a dressed arrangement, not into another cube.
     columns = (-3650, -3150, -2650, -2150, -1650, -1250,
                1250, 1650, 2150, 2650, 3150, 3650)
-    runs = (-1850, -650, 650, 1850)
+    runs = (-1850, -650, 650, 1650)
     for floor in ("lower", "upper"):
         z = 0.0 if floor == "lower" else UPPER_Z
         for column_index, x in enumerate(columns):
@@ -172,6 +178,8 @@ def validate_horizontal_reach(floor: str, sockets: list[Socket]) -> None:
     obstacles = [s.box for s in sockets if s.floor == floor]
     if floor == "upper":
         obstacles.append(ATRIUM)
+    else:
+        obstacles.extend(SERVICE_WALLS)
 
     def point(index: tuple[int, int]) -> tuple[float, float]:
         ix, iy = index
@@ -203,7 +211,7 @@ def validate_horizontal_reach(floor: str, sockets: list[Socket]) -> None:
                 frontier.append(neighbor)
     # Four sales wings and the service end must all connect to the entry.
     targets = ((-3850, -750), (3850, -750), (-3850, 750),
-               (3850, 750), (0, 2250))
+               (3850, 750), (0, 2475 if floor == "lower" else 2250))
     for x, y in targets:
         if index(x, y) not in reached:
             raise ValueError(f"{floor} route cannot reach ({x}, {y})")
@@ -253,6 +261,10 @@ def write_svg(sockets: list[Socket]) -> None:
         rect(PLATE, ox, "#35444b", stroke="#b8c9c7")
         for route in ROUTES.values():
             rect(route, ox, "#8fabb1", 0.28)
+        if floor == "lower":
+            rect(LOWER_SERVICE_PASSAGE, ox, "#8fabb1", 0.28)
+            for wall in SERVICE_WALLS:
+                rect(wall, ox, "#d5c9ad")
         if floor == "upper":
             rect(ATRIUM, ox, "#111a22", stroke="#e1bd74")
         else:
@@ -274,7 +286,7 @@ def write_svg(sockets: list[Socket]) -> None:
                           f'stroke-width="3" paint-order="stroke">{escape(label)}</text>')
         for label, x, y in (("MALL / ENTRY", 0, -2480),
                             ("ESCALATOR WELL", 0, 0),
-                            ("SERVICE / DOCK", 0, 2500)):
+                            ("SERVICE / DOCK" if floor == "lower" else "SERVICES", 0, 2500)):
             px = ox + (x - X0) * scale
             py = 50 + (Y1 - y) * scale
             chunks.append(f'<text x="{px:.1f}" y="{py:.1f}" '

@@ -9,7 +9,9 @@ checks that 104 named fixture sockets stay within the plates, do not overlap
 one another or reserved routes, and that a 50 cm clearance grid connects the
 entry/escalator landing to the sales wings and service end on each floor.
 The lower sockets cover 9.3% of the plate; upper sockets cover 8.8%. The
-routes reserve at least 300 cm in the plan. Fixture *kinds* distinguish
+routes reserve at least 300 cm in the plan. The lower service wall has two
+400 cm doorways; the route checker reaches the dock through one of them.
+Fixture *kinds* distinguish
 clothing runs, four-ways, round racks, shoe benches, toy gondolas, beds,
 sofas, counters, and service rooms. A socket is a place to dress with art,
 not a finished actor or permission to fill it with one generic cube.
@@ -19,11 +21,24 @@ The plate dimensions and department adjacency come from
 The public Galleria map confirms Boscov's as a two-level anchor; it does not
 publish Boscov's internal fixture plan. This is an authored level layout.
 
-**Unbuilt in Unreal:** these files do not change `LLK_Boswells_Anchor.umap`.
-The escalator, elevator, back-of-house rooms, mall concourse connection,
-art, collision, navmesh, child-height sightlines, lighting, and a complete
-played route still need a map pass. The grid check tests horizontal plan
-connectivity only. Preserve this distinction when reporting progress.
+**Separate route map:** `Content/LLK_Boswells_RoutePass.umap` is a copy of
+the Anchor with a split mall frontage and closed grille, an open dock mouth
+with a guarded pad, a two-door service threshold, and paired sloped routes
+through the existing atrium void. `Tools/build_boswells_route_pass.py`
+creates it through the headless Unreal editor and refuses to overwrite it.
+The original Anchor map is untouched. Downward collision traces on the new
+map hit the ascent at z 55, 344 and 633 cm, then the upper landing at 662.5
+cm. This proves collision surfaces and the direction of the slopes, not
+keeper movement or navmesh connectivity. The commandlet's nav query returned
+an empty path because navigation was not built in that process. The route
+still needs a PIE walk, capsule clearance, and a navigation build. Run
+`Tools/run_editor_python.ps1 -Script Tools/verify_boswells_route_pass.py`
+to repeat the 13 saved-collision checks.
+
+**Still unbuilt:** these plan files do not populate the map's fixture sockets.
+The elevator, real escalator art, back-of-house rooms, mall concourse,
+retail meshes, child-height sightlines, lighting, and a complete played
+route remain. The grid check tests horizontal plan connectivity only.
 
 ## First-run room: walked 28 × 18 m test space
 
