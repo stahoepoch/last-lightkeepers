@@ -2,7 +2,7 @@
 	"FileVersion": 3,
 	"EngineAssociation": "5.8",
 	"Category": "Games",
-	"Description": "Last Lightkeepers — PC-first cooperative recovery game.",
+	"Description": "Last Lightkeepers — solo story-led horror RPG with stealth and environmental puzzles.",
 	"Modules": [
 		{
 			"Name": "LLK",

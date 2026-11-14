@@ -1,4 +1,31 @@
-# Boswell's sales floor, walked
+# Boswell's spatial plans
+
+## Full anchor: authored two-floor layout
+
+`BoswellsFullStore_Plan.svg` and `BoswellsFullStore_Sockets.csv` cover the
+existing 87 × 54 m Anchor plates, not just the first playable room below.
+Regenerate both with `python Tools/plan_boswells_store.py`. The generator
+checks that 104 named fixture sockets stay within the plates, do not overlap
+one another or reserved routes, and that a 50 cm clearance grid connects the
+entry/escalator landing to the sales wings and service end on each floor.
+The lower sockets cover 9.3% of the plate; upper sockets cover 8.8%. The
+routes reserve at least 300 cm in the plan. Fixture *kinds* distinguish
+clothing runs, four-ways, round racks, shoe benches, toy gondolas, beds,
+sofas, counters, and service rooms. A socket is a place to dress with art,
+not a finished actor or permission to fill it with one generic cube.
+
+The plate dimensions and department adjacency come from
+`docs/PLAN-AUDIT-BOSWELLS-ANCHOR.md` and Chris's recollection recorded there.
+The public Galleria map confirms Boscov's as a two-level anchor; it does not
+publish Boscov's internal fixture plan. This is an authored level layout.
+
+**Unbuilt in Unreal:** these files do not change `LLK_Boswells_Anchor.umap`.
+The escalator, elevator, back-of-house rooms, mall concourse connection,
+art, collision, navmesh, child-height sightlines, lighting, and a complete
+played route still need a map pass. The grid check tests horizontal plan
+connectivity only. Preserve this distinction when reporting progress.
+
+## First-run room: walked 28 × 18 m test space
 
 Fixtures for the room that already plays. Not a level, and not shipped art.
 `LLK_Boswells_FirstRun` is still the night. This file does not replace it,
