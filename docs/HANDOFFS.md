@@ -1,5 +1,10 @@
 # Handoffs — the open items, their owners, and how each one is proved closed
 
+**Product-pivot notice, 2026-11-14:** this ledger contains tickets filed for
+the former co-op extraction build. Before taking an old ticket, check it
+against `DECISIONS.md` row 92 and the current `ROADMAP.md`. Existing defects
+may still be real; old acceptance goals do not automatically remain goals.
+
 Written 2026-11-02 by Claude, on Chris's instruction: *"i definitely need to
 make sure what you do and what codex does gets integrated and you guys are able
 to communicate effectively."*

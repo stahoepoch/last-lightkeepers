@@ -1,5 +1,10 @@
 # The vertical slice — the 10–15 minutes that has to be fun
 
+**Historical raid test, 2026-11-14:** this document describes the former
+co-op/extraction prototype and its Roblox-era evidence. It is not the current
+Unreal chapter acceptance test. Use `GAME-THESIS.md` and `ROADMAP.md` for the
+solo horror / stealth / puzzle crossing.
+
 Status: **proposed**, 2026-10-26. Chris's five elements, checked against the
 build. Nothing is marked done here on the strength of code existing: an element
 is done when it is *fun in a session with a person in it*.

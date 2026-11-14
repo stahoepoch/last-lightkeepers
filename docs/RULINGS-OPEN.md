@@ -3,6 +3,12 @@
 Status: **ballot, opened 2026-11-11.** Chris: *"Whatever questions I need to
 answer I will."*
 
+**2026-11-14 product update:** `DECISIONS.md` row 92 is the current product
+direction: solo horror RPG / stealth / environmental puzzle, not co-op raid or
+extraction payout. RA1, RB6, RC1, RC2 and RC3 below are answered. The remaining ballot does
+not block work on the playable Boswell's-to-Sayers chapter; proposed mechanics
+still need their own decisions.
+
 **This is not another argument about the pivot.** Every "why" here is a
 pointer, not a paragraph. Three documents already carry the reasoning and
 `AUDIT-THE-PIVOT-2026-11.md` §2.5 says the right thing to do with a fourth is
@@ -25,24 +31,26 @@ edit a locked row**, which is why so much of this is here at all.
 
 | # | The question | Options | What it buys |
 | --- | --- | --- | --- |
-| **RA1** | **Row 3's playtest question has `bank` in it, and the pivot deletes banking.** The gate that has held scope for 22 days cannot be answered as written. Rows 79 and `ROADMAP.md` M4 quote it verbatim | **Restate** as *"do testers kill their lanterns, make camp, and argue for one more shop?"* · restate differently · rule that `bank` already means *secure what you came for*, in which case nothing needs doing | The gate becomes openable. M4 and row 79's instrumentation get a question they can measure. **Me**, same day, in `ROADMAP.md` |
+| **RA1 — CLOSED 2026-11-14** | Row 3's bank-and-repeat-raid question was obsolete | Amended to a fresh-player opening-chapter gate in row 3 and `ROADMAP.md` | The gate now tests orientation, lantern purpose, threat response, escape, puzzle route and desire to continue |
 
 ---
 
 ## B. The pivot rows — nothing below them can be judged
 
-Rows **84–91** are `PROPOSED` in `DECISIONS.md`. They are the subset of the
-pivot that binds mechanism or scope. Full reasoning per row is in that file
-and in `AUDIT-THE-PIVOT-2026-11.md`.
+Rows **84–88 and 90–91** remain `PROPOSED` in `DECISIONS.md`; row **89** is
+`LOCKED` as solo. They are the subset of the pivot that binds mechanism or
+scope. Full reasoning per row is in that file and in
+`AUDIT-THE-PIVOT-2026-11.md`. Row 92 settles product direction without
+automatically settling these more specific mechanisms.
 
 | # | Row | The question | Options |
 | --- | --- | --- | --- |
 | **RB1** | **84** | Version one is a forward-moving campaign; the night loop lives inside it | **Lock** · amend · reject |
-| **RB2** | **85** | No extraction. The unit is a night and a camp; the frontier is the progression | **Lock** · amend · reject |
+| **RB2** | **85** | The proposed row says *no extraction* and defines camp failure. Chris's current phrasing is *"not extraction per se"*: the raid payout is out, but a future leave/return action is not yet forbidden | **Amend** to campaign progression without raid payout, then decide camp failure · lock the stronger no-extraction rule · reject |
 | **RB3** | **86** | Attacking a machine is fatal and alerts every machine | **Lock** · amend · reject |
 | **RB4** | **87** | Chapter one is the crossing, Boswell's to Sayers | **Lock** · amend · reject |
 | **RB5** | **88** | Motion is one-way within a chapter; returns happen between chapters | **Lock** · amend · reject |
-| **RB6** | **89** | No co-op. One player, one lantern | **Lock** · amend · reject |
+| **RB6 — CLOSED 2026-11-14** | **89** | No co-op. One player, one lantern | **LOCKED** by Chris's repeated solo direction; see row 92 |
 | **RB7** | **90** | The player is 12 or 13; eye height is measured from a built capsule | **Lock** · amend · reject |
 | **RB8** | **91** | The season is the clock on home; no countdown on the family | **Lock** · amend · reject |
 
@@ -68,9 +76,9 @@ and **no agent may touch a locked row.**
 
 | # | The question | Options | Follows from |
 | --- | --- | --- | --- |
-| **RC1** | **Rows 36, 50, 51, 52 — strike all four.** Co-op's existence, its no-gating rule, mixed crews, and the NPC lantern ban | **Strike** · strike with 52's *reason* kept as a note (it is why the roster can never perturb the meter) · keep one of them | RB6 / row 89 |
-| **RC2** | **Row 28 — amend one clause.** *"Version one is"* one sealed store. Rows 34 and 38 already permit the crossing, so this clause alone is in the way | **Amend** into the build order row 34 already states · retire · keep | RB4 / row 87 |
-| **RC3** | **Row 43 — amend.** *"The department store is the tutorial"* survives; its curriculum list teaches extraction | **Amend the list, keep the rule** · rewrite · keep | RB2 / row 85 |
+| **RC1 — CLOSED 2026-11-14** | **Rows 36, 50, 51, 52.** Co-op's existence, its no-gating rule, mixed crews, and the NPC lantern ban | All four marked **SUPERSEDED** in `DECISIONS.md`; historical reasoning remains readable | RB6 / row 89 / row 92 |
+| **RC2 — CLOSED 2026-11-14** | Row 28's sealed-store scope cap | Amended to store-first build order and Boswell's-to-Sayers crossing; density rule kept | Row 92 and Chris's crossing direction |
+| **RC3 — CLOSED 2026-11-14** | Row 43's raid curriculum | Amended to solo movement, light, stealth, machine cues, puzzle and story route; tutorial rule kept | Row 92 |
 | **RC4** | **Rows 30 and 31 — retire.** Combat. Both only `PROPOSED`, so this is free | **Retire** · keep | RB3 / row 86 |
 
 ---

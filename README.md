@@ -1,4 +1,16 @@
-# Last Lightkeepers — Roblox prototype (archived 2026-10-27)
+# Last Lightkeepers
+
+**Current game, 2026-11-14:** a solo Unreal horror RPG with stealth and
+environmental puzzles. The playable target is a young Lightkeeper crossing
+Boswell's department store and the Galleria toward Sayers, using a lantern to
+discover and operate things while surviving the machines. Start with
+[the current thesis](docs/GAME-THESIS.md), [roadmap](docs/ROADMAP.md) and
+[production order](docs/PRODUCTION-CONTROL.md). The old co-op extraction loop
+and the Roblox prototype are reference material, not the product brief.
+
+---
+
+# Archived Roblox prototype (2026-10-27)
 
 > **This repo is no longer the product.** On 2026-10-27 Chris chose Steam,
 > PC-first, with no parallel Roblox version — `docs/DECISIONS.md` row 1,

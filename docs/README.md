@@ -1,8 +1,24 @@
-# docs — what is in here and which file wins
+# docs — current game and decision history
 
-Fifty-seven design files, three agents, one human. This page exists because
-that is enough files to lose a rule in, and a rule nobody can find gets
-deleted by someone who never knew it was one.
+**Start with the current game:** `GAME-THESIS.md`, then `ROADMAP.md`, then
+`PRODUCTION-CONTROL.md`. On 2026-11-14 Chris restated the product as a **solo
+horror RPG with stealth and environmental puzzles**, built in Unreal. It is
+not a two-player extraction raid or a Roblox release. `DECISIONS.md` row 92
+records that direction. The superseded raid thesis, pitch, roadmap and
+production schedule live under `docs/archive/` so they remain readable without
+assigning current work.
+
+Older feature documents and tests still describe extraction and co-op code
+that exists in the project. Treat those as implementation history or migration
+material. They do not override the current product direction. The specific
+mechanics in proposed pivot rows 84–88 and 90–91 remain open until decided
+individually; row 89 is locked as solo.
+
+## Older index and research map
+
+This folder contains current product direction alongside dated research and
+prototype decisions. This index exists so an older document is not mistaken
+for today's work order.
 
 ## Which file wins
 
@@ -11,7 +27,8 @@ and the lower one is stale.
 
 | Tier | File | What it is |
 | --- | --- | --- |
-| 1 | `DECISIONS.md` | Binding calls only, numbered, `LOCKED` / `PROPOSED` / `OPEN`. Cite rows by number. Nothing is promoted into here without Chris |
+| 1 | `DECISIONS.md` | Binding calls, numbered and dated. Row 92 records Chris's current product direction; `SUPERSEDED` rows are historical. Cite rows by number. |
+| 1a | `GAME-THESIS.md`, `ROADMAP.md` | Current product interpretation and playable gate. A proposal elsewhere cannot turn the old raid into an active work order. |
 | 2 | `WORLD-SYSTEMS-BOARD.md` | The living board for new lore, mechanics and encounters. **New ideas enter here first**, as a pressure test, and move only after a playtest. It carries the intake template |
 | 3 | `FLEET.md`, `PRODUCTION-CONTROL.md`, `LANES.md` | Who is building what, which files are owned, what is in flight. `../COORDINATION.md` is the superseded Roblox-era agreement, kept for its tag contracts |
 | 4 | Everything else | Synthesis, findings, proposals, handoffs. Descriptive. None of it binds |
@@ -23,7 +40,7 @@ and the lower one is stale.
 | `FLEET.md` | The four parties, lanes, handoff format, and the one rule: **uncommitted work does not exist** |
 | `ADVERSARY.md` | How the agents check each other. What counts as a claim, which arguments have already failed, retraction discipline |
 | `DRIFT.md` | The stale-concept register. **Section A is a contradiction between two LOCKED rows and only Chris can clear it** |
-| `AUDIT-THE-PIVOT-2026-11.md` | The whole design against the 2026-11-09 pivot, and both against the build. Finds 65 of 83 rows untouched, extraction a rename rather than a deletion, and co-op the one thing genuinely broken — which Chris then answered with **no co-op**, retiring the only four LOCKED rows the pivot reaches. **Proposes rows 84–91; none ratified** |
+| `AUDIT-THE-PIVOT-2026-11.md` | Dated audit of the old design and build. Row 89 is now locked; the other pivot rows remain proposed. Its mechanics are evidence to consider, not current work orders. |
 | `RULINGS-OPEN.md` | **Every open ruling waiting on Chris, on one page.** A ballot, not an argument: twenty-three questions with their options and what each answer unblocks. Start here |
 | `HANDOFF-CLAUDE-PRODUCT-PIVOT-AUDIT.md` | Codex's product audit: the promise is split, and one Boswell's-to-concourse segment is the first proof |
 | `ADJUDICATION-CODEX-PRODUCT-PIVOT-2026-11.md` | The review of it. Agrees on the diagnosis; finds the co-op row already answered, row 3's gate unanswerable as written, and **the lantern redundant because its only cost appears on the debug HUD alone** |
@@ -36,12 +53,12 @@ have already been had, and the board is where they were written down.
 
 | Read | For |
 | --- | --- |
-| `GAME-THESIS.md` | The claim, the playable argument, what the game is not |
+| `GAME-THESIS.md` | The current solo horror / stealth / puzzle claim and its playable proof |
 | `PREMISE.md` | Why the dark, and who you are |
 | `THE-WORK.md` | Why any of this happens — act one |
 | `SPINE.md` | One session, one week, thirty hours |
 | `THE-HARD-RUN.md` | The one night followed end to end: the body, the verb list, the five feelings, the build cards. Moved off `WORLD-SYSTEMS-BOARD.md` 2026-11-05 |
-| `PITCH.md` | How to say it out loud |
+| `PITCH.md` | How to describe the current game; the raid pitch is archived |
 
 ## The rules of the night
 
@@ -49,7 +66,8 @@ have already been had, and the board is where they were written down.
 `THE-LANTERN.md` — what it is, how it works, what it costs.
 `COMBAT.md` — whether a keeper can fight back.
 `SOUND.md` — how a threat announces itself.
-`BANKING.md`, `CONTAINED-KEEPERS.md` — extraction, and rescuing each other.
+`BANKING.md`, `CONTAINED-KEEPERS.md` — raid-era mechanics and rescue research;
+reconcile with the current chapter before assigning work from them.
 `QUESTS.md`, `REWARDS.md`, `PROGRESSION-GAP.md` — the ladder, what it pays,
 and the sinks that are still not wired.
 
@@ -65,7 +83,7 @@ does to play.
 ## Teaching the player
 
 `FIRST-SIXTY-SECONDS.md`, `HOW-THE-PLAYER-LEARNS.md`,
-`VERTICAL-SLICE.md`, `HUD-STATUS-SCREEN.md`.
+`VERTICAL-SLICE.md` (historical raid test), `HUD-STATUS-SCREEN.md`.
 `FOUR-ANCHORS.md` — the four ways of knowing where you are.
 `KNOWLEDGE-SPACE-TIME.md` — the research behind it, and what it buys.
 `FIELDBOARD-OBSERVATIONS.md`, `UI-NOVELTY.md` — the Fieldboard records

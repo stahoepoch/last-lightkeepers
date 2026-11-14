@@ -1,5 +1,10 @@
 # Fleet protocol — how four parties work one repo
 
+**Current-scope notice, 2026-11-14:** coordination and one-writer principles
+remain useful. Any raid, co-op, extraction or old authority-stack example in
+this file is historical. `DECISIONS.md` row 92, `GAME-THESIS.md` and
+`ROADMAP.md` define current product work; `LANES.md` defines file ownership.
+
 Status: **proposed**, 2026-11-01. The ownership table needs Chris's
 ratification before it is binding; everything else is description of what
 already happens, written down so it stops being re-invented.

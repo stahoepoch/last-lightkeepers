@@ -1,5 +1,10 @@
 # Platform — Last Lightkeepers is a Steam game
 
+**Current-scope notice, 2026-11-14:** this file's platform and Unreal research
+remain useful. Its private co-op, raid and extraction product assumptions are
+historical. `DECISIONS.md` row 92 and `GAME-THESIS.md` define the solo horror
+campaign; `ROADMAP.md` is the active acceptance plan.
+
 Decided by Chris, 2026-10-27. `docs/DECISIONS.md` row 1, LOCKED.
 
 > "Choose Steam. PC-first. No parallel Roblox version."

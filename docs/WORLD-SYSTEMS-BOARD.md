@@ -5,6 +5,10 @@ new lore, mechanics, and encounter ideas. It does not replace the binding
 decision log: `DECISIONS.md` is canon authority; this board turns a promising
 thought into a falsifiable playtest before it becomes a rule.
 
+**Product refresh, 2026-11-14:** row 92 and `GAME-THESIS.md` now describe a
+solo horror RPG / stealth / puzzle campaign. Older raid and crew ideas below
+remain dated proposals unless reconciled with that direction.
+
 ## The game in one sentence
 
 At night, a Lightkeeper enters places still completing their last humane job.
@@ -18,11 +22,11 @@ outlived the people and circumstances that made those procedures safe.
 
 | Thing | Current truth | Source |
 | --- | --- | --- |
-| First game | One sealed Boswell's department store; the store teaches the game before the wider Galleria opens. | `DECISIONS.md` 28, 34, 43 |
-| Player role | A Lightkeeper carries equipment, records, and recovered material home to Lanternhold. | `PREMISE.md`, `SPINE.md` |
+| Opening chapter | A dense two-floor Boswell's teaches the game as the solo keeper crosses toward Sayers through part of the Galleria. The exact chapter boundary is still being authored. | `DECISIONS.md` 28, 43, 92; `ROADMAP.md` |
+| Player role | A young Lightkeeper separated from his people seeks family and a way home. Recovery and material may matter, but a raid payout does not organize the journey. | `DECISIONS.md` 92; `GAME-THESIS.md` |
 | Light | The lantern reveals routes and value, and gives nearby systems reason to notice the keeper. It never repels enemies or accelerates the weather. | `DECISIONS.md` 5; `THE-LANTERN.md` |
 | Enemy intent | Machines contain, retrieve, clean, stock, route, restrain, and lock down. Their primary consequence is a dangerous state, not ordinary combat damage. | `DECISIONS.md` 47; `COMBAT.md` |
-| Run promise | Bring something home, change Lanternhold, then choose whether the next room is worth the risk. | `SPINE.md`, `REWARDS.md` |
+| Chapter promise | Learn something worth the danger, change a real route or system, and reach the next place with a reason to continue. | `GAME-THESIS.md`, `ROADMAP.md` |
 
 ## The lantern is technical support, not a magic remote
 

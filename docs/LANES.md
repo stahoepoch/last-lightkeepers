@@ -1,5 +1,11 @@
 # Lanes — who owns what on the Unreal build
 
+**Current-scope notice, 2026-11-14:** file ownership and the one-writer rule
+remain active. This file's multiplayer responsibility, host/client proofs,
+extraction examples and related schedule were written for the superseded raid
+product. No new co-op work is authorized by them. The active product and work
+order are `GAME-THESIS.md`, `ROADMAP.md` and `PRODUCTION-CONTROL.md`.
+
 Written 2026-10-27, on Chris's instruction: "divide the work between you and
 codex. Keep specific lanes. And responsibility. Everything accounted for."
 

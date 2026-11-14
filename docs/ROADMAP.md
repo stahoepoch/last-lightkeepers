@@ -1,617 +1,82 @@
-# Roadmap — the Unreal build
+# Roadmap — the solo horror campaign
 
-Written 2026-10-27 on Chris's instruction: a roadmap big and small, work
-divided, lanes specific, responsibility clear, everything accounted for.
+Status: **active work order, 2026-11-14.** This replaces the October raid
+roadmap, preserved at `docs/archive/ROADMAP-RAID-2026-10.md`. Read
+`GAME-THESIS.md` for the product and `PRODUCTION-CONTROL.md` for how work is
+integrated. `DECISIONS.md` retains the decision history; its unresolved pivot
+rows are not silent permission to rebuild the co-op extraction game.
 
-Read `docs/LANES.md` first for who owns what. Read `docs/PLATFORM.md` for why
-we are here. `docs/DECISIONS.md` is the authority if anything below contradicts
-it.
+## One playable target
 
-**Read `docs/PRODUCTION-CONTROL.md` before scheduling work.** It is the
-canonical current sequence, WIP limit, integration cadence, and M4 test plan.
-This roadmap remains the authority for milestone acceptance criteria.
+Build the opening crossing in Unreal: **Boswell's → Galleria concourse →
+Sayers threshold**. The first proof is a compelling, finishable chapter path,
+not a whole Valley, a feature inventory, or a greybox whose appearance cannot
+test the intended experience. Boswell's must read as a substantial two-floor
+department store, with real-scale paths, departments, vertical circulation,
+cover, emergency lighting, and selective use of the assets already licensed.
 
----
+The chapter should let a new player:
 
-## The shape of it
+1. Enter and orient without a minimap or debug text doing all the work.
+2. Move between both floors through a working route and choose paths around
+   obstacles and machines. No fall-through or inescapable corner.
+3. Hear and see a machine's intention, hide or flee, and keep movement control
+   through contact and recovery.
+4. Use the carried lantern for a necessary read or authored interaction, while
+   ambient light remains sufficient to navigate.
+5. Find a story clue, change part of the building, and reach Sayers with a
+   clear reason to continue.
 
-| | Milestone | Exit criteria — the thing that proves it is done |
+## Work slices and exit evidence
+
+| Slice | Work | Exit evidence |
 | --- | --- | --- |
-| **M0** | **It builds** | A clean clone builds, the editor opens, the data contract gate passes in CI, and a headless automation test passes **locally** - see the two-tier CI rule below. Nobody writes gameplay before this |
-| **M1** | **The keeper and the lantern** | Two players on a listen server in a grey-box store floor. One lights a lantern; both see the storm charge move. Movement reads from `data/lantern.json` |
-| **M2** | **The storm has teeth** | A dark run and a lit run end measurably differently. Thresholds fire, the Warden arrives, a keeper can be knocked down |
-| **M3** | **The loop closes** | A run can be won or lost. Loot visible only by light, burden slows you, the extraction call spikes the meter, extraction secures the haul and nothing else does |
-| **M4** | **⟵ THE GATE: the playtest** | **Row 3's question answered with data, not opinion:** do testers kill their lanterns, bank, and argue for one more room? Four real testers, instrumented |
-| **M5** | **The ladder and the hall** | Rungs 1–5 from `docs/QUESTS.md`. Lanternhold persists per keeper, restoration visible, each rung wakes its enemy |
-| **M6** | **One store, furnished** | The art, audio and animation pass on the single department store. Fidelity, deliberately **after** the gate |
-| **M7+** | **Expansion by danger** | Row 38. One zone at a time, in `docs/ZONES.md` order, each one passing the inversion test or not shipping |
-
-### Two things about that order
-
-**M4 is a gate, not a milestone.** Nothing after it is scheduled, estimated or
-started. If testers do not kill their lanterns, the answer is not more content
-— it is that the central trade does not work yet, and M5–M7 would be building
-on sand. This is the same gate the Roblox project carried from the handoff and
-never reached. Reaching it is the only goal that matters.
-
-**M6 is after M4 on purpose, and it will feel wrong.** The whole argument for
-leaving Roblox was fidelity — real shadow, real sound, weight. The temptation
-will be to build M6 first because it is the reason we are here. Resist it: a
-beautiful store that is not frightening to stand in has told us nothing, and it
-costs ten times what the grey box costs to change. Grey-box the fear, prove it,
-then make it beautiful. `DECISIONS.md` row 34 exists for this.
-
----
-
-## M0 — It builds
-
-Nothing here is gameplay. The point is that the next milestone can be judged
-instead of debugged.
-
-| # | Task | Owner | Done when |
-| --- | --- | --- | --- |
-| M0.1 | **Install Unreal Engine** and record the exact version | Codex | `UE_5.8.4` exists, the version is written into this file, and it is **pinned** — no mid-milestone engine upgrades, ever. An engine upgrade is its own milestone with its own regression pass |
-| M0.2 | Project skeleton: `LastLightkeepers.uproject`, `Source/LLK`, `Source/LLKEditor`, both `.Target.cs`, both `.Build.cs` | Codex | `-nocompile -game` build succeeds from a clean clone with no editor open |
-| M0.3 | Git hygiene: `.gitignore` for `Binaries/ Intermediate/ Saved/ DerivedDataCache/`, `.gitattributes` marking UE binaries `-text`, Git LFS for `Content/**` | Codex (seeded by Claude, see below) | A built project leaves `git status` clean, and `Content/` goes to LFS rather than into the pack file |
-| M0.4 | Data pipeline spec: the JSON→DataTable contract, one row type per file, with the schema written down | Claude | `docs/DATA-PIPELINE.md` exists and Codex can implement from it without asking a question |
-| M0.5 | The importer that runs the contract, in two halves: the validating front end and the asset writer | Codex, with the runtime contract from Claude — see the boundary below | Running it regenerates every `Content/Data/*.uasset` from `data/*.json` with no hand editing, and is idempotent |
-| M0.6 | Headless test runner + CI | Codex | `Automation RunTests LLK` runs from the command line, exits non-zero on failure, and prints which test failed. Data checks gate every push in CI; the UE run is local until a self-hosted runner exists - see the two-tier rule below |
-| M0.7 | The first automation test — a trivial one that proves the harness runs | Claude | It fails when deliberately broken. A green suite that cannot go red is worse than no suite |
-| M0.8 | Open the editor, press Play, walk a cube around | Chris | He has seen it move. Nothing in this project is "done" because a test passed and nobody looked |
-
-**M0.3 note on lanes:** `.gitignore` and `.gitattributes` are Codex's by the
-lane table, but they block the first commit anyone makes, and Codex is not in
-this session. Claude has seeded them today with UE-ready entries. **Ownership
-is Codex's from here** — change them rather than inheriting them, and the LFS
-decision in particular deserves a second opinion before anyone pushes 2GB.
-
-**M0.1 status, 2026-10-28 — complete.** **Unreal Engine 5.8.4 is installed
-and pinned.** Exact build, read off disk rather than off the launcher:
-**changelist `58902052`**, branch `++UE5+Release-5.8`, compatible changelist
-`55116800`, at `C:/Program Files/Epic Games/UE_5.8`. Source:
-`Engine/Build/Build.version`, corroborated by the editor binary's own product
-version string `++UE5+Release-5.8-CL-58902052`. The changelist is what makes
-this a pin - "5.8.4" is a launcher label and a hotfix can move under it, while
-a changelist cannot. The Epic Games Launcher exposes its Launch button. It is the
-current stable UE5 hotfix release available through the launcher. Visual Studio
-Build Tools 2022 with MSVC 14.44 and Windows SDK 10.0.26100 are present, and
-740GB is free. Opening the editor remains M0.8's explicit visual proof; M0.2–
-M0.7 are now unblocked, but none is verified until 5.8.4 builds it.
-
-**M0.7 status, 2026-10-28 - COMPLETE.** `LLK.Harness.CanFail` has been
-watched going red and coming back green, in that order, which is the only
-thing this task ever asked for.
-
-**Observed by Codex**, 2026-10-28, in the required sequence: rebuild the
-Editor target, flip `bCanaryShouldPass` to false, run headless automation and
-see `LLK.Harness.CanFail` fail at the expected assertion with the runner
-exiting non-zero, restore the flag to true, rebuild, run again and see
-`LLK automation passed: LLK`. Commit `6522f8f`, which also carries the
-`-abslog` fix, the Fab disable, and the generated-config cleanup.
-
-**What a second pair of eyes confirmed independently, from the retained
-artefacts rather than from the report:** `Saved/Logs/LLK-Automation.log` at
-19:33 shows both tests discovered (`LLK.Harness.CanFail`, `LLK.Harness.Runs`),
-both `Test Completed. Result={Success}`, and the line
-`LogLLK: LLK automation harness reached RunTest.` - which is the runner's
-proof that the body executed rather than the suite passing vacuously. The
-runner now uses `-abslog`, the canary is back at `true`, and `git status` is
-clean.
-
-**The red run is now preserved, and verified here first-hand** - `3840870`.
-A failing run archives its log, report and a failure summary under
-`Saved/Automation/History/` before any later green run can overwrite it. Codex
-recreated the failure to exercise it. What the archive at
-`failed-20261028-193837` actually contains, read rather than reported:
-
-```
-LogAutomationController: Error: Test Completed. Result={Fail} Name={CanFail} Path={LLK.Harness.CanFail}
-LogAutomationController: Error: Expected 'the canary is healthy - set bCanaryShouldPass to false
-  to prove the suite can fail' to be true. [...\LLKHarnessTest.cpp(72)]
-UnrealEditor-Cmd exited with code 255.
-```
-
-and its `Report/index.json` records `succeeded=1 failed=1`, with
-`LLK.Harness.CanFail` at `Fail` and `LLK.Harness.Runs` at `Success`.
-
-**That last detail is the one worth keeping.** The canary failed *in
-isolation* - the other test in the same suite still passed. A canary that took
-the whole harness down with it would prove far less, because a suite that dies
-wholesale cannot tell you it distinguishes a broken test from a broken
-harness. This one can, and now there is a file on disk that says so.
-
-So M0.7 holds both proofs at once: a preserved failure with its assertion and
-source line, and a current green run whose log shows two successes and the
-`reached RunTest` line. The milestone's rule - *a green suite that cannot go
-red is worse than no suite* - is satisfied by evidence rather than by memory.
-
----
-
-## The two-tier CI rule, decided 2026-10-28
-
-**Every push:** GitHub runs the fast JSON contract and data checks.
-**Unreal automation:** local for M0, and required in CI only once a
-maintained self-hosted Windows runner with the pinned UE 5.8.4 install
-exists.
-
-Codex's call, and it is the right one. An `ubuntu-latest` job cannot prove
-Unreal tests passed - it has no engine on it - and a hosted Unreal job nobody
-operates would be slow, costly and brittle this early. The alternative was a
-CI line that describes something nobody is building, which is worse than an
-honest local-only rule.
-
-**This amended two rows above, and the second one mattered more.** M0.6's
-acceptance said `Automation RunTests LLK` must run "from the command line and
-in CI". But M0's own definition - the gate for the entire milestone - said a
-headless automation test "passes in CI", which under this rule M0 can never
-satisfy. Left alone, M0 would have been unclosable by its own terms while
-every task inside it was finished, and somebody would eventually have closed
-it anyway by ignoring the line. A gate that cannot be met is a gate that gets
-waived.
-
-**What this costs, stated plainly:** between now and that runner, the Unreal
-suite is only as good as somebody remembering to run it. The data gate is the
-only thing CI actually enforces. That is an accepted risk and not an oversight
-- but it does mean M0.7's canary procedure is the whole safety net, which is
-why the evidence for it gets recorded rather than assumed.
-
----
-## M1 — The keeper and the lantern
-
-The first milestone with the game in it. One room, one mechanic, two players.
-
-| # | Task | Owner | Done when |
-| --- | --- | --- | --- |
-| M1.1 | `ALLKCharacter` — first-person keeper, server-authoritative, speeds read from `data/lantern.json` (walk 16, sprint 23, crouch 9) | Claude | Two clients move independently on a listen server; speeds come from data, not constants. **Row 44, LOCKED:** first person is not a camera setting here - the lantern, hands, carry states, tools and downed crawl are first-person systems from day one, and no third-person fallback is kept working. The saving: no full-body player animation in the first slice beyond what co-op players see of each other |
-| M1.2 | `ULLKLanternComponent` — toggle, replicated state, owns the light's on/off only | Claude | Client presses the key, server decides, both clients see the same state. No client-side authority anywhere |
-| M1.3 | The lantern actor: light, mesh, the sound of it striking | Chris | It looks and sounds like a lantern. The C++ class is complete and works with a placeholder before this exists |
-| M1.4 | `ULLKStormChargeSubsystem` — the meter, rate and multiplier from `data/storm-charge.json`, the **diminishing** curve (row 12) | Claude | Four lanterns cost more than one and no keeper's light is free. The existing 98 data assertions still pass |
-| M1.5 | Grey-box store floor: **the ground floor**, blockout only, no art | Codex via Unreal MCP, with Chris as creative director | It **teaches**. `DECISIONS.md` row 43 makes the store the tutorial, so navigable is no longer the bar: someone who has never seen it loots with the lantern off, then turns it on for the first relic, is noticed, and gets away - without being told to. Not pretty, just legible and big enough to be dark. Curriculum in `docs/THE-STORE.md`. Row 41 assigns one active writer per `.umap`; Codex owns the first greybox map until handoff. |
-| M1.6 | Enhanced Input: move, look, sprint, crouch, **jump**, lantern, interact | Codex (contract/validator) + Chris (binary Input assets) + Claude (runtime consumption) | Every action is an Input Action asset, rebindable, with gamepad bindings. Nothing hardcoded to a key. The split preserves Chris's exclusive ownership of `Content/**`; see `PRODUCTION-CONTROL.md`. |
-| M1.7 | Debug HUD: storm charge as a number on screen | Claude | Readable while playing. Not the real HUD — the real one is M3 |
-| M1.8 | Automation tests for the storm charge rules | Claude | The curve, the multiplier and "only ever rises" (row 6) are asserted in-engine, not just in `tests/` |
-| M1.9 | Two-player test over Steam or LAN | Chris + Codex | Two machines, one host, lantern state agrees. This is where networking mistakes surface, so it happens in M1 and not M4 |
-
-**M1.1 status, 2026-10-28 - the class is built; it cannot be driven yet.**
-`ALLKCharacter` exists in `Source/LLK/Public/Characters/`, compiles against
-the pinned 5.8.4, and all seven of its reflected names are in the linked
-binary. First person with no third-person branch (row 44). Sprint is a
-replicated server decision; crouch routes to `ACharacter`'s own replicated
-crouch rather than a second mechanism beside it. It needs no `Content/`: a
-capsule, a camera and declared fallback speeds, so a clean clone runs it.
-
-**Two things it does not do, stated rather than implied.** It has no input
-bindings - those are M1.6, Codex's row - so nothing presses a key yet, and
-M1.1's acceptance (*"two clients move independently on a listen server"*)
-cannot be met until M1.6 lands. **That is an ordering problem in this table,
-not in the work:** M1.1 is listed first and depends on a task listed sixth.
-The seam is deliberate - the character exposes `MoveInput`, `LookInput`,
-`SetSprinting`, `SetCrouching`, and nothing in it is bound to a key - so the
-binding scheme can be built and rebuilt without touching movement.
-
-**And the units question it had to answer first - O9.** Every spatial number
-in `data/` is in studs, inherited from Roblox. `walkSpeed` was **16** when this
-was written, which is literally Roblox's default humanoid walk speed, and that
-is what raised the question in the first place. **It is 8 at `HEAD`** - Chris
-halved every movement value on 2026-11-04 - so the hazard is unchanged in kind
-and smaller in size: read straight into `MaxWalkSpeed`, 8 studs becomes 8 cm/s,
-a twentieth of walking pace, which would read as a broken character controller
-rather than as wrong units. The 16 is kept because the argument is historical:
-the number that made the unit seam visible was Roblox's default, and that is
-the point. `FINDINGS-SPEED-SCALE-COPIES.md` tracks this as copy 7. `Source/LLK/Public/LLKUnits.h` converts at the
-boundary with one documented constant. Whether `data/` should be re-authored
-in centimetres instead is Chris's, and wants settling before M2 spreads the
-same tax across six enemies' ranges.
-
-**M1.2 status, 2026-10-29 - built and asserted, no light involved.**
-`ULLKLanternComponent` owns whether the lantern is on and nothing else. It has
-no `ULightComponent`, no mesh and no reference to either, because the light
-actor is M1.3 and Chris's - which is exactly what let M1.2 be finished,
-replicated and tested before any art exists. It broadcasts
-`OnLanternStateChanged` instead, which is how M1.3's light, M1.4's storm
-charge and eventually enemy targeting all learn the state without this class
-knowing any of them.
-
-Server-authoritative with no exception: the client asks, the server decides,
-the state replicates, and `OnRep` reports `Replicated` rather than letting a
-client claim it decided. Idempotent, because the storm multiplier is a *count*
-of lit lanterns and a no-op that still broadcast would move the meter for
-nothing. `LLK.Lantern.StateRules` asserts all of that plus the downed rule,
-and runs with no world.
-
-**Two things tidied while in there.** `ELLKSpeedSource` and the lantern's own
-source enum were one concept with two names, so both became `ELLKDataSource`
-in `LLKDataTypes.h` - the duplication this project keeps catching, found in
-my own code an hour after writing it. And `FLLKLanternChargeState::
-bAutoOffAtEmpty` defaulted to `false` while `lantern.json` says `true`: on the
-fallback path the default *is* the value, so a default that disagrees with the
-data is a silent disagreement.
-
-**M1.3 placeholder + M1.4 status, 2026-10-29 - the light attaches and the
-meter reacts.** M1.3 proper is Chris's row and is not done; what landed is the
-placeholder its own proof line asks for ("the C++ class is complete and works
-with a placeholder before this exists").
-`ULLKLanternLightComponent` is a code-built spot light attached to the camera,
-with no asset of any kind behind it. It only listens: it subscribes to
-`OnLanternStateChanged` and sets its own visibility, and the lantern component
-still knows nothing about it. Deleting the file would not change a single rule
-about light in this game, which is the test of whether the seam is real.
-
-**M1.4 is done.** `ULLKStormChargeSubsystem` owns both meters - the thresholds'
-and the Warden's dampened one, kept separate all the way through rather than
-derived from each other at the end, per row 54. Both curves are implemented and
-read from the asset, so row 12's "switching back must never need a code change"
-holds. Lanterns are **recounted every tick** rather than tracked by a counter
-incremented on the delegate: a keeper downed while lit has their actor torn
-down, and a decrement that never arrives would leave the storm permanently
-accelerated for the rest of the night. With at most four lanterns, recounting
-cannot be wrong and costs nothing.
-
-Accrual is authority-only. Replicating the value out for a HUD needs a
-GameState and is a later row; until then `GetCharge()` on a client is honestly
-zero rather than plausibly wrong. Row 6 is enforced rather than documented:
-there is no subtracting accessor, a zero or negative delta changes nothing, and
-`AddSpike` refuses a negative amount with a warning instead of applying it.
-
-**M1.8 is done and was proved red.** `LLK.Storm.LanternCurve` and
-`LLK.Storm.Accrual` assert the locked 2.5x one-lantern anchor, row 12's
-property that each further lantern costs less than the last but never nothing,
-the self-limit at 4.75x, the Warden's dampening at both ends of its dial, and
-"only ever rises" against forty steps and a negative spike. Row 12's assertion
-is written as a *property*, not as 3.40 / 3.94 / 4.26, so a retune cannot make
-it pass while the design intent is broken. Verified by breaking
-`LanternMultiplier` to the linear form: the 2.5x anchor still passed and only
-the diminishing property failed, which is exactly the drift it exists to catch.
-
-**The data gap it found is closed, same day.** The light's settings were C++
-constants, which put the most consequential number in the game - how far a
-keeper can see - somewhere `tests/` could not read it. Chris, 2026-10-29: "the
-actual reach must be portable, tunable, and shared by light visibility/enemy
-logic later." `data/lantern.json` now has a `light` block with `radiusStuds`,
-`coneAngleDegrees`, `intensity`, `warmColor` and `castsShadows`, reflected as
-`FLLKLanternLightRules`, validated by the importer, and read by
-`ULLKLanternLightComponent` with declared fallbacks that announce themselves.
-
-What stayed out is as deliberate as what went in: the **inner** cone angle
-softens the falloff and changes nothing about reach, and mesh placement and
-cosmetic flicker are `Content/` and Chris's (row 41). The authored cone is the
-outer one, so it means exactly one thing.
-
-**And the assertion that move was for.** `tests/balance.test.mjs` can now
-compare the lantern's reach against the range it is noticed from - two halves
-of one decision that previously lived in different languages.
-`radiusStuds: 30` against `aggroRadiusLit: 38` means a lit keeper is noticed
-from eight studs *beyond* the edge of their own light, which is row 5's trade
-made physical: the danger arrives out of the dark you just announced yourself
-into. The test fails if the radius ever reaches 38, because at that point
-light becomes pure advantage; it also fails if it drops below
-`aggroRadiusDark: 12`, because then light would never show you anything that
-had not already detected you, and no player would use it. 30 was the
-placeholder's value and was kept rather than retuned in the same change that
-moved it.
-
-`LLK.Lantern.LightRules` asserts the half Node cannot: that the engine applies
-those numbers, that the radius goes through `LLKUnits` (read raw, 30 studs is
-30cm - a lantern lighting the keeper's own boots, which reads as a broken light
-rather than as wrong units), that the authored angle lands on the outer cone,
-that an asset beats the fallback, and that resolving the numbers never turns
-the light on. Both new guards were proved red: the radius at 40 failed the
-balance check, and dropping the `LLKUnits` call failed the engine one.
-
-The colour is its own small struct rather than `FLinearColor`, which the JSON
-converter reads from a hex string through `FColor::FromHex` - silently applying
-an sRGB conversion - and from an object with no alpha key would leave alpha at
-0. Three declared floats have neither problem, and the data says plainly that
-alpha is absent because a light has no opacity.
-
-**And one assumption, flagged rather than buried.** `AddSpike` applies the
-extraction call's 180 and the anchor revive's 120 to the Warden's meter
-undampened. The data does not say whether it should. The reading that matches
-Chris's words - "a deliberate loud spike: flare, siren, enemies converging,
-regardless of current Storm Charge" - is that dampening exists to stop a
-*lantern* from summoning the Warden, and a siren is not a lantern. If he wants
-the Warden deaf to sirens it is one line, and it wants a `spikeReachesWarden`
-key rather than a decision in code.
-
-**M1.7 status, 2026-10-29 - done, and it shows time rather than charge.**
-Chris's framing was that the HUD "turns the lantern from 'a cool light' into
-the game's actual risk decision", and that decided the design: the primary
-number is **projected seconds to the next escalation**, not the meter.
-`336 / 480` is two numbers with no stakes. "PatrolsHunt in 2:24" is a decision,
-and watching it drop to 0:58 the instant the lantern comes on teaches the whole
-of row 5 in one frame without a word of tutorial text - the same principle row
-43 applies to the store, applied to a number instead of a room.
-
-So the readout leads with the projection, then prints **the counterfactual on
-the line below it**: "0:58 if you light one lantern", or "4:30 if you put every
-lantern out". Cause and consequence together, because a player shown only the
-consequence learns to fear the meter, while a player shown both learns what
-they did. The lit count, multiplier and rate sit beneath that; the raw charge
-values come last, because they are the trivia.
-
-`ALLKDebugHUD` draws with `DrawText` - no UMG, no widget Blueprint, nothing in
-`Content/`. It is set as `HUDClass` by the harness GameMode so Play needs no
-setup, and it is gated behind `LLK.ShowStormHUD 0` rather than a key, because a
-key would mean a seventh input action and M1.6's asset set is already
-all-or-nothing on six.
-
-**It refuses to show a number it does not have.** The subsystem accrues on
-authority only, so a client holds an honest zero; the HUD says "not replicated
-to clients yet" rather than rendering that zero as a meter. A debug readout that
-lies about the one number the storm, the enemies and the loot rules all read is
-worse than no readout. It also prints which data it read, because "it was on
-declared fallbacks the whole time" has already cost this project an evening.
-
-**`LLK.Storm.Projection` asserts the arithmetic, because the player will trust
-it.** Three failure modes, none of which would crash: the counterfactual
-pointing the wrong way, which would teach in the player's own numbers that
-light BUYS time; a zero `baselineRatePerSecond` rendering as "0:00" rather than
-"never", saying the opposite of what is true; and the Warden being projected off
-the thresholds' rate instead of its own dampened meter. The test also pins the
-engine's projection to `oneLanternSeconds: 108`, already published in
-`storm-charge.json`, so the two layers agree on a number a designer can read.
-
-Proved red by projecting the Warden off the wrong meter: it reported 280s where
-the truth is 483s, so the HUD would have told a lit crew the Warden was arriving
-three and a half minutes sooner than it does. Eight LLK tests now pass headless.
-
-**M1.7's replication seam, 2026-10-29, on Codex's review.** He was right and
-his reason is the one that decided the shape: the HUD could not read the
-subsystem on a client, because the subsystem accrues on authority alone and a
-client's copy holds an honest zero - so M1.9's two-machine test would have been
-run against a client screen showing nothing, which cannot verify the
-lantern/storm relationship from the side that matters.
-
-`ALLKGameState` now carries an `FLLKStormSnapshot` and the subsystem publishes
-into it at 10Hz, plus immediately on a spike. Three choices in that are worth
-recording:
-
-**One struct, not five replicated properties.** Replicated separately, charge
-and multiplier arrive in different packets, so a client could hold a new charge
-beside an old multiplier and compute a projection from two different moments. A
-player watching "2:24" flicker to "0:58" and back learns only not to trust the
-number. One struct cannot tear.
-
-**State travels; rules do not.** `DA_StormCharge` is static data already present
-on both sides, so only the meters go on the wire and each machine computes its
-own projection. That is cheaper, it stays smooth between snapshots instead of
-stepping at 10Hz, and it means the countdown is the same code reading the same
-asset on both machines.
-
-**The HUD reads the snapshot on the server too.** It could read its own meters
-where it is authoritative and deliberately does not: two paths would mean the
-server sees a readout no client ever sees, and a snapshot bug would only show up
-on the other machine. One path also made `bPublished` necessary - a
-default-constructed snapshot is field-for-field identical to a genuine all-zero
-start of night, and those mean opposite things.
-
-**`LLK.Storm.Snapshot` asserts agreement, which is the property M1.9 rests on.**
-Two subsystems share one rules asset; one accrues and the other does not, which
-is exactly a server and a client. The test checks they reach the same second,
-and render the same text, at every crew size from zero to four - including the
-counterfactual line, since a client teaching a lesson the server does not
-enforce is worse than a client teaching nothing.
-
-It also pins the thing Codex praised in the accrual: lanterns are recounted
-rather than tracked, so a lantern destroyed while lit leaves no light behind.
-The test registers three real components, lights them, marks one as garbage and
-asserts the count drops - the "ghost light" property had been a comment until
-now.
-
-Proved red by making the snapshot always measure against the thresholds' meter
-instead of switching to the Warden's: the client projected **-100 seconds where
-the truth was 26**, so its HUD would have read "now" for a Warden still half a
-minute out. Nine LLK tests pass headless.
-
-**One correction worth recording, because it was mine.** The first version of
-that test asserted a lit count after `AdvanceForTest(1.f, 3)`, which passes the
-count as a parameter and registers nothing - so it asserted 3 against a true 0.
-The code was right and the test was wrong. Registering real components instead
-tests the recount itself, which is the better assertion anyway.
-
-**The lighting warning.** `DONTFUCKUPTHELIGHTS.md` exists at the repo root
-because lighting globals were broken
-repeatedly by people who did not know they were load-bearing. Unreal makes this
-*easier* to break and harder to notice. M1.5's grey box gets a lighting setup
-owned by Chris, and no C++ touches a global lighting value. Ever. The lantern
-is a light; the world's darkness is a creative decision, not a constant.
-
----
-
-## M2 — the night pushes back
-
-Sliced 2026-10-29, when M1's code side landed. The outline that stood here is
-below in the rows it became; the content was already written and is not
-re-derived.
-
-**The thing that makes this sliceable is a dependency split nobody expected to
-be this clean.** Most of M2 is rules, state and data - knockdown, revive,
-threshold consequences, perception thresholds - and none of that needs a floor
-plan. What needs geometry is navigation: patrol routes, spawn placement, and
-line of sight. So M2 is in two halves, and the first half can start before
-M1.5's greybox exists.
-
-**And the hardest prerequisite is already done.** The outline's loudest warning
-was *do not inherit the nearest-player bug* - enemies converge on the
-**brightest position**, because that is what puts cause and consequence in the
-same pair of hands, and in four-player co-op it is the difference between the
-building teaching the lantern rule and nobody learning it. That landed on
-2026-10-29 as `LLKLightField` plus
-`ULLKStormChargeSubsystem::GetBrightestLitPosition`, before any enemy existed,
-so there is nothing for the first enemy to inherit the bug *from*. It is
-asserted by `LLK.Light.BrightestPosition`.
-
-**O1 is closed**, by the way - the note here saying it "has to be settled
-inside M2" predates Chris settling it on 2026-10-28. Run length lives in
-`storm-charge.json` `run` with three separately-named values, and
-`tests/balance.test.mjs` reads them. M2 can be judged.
-
-### The half that needs no geometry
-
-| Row | What | Owner | Done when |
-| --- | --- | --- | --- |
-| M2.1 | **Knockdown and the downed state.** `lantern.json` `knockdown`: `downedWalkSpeed: 0`, `bleedOutSeconds: 0`, `lanternForcedOffWhenDowned: true`, `dropsCarriedCrate: false` | Claude | A downed keeper cannot move, keeps what they carry, and their lantern goes out with the reason `ForcedOffWhenDowned`. **That seam already exists and has no caller**: `ULLKLanternComponent::ForceOff` was built in M1.2 and nothing has ever invoked it |
-| M2.2 | **Revive, both kinds.** Teammate hold (`teammateHoldSeconds: 4`, `maxReviveDistance: 12`, server-validated, cancelled by moving out of range) and the Anchor Revive (`chargesPerRun: 1`, `reviveSeconds: 8`, `stormChargeSpike: 120`, **solo only**, row 9) | Claude | A teammate can be lifted and the hold cancels honestly. A solo keeper gets exactly one self-revive and the meter jumps 120 for it. A crew of two never gets one |
-| M2.3 | **Threshold consequences.** `OnThresholdCrossed` and `OnWardenConverged` broadcast today and **nothing listens** | Claude | Crossing `PatrolsAlert` and `PatrolsHunt` changes something observable, and the debug HUD says which stage the night is in |
-| M2.4 | **Enemy definitions and the perception rules.** `DT_Enemies` is generated from `enemies.json`; six families with `aggroRadiusDark`/`aggroRadiusLit`, `sightRange`, `sightConeDegrees`, `scanRange`, `wakeRange`, `wakeRequiresActiveLantern` | Claude | Every family's thresholds load and are queryable, and "would this enemy notice this keeper right now" is one function reading the light field - not six copies of a distance check |
-| M2.9 | **Automation tests for all of the above** | Claude | The lit/dark aggro asymmetry, the solo-only rule, and knockdown's four flags are asserted in-engine |
-
-### The half that waits on M1.5 — and it is ONE enemy, not six
-
-**Re-sliced 2026-10-29 by Chris, after the retention research.** The table
-here used to list the Sweeper, the Warden and all six families' telegraphs as
-parallel rows, which is breadth before proof. His replacement is a vertical
-slice, and the reasoning is the part to keep: *"That will tell us whether the
-game has teeth before we build a dozen enemy types."*
-
-Row 64 is what it has to demonstrate. One enemy, carrying all four lines of
-the escalation contract at once.
-
-| Row | What | Owner | Done when |
-| --- | --- | --- | --- |
-| M2.5 | **Navigation and placement**: navmesh on the greybox floor, authored patrol routes, spawn points | Chris + Codex | One machine can walk a route without a C++ change, and the routes are authored rather than generated |
-| M2.5s | **The support slice for M2.5**, so the map is not built blind: the readiness contract, the occlusion interface, and a check that names what is missing | Claude, 2026-10-29 - **done** | `docs/MAP-READINESS.md` lists what a map must have; `LLKPerception::Notice` consumes a visibility answer through `ILLKVisibilitySource` rather than tracing itself; `LLK.CheckMap` reports `NavBoundsMissing`, `NoOccludingGeometry`, `NoRouteFromSpawn` and eleven others instead of letting us find them by way of a Sweeper that stands still |
-| M2.6 | **ONE enemy, two night states, and a relief beat.** A readable Routine behaviour; one clear Emergency behaviour unlocked by a Storm threshold; a short withdrawal after pressing the crew; and a decision the crew must actually make | Claude, on M2.5 | **Judged on behaviour, not on report** — see below. The threshold crossing is legible: a player can name what changed. The withdrawal happens before the crew is exhausted, per Valve's Peak Fade. And the emergency leaves an escape that costs something |
-| M2.7 | **Its second channel**, row 16. One enemy's physical tell, not six | Chris (the tell) + Claude (the hook) | The threshold crossing and the approach are both readable with the sound off. One enemy done properly is the template the other five copy |
-
-**M2.5s is support, not the map.** Chris, 2026-10-29: *"take the M2.5 support
-slice, but do not build the actual store map yourself."* So nothing in it
-spawns, moves or repairs anything in a level - it reports. Chris owns the
-`Content/` map (row 41) and the first version of it is allowed to be a
-deliberately ugly playable greybox; the contract exists so that "ugly" and
-"not ready" stay different words. The one thing M2.5s cannot do itself is the
-navmesh path query, because that needs `"NavigationSystem"` in
-`Source/LLK/LLK.Build.cs` and `.Build.cs` files are Codex's lane. Until that
-line lands, `LLK.CheckMap` reports `RouteUnverified` on every clean map, which
-is the honest answer rather than a pass.
-
-**How M2.6 gets judged, which is a finding rather than a preference.** Grizzard
-et al. found that physiological arousal habituates *before players notice it
-has*, and that the dampening generalises to novel content. So a crew will
-report a run as tense well after it has stopped being so, and self-report is
-exactly the wrong instrument. Measure what they did: **did they leave loot
-behind, did they argue about the rescue, did anybody say "we should go" out
-loud.** Those are observable. "It felt scary" is not.
-
-**What is NOT in M2, deliberately** (row 64): the preset editor, weekly
-modifiers, the difficulty ladder, and visible long-term world change —
-restored rooms, rescued keepers, opened districts. Every one is a good later
-idea and every one would distract from finding out whether light, risk,
-containment and extraction are fun at all. Row 63's traversal work sits behind
-the same gate. The deferral is the decision, not an oversight.
-
-**And the three remaining families stay unbuilt on purpose.** Stockers,
-Glimmers, Window Walkers, the Ficus and the Warden all have their data
-authored in `enemies.json` and none of them should be started until M2.6 has
-answered its question. If one enemy with two states does not produce a real
-decision, five more will not fix it — they will just cost five times as much
-to change.
-
-**M2.7 is the one to not leave until last.** Row 16 is an accessibility
-requirement and it is LOCKED, and `docs/SOUND.md` already says it plainly: *"a
-telegraph with two channels is unbuildable as an afterthought."* The same
-mistake was found in `THE-STORE.md`'s curriculum on 2026-10-29 - a lesson
-taught by removing the audio channel - and repairing it after the fact was
-cheap only because it was prose. Six enemies built sound-first would not be,
-which is the other argument for doing one properly first: the template is
-cheap to copy and expensive to retrofit.
-
-**One more reason the vertical slice is right, from the research.** Four
-players on voice chat convert horror into comedy - it is the best-attested
-failure mode in the co-op record, with Lethal Company's proximity chat named
-as the proximate cause. Whether a non-lethal threat survives four people
-talking over each other is the single largest unknown in this design, and it
-is answerable with one enemy. It is not answerable with a design document.
-
----
-
-## M3, in outline
-
-Sliced when M2 lands, for the same reason. The content is written:
-
-- **M3** — loot, burden, extraction. `data/loot.json` holds tiers, pickup
-  seconds and the burden penalty; row 8 says only extraction secures loot and a
-  wipe or an expired timer loses the whole haul; O3 says the extraction call
-  itself is the climax and the cost. `docs/FIRST-SIXTY-SECONDS.md` is the
-  opening-minute spec and should be read before the HUD is built.
-  **Partly begun already:** relics identify, refuse and can be taken
-  (`ULLKRelicComponent`, `ULLKInteractorComponent`, row 53 and row 62), and
-  `AddSpike` is waiting for the extraction call that pays 180 into the meter.
-
----
-
-## What we are deliberately not doing yet
-
-Written down so nobody has to ask, and so nobody quietly starts:
-
-- No animation work beyond placeholder. No retargeting, no mocap, no IK.
-- No audio mix, no middleware, no music. Enemy telegraph sounds are the
-  exception — row 16 makes them a build requirement, so they are in M2.
-- No art pass, no materials beyond grey. M6.
-- No save-format compatibility guarantees before M4. Say so to testers.
-- No packaging for release, no store page build, no trailer, no capsule art.
-- No second zone, no second store, no mall. Row 38 is the scope; row 34 is the
-  order.
-- No dedicated servers, no public matchmaking, no player count above four.
-- No monetisation work. O7 is open and a premium game may sell nothing at all.
-
----
-
-## Risks, with an owner each
-
-| Risk | Owner | What we do about it |
+| **0. Reconcile the product** | Current thesis, roadmap, production order and decision conflicts agree on solo, campaign, stealth and puzzle. Retire obsolete work cards rather than deleting history. | An agent opening the repo reaches this roadmap; no current task requires two players, a raid payout, or Roblox. Remaining runtime migration is named. |
+| **1. Make the store traversable** | Correct keeper scale, two floors, stairs or escalator, wide connected aisles, counters and alternate routes; bake and verify navigation. | One person can walk the intended Boswell's path, get upstairs and back, use cover, escape a Sweeper and never leave the map accidentally. |
+| **2. Make the instrument matter** | Dress emergency orientation lights, give the lantern a readable physical presence, author one information read and one infrastructure use, and expose its notice cost through machine behavior. | The chapter remains navigable with the lantern off, yet a player must choose when and where to use it to advance. They can explain what using it cost. |
+| **3. Make a threat worth answering** | Give machines distinct jobs, directional sound and visible route commitments. Tune pursuit, contact, recovery and disengage around escape paths. | A fresh player can identify a cue and choose hide, detour or sprint. No pin, long input lock, unexplained hit or endless harassment is accepted. |
+| **4. Finish the chapter path** | Connect the clue, environmental puzzle and route change to the concourse and Sayers threshold; persist the meaningful result. | A build can be started, played to the chapter end and resumed without editor commands or a verbal walkthrough. |
+| **5. Integrate the look and playtest** | Replace temporary shapes with selected licensed assets, authored materials and animation; mix sound; measure performance and run fresh-player sessions. This work starts in slice 1 and continues through every slice. | Players recognize a department store, use its geometry, read its lighting and want to continue. Failures found in play become the next work card. |
+
+Slices are an order for proving the game, not a ban on art or sound until the
+last row. Each slice ends in a playable integration pass. A feature is not
+credited because its C++ compiles or an asset exists on disk.
+
+## Work explicitly outside the current gate
+
+- Two-client and listen-server acceptance, multiplayer UI, co-op crew balance
+  and private matchmaking. Existing replication can stay until there is a
+  reason to remove it; no new work is scheduled to prove a feature Chris cut.
+- Timed raid exits, extraction payout and haul-loss balancing. Their code and
+  tests remain historical or migration material until a current chapter rule
+  replaces them. Do not mistake a green extraction suite for product progress.
+- Roblox implementation. `src/` and `default.project.json` are a frozen
+  prototype, not the game target.
+- A large mall footprint before one dense, convincing crossing works. The
+  route to Sayers matters; empty floor area does not satisfy it.
+
+## Existing code and data to reconcile
+
+The previous loop remains in the checkout. Removing tests before replacing
+their behavior would hide regressions; letting them define the new product
+would preserve the wrong goal. Migrate each seam with its replacement and a
+playable proof:
+
+| Seam | Current location | Next action |
 | --- | --- | --- |
-| Blueprint logic creeps in because it is faster | Claude | Review every handoff note. A rule in a Blueprint is a bug report, not a shortcut |
-| Someone edits a `.uasset` an agent also touched | Chris | `Content/` is his alone. The DataTables are generated and belong to nobody |
-| Replication retrofitted late | Claude | Server-authoritative from the first commit, and M1.9 tests two machines before the loop is even finished |
-| Fidelity before fun | all three | M4 gates M6. The temptation is the whole reason the gate is written down |
-| The engine version moves under us | Codex | Pinned in M0.1. An upgrade is a milestone with a regression pass, never a convenience |
-| The loop is not fun | Chris | That is what M4 is for, and it is better to learn it at M4 than at M6. If the answer is no, we change the trade, not the content |
-| Scope creep into the mall | Claude | Row 34 is the order and row 38 is the scope. Both are written down now precisely so this argument does not need having twice |
+| Raid/extraction state and UI | `Source/LLK/Public/Run/`, `Source/LLK/Private/Run/`, `LLKExtractionReadout` | Audit what can drive chapter transitions or safe places; repurpose only after the leave/return and camp-failure rules are decided. Keep existing code compiling meanwhile. |
+| Raid clock and payout data | `data/zone-pressure.json` (`earlyExitSeconds`, `hardCeilingSeconds`, `extractionCall`), `data/loot.json` | Chris decides the replacement values and loss rule. No raid timer should silently end the story chapter. |
+| Old contract tests | `tests/extraction.test.mjs`, raid assertions in `tests/balance.test.mjs`, `tests/curriculum.test.mjs`, and related suites | Label current coverage as legacy behavior. Replace assertions alongside runtime changes; a green suite today is regression evidence for old code, not chapter acceptance. |
+| Playable map | `Content/LLK_Boswells_Anchor.umap` and `Content/LLK_Boswells_FirstRun.umap` | Assign one map writer, inspect what each contains, and choose the chapter map before editing a binary level. Do not infer that either is already a complete crossing. |
 
----
+This is a migration register, not a request to delete working code or to
+silently pick answers from proposed decision rows.
 
-## Historical status, 2026-10-28
+## Review gate
 
-This snapshot is retained as evidence, not a live dispatch board. Use
-`docs/PRODUCTION-CONTROL.md` for the current sequence and re-verify each
-milestone against its acceptance criteria before calling it green.
-
-- **Current milestone: M0.** Done: M0.1 (engine pinned), M0.2 (skeleton builds
-  from a clean clone), M0.3 (git hygiene), M0.4 (`DATA-PIPELINE.md`), M0.6
-  (headless runner + the fast CI gate). `ProjectID` is committed as shared
-  identity in `30ca0ca`.
-- **M0.5 is done** - `3df79e6` built the editor writer and `c792f48` added one
-  fail-closed command that validates the JSON, runs the Unreal import,
-  confirms all eleven assets exist and checks git ignores them.
-  **Verified here from the artefacts, not the report:** eleven `.uasset`
-  files in `Content/Data/`, `git check-ignore` resolving them to
-  `.gitignore:73`, and the two conversions that had no precedent both landed -
-  `DA_LootRules` carries `LoadingDock` and `FreightLift` alongside `Id`,
-  `Reliability` and `PayoutModifier`, so the keyed object really did become an
-  array with its keys promoted; `DT_LedgerRungs` carries all four real rung
-  ids as row names; `DT_Enemies` carries all six enemies including the Ficus.
-- **M0.7 is done, and it is done the way it was specified.** The canary was
-  watched failing and then passing, by Codex, on 2026-10-28 (`6522f8f`). The
-  blocker turned out to be a single flag - the runner asked for its log at an
-  absolute path via `-log=`, which Unreal appends to `Saved/Logs/` rather than
-  treating as a path, so the editor ran correctly and the runner threw on a
-  log that was never going to be there. `-abslog=` fixed it.
-- **M0 now has two items left, and neither is a test.** M0.5's editor writer,
-  and M0.8 - Chris opens the editor, makes a cube, presses Play. That second
-  one is not ceremony: it is the milestone's deliberate "somebody looked at it"
-  step, and this evening is a good argument for keeping it.
-- Engine version: **Unreal Engine 5.8.4, pinned.** No engine upgrade occurs
-  inside a milestone.
-- Done today: the platform decision and its paper trail (`86c5bb8`,
-  `312ea8a`, `7cde823`), these lanes and this roadmap, and the UE-ready git
-  hygiene that M0.3 hands to Codex.
-- ~~The Roblox prototype's 490 tests still pass and will keep passing.~~
-  **Retracted 2026-11-05: they do not exist.** `947a84b` separated the engines
-  on 2026-11-03 (row M10) and removed 45 Luau and Rojo files; there are now
-  **zero** `.luau` files in the repo and no `src/`. Everything addressable at
-  the tag `roblox-prototype-final`. **The claim's load-bearing half survived
-  and is the reason it was worth writing:** the data assertions did carry
-  across the engine change, and the node suite now runs **645** checks against
-  `data/` and the C++ sources with no engine present. That is why `data/` was
-  worth carrying, which is what this bullet was really saying.
+Run a fresh-player chapter test in a packaged or otherwise reproducible Unreal
+build. Watch whether the player can orient, move, hide, use the lantern for a
+reason, understand a machine's cue, escape, solve the route and reach the end.
+Record where they were confused, bored, trapped or unable to see. Fix the
+repeated failures before expanding the campaign. The obsolete question about
+banking loot and arguing for one more raid does not judge this game.

@@ -1,5 +1,10 @@
 # Last Lightkeepers — Steam Production Plan
 
+**Historical capacity research, 2026-11-14:** this plan's co-op raids,
+extraction gates and timetable describe the former product. Its research may
+inform estimates, but it does not assign current work. See `GAME-THESIS.md`,
+`ROADMAP.md` and `PRODUCTION-CONTROL.md`.
+
 Status: **proposed for approval**, 2026-10-27.
 
 ## The decision this plan serves

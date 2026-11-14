@@ -1,5 +1,10 @@
 # The store — one building, furnished top to bottom
 
+**Current-use note, 2026-11-14:** use this file for Boswell's physical and
+department-store research. Its co-op curriculum, timed raid and extraction
+ending were written for the previous product and do not define chapter one.
+The active playable target is in `ROADMAP.md`.
+
 Status: **proposed**, 2026-10-26. Chris: *"it's just like one department store
 that you're in, so that department store would be massively stocked and feel
 like a real department store and not just Roblox… furnishing one building from
