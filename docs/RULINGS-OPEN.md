@@ -31,7 +31,7 @@ edit a locked row**, which is why so much of this is here at all.
 
 | # | The question | Options | What it buys |
 | --- | --- | --- | --- |
-| **RA1 — CLOSED 2026-11-14** | Row 3's bank-and-repeat-raid question was obsolete | Amended to a fresh-player opening-chapter gate in row 3 and `ROADMAP.md` | The gate now tests orientation, lantern purpose, threat response, escape, puzzle route and desire to continue |
+| **RA1 — CLOSED 2026-11-14** | Row 3's bank-and-repeat-raid question was obsolete | Amended the question in row 3, scoped row 79's old metrics as historical, and wrote the playable gate in `ROADMAP.md` | The gate now tests orientation, lantern purpose, threat response, escape, puzzle route and desire to continue |
 
 ---
 

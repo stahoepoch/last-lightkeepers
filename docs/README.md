@@ -49,7 +49,13 @@ and the lower one is stale.
 **Before proposing a mechanic, read tier 2.** Most good ideas about this game
 have already been had, and the board is where they were written down.
 
-## Start here
+## Narrative research to reconcile
+
+The files below contain useful world and quest ideas, but several still open
+with a co-op raid, a return-to-Lanternhold run, or a sealed-store-only scope.
+They are not the current product brief. Grok owns the assigned narrative set;
+reconcile it against `GAME-THESIS.md` and row 92 before turning a paragraph
+into a chapter task.
 
 | Read | For |
 | --- | --- |

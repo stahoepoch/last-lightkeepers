@@ -1,3 +1,8 @@
+# ARCHIVED — October co-op extraction roadmap
+
+Superseded 2026-11-14. Kept for provenance. Current roadmap:
+`docs/ROADMAP.md`.
+
 # Roadmap — the Unreal build
 
 Written 2026-10-27 on Chris's instruction: a roadmap big and small, work

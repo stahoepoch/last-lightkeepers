@@ -1,3 +1,7 @@
+# ARCHIVED — October co-op raid pitch
+
+Superseded 2026-11-14. Kept for provenance. Current pitch: `docs/PITCH.md`.
+
 # How to explain Last Lightkeepers
 
 

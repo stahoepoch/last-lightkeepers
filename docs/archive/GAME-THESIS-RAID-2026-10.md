@@ -1,3 +1,8 @@
+# ARCHIVED — October co-op raid thesis
+
+Superseded 2026-11-14. Kept for provenance. Current direction:
+`docs/GAME-THESIS.md` and `docs/DECISIONS.md` row 92.
+
 # Last Lightkeepers — Game Thesis
 
 ## The claim

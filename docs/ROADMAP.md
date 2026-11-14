@@ -68,6 +68,7 @@ playable proof:
 | Raid clock and payout data | `data/zone-pressure.json` (`earlyExitSeconds`, `hardCeilingSeconds`, `extractionCall`), `data/loot.json` | Chris decides the replacement values and loss rule. No raid timer should silently end the story chapter. |
 | Old contract tests | `tests/extraction.test.mjs`, raid assertions in `tests/balance.test.mjs`, `tests/curriculum.test.mjs`, and related suites | Label current coverage as legacy behavior. Replace assertions alongside runtime changes; a green suite today is regression evidence for old code, not chapter acceptance. |
 | Playable map | `Content/LLK_Boswells_Anchor.umap` and `Content/LLK_Boswells_FirstRun.umap` | Assign one map writer, inspect what each contains, and choose the chapter map before editing a binary level. Do not infer that either is already a complete crossing. |
+| Narrative spine | `docs/SPINE.md`, `docs/QUESTS.md`, `docs/THE-WORK.md` and related Grok-owned files | Reconcile the old solo-or-friends departure and return-with-loot chapters with row 92. Keep the useful practical-job and changing-world ideas. Do not treat proposed story beats as already authored level objectives. |
 
 This is a migration register, not a request to delete working code or to
 silently pick answers from proposed decision rows.

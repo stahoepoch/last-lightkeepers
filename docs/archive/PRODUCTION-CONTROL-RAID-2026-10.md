@@ -1,3 +1,8 @@
+# ARCHIVED — October raid production schedule
+
+Superseded 2026-11-14. Kept for provenance. Current operating plan:
+`docs/PRODUCTION-CONTROL.md`.
+
 # Production control — how Last Lightkeepers is actually made
 
 Status: **active operating plan**, 2026-10-30. This is the small-team version
