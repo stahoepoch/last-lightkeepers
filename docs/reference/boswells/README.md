@@ -21,6 +21,35 @@ The plate dimensions and department adjacency come from
 The public Galleria map confirms Boscov's as a two-level anchor; it does not
 publish Boscov's internal fixture plan. This is an authored level layout.
 
+### Meriden Boscov's visual reference, 2015
+
+[CT Mommy Blog's Meriden store visit](http://ctmommyblog.com/boscovs-meriden-ct/)
+includes photographs of that store's [first-floor diagram](http://ctmommyblog.com/wp-content/uploads/2015/10/photo-2.jpg),
+[second-floor diagram](http://ctmommyblog.com/wp-content/uploads/2015/10/photo-1.jpg),
+and sales floor. **Meriden is a different building and the photographs are from
+2015.** Neither diagram supplies Boswell's walls, department positions,
+escalator geometry, dimensions, or a 1990s material palette. The diagrams are
+low-resolution photos without a readable scale. Chris's memory in
+`docs/THE-MALL-IS-STILL-TRADING.md` section 13 remains the department authority
+for our 1990s room. No image from the blog is copied into this repository.
+
+What the visit *does* show, and what the fixture pass should carry over as a
+retail design pattern:
+
+| Visible evidence | Boswell's dressing consequence |
+| --- | --- |
+| The two floor diagrams divide sales into named departments around shared circulation and a central vertical connection. | Preserve a recognizable main route and a visible route between floors. Department boundaries should read through fixtures, signs, and floor treatment, not a new wall around each category. |
+| Clothing and children's photos show tightly packed hanging stock, wall displays, end caps, small sale signs, and mannequins. | Dress clothing sockets as layered racks and wall standards with varied heights. A single repeated cuboid per socket would still look like a warehouse. |
+| Home and toy photos show packed gondolas and display islands; the bedding photograph includes a made bed as a complete vignette. | Give toys, bedding, and home distinct silhouettes and materials. A bed needs bedding, curtains, nearby stock, and a price placard rather than only a mattress mesh. |
+| The furniture photograph shows sofas in open rows, with long views across the floor and department banners on columns. | Keep furniture more open than clothing. Use low seating masses and columns as wayfinding; do not fill its entire wing with tall gondolas. |
+| Photos show a pale drop ceiling with a regular field of recessed panels, square structural columns, polished tile in some aisles, and softer floor treatment in others. | Build a consistent ceiling and column rhythm before local clutter. Floor changes should help identify departments, while emergency lighting still follows `FIXTURE-LIGHT-CONTRACT.md`. The bright trading-store exposure in these photos is not the game's light level. |
+| The author reports navigating an aisle with a stroller. | Check our intended customer routes with keeper and Sweeper collision in Unreal. A stroller anecdote does not give a usable aisle width, so retain the project's measured clearances. |
+
+The next fixture pass should choose one arrival-to-escalator sightline and one
+upper-floor furniture sightline, dress those with these distinct fixture types,
+and test navigation. This reference does not justify copying the Meriden plan
+onto the Anchor plate.
+
 **Separate route map:** `Content/LLK_Boswells_RoutePass.umap` is a copy of
 the Anchor with a split mall frontage and closed grille, an open dock mouth
 with a guarded pad, a two-door service threshold, and paired sloped routes
