@@ -130,6 +130,80 @@ ballot item into the thing standing between here and a play pass. Tracing at
 expects — you are hidden when your head is behind the thing — and would make
 fixture heights mean what they look like they mean.
 
+## 3b. The furniture is right. Measured, after Chris stood next to it
+
+*"If you put yourself at the height of the counters and the clothes racks,
+the person towers over it."*
+
+Every fixture in the kit, against retail spec-book ranges:
+
+| fixture | built | real | verdict |
+|---|---|---|---|
+| display / folded-goods table | 80 | 76–91 | in range |
+| service counter | 102 | 91–107 | in range |
+| sales desk *(body)* | 94 | 91–107 | in range |
+| kids rolling rack | 145 | 152–183 | 7 cm under, and it is a *kids* rack |
+| round rack | 156 | 122–152 | 4 cm over |
+| clothing run | 164 | 152–183 | in range |
+| four-way | 166 | 137–152 | 14 cm over |
+| wall merchandise bay | 190 | 183–213 | in range |
+
+**A correction to my own first pass**: I read the sales desk as 209 cm and
+called it wrong by 102. It is not. The desk body tops out at **94 cm** and the
+209 is a signage mast standing on two 3 cm posts above it — I had measured
+the mesh's full bounds instead of the thing a person stands at. That is the
+same mistake as this morning's rack union box, which reported a two-post
+garment rack as a solid 146 × 72 × 145 block. Bounds are not geometry, and I
+have now made that error twice in one day on the same floor.
+
+So nothing in the kit needs resizing. **The towering is the person.**
+
+### What the department looks like from each height
+
+| fixture | cm | adult 176 (today) | boy 155 | boy 145 | boy 135 |
+|---|---|---|---|---|---|
+| display table | 80 | well below eye | well below eye | well below eye | well below eye |
+| service counter | 102 | well below eye | well below eye | well below eye | just below eye |
+| kids rolling rack | 145 | **just below eye** | about eye level | above your head | above your head |
+| round rack | 156 | **about eye level** | above your head | above your head | above your head |
+| clothing run | 164 | **about eye level** | above your head | above your head | above your head |
+| four-way | 166 | **about eye level** | above your head | above your head | above your head |
+| wall merchandise bay | 190 | above your head | above your head | above your head | above your head |
+
+Read the adult column. **Every garment rack in the department sits at or just
+below the keeper's eye**, so you stand in the middle of the children's floor
+and look straight out across the tops of all of them. Nothing is a wall.
+That is the towering, and it is not because the racks are short — they are
+spec-correct — it is because an adult's eye is exactly at rack-rail height.
+
+Read the boy column and the same floor becomes a different room: the racks go
+over your head and the department turns into corridors of fabric you cannot
+see across. Counters stay at chin height and tables at your waist, which is
+what they are in life — you are *meant* to tower over a display table.
+
+That is the store the fiction already describes, and the fixtures are already
+built for it. One number is wrong, and it is the keeper's.
+
+### Which makes RF5 the blocker, not a ballot item
+
+The visual case for shrinking him is now unambiguous. The mechanical case is
+the problem, and it is entirely the trace rule: sight is traced between
+**capsule centres**, so a shorter boy has a lower traced point and §3's table
+applies — every fixture collapses into "stand, hide, watch over" and the
+racks stop being cover at all.
+
+So the two halves disagree, and only because of where the trace is taken:
+
+- **To the eye**, a boy among 156–166 cm racks is hidden by them. Correct and
+  obvious.
+- **To the trace**, a boy's centre at 72 cm is below the racks' 88–130 cm
+  blocking band, so they hide nothing.
+
+Tracing at eye height rather than capsule centre resolves both at once: the
+racks become cover because they *look* like cover, and the counter stops
+hiding a standing boy who is plainly visible above it. That is RF5, and it
+should be settled before the height is set rather than after.
+
 ## What I would do, in order
 
 1. **Walk 8 → 5, crouch 4.5 → 3.** One file, no enemy touched, and it is the
