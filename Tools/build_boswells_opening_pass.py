@@ -11,7 +11,7 @@ import unreal
 
 SOURCE = "/Game/LLK_Boswells_ApparelPass"
 TARGET = "/Game/LLK_Boswells_OpeningPass"
-START = (1600.0, -2370.0, 120.0)
+START = (1600.0, -2370.0, 73.0)
 LANTERN = (1450.0, -2260.0, 9.0)
 
 
@@ -43,16 +43,22 @@ require("BSW_OPENING_LANTERN" not in actors, "pickup already exists")
 start = actors["ANCHOR_PLAYERSTART_ENTRANCE"]
 require(start.set_actor_location(unreal.Vector(*START), False, False),
         "could not move PlayerStart")
-require(start.set_actor_rotation(unreal.Rotator(0, -90, 0), False),
+# Unreal Python's positional Rotator arguments are roll, pitch, yaw. Set the
+# fields explicitly so this faces south without pitching the pawn into the tile.
+start_rotation = unreal.Rotator()
+start_rotation.yaw = -90.0
+require(start.set_actor_rotation(start_rotation, False),
         "could not face PlayerStart toward the grille")
 
 # A world pickup actor, not a second usable lantern. The cylinder is an unlit
 # placeholder silhouette that will be replaced with the issued lantern mesh.
 # Its component has NoCollision in C++; the player must move out of cover to
 # get close enough for Claude's short-reach, line-of-sight interaction.
+pickup_rotation = unreal.Rotator()
+pickup_rotation.roll = 80.0
+pickup_rotation.yaw = 20.0
 pickup = subsystem.spawn_actor_from_class(
-    unreal.LLKLanternPickup, unreal.Vector(*LANTERN),
-    unreal.Rotator(0, 20, 80))
+    unreal.LLKLanternPickup, unreal.Vector(*LANTERN), pickup_rotation)
 require(pickup is not None, "could not spawn pickup actor")
 pickup.set_actor_label("BSW_OPENING_LANTERN")
 pickup.set_folder_path("Boswells/Opening")

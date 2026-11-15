@@ -41,8 +41,13 @@ require(isinstance(start, unreal.PlayerStart), "PlayerStart missing")
 require(isinstance(pickup, unreal.LLKLanternPickup),
         "world pickup has the wrong class")
 require(counter is not None, "entrance counter missing")
-require(close_to(xyz(start.get_actor_location()), (1600.0, -2370.0, 120.0)),
+require(close_to(xyz(start.get_actor_location()), (1600.0, -2370.0, 73.0)),
         "PlayerStart moved")
+start_rotation = start.get_actor_rotation()
+require(abs(start_rotation.pitch) < 0.1 and
+        abs(start_rotation.yaw + 90.0) < 0.1 and
+        abs(start_rotation.roll) < 0.1,
+        "PlayerStart must face south without pitching the pawn")
 require(close_to(xyz(pickup.get_actor_location()), (1450.0, -2260.0, 9.0)),
         "pickup moved")
 require(150.0 < math.dist((1600.0, -2370.0), (1450.0, -2260.0)) < 200.0,
