@@ -1,5 +1,9 @@
-"""Place the three Boswell's cover fixtures on the children's deck of
+"""Place three Boswell's cover fixtures on the children's deck of
 LLK_Boswells_ApparelPass, then prove each one blocks a sight trace.
+
+The table and wall bay temporarily use hidden engine-cube collision proxies.
+Their imported simple collision does not reliably cook; the counter's does.
+Keep the proxies until the import defect is fixed and re-tested after reload.
 
 Run with the commandlet runner, not the MCP bridge:
     Tools/run_editor_python.ps1 "<repo>/assets/models/boswells/place_fixtures.py"
@@ -17,7 +21,8 @@ the asset lane allowed to.
 It is still narrow on purpose:
 
   - It touches ONLY actors it spawned itself, tagged `LLK_CoverFixture`. A
-    re-run deletes its own tag first, so it replaces rather than stacks.
+    re-run deletes its own tag first, including the two collision proxies,
+    so it replaces rather than stacks.
   - It never moves, edits or deletes anything it did not place. The 21 rolling
     racks stay open and unreliable, which is the point of them, and the
     encounter `7c737df` built is not touched.
@@ -107,6 +112,11 @@ import unreal
 MAP = "/Game/LLK_Boswells_ApparelPass"
 MESH_ROOT = "/Game/Props/Boswells"
 TAG = "LLK_CoverFixture"
+PROXY_MESH = "/Engine/BasicShapes/Cube.Cube"
+# These two imported meshes render correctly but their simple collision has
+# failed repeated Visibility traces. The proxy is a measured, temporary cover
+# body; the import defect remains open for a separate investigation.
+PROXY_COVER = {"SM_BSW_FoldedGoodsTable", "SM_BSW_WallMerchBay"}
 
 # Measured, not approximated: four slabs carry the deck and all four tops are
 # at z = 662.500. The carpets sit 1.05 cm proud with collision off.
@@ -252,11 +262,43 @@ def place(spec):
             f"{spec['label']} did not keep its {TAG} tag, so a re-run could "
             f"not find it to replace. Refusing to continue: the next run "
             f"would stack fixtures rather than replace them. Nothing saved")
-    # The asset already defaults to BlockAll from import_fixtures.py. Set it on
-    # the component too rather than trusting inheritance: a component that
-    # overrides the asset's profile is the exact silent failure that whole
-    # script was written to catch.
+    # Only one body owns collision. The table and bay have unreliable cooked
+    # bodies; their separately tagged proxy owns both Pawn and Visibility.
+    actor.static_mesh_component.set_collision_profile_name(
+        "NoCollision" if spec["mesh"] in PROXY_COVER else "BlockAll")
+    return actor
+
+
+def place_proxy(spec, where=None):
+    """A hidden-in-game engine cube with the fixture's measured solid bounds.
+
+    The built-in cube already has working simple collision. Its 100 cm unit
+    bounds are scaled to the fixture footprint and height, with its centre
+    half a fixture height above the floor. This is a collision workaround,
+    never a substitute for proving the sightline in the saved level.
+    """
+    cube = unreal.load_asset(PROXY_MESH)
+    if cube is None:
+        raise RuntimeError(f"Engine collision cube missing: {PROXY_MESH}")
+    x, y = where if where is not None else spec["xy"]
+    actor = editor_actors().spawn_actor_from_class(
+        unreal.StaticMeshActor,
+        unreal.Vector(x, y, FLOOR_Z + spec["height"] / 2.0),
+        unreal.Rotator(0.0, 0.0, spec["yaw"]))
+    if actor is None or not actor.static_mesh_component.set_static_mesh(cube):
+        raise RuntimeError(f"Collision proxy for {spec['label']} did not spawn")
+    actor.set_actor_scale3d(unreal.Vector(
+        spec["size"][0] / 100.0,
+        spec["size"][1] / 100.0,
+        spec["height"] / 100.0))
     actor.static_mesh_component.set_collision_profile_name("BlockAll")
+    actor.set_actor_enable_collision(True)
+    actor.set_actor_hidden_in_game(True)
+    actor.set_actor_label(spec["label"] + "_COLLISION")
+    actor.set_editor_property("tags", [unreal.Name(TAG)])
+    if not actor.actor_has_tag(TAG):
+        raise RuntimeError(
+            f"{spec['label']} proxy did not keep its replacement tag")
     return actor
 
 
@@ -381,18 +423,16 @@ def prove_the_instrument(world):
 
 
 def preflight_the_fixtures(world):
-    """Prove each fixture mesh blocks ANYWHERE before placing it anywhere.
+    """Prove each fixture's chosen collision body before map placement.
 
     The instrument check above proves the trace works, using the map's own
     geometry. It does not prove the three assets do, and that gap is exactly
     where two of them hid: they passed every asset-level check, they had a
     working instrument fired at them, and they blocked nothing.
 
-    So each mesh is spawned well clear of the department, traced across its
-    short axis at every height it claims to block, and destroyed again. A
-    fixture that cannot block in empty space will certainly not block on a
-    shop floor, and finding that out here costs one spawn instead of a map
-    edit and a round trip.
+    The counter uses its imported body. The table and bay use measured engine
+    cube proxies while their importer defect is investigated. Each source is
+    spawned well clear of the department, traced, then destroyed again.
 
     Suggested by the session that found the asset defect, with the right
     reasoning: this would have caught it on the first run instead of the
@@ -405,16 +445,21 @@ def preflight_the_fixtures(world):
             problems.append(f"{spec['mesh']} is not imported")
             continue
 
-        where = unreal.Vector(60000.0, 0.0, 0.0)
+        is_proxy = spec["mesh"] in PROXY_COVER
+        where = unreal.Vector(60000.0, 0.0, FLOOR_Z if is_proxy else 0.0)
         half = spec["size"][1] / 2.0
-        twin = editor_actors().spawn_actor_from_class(
-            unreal.StaticMeshActor, where, unreal.Rotator(0.0, 0.0, 0.0))
+        twin = None
         try:
-            if twin is None or not twin.static_mesh_component.set_static_mesh(
-                    mesh):
-                problems.append(f"{spec['mesh']} would not spawn for preflight")
-                continue
-            twin.static_mesh_component.set_collision_profile_name("BlockAll")
+            if is_proxy:
+                twin = place_proxy(spec, (where.x, where.y))
+            else:
+                twin = editor_actors().spawn_actor_from_class(
+                    unreal.StaticMeshActor, where, unreal.Rotator(0.0, 0.0, 0.0))
+                if twin is None or not twin.static_mesh_component.set_static_mesh(
+                        mesh):
+                    problems.append(f"{spec['mesh']} would not spawn for preflight")
+                    continue
+                twin.static_mesh_component.set_collision_profile_name("BlockAll")
             for height in spec["blocks"]:
                 start = unreal.Vector(where.x, where.y - half - 90.0,
                                       where.z + height)
@@ -423,10 +468,9 @@ def preflight_the_fixtures(world):
                 if not blocked_stable(world, start, end,
                                       f"preflight {spec['mesh']} @{height:.0f}"):
                     problems.append(
-                        f"{spec['mesh']} does not block at {height:.0f} cm in "
-                        f"EMPTY SPACE, so it is not cover anywhere. Its "
-                        f"collision is broken at the asset, not at the "
-                        f"position - re-import it rather than moving it")
+                        f"{spec['mesh']} {'proxy' if is_proxy else 'asset'} "
+                        f"does not block at {height:.0f} cm in EMPTY SPACE. "
+                        f"Nothing saved")
         finally:
             if twin is not None:
                 editor_actors().destroy_actor(twin)
@@ -435,9 +479,9 @@ def preflight_the_fixtures(world):
         for problem in problems:
             unreal.log_error(problem)
         raise RuntimeError(
-            f"{len(problems)} fixture(s) are not cover before placement was "
+            f"{len(problems)} fixture collision source(s) failed before placement was "
             f"even attempted. The map has not been touched")
-    unreal.log("preflight: all three meshes block in empty space, "
+    unreal.log("preflight: counter body and two proxy bodies block in empty space, "
                f"{TRACE_REPEATS} consecutive traces each")
 
 
@@ -598,6 +642,8 @@ def main():
     placed = {}
     for spec in PLACEMENTS:
         placed[spec["label"]] = place(spec)
+        if spec["mesh"] in PROXY_COVER:
+            place_proxy(spec)
         unreal.log(f"placed {spec['label']} at {spec['xy']} z {FLOOR_Z} - "
                    f"{spec['why']}")
 
@@ -635,7 +681,7 @@ def main():
             "exist only in this process and vanish when it exits. Check the "
             "package is not read-only or held by an open editor")
 
-    unreal.log(f"{len(PLACEMENTS)} fixtures placed, probed against both "
+    unreal.log(f"{len(PLACEMENTS)} fixtures placed (two with collision proxies), probed against both "
                f"controls, and saved. Racks and the 7c737df encounter "
                f"untouched.")
 
