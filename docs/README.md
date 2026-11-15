@@ -41,7 +41,8 @@ and the lower one is stale.
 | `ADVERSARY.md` | How the agents check each other. What counts as a claim, which arguments have already failed, retraction discipline |
 | `DRIFT.md` | The stale-concept register. **Section A is a contradiction between two LOCKED rows and only Chris can clear it** |
 | `AUDIT-THE-PIVOT-2026-11.md` | Dated audit of the old design and build. Row 89 is now locked; the other pivot rows remain proposed. Its mechanics are evidence to consider, not current work orders. |
-| `RULINGS-OPEN.md` | **Every open ruling waiting on Chris, on one page.** A ballot, not an argument: twenty-three questions with their options and what each answer unblocks. Start here |
+| `RULINGS-OPEN.md` | **Every open ruling waiting on Chris, on one page.** A ballot, not an argument: each question with its options and what each answer unblocks. Start here |
+| `PROPOSAL-THE-MACHINES-SHOULD-HEAR.md` | Slice 3: there is no noise input in the enemy code at all, so a sprint and a crouch are the same event to a machine. Carries hearing radii derived from the 2D prototype Chris tuned by feel. **Proposes schema only; the values are his** |
 | `HANDOFF-CLAUDE-PRODUCT-PIVOT-AUDIT.md` | Codex's product audit: the promise is split, and one Boswell's-to-concourse segment is the first proof |
 | `ADJUDICATION-CODEX-PRODUCT-PIVOT-2026-11.md` | The review of it. Agrees on the diagnosis; finds the co-op row already answered, row 3's gate unanswerable as written, and **the lantern redundant because its only cost appears on the debug HUD alone** |
 | `LOG.md` | Append-only log: who was driving, why, what it cost |
