@@ -34,13 +34,51 @@ GARMENTS = ("navy", "burgundy", "pine", "oat", "denim", "cream")
 class Mesh:
     def __init__(self):
         self.vertices = []
+        self.index = {}
+        self.normals = []
+        self.normal_index = {}
         self.uvs = []
         self.faces = []
 
-    def vertex(self, point, uv):
-        self.vertices.append(point)
-        self.uvs.append(uv)
-        return len(self.vertices)
+    def vertex(self, point):
+        """One index per POSITION, shared by every face that touches it.
+
+        This used to mint a fresh vertex for every corner of every face, so
+        nothing was ever shared: a six-sided box came out as six disconnected
+        quads with 24 vertices and not one shared edge, and the merchandise
+        bay was 252 separate shells. Measured on the committed files before
+        this changed - zero edges shared by two faces, in all three fixtures.
+
+        That is wrong on its own terms. A fixture whose faces do not know
+        they are a solid is not a solid to anything that asks the question
+        geometrically, and these meshes exist to be asked exactly that.
+        """
+        key = (round(point[0], 4), round(point[1], 4), round(point[2], 4))
+        if key not in self.index:
+            self.vertices.append(key)
+            self.index[key] = len(self.vertices)
+        return self.index[key]
+
+    def normal(self, points):
+        """One flat normal per face.
+
+        Welding without normals would be a downgrade, not an upgrade: with
+        shared vertices and no normals the importer averages across the join
+        and shades a box like a ball. Emitting a flat normal per face keeps
+        the hard edges that make a counter read as a counter, while the
+        positions stay welded underneath.
+        """
+        (ax, ay, az), (bx, by, bz), (cx, cy, cz) = points[0], points[1], points[2]
+        ux, uy, uz = bx - ax, by - ay, bz - az
+        vx, vy, vz = cx - ax, cy - ay, cz - az
+        nx, ny, nz = uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx
+        length = (nx * nx + ny * ny + nz * nz) ** 0.5 or 1.0
+        key = (round(nx / length, 4), round(ny / length, 4),
+               round(nz / length, 4))
+        if key not in self.normal_index:
+            self.normals.append(key)
+            self.normal_index[key] = len(self.normals)
+        return self.normal_index[key]
 
     def face(self, points, material):
         count = len(points)
@@ -50,8 +88,12 @@ class Mesh:
             uvs = [(0.5 + 0.5 * cos(2 * pi * i / count),
                     0.5 + 0.5 * sin(2 * pi * i / count))
                    for i in range(count)]
-        self.faces.append((material, [self.vertex(p, uv)
-                                      for p, uv in zip(points, uvs)]))
+        normal = self.normal(points)
+        corners = []
+        for point, uv in zip(points, uvs):
+            self.uvs.append(uv)
+            corners.append((self.vertex(point), len(self.uvs), normal))
+        self.faces.append((material, corners))
 
     def box(self, cx, cy, cz, sx, sy, sz, material, angle=0.0):
         ca, sa = cos(angle), sin(angle)
@@ -94,12 +136,14 @@ class Mesh:
             lines.append(f"v {x:.4f} {y:.4f} {z:.4f}")
         for u, v in self.uvs:
             lines.append(f"vt {u:.4f} {v:.4f}")
+        for x, y, z in self.normals:
+            lines.append(f"vn {x:.4f} {y:.4f} {z:.4f}")
         last = None
-        for material, indices in sorted(self.faces, key=lambda face: face[0]):
+        for material, corners in sorted(self.faces, key=lambda face: face[0]):
             if material != last:
                 lines.append("usemtl " + material)
                 last = material
-            lines.append("f " + " ".join(f"{i}/{i}" for i in indices))
+            lines.append("f " + " ".join(f"{v}/{t}/{n}" for v, t, n in corners))
         obj.write_text("\n".join(lines) + "\n", encoding="utf-8")
         print(obj.name, len(self.vertices), "vertices")
 

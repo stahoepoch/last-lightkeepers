@@ -554,6 +554,66 @@ console.log("\nCover placement");
         "pre-flight to notice is shipping the thing that looks done again",
     );
 
+    // The fixtures must be closed solids. Measured on the committed files
+    // 2026-11-15: they were not - the generator minted fresh vertices for
+    // every corner of every face, so a six-sided box came out as six
+    // disconnected quads and the merchandise bay was 252 separate shells
+    // with not one shared edge between them.
+    //
+    // This does NOT explain why two of the three miss a sight trace: all
+    // three were pathological in the same way and only two fail. It is wrong
+    // on its own terms, which is reason enough - a fixture whose faces do not
+    // know they are a solid is not a solid to anything that asks the question
+    // geometrically, and these meshes exist to be asked exactly that.
+    const manifold = (stem) => {
+      const path = join(root, "assets/models/boswells", `${stem}.obj`);
+      if (!existsSync(path)) return null;
+      const edges = new Map();
+      let normals = 0;
+      for (const line of readFileSync(path, "utf8").split("\n")) {
+        if (line.startsWith("vn ")) normals += 1;
+        if (!line.startsWith("f ")) continue;
+        const idx = line.trim().split(/\s+/).slice(1)
+          .map((t) => Number(t.split("/")[0]));
+        for (let i = 0; i < idx.length; i += 1) {
+          const a = idx[i];
+          const b = idx[(i + 1) % idx.length];
+          const key = `${Math.min(a, b)}-${Math.max(a, b)}`;
+          edges.set(key, (edges.get(key) || 0) + 1);
+        }
+      }
+      let open = 0;
+      let nonManifold = 0;
+      for (const n of edges.values()) {
+        if (n === 1) open += 1;
+        if (n > 2) nonManifold += 1;
+      }
+      return { open, nonManifold, normals, edges: edges.size };
+    };
+
+    for (const stem of [
+      "SM_BSW_FoldedGoodsTable",
+      "SM_BSW_ServiceCounter",
+      "SM_BSW_WallMerchBay",
+    ]) {
+      const m = manifold(stem);
+      if (!m) continue;
+      check(
+        `${stem} is a closed solid with shared edges`,
+        m.open === 0 && m.nonManifold === 0,
+        `${m.open} boundary edge(s) and ${m.nonManifold} non-manifold out of ` +
+          `${m.edges}. Unwelded faces mean every box is a loose set of quads ` +
+          `rather than a solid`,
+      );
+      check(
+        `${stem} carries flat normals, so welding did not round its edges`,
+        m.normals > 0,
+        "welded positions with no normals make the importer average across " +
+          "every join and shade a box like a ball. Welding without normals " +
+          "is a downgrade, not an upgrade",
+      );
+    }
+
     // Deliberately NOT checked here: whether each fixture actually blocks a
     // sight line where it stands. That is a question about 30 other solids on
     // the deck and the answer changes the moment anyone moves one, so it

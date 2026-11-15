@@ -120,6 +120,37 @@ fixes the trace to use eye height and deletes it."* This is that, on purpose.
 > intermittency; building without it is a different thing. **Still
 > unproven** - the pre-flight is where it gets caught if it did not work.
 
+> **NANITE IS WITHDRAWN AS THE CAUSE TOO (`ae883f5`).** A clean re-import -
+> assets deleted, rebuilt from their OBJs with Nanite off at build time -
+> changed nothing. Same two meshes, same failures, same heights, in empty
+> space. `962d506` changed behaviour without being the mechanism, which is
+> how it survived nine runs. The 24-triangle theory for why the counter
+> differs dies with it: if the counter worked by being effectively
+> non-Nanite, three genuinely non-Nanite meshes should behave alike, and they
+> do not.
+>
+> **Two things were gained anyway.** The pre-flight trace reported the whole
+> diagnosis in one line on its first run, before the map was opened. And the
+> five-trace guard never fired: within one process the answer is perfectly
+> stable, so the flakiness is strictly *across* processes - not a race inside
+> a run, something about what a given process loads.
+>
+> **The source geometry does not explain the asymmetry either, measured
+> here.** All three OBJs were the same kind of thing: every face a
+> disconnected quad with its own vertices, zero shared edges, not closed -
+> the counter included. Winding is correct and outward on every primitive, no
+> degenerate or zero-area faces, no duplicate-index faces. So manifoldness
+> and winding are eliminated as the *difference*, because all three shared
+> the defect and only two fail.
+>
+> **That defect is fixed regardless, because it was mine and it was wrong.**
+> `make_fixture_kit.py` minted fresh vertices for every corner of every face,
+> so a six-sided box was six loose quads and the merchandise bay was 252
+> separate shells. The generator now welds positions and emits a flat normal
+> per face - welding without normals would shade a box like a ball. All three
+> are now closed solids, every edge shared by exactly two faces, and **no
+> vertex moved**: bounds are identical across all eight kit meshes.
+
 > **THE CAUSE NAMED BELOW IS WITHDRAWN, same day. It was Nanite, and the
 > fallback I blamed was never the fault.** Varying one thing at a time in a
 > full editor: Nanite on, clear; Nanite off with the collider *untouched*,
