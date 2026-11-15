@@ -392,6 +392,43 @@ console.log("\nCover placement");
       );
     }
 
+    // Three guards against the one failure mode this kit has already shipped
+    // once: a call that reports success whether or not it did anything.
+    // add_simple_collisions returns -1 without raising, and the import script
+    // asserted against collision it had never added. Each of these was a live
+    // fault in this script, found in review before it ran.
+    check(
+      "the map save's return value is checked",
+      /if not unreal\.EditorLoadingAndSavingUtils\.save_map\(/.test(src),
+      "save_current_level() and save_map() both return a bool and both can " +
+        "refuse. Logging success unconditionally after one is the " +
+        "add_simple_collisions fault again, one file along: the fixtures " +
+        "would exist only in that process and vanish when it exits",
+    );
+    // Matches the CALL, not the definition: /prove_the_instrument\(world\)/
+    // also matches "def prove_the_instrument(world):", so the first version
+    // of this guard passed with the call deleted. A leading-whitespace anchor
+    // and no trailing colon is the difference between checking a function
+    // exists and checking it is used.
+    const instrumentCall = /^[ \t]+prove_the_instrument\(world\)[ \t]*$/m;
+    const called = instrumentCall.exec(src);
+    check(
+      "the trace instrument is proven against known geometry before spawning",
+      called !== null && called.index < src.indexOf("for spec in PLACEMENTS:"),
+      "every way the trace can break - a tuple result read for truthiness, a " +
+        "None world, the wrong channel - gives a uniform answer, so the " +
+        "probes cannot detect it. Two traces with opposite known answers can, " +
+        "and they must run before anything is spawned",
+    );
+    check(
+      "the re-run tag is read back after it is set",
+      /if not actor\.actor_has_tag\(TAG\)/.test(src),
+      "clear_previous() finds its own work by this tag. A tag that failed to " +
+        "stick means the second run stacks three more fixtures on the first " +
+        "three instead of replacing them, and the re-run guard is the thing " +
+        "protecting the map from this script",
+    );
+
     // Deliberately NOT checked here: whether each fixture actually blocks a
     // sight line where it stands. That is a question about 30 other solids on
     // the deck and the answer changes the moment anyone moves one, so it

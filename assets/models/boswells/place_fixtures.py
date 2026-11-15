@@ -152,6 +152,12 @@ PLACEMENTS = [
          size=(240.0, 74.0), height=190.0,
          blocks=[TRACE_CROUCHED_CM, TRACE_STANDING_CM, EYE_HEIGHT_CM],
          clear=[],
+         # The thinnest control of the three: 30 cm past the bay's own end and
+         # 27 cm off RACK_-2150_-900. That holds for the zero-radius line
+         # trace this fires, and was checked independently, but it leaves no
+         # room at all. **If this fixture moves, re-solve the offset rather
+         # than keeping -150** - the aisle is only 354 cm wide and the control
+         # has to clear both the bay and the rack column.
          control=-150.0,
          why="the only hidden-and-blind cover away from the desk-and-column "
              "corner. 240 cm across the aisle the patrol walks, so it breaks "
@@ -206,7 +212,19 @@ def place(spec):
         unreal.Vector(spec["xy"][0], spec["xy"][1], FLOOR_Z),
         unreal.Rotator(0.0, 0.0, spec["yaw"]))
     actor.set_actor_label(spec["label"])
-    actor.tags = [TAG]
+    # The repo's working idiom, from build_boswells_kids_stealth.py:107, with
+    # an explicit unreal.Name rather than a str left to coerce. This matters
+    # more than it looks: clear_previous() finds its own work by this tag, so
+    # a tag that silently failed to stick means the SECOND run stacks three
+    # more fixtures on the first three instead of replacing them. The re-run
+    # guard is what protects the map from this script, so it is read back
+    # below rather than assumed.
+    actor.set_editor_property("tags", [unreal.Name(TAG)])
+    if not actor.actor_has_tag(TAG):
+        raise RuntimeError(
+            f"{spec['label']} did not keep its {TAG} tag, so a re-run could "
+            f"not find it to replace. Refusing to continue: the next run "
+            f"would stack fixtures rather than replace them. Nothing saved")
     # The asset already defaults to BlockAll from import_fixtures.py. Set it on
     # the component too rather than trusting inheritance: a component that
     # overrides the asset's profile is the exact silent failure that whole
@@ -216,15 +234,94 @@ def place(spec):
 
 
 def blocked(world, start, end):
-    """One Visibility trace. True means something is in the way."""
-    hit = unreal.SystemLibrary.line_trace_single(
+    """One Visibility trace. True means something is in the way.
+
+    `UKismetSystemLibrary::LineTraceSingle` returns `bool` and takes
+    `FHitResult& OutHit`, and UE's Python binding collapses that shape into a
+    `(bool, HitResult)` tuple - the out param is dropped from the call
+    signature and appended to the result. So the obvious `hit is not None` is
+    **always true**, a tuple being never None, and every trace would read as
+    blocked: the `blocks` checks would pass for the wrong reason and every
+    `clear` check and control would fail. It fails safe, in that nothing gets
+    saved, but it proves nothing.
+
+    Rather than assert which shape the binding returns, this reads a bool out
+    of either and `prove_the_instrument` below checks the answer against
+    geometry whose answer is already known.
+    """
+    result = unreal.SystemLibrary.line_trace_single(
         world, start, end,
         unreal.TraceTypeQuery.TRACE_TYPE_QUERY1,
         False,                      # simple collision, as the game traces
         [],
         unreal.DrawDebugTrace.NONE,
         True)
-    return hit is not None
+
+    # (bool, HitResult) - the documented binding for a bool return with one
+    # out param. The bool is "did this hit a BLOCKING object", which is the
+    # question, and is stricter than the hit struct being present: a trace can
+    # return a hit that merely overlapped.
+    if isinstance(result, tuple):
+        return bool(result[0])
+    # A bare bool, if the binding ever changes to drop the out param.
+    if isinstance(result, bool):
+        return result
+    # A bare HitResult-or-None. Read its own blocking flag rather than its
+    # existence, for the same reason as above.
+    if result is None:
+        return False
+    try:
+        return bool(result.get_editor_property("blocking_hit"))
+    except Exception:
+        raise RuntimeError(
+            f"line_trace_single returned a {type(result).__name__} this "
+            f"script cannot read. Nothing has been changed. Do not guess: a "
+            f"trace whose result is misread reports cover that is not there")
+
+
+def prove_the_instrument(world):
+    """Fire two traces whose answers are already known, and refuse to go on if
+    either is wrong.
+
+    This is the check that makes the probes worth running. Every failure mode
+    of `blocked` above - the tuple read as a truthy object, a None world, a
+    trace channel that is not the one the game uses - produces a uniform
+    answer: everything blocked, or everything clear. Two traces with opposite
+    known answers catch all of them, and no amount of reading the binding
+    documentation does.
+
+    The geometry is chosen so that only one thing can be responsible:
+
+      - `BSW_KIDS_CEILING_SALES_COLUMN` at (-2550,-1970) is 44 x 44 cm and runs
+        floor to ceiling. A line crossing it meets the column and nothing else
+        at any of the three heights - the sales desk stops 13 cm west of it.
+      - The cross aisle at x = -3530, from y -1240 to -830, is clear of all 30
+        collidable actors on the deck at all three heights, and stays clear
+        after these three fixtures are placed.
+    """
+    checks = [
+        ("the 44 cm sales column", True,
+         unreal.Vector(-2550.0, -2100.0, 0.0),
+         unreal.Vector(-2550.0, -1850.0, 0.0)),
+        ("the open cross aisle at x=-3530", False,
+         unreal.Vector(-3530.0, -1240.0, 0.0),
+         unreal.Vector(-3530.0, -830.0, 0.0)),
+    ]
+    for label, expected, start, end in checks:
+        for height in (TRACE_CROUCHED_CM, TRACE_STANDING_CM, EYE_HEIGHT_CM):
+            s = unreal.Vector(start.x, start.y, FLOOR_Z + height)
+            e = unreal.Vector(end.x, end.y, FLOOR_Z + height)
+            got = blocked(world, s, e)
+            if got != expected:
+                raise RuntimeError(
+                    f"INSTRUMENT FAILED: {label} at {height:.0f} cm read "
+                    f"{'blocked' if got else 'clear'} and is known to be "
+                    f"{'blocked' if expected else 'clear'}. Every probe below "
+                    f"would be meaningless, so nothing was spawned and "
+                    f"nothing saved. Check the trace channel, the world, and "
+                    f"how line_trace_single's result is being read")
+    unreal.log("instrument proven: the column blocks and the open aisle does "
+               "not, at 40, 88 and 152 cm")
 
 
 def probe(world, spec):
@@ -281,6 +378,10 @@ def main():
     unreal.EditorLoadingAndSavingUtils.load_map(MAP)
     world = editor_world()
 
+    # Before anything is spawned, and before any map change: does a trace in
+    # this process actually answer the question?
+    prove_the_instrument(world)
+
     for label in clear_previous():
         unreal.log(f"replaced previously placed {label}")
 
@@ -300,7 +401,18 @@ def main():
             f"{len(problems)} problem(s). NOTHING SAVED - the map on disk is "
             f"untouched. Fix the positions and run again")
 
-    unreal.EditorLoadingAndSavingUtils.save_current_level()
+    # save_map's return is CHECKED, which save_current_level's was not. All
+    # eleven build scripts in Tools/ use this idiom, and the reason is the one
+    # this kit has already been bitten by: add_simple_collisions returns -1 on
+    # failure without raising, so the import script carried on and asserted
+    # against collision it had never added. A save that logs success whether
+    # or not it saved is the same fault in the same kit, one file along.
+    if not unreal.EditorLoadingAndSavingUtils.save_map(world, MAP):
+        raise RuntimeError(
+            "the map did NOT save, and every probe above passed. The fixtures "
+            "exist only in this process and vanish when it exits. Check the "
+            "package is not read-only or held by an open editor")
+
     unreal.log(f"{len(PLACEMENTS)} fixtures placed, probed against both "
                f"controls, and saved. Racks and the 7c737df encounter "
                f"untouched.")
