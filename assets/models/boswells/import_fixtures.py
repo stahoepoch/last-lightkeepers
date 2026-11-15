@@ -118,6 +118,37 @@ PALETTE_SURFACES = {
 }
 
 
+def delete_first(stem):
+    """Delete the existing asset before re-importing over it.
+
+    `replace_existing = True` reuses the package and keeps its build settings,
+    which is the opposite of what is needed here: the two broken fixtures were
+    BUILT with Nanite, and a flag flipped afterwards does not undo that. This
+    has been tested the expensive way - a full editor turned Nanite off,
+    traced BLOCK, and saved on that basis; a commandlet then loaded the saved
+    package and read clear. **So whatever makes it work in some processes
+    lives in the derived data cache, not in the package, and no amount of
+    re-saving moves it there.**
+
+    Deleting first forces the import to produce a new asset whose build
+    settings are the ones set below, rather than a package that remembers
+    being a Nanite mesh. The meshes are generated from committed OBJs by
+    `make_fixture_kit.py` and the assets are in git, so this is recoverable
+    either way; nothing but these three fixture meshes is touched, and the
+    shared palette materials are left alone.
+    """
+    path = f"{PACKAGE_PATH}/{stem}"
+    if not unreal.EditorAssetLibrary.does_asset_exist(path):
+        return False
+    if not unreal.EditorAssetLibrary.delete_asset(path):
+        raise RuntimeError(
+            f"{stem}: the existing asset would not delete, so a re-import "
+            f"would inherit its build settings - which is the thing this "
+            f"step exists to prevent. Nothing changed")
+    unreal.log(f"{stem}: deleted before re-import, so the rebuild is clean")
+    return True
+
+
 def import_mesh(stem):
     task = unreal.AssetImportTask()
     task.filename = SOURCE_DIR + stem + ".obj"
@@ -188,8 +219,25 @@ def turn_nanite_off(mesh, stem):
             unreal.log_warning(f"{stem}: set_nanite_settings refused ({error})")
 
     if applied is None:
+        # The property-only path is the one the evidence has already
+        # eliminated. Writing the flag without asking for a build is what
+        # `fix_nanite.py` effectively did: a full editor turned Nanite off,
+        # traced BLOCK, saved - and a commandlet then loaded that saved
+        # package and read clear. Whatever makes it work lives in the derived
+        # data cache, and a flag write does not put it in the asset.
+        #
+        # So this raises rather than proceeding. Producing assets by a route
+        # already known to produce broken ones, and leaving the pre-flight to
+        # notice, would be shipping the thing that looks done again - which is
+        # the mistake this whole file is an apology for.
         mesh.set_editor_property("nanite_settings", settings)
-        applied = "nanite_settings property (no rebuild requested)"
+        raise RuntimeError(
+            f"{stem}: StaticMeshEditorSubsystem.set_nanite_settings is not "
+            f"available, so Nanite can only be switched off as a flag with no "
+            f"rebuild. That path has already been tested and does not produce "
+            f"working collision - the saved package reloads clear. The flag "
+            f"is set but the asset is NOT rebuilt and must not be trusted. "
+            f"Find the build call before running this again")
 
     still_on = mesh.get_editor_property("nanite_settings").get_editor_property(
         "enabled")
@@ -231,12 +279,20 @@ def give_it_collision(mesh, stem):
     # report is how this file got here, and because neither path has been
     # verified by a trace at the point of import.
     #
-    # **The check that settles it has never been run by anyone: nobody has
-    # measured the box's EXTENTS.** Both sides counted `box_elems == 1` and
-    # read a profile string. A box element of the wrong size, or of no size,
-    # satisfies every assert in this file and collides with nothing. That is
-    # one property read and it should come before any further argument about
-    # which build path to use.
+    # I claimed here that nobody had measured the box's EXTENTS and that it
+    # was the cheapest unchecked thing. **That was wrong - they had been
+    # measured, before any of the repairs, and they were correct:** table
+    # (160, 90, 80), counter (186, 71, 102), bay (240, 74, 190), each centred
+    # at its own half-height. The claim is withdrawn.
+    #
+    # What the extents being right establishes is better than what I expected
+    # them to show. The actor's COLLIDING bounds come back as exactly half the
+    # box - extent (80, 45, 40) against a (160, 90, 80) element - so the
+    # engine is reading that box and deriving bounds from it, and a trace
+    # still passes through. **That separates "the collision data is wrong"
+    # from "the data is right and no physics body was ever built from it",
+    # and it is the second.** Which is why this file's build path matters and
+    # why re-saving does not fix it.
     #
     # It used to build a `KBoxElem` by hand and write it onto the body setup's
     # aggregate geometry when the subsystem was absent. That produces a struct
@@ -380,12 +436,21 @@ def assert_it_is_cover(mesh, stem, expected_top_cm):
 def main():
     problems = []
     for stem, expected_top in FIXTURES:
+        # Delete, re-import, THEN turn Nanite off with a rebuild, and only
+        # then build collision. The order is the whole point:
+        #
+        #   delete   - so the import cannot inherit a package that remembers
+        #              being a Nanite mesh
+        #   import   - a fresh asset
+        #   Nanite   - off via set_nanite_settings(apply_changes=True), which
+        #              asks the engine to BUILD, not to re-save. That
+        #              distinction is the one the evidence turns on: saving a
+        #              Nanite-built asset with the flag off has been tested
+        #              and the reloaded package still reads clear
+        #   collision- built last, against a mesh with one representation of
+        #              itself rather than two
+        delete_first(stem)
         mesh = import_mesh(stem)
-        # Nanite OFF before collision is built, not after. Flipping the flag
-        # on an asset that already has a Nanite build is what produced a
-        # result that would not sit still; the point of doing it here is that
-        # the collision is then built against a mesh with one representation
-        # rather than two.
         turn_nanite_off(mesh, stem)
         give_it_collision(mesh, stem)
         problems += assert_it_is_cover(mesh, stem, expected_top)

@@ -527,6 +527,33 @@ console.log("\nCover placement");
         "that cannot block in empty space will not block on a shop floor",
     );
 
+    // Two guards on the import ORDER, which is the only part of the Nanite
+    // story that is load-bearing. Saving a Nanite-built asset with the flag
+    // off was tested: a full editor traced BLOCK and saved, and a commandlet
+    // then loaded that package and read clear. So the asset has to be BUILT
+    // without Nanite, and that means deleting first and rebuilding - not
+    // flipping a flag on something that already exists.
+    check(
+      "the import deletes each asset before re-importing it",
+      importSrc.length > 0 &&
+        /^[ \t]+delete_first\(stem\)[ \t]*$/m.test(importSrc) &&
+        importSrc.search(/^[ \t]+delete_first\(stem\)/m) <
+          importSrc.search(/^[ \t]+mesh = import_mesh\(stem\)/m),
+      "replace_existing reuses the package and keeps its build settings, so " +
+        "a re-import over a Nanite-built asset inherits the thing being " +
+        "removed. Delete first or the rebuild is not clean",
+    );
+    check(
+      "a Nanite flag written without a rebuild is refused, not shipped",
+      importSrc.length > 0 &&
+        /raise RuntimeError\([\s\S]{0,400}?set_nanite_settings is not/.test(
+          importSrc,
+        ),
+      "writing the flag with no build is the route already proven to leave " +
+        "collision broken. Producing assets that way and leaving the " +
+        "pre-flight to notice is shipping the thing that looks done again",
+    );
+
     // Deliberately NOT checked here: whether each fixture actually blocks a
     // sight line where it stands. That is a question about 30 other solids on
     // the deck and the answer changes the moment anyone moves one, so it
