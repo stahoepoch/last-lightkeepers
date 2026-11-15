@@ -88,6 +88,45 @@ bool FLLKLanternFeelTest::RunTest(const FString& Parameters)
 	// ---- GUARANTEE 3: no cosmetic value can reach the gameplay anchor ----
 	{
 		const FVector Capsule(1200.f, -400.f, 90.f);
+	// ------------------------------------------- the eye, above the floor
+	//
+	// **The relationship between the two constants, pinned.** On
+	// 2026-11-15 three call sites added KeeperEyeHeightCm - a height above
+	// the FEET - to a character's actor location, which is already a
+	// half-height off the floor. The eye landed 72.5 cm above the boy's
+	// own head and the lantern pickup became unreachable from the whole
+	// level. Nothing failed: the arithmetic was consistent everywhere and
+	// consistently wrong.
+	//
+	// So this asserts the one thing that makes it wrong - that measured
+	// from the floor, the keeper's eye is at exactly the authored eye
+	// height - and it is written in terms of the floor rather than the
+	// capsule so that it cannot be satisfied by the same mistake.
+	{
+		const float FloorZ = 412.f;  // arbitrary, and that is the point
+		const FVector EyeTestCapsule(
+			-300.f, 75.f, FloorZ + LLKLanternFeel::KeeperCapsuleHalfHeightCm);
+		const FVector Eye = LLKLanternFeel::KeeperEyeWorldPosition(EyeTestCapsule);
+
+		TestEqual(
+			TEXT("the keeper's eye is the authored eye height above the floor"),
+			static_cast<float>(Eye.Z - FloorZ),
+			LLKLanternFeel::KeeperEyeHeightCm, 0.01f);
+		TestEqual(TEXT("and it is directly above the capsule"),
+			FVector2D(Eye.X, Eye.Y), FVector2D(EyeTestCapsule.X, EyeTestCapsule.Y));
+
+		// The shape of the old bug, named so it cannot come back wearing
+		// the same clothes: the eye must NOT be the capsule's centre plus
+		// an eye height measured from the feet.
+		TestTrue(
+			TEXT("and it is not the capsule centre plus a feet-relative height"),
+			!FMath::IsNearlyEqual(
+				static_cast<float>(Eye.Z),
+				static_cast<float>(
+					EyeTestCapsule.Z + LLKLanternFeel::KeeperEyeHeightCm),
+				0.01f));
+	}
+
 		const FVector Anchor = LLKLanternFeel::GameplayLightPosition(
 			Capsule, LLKLanternFeel::KeeperEyeHeightCm);
 

@@ -20,6 +20,12 @@
 #include "Storm/LLKZonePressureSubsystem.h"
 #include "Storm/LLKZonePressureSubsystem.h"
 #include "LLKUnits.h"
+#include "Lantern/LLKLanternFeel.h"
+#include "GameFramework/PlayerController.h"
+#include "GameFramework/Pawn.h"
+#include "Lantern/LLKLanternPickup.h"
+#include "Loot/LLKInteractorComponent.h"
+#include "TimerManager.h"
 #include "Harness/LLKStoreFloorBuilder.h"
 #include "UI/LLKDebugHUD.h"
 #include "UObject/ConstructorHelpers.h"
@@ -386,10 +392,30 @@ void ALLKTestGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 
+	UWorld* World = GetWorld();
+
+	// **Next tick, not now, and scheduled above the early return below.**
+	//
+	// Two reasons, both load-bearing. The registry fills from each pickup's
+	// BeginPlay, and actor BeginPlay order inside
+	// AWorldSettings::NotifyBeginPlay is not specified - this GameMode is in
+	// that same pass, so counting here could report zero in a map that has
+	// one. A diagnostic that can be wrong about the one thing it exists to
+	// report is worse than none at all; a frame of delay cannot be.
+	//
+	// And the Storm lookup below returns out of BeginPlay in any world
+	// without that subsystem, so anything scheduled after it is not
+	// scheduled in every world.
+	if (World != nullptr)
+	{
+		World->GetTimerManager().SetTimerForNextTick(
+			FTimerDelegate::CreateUObject(
+				this, &ALLKTestGameMode::ReportLanternPickups));
+	}
+
 	// Bound here rather than in InitGame, where the harness world is built:
 	// the subsystem exists by then, but binding before the lights have been
 	// spawned means a crossing during startup would drive nothing.
-	UWorld* World = GetWorld();
 	ULLKZonePressureSubsystem* Storm =
 		World != nullptr ? World->GetSubsystem<ULLKZonePressureSubsystem>() : nullptr;
 	if (Storm == nullptr)
@@ -405,6 +431,90 @@ void ALLKTestGameMode::BeginPlay()
 	// Applied once at the start too, so a world that somehow begins mid-night
 	// does not look calm until the next crossing.
 	ApplyStormStage();
+}
+
+void ALLKTestGameMode::ReportLanternPickups()
+{
+	UWorld* World = GetWorld();
+	if (World == nullptr)
+	{
+		return;
+	}
+
+	// The same registry the interactor reads, so this cannot disagree with
+	// what E can actually find. Asking a second source would make this a
+	// report about a different world than the one being played.
+	const TArray<ALLKLanternPickup*> Pickups =
+		ALLKLanternPickup::GetLivePickups(World);
+	const FString MapName = World->GetMapName();
+
+	if (Pickups.Num() == 0)
+	{
+		// **A Warning on purpose, and unconditional on purpose.** Several
+		// maps legitimately have no lantern - the harness floor, the route
+		// and apparel passes - so this will speak in all of them. That is
+		// the cost of it speaking in the one where somebody is standing
+		// still pressing a key that cannot work. It does not name the map
+		// that does have the lantern: a map name spelled into a log string
+		// is a thing that goes stale silently, which is the exact failure
+		// shape this project keeps finding in its own checks.
+		UE_LOG(LogLLK, Warning,
+			TEXT("No lantern pickup in %s. The keeper starts empty-handed, so "
+				 "E will never offer one and F will refuse - this map has "
+				 "nothing to find. If you expected a lantern here, it is "
+				 "either a different map or it was never saved into this one."),
+			*MapName);
+		return;
+	}
+
+	// The keeper's own reach, read off the component that enforces it. A
+	// number repeated here would be a number that goes stale the first time
+	// somebody tunes the real one, and this check exists precisely to catch
+	// a reach that cannot work.
+	const APawn* Keeper = World->GetFirstPlayerController() != nullptr
+		? World->GetFirstPlayerController()->GetPawn()
+		: nullptr;
+	const ULLKInteractorComponent* Interactor = Keeper != nullptr
+		? Keeper->FindComponentByClass<ULLKInteractorComponent>()
+		: nullptr;
+
+	for (const ALLKLanternPickup* Pickup : Pickups)
+	{
+		// The interaction point, not the actor location - that is the point
+		// the reach and the sight line are measured to, so it is the one
+		// worth reading next to a complaint about not being able to take it.
+		const FVector At = Pickup->GetInteractionPoint();
+		UE_LOG(LogLLK, Log,
+			TEXT("Lantern pickup in %s: %s, reached at (%.0f, %.0f, %.0f)%s."),
+			*MapName, *Pickup->GetName(), At.X, At.Y, At.Z,
+			Pickup->IsTaken() ? TEXT(" - already taken") : TEXT(""));
+
+		if (Interactor == nullptr)
+		{
+			continue;
+		}
+
+		// **The check that would have caught the double-counted eye at
+		// frame one.** Reach is measured eye-to-lantern, so the vertical
+		// gap is a floor on the distance: no amount of walking closer can
+		// get under it. If that gap alone exceeds the reach, the pickup is
+		// unreachable from every position in the level and no amount of
+		// playing will find that out - which is exactly what happened on
+		// 2026-11-15, when the eye sat 189 cm above a lantern a 150 cm
+		// reach was supposed to span.
+		const FVector Eye =
+			LLKLanternFeel::KeeperEyeWorldPosition(Keeper->GetActorLocation());
+		const float VerticalGap = FMath::Abs(Eye.Z - At.Z);
+		if (VerticalGap >= Interactor->LanternReachCm)
+		{
+			UE_LOG(LogLLK, Warning,
+				TEXT("  and it cannot be reached from anywhere: the keeper's "
+					 "eye is %.0f cm above it and the reach is %.0f cm. Reach "
+					 "is measured eye-to-lantern, so the height difference is "
+					 "a floor on the distance - walking closer cannot help."),
+				VerticalGap, Interactor->LanternReachCm);
+		}
+	}
 }
 
 void ALLKTestGameMode::HandleThresholdCrossed(FName ThresholdId, float Pressure)

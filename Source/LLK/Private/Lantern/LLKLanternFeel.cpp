@@ -70,6 +70,16 @@ namespace LLKLanternFeel
 		return CapsuleLocation + FVector(0.f, 0.f, Finite(EyeHeightCm));
 	}
 
+	FVector KeeperEyeWorldPosition(const FVector& CapsuleLocation)
+	{
+		// The camera's authored offset from the capsule centre - NOT
+		// KeeperEyeHeightCm, which is measured from the feet and would add
+		// the half-height a second time. The header carries the measurement
+		// that found this.
+		return CapsuleLocation
+			+ FVector(0.f, 0.f, Finite(KeeperCameraRelativeZCm));
+	}
+
 	FVector ClampedOffset(
 		const FVector& DesiredOffsetCm, float FreeDistanceCm, const FLLKLanternFeelRules& Rules)
 	{

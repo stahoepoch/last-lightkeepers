@@ -696,6 +696,76 @@ console.log("\nCover placement");
   }
 }
 
+// ====================================================================
+// The lantern census, and the two ways it could quietly stop working.
+//
+// It exists because a correct system with no voice cost two play sessions
+// on 2026-11-15: the keeper had no lantern, every component said so, and
+// nothing said the map had none to find. These guard the parts of that
+// fix that are invisible to a compiler.
+{
+  const gmPath = join(root, "Source/LLK/Private/LLKTestGameMode.cpp");
+  const gm = existsSync(gmPath) ? readFileSync(gmPath, "utf8") : "";
+
+  check(
+    "the game mode still has a lantern census",
+    gm.includes("ReportLanternPickups"),
+    "nothing reports how many pickups a world has, so a map with none " +
+      "looks exactly like a map whose pickup is out of reach",
+  );
+
+  // Scheduled, not called inline. Actor BeginPlay order inside
+  // NotifyBeginPlay is unspecified and the game mode is in that same pass,
+  // so a direct call can count zero in a map that has one - a diagnostic
+  // that is wrong about its own subject, which is worse than silence.
+  const timerIdx = gm.indexOf("SetTimerForNextTick");
+  const reportIdx = gm.indexOf("&ALLKTestGameMode::ReportLanternPickups");
+  check(
+    "the census is deferred a tick rather than called during BeginPlay",
+    timerIdx >= 0 && reportIdx >= 0 && reportIdx - timerIdx < 200,
+    "ReportLanternPickups must be bound to SetTimerForNextTick. Called " +
+      "straight from BeginPlay it races every pickup's own BeginPlay and " +
+      "can report an empty world that is not empty",
+  );
+
+  // BeginPlay returns early in any world with no zone-pressure subsystem.
+  // Anything scheduled after that return is not scheduled everywhere, and
+  // the symptom is a census that is silent in exactly some maps - which
+  // reads as "no pickup here" rather than "nobody asked".
+  const beginIdx = gm.indexOf("void ALLKTestGameMode::BeginPlay()");
+  const earlyReturnIdx = gm.indexOf("Storm == nullptr");
+  check(
+    "and it is scheduled above the subsystem early-return",
+    beginIdx >= 0 &&
+      timerIdx >= 0 &&
+      earlyReturnIdx >= 0 &&
+      timerIdx > beginIdx &&
+      timerIdx < earlyReturnIdx,
+    "the census must be scheduled before BeginPlay's `Storm == nullptr` " +
+      "return, or it never runs in a world without that subsystem and its " +
+      "silence is indistinguishable from a map with no lantern",
+  );
+
+  // The empty-case message must not name the map that does have one. A map
+  // name spelled into a log string is the same failure shape this suite
+  // was built to catch: it keeps printing confidently after a rename.
+  const bodyStart = gm.indexOf("void ALLKTestGameMode::ReportLanternPickups()");
+  const bodyEnd = gm.indexOf("void ALLKTestGameMode::", bodyStart + 10);
+  const body = bodyStart >= 0 && bodyEnd > bodyStart
+    ? gm.slice(bodyStart, bodyEnd)
+    : "";
+  check(
+    "the census names no map in its own log text",
+    body.length > 200 && !/LLK_Boswells/.test(body),
+    body.length > 200
+      ? "the census spells a map name into a log string, which goes stale " +
+        "silently on the next rename - it should describe what the player " +
+        "will experience and let the map name come from GetMapName"
+      : "could not find the census body to check, which means this guard " +
+        "is passing on nothing",
+  );
+}
+
 console.log(`\n${checks - failures}/${checks} passed`);
 if (failures > 0) {
   console.log(`${failures} FAILED\n`);

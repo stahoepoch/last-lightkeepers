@@ -49,6 +49,25 @@ public:
 	virtual void BeginPlay() override;
 
 protected:
+	/**
+	 * Say out loud how many lantern pickups this world actually has.
+	 *
+	 * **Why this earns a place in a class marked for deletion.** On
+	 * 2026-11-15 Chris played two full sessions looking for a lantern in
+	 * `LLK_Boswells_ApparelPass`, which has none - the pickup is only in the
+	 * opening map, and `EditorStartupMap` points at the other one. Every
+	 * system behaved correctly and the log said so eleven times
+	 * ("Lantern stayed off: the keeper does not have one"), but nothing said
+	 * the *reason*: there was no lantern in the building. Two sessions and a
+	 * log grep to learn a fact the world knew at frame one.
+	 *
+	 * This is the sentence that was missing. It is deliberately loud in the
+	 * empty case and deliberately says what the player will experience
+	 * rather than printing a count for somebody to interpret.
+	 */
+	void ReportLanternPickups();
+
+protected:
 	// ------------------------------------------------- M2.3, the storm outside
 	/**
 	 * The storm's answer to a threshold crossing, in the harness's own sky.

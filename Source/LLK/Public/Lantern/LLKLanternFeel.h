@@ -308,6 +308,36 @@ namespace LLKLanternFeel
 	LLK_API FVector GameplayLightPosition(const FVector& CapsuleLocation, float EyeHeightCm);
 
 	/**
+	 * Where the keeper is actually looking from, in world space.
+	 *
+	 * **Why this exists, measured on 2026-11-15.** Three call sites had
+	 * written `GameplayLightPosition(GetActorLocation(), KeeperEyeHeightCm)`,
+	 * which double-counts the capsule. `GetActorLocation` on a character is
+	 * the capsule's CENTRE - already `KeeperCapsuleHalfHeightCm` off the
+	 * floor - while `KeeperEyeHeightCm` is measured from the FEET. Adding
+	 * them puts the eye at 197.7 cm for a 145 cm boy: 72.5 cm above the top
+	 * of his own head, and 72.5 cm above the camera the character actually
+	 * builds.
+	 *
+	 * It was not a rounding error. The lantern pickup's interaction point in
+	 * the opening sits 9 cm off the tile, so the vertical gap alone came to
+	 * 189 cm against a 150 cm reach - the pickup could not be resolved from
+	 * anywhere in the building, standing, crouched or on top of the counter.
+	 *
+	 * So: the camera's authored relative height, added to the capsule, and
+	 * nothing else. It is right crouched as well as standing, because the
+	 * capsule's centre moves and this offset does not. It reads the authored
+	 * CONSTANT rather than the camera component's world transform, so no
+	 * sway, dip or feel value can reach a gameplay decision through it -
+	 * the same reason `GameplayLightPosition` refuses the camera.
+	 *
+	 * Measured from the floor this returns exactly `KeeperEyeHeightCm`, and
+	 * `LLK.Lantern.Feel` asserts that, which is what makes the two
+	 * constants' relationship a thing that cannot drift again.
+	 */
+	LLK_API FVector KeeperEyeWorldPosition(const FVector& CapsuleLocation);
+
+	/**
 	 * Advances the cosmetic filter by one frame.
 	 *
 	 * Pure: state and input in, new state out. Every output is bounded by

@@ -310,11 +310,17 @@ ALLKLanternPickup* ULLKInteractorComponent::ResolveLanternPickup() const
 		return nullptr;
 	}
 
-	// The project's one authority on where a keeper's eye is. Reusing it
-	// means this moved with the boy when the capsule shrank, instead of
-	// being a second 152 nobody updated.
-	const FVector Eye = LLKLanternFeel::GameplayLightPosition(
-		Pawn->GetActorLocation(), LLKLanternFeel::KeeperEyeHeightCm);
+	// The project's one authority on where a keeper's eye is.
+	//
+	// This used to read `GameplayLightPosition(GetActorLocation(),
+	// KeeperEyeHeightCm)`, copying the form the light component uses, and
+	// that form double-counts the capsule half-height: the eye landed at
+	// 197.7 cm for a 145 cm boy and the lantern, 9 cm off the tile, was
+	// 189 cm away vertically against a 150 cm reach. E could not have
+	// worked anywhere. Measured 2026-11-15, after the census printed the
+	// pickup's real height.
+	const FVector Eye =
+		LLKLanternFeel::KeeperEyeWorldPosition(Pawn->GetActorLocation());
 
 	// GetBaseAimRotation, not the actor's forward: the pawn turns with the
 	// controller in yaw only, and a child reaching for something on the
