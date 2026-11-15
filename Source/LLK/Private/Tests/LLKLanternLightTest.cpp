@@ -142,7 +142,12 @@ bool FLLKLanternLightTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the asset's radius is the one reported"), Light->GetRadiusStuds(), 11.f);
 	TestEqual(TEXT("and it went through the same conversion"),
 		Light->AttenuationRadius, LLKUnits::DistanceFromStuds(11.f));
-	TestEqual(TEXT("the asset's cone is the outer one"), Light->OuterConeAngle, 50.f);
+	// The asset authors a 50-degree FULL beam, so the outer half-angle is
+	// 25. This expected 50 and would have passed only while the authored
+	// number was being handed to Unreal unhalved - the bug the full-beam
+	// change exists to fix, asserted as if it were the contract.
+	TestEqual(TEXT("the asset's full beam is halved into the outer cone"),
+		Light->OuterConeAngle, 25.f);
 	TestEqual(TEXT("the asset's intensity reached the light"), Light->Intensity, 2.f);
 	TestFalse(TEXT("the asset can turn shadows off"), Light->CastShadows);
 

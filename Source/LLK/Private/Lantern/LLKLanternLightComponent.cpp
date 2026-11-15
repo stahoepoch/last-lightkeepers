@@ -319,8 +319,16 @@ float ULLKLanternLightComponent::GetEffectiveOuterConeDegrees() const
 	// is asked the question rather than a copy of it being maintained here -
 	// a second clamp in this file would be one more number that stops
 	// agreeing the day Epic changes theirs.
-	const FVector2f Clamped =
-		USpotLightComponent::GetClampedConeAngles(InnerConeAngle, OuterConeAngle);
+	//
+	// **The INSTANCE overload, which is the one that links.**
+	// `SpotLightComponent.h:48` declares a static
+	// `GetClampedConeAngles(inner, outer)` with no ENGINE_API on it, so it
+	// is visible to the compiler and absent from the engine DLL - this file
+	// compiled against it and the module failed at link. Line 49's
+	// `ENGINE_API FVector2f GetClampedConeAngles() const` is exported, and
+	// since this component IS a USpotLightComponent it already has the two
+	// angles to clamp.
+	const FVector2f Clamped = GetClampedConeAngles();
 	return FMath::RadiansToDegrees(Clamped.Y);
 }
 
