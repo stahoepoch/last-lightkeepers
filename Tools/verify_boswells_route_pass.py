@@ -5,11 +5,13 @@ The checks query saved collision in Unreal. They do not replace a PIE walk or
 prove navmesh connectivity.
 """
 
+import os
+
 import unreal
 
-MAP = "/Game/LLK_Boswells_RoutePass"
+MAP = os.environ.get("LLK_BOSWELLS_MAP", "/Game/LLK_Boswells_RoutePass")
 world = unreal.EditorLoadingAndSavingUtils.load_map(MAP)
-if world is None or world.get_name() != "LLK_Boswells_RoutePass":
+if world is None or world.get_name() != MAP.rsplit("/", 1)[-1]:
     raise RuntimeError("could not load the saved route map")
 
 
