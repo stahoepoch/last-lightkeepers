@@ -117,6 +117,15 @@ attention or a swarm call — `swarmCallRadius` stays sight-and-light driven.
 **No hearing for the Warden.** Row 7's unkillable Warden is a pursuit, not a
 patrol, and giving it ears makes a chase unloseable rather than tense.
 
+## The row, drafted for Chris to paste
+
+Ratified in conversation on 2026-11-14 but not yet a row, which is the state
+this project's own audit calls drift. **Only Chris puts a row in
+`DECISIONS.md`** (`docs/README.md`, house rule 2), so this is text to paste
+rather than something to apply. The next free number is **93**.
+
+> | 93 | **Machines hear the keeper. Hearing is a notice and never a lock: it wakes a walk toward where the keeper *was*, and grants no target, no pursuit and no swarm call.** Radii are authored per family in studs at crouch / walk / sprint; Sweepers are **4 / 8 / 14**. Unset is deaf | LOCKED | Chris, 2026-11-14 | Row 92 requires that the player can **hide**, and there was no noise input anywhere in the enemy code - every `Volume` in `LLKSweeper.cpp` is cue playback, output rather than input - so sprinting past a Sweeper and crouching past it were the same event. That was a deliberate position taken for the four-player raid, where the crew was the noisemaker; in a solo game the player's own feet are the only thing making noise, so it is re-taken here rather than inherited. **The numbers are derived rather than picked**, per row 81: they are the ratios of the 2D prototype Chris tuned by feel on 2026-11-12, expressed against this family's own `aggroRadiusDark` rather than converted from that world's pixels, which are not to scale. Sprint deliberately exceeds the 12-stud dark notice radius, so **you can be heard before you are seen**. **Unset is deaf**, so every family without authored values behaves exactly as it did before this row. The Warden is excluded under row 7: a pursuit that can hear is unloseable rather than tense. Row 61 keeps the values in studs. `Source/LLK` landed deaf-by-default in `652b7b4`; the data half is gated on `HANDOFFS.md` **P6**, because `validate_enemies` makes an unknown key a hard error and `Tools/**` is Codex's. `docs/PROPOSAL-THE-MACHINES-SHOULD-HEAR.md` |
+
 ## The falsifier
 
 If a machine that hears produces a chapter where the player sprints anyway —

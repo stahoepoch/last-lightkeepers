@@ -181,6 +181,92 @@ def kids_sales_desk():
     mesh.write("SM_BSW_KidsSalesDesk")
 
 
+# ---------------------------------------------------------------------------
+# Cover fixtures. Added 2026-11-14 against docs/FINDINGS-KIDS-FLOOR-STEALTH.md.
+#
+# Sight is traced between capsule CENTRES - 88 cm standing, 40 cm crouched -
+# while the keeper looks out from 152 cm. The rolling racks block only between
+# 88 and 130 cm, so crouching behind one drops the traced point below the cover
+# and makes the keeper MORE visible. The racks stay as they are: they are an
+# honest open rack and they should keep reading as open.
+#
+# These two are the deliberate answer, and they are solid to the floor so there
+# is no band to fall below.
+TRACE_CROUCHED_CM = 40.0
+TRACE_STANDING_CM = 88.0
+EYE_HEIGHT_CM = 152.0
+
+
+def folded_goods_table():
+    """A 30-inch folded-stock table. Blocks a crouched keeper and NOT a
+    standing one: you have to duck behind it, and because the whole silhouette
+    stays under chest height it never looks like something you could stand
+    behind. That misreading is what the racks already cost us."""
+    mesh = Mesh()
+    mesh.box(0, 0, 5, 134, 64, 10, "steel")             # toe recess, 0-10
+    mesh.box(0, 0, 37, 150, 80, 54, "white_steel")      # painted plinth, 10-64
+    mesh.box(0, 0, 68, 160, 90, 8, "oat")               # laminate top, 64-72
+    for x, y, colour in ((-38, -20, "denim"), (38, -20, "cream"),
+                         (-38, 20, "burgundy"), (38, 20, "mint")):
+        mesh.box(x, y, 76, 36, 34, 8, colour)           # folded stock, 72-80
+    mesh.write("SM_BSW_FoldedGoodsTable")
+    return mesh
+
+
+def service_counter():
+    """A 40-inch service counter. Blocks the chest at 88 and stays fifty
+    centimetres below the eye at 152, so a keeper stands behind it, watches the
+    machine over the top, and is not seen. The findings found that affordance
+    by accident in the racks and asked for it to be made deliberate before
+    someone 'fixes' the trace to use eye height and deletes it."""
+    mesh = Mesh()
+    mesh.box(0, 6, 5, 168, 49, 10, "charcoal")          # toe recess, 0-10
+    mesh.box(0, 2, 53, 180, 57, 86, "cream")            # carcass, 10-96
+    mesh.box(0, 0, 92, 182, 67, 8, "white_steel")       # apron, 88-96
+    mesh.box(0, 0, 99, 186, 71, 6, "dark_wood")         # laminate top, 96-102
+    mesh.write("SM_BSW_ServiceCounter")
+    return mesh
+
+
+def cover_check(table, counter):
+    """These two exist for a rule, so the rule is checked here rather than
+    trusted. A fixture that silently stops being cover is the failure the
+    racks already demonstrated, and it cost a live editor session to find."""
+    def extent(mesh):
+        zs = [z for _, _, z in mesh.vertices]
+        return min(zs), max(zs)
+
+    problems = []
+    t_low, t_high = extent(table)
+    c_low, c_high = extent(counter)
+
+    if t_low > 0.01:
+        problems.append("the table does not reach the floor, so a crouched "
+                        "keeper is visible beneath it")
+    if t_high <= TRACE_CROUCHED_CM:
+        problems.append(f"the table tops at {t_high:.0f} cm and does not hide a "
+                        f"crouched keeper traced at {TRACE_CROUCHED_CM:.0f} cm")
+    if t_high >= TRACE_STANDING_CM:
+        problems.append(f"the table tops at {t_high:.0f} cm and hides a STANDING "
+                        f"keeper traced at {TRACE_STANDING_CM:.0f} cm. It is "
+                        f"meant to be the fixture that makes you duck")
+    if c_low > 0.01:
+        problems.append("the counter does not reach the floor")
+    if c_high <= TRACE_STANDING_CM:
+        problems.append(f"the counter tops at {c_high:.0f} cm and does not hide "
+                        f"a standing keeper traced at {TRACE_STANDING_CM:.0f} cm")
+    if c_high >= EYE_HEIGHT_CM:
+        problems.append(f"the counter tops at {c_high:.0f} cm, at or above the "
+                        f"{EYE_HEIGHT_CM:.0f} cm eye, so the keeper can no "
+                        f"longer see over it")
+
+    if problems:
+        raise SystemExit("cover rule broken:\n  - " + "\n  - ".join(problems))
+    print(f"cover ok: table 0-{t_high:.0f}, counter 0-{c_high:.0f}, "
+          f"against crouch {TRACE_CROUCHED_CM:.0f} / stand "
+          f"{TRACE_STANDING_CM:.0f} / eye {EYE_HEIGHT_CM:.0f}")
+
+
 def main():
     with (ROOT / "BoswellsFixtures.mtl").open("w", encoding="utf-8") as file:
         file.write("# Authored palette for Boswell's fixture masters\n")
@@ -191,6 +277,7 @@ def main():
     round_rack()
     kids_rolling_rack()
     kids_sales_desk()
+    cover_check(folded_goods_table(), service_counter())
 
 
 if __name__ == "__main__":

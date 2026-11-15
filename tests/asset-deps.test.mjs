@@ -21,7 +21,7 @@
 //
 //   node tests/asset-deps.test.mjs
 
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -93,6 +93,93 @@ for (const [rel, min] of EXPECTED) {
       ? `empty or missing while the rest of the pack is here — a half-finished copy`
       : `found ${n}, expected at least ${min}`,
   );
+}
+
+// ---- the two cover fixtures are the height they were measured to be -----
+//
+// `docs/FINDINGS-KIDS-FLOOR-STEALTH.md` measured the live editor: sight is
+// traced between capsule centres, 88 cm standing and 40 cm crouched, while the
+// keeper's eye is at 152. The children's rolling racks block only 88-130, so
+// crouching behind one makes the keeper MORE visible.
+//
+// `assets/models/boswells/make_fixture_kit.py` already refuses to write a
+// fixture that breaks the rule. This checks the OBJ that actually landed,
+// because the generator's guarantee only covers the run that produced it and
+// these files are committed art, not build output.
+console.log("\nCover fixtures");
+{
+  const TRACE_CROUCHED_CM = 40;
+  const TRACE_STANDING_CM = 88;
+  const EYE_HEIGHT_CM = 152;
+
+  const topOf = (stem) => {
+    const path = join(root, "assets/models/boswells", `${stem}.obj`);
+    if (!existsSync(path)) return null;
+    let low = Infinity;
+    let high = -Infinity;
+    for (const line of readFileSync(path, "utf8").split("\n")) {
+      if (!line.startsWith("v ")) continue;
+      const z = Number(line.trim().split(/\s+/)[3]);
+      if (!Number.isFinite(z)) continue;
+      if (z < low) low = z;
+      if (z > high) high = z;
+    }
+    return { low, high };
+  };
+
+  const table = topOf("SM_BSW_FoldedGoodsTable");
+  const counter = topOf("SM_BSW_ServiceCounter");
+
+  check(
+    "both cover fixtures exist as committed source meshes",
+    table !== null && counter !== null,
+    "run python assets/models/boswells/make_fixture_kit.py",
+  );
+
+  if (table && counter) {
+    check(
+      "the folded-goods table reaches the floor",
+      table.low <= 0.01,
+      `lowest vertex ${table.low} cm. A gap under a fixture is a sight line ` +
+        `under it, and the crouched trace sits at ${TRACE_CROUCHED_CM} cm`,
+    );
+    check(
+      "the folded-goods table hides a crouched keeper",
+      table.high > TRACE_CROUCHED_CM,
+      `tops at ${table.high} cm against a crouched trace at ${TRACE_CROUCHED_CM}`,
+    );
+    check(
+      "and does NOT hide a standing one, so it is the fixture you duck behind",
+      table.high < TRACE_STANDING_CM,
+      `tops at ${table.high} cm against a standing trace at ${TRACE_STANDING_CM}. ` +
+        `If it covers both, the floor has no fixture that teaches crouching`,
+    );
+    check(
+      "the service counter reaches the floor",
+      counter.low <= 0.01,
+      `lowest vertex ${counter.low} cm`,
+    );
+    check(
+      "the service counter hides a standing keeper",
+      counter.high > TRACE_STANDING_CM,
+      `tops at ${counter.high} cm against a standing trace at ${TRACE_STANDING_CM}`,
+    );
+    check(
+      "and stays below eye height, so the keeper can watch over it",
+      counter.high < EYE_HEIGHT_CM,
+      `tops at ${counter.high} cm against a ${EYE_HEIGHT_CM} cm eye. Cover you ` +
+        `cannot see over is a wall, and the findings asked for this affordance ` +
+        `to be made deliberate rather than lost`,
+    );
+  }
+
+  // The racks must keep reading as open, and that is deliberately NOT checked
+  // here. The obvious proxy - "no vertex reaches the floor" - fails on the
+  // castors, which legitimately touch it, and a check that fires on correct
+  // geometry teaches people to edit the test. Whether a fixture is see-through
+  // is a question about air between solids at a height and an angle, and the
+  // instrument that answers it is a trace in the live editor, which is what
+  // FINDINGS-KIDS-FLOOR-STEALTH.md already used. Left to that.
 }
 
 console.log(`\n${checks - failures}/${checks} passed`);
