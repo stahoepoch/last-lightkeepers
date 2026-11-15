@@ -27,7 +27,7 @@ code is technical debt to evaluate, not a co-op acceptance gate.
 | 1 | **Boswell's traversal and scale** | The two-floor store has connected playable routes, usable cover, exits from tight spaces, a working vertical connection, and no fall-off path. Character and Sweeper footprints are measured in it. |
 | 2 | **Lighting and lantern in that space** | Emergency fixtures show navigation; the carried lantern reveals one needed detail and operates one authored reader. Its notice cost is perceptible through the machine. Art tuning does not change gameplay radius. |
 | 3 | **Threat and sound** | A machine has a legible job, directional sound and a visible commitment; the player can hide, detour or flee. Contact never removes input for a long recovery or pins the player in geometry. |
-| 4 | **Chapter objective** | A clue and environmental change lead through the concourse to Sayers; the result persists and the path has an end. |
+| 4 | **Chapter objective** | Clues and environmental changes carry the player across the whole overgrown, scavenged, dangerous Galleria to Sayers; the result persists and the path has an end. |
 | 5 | **Fresh-player proof** | A reproducible build is played without coaching. Record what the player actually did, what blocked them and what they wanted next. Revise the chapter before enlarging the map. |
 
 Art, animation, texture and audio work belong inside packages 1–4. They are
@@ -41,6 +41,31 @@ behavior to prove and evidence to retain. Keep one active card per owner and
 integrate often. A source change needs a compile and relevant test; an Unreal
 content change needs an editor or packaged play observation. A passing script
 that examines old extraction data cannot certify the new chapter.
+
+## Minimal operating loop
+
+This is deliberately the smallest process layer. Do not add a second backlog,
+agent hierarchy, template catalogue, or status report on top of `HANDOFFS.md`.
+The project already has enough historical documentation to create a convincing
+but wrong plan.
+
+- **One live checkpoint:** `CURRENT-STATE.md` names the current chapter proof,
+  active boundaries, last *observed* play result, and the next risk. Replace it
+  at a work-package boundary; do not append a diary. Git history is the diary.
+- **One ledger:** `HANDOFFS.md` owns assigned/open work and closure evidence.
+  An item is not duplicated in the checkpoint.
+- **One playable claim:** work affecting player experience is only *verified*
+  after a person moves through it in the editor or a reproducible build. A
+  compile, an automation check, screenshot of an empty map, or an MCP response
+  is evidence about a seam, not the chapter.
+- **One asset writer:** `LANES.md` governs `.umap` and `.uasset` claims. A
+  work package can have several collaborators, but never two concurrent binary
+  writers.
+
+The guard against stale status is part of the loop: the checkpoint distinguishes
+**observed**, **automated**, and **unverified** statements and carries its date
+at the top. If it stops reflecting `HEAD`, update or delete the claim rather
+than planning around it.
 
 At least once each work week, run the fast tooling checks, compile the target,
 play the newest chapter path, and record three things: what changed, where

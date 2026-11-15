@@ -56,12 +56,14 @@ without silently changing enemy balance.
 
 ## Story and structure
 
-The opening playable crossing begins in Boswell's, passes through part of the
-Galleria, and reaches Sayers. Boswell's should be a real two-floor department
-store with departments, service routes and safe ways around a machine. The
-first chapter needs a beginning, discovery, decision and destination, not just
-collectibles in a room. Storms change conditions and the place; they are not a
-raid timer that ejects the player.
+The opening playable crossing begins in Boswell's and carries the player across
+the entire overgrown, scavenged, dangerous Galleria Mall to Sayers. Boswell's
+should be a real two-floor department store with departments, service routes
+and safe ways around a machine; the concourse and intervening stores must be
+real traversal territory, not an empty connector. The first chapter needs a
+beginning, discovery, decision and destination, not just collectibles in a
+room. Storms change conditions and the place; they are not a raid timer that
+ejects the player.
 
 The family mission, the fate of the crew, the role of Lanternhold and the final
 action of the game need an authored story outline and play proof. Do not turn
@@ -71,12 +73,13 @@ and ending mechanism remain open at their current decision status.
 
 ## The first proof
 
-A fresh player can enter Boswell's, understand where they are, move between
-both floors, use cover and the lantern, survive a machine without being pinned,
-discover why they are going to Sayers, and reach the chapter exit. They should
-want to continue. This must be observed in a playable Unreal build, with art
-and sound good enough to test the intended experience. A green data test, a
-render of an empty aisle, or a Playground game cannot substitute for it.
+A fresh player can enter Boswell's, understand where they are, cross the whole
+mall through overgrowth, scavenged routes, cover and danger, use the lantern,
+survive a machine without being pinned, discover why they are going to Sayers,
+and reach the chapter exit. They should want to continue. This must be observed
+in a playable Unreal build, with art and sound good enough to test the intended
+experience. A green data test, a render of an empty aisle, or a Playground game
+cannot substitute for it.
 
 The old extraction, co-op and Roblox implementations are available as
 reference. They do not define the current product's acceptance test.

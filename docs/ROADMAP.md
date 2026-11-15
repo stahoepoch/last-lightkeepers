@@ -8,8 +8,10 @@ rows are not silent permission to rebuild the co-op extraction game.
 
 ## One playable target
 
-Build the opening crossing in Unreal: **Boswell's → Galleria concourse →
-Sayers threshold**. The first proof is a compelling, finishable chapter path,
+Build the opening crossing in Unreal: **Boswell's → the whole Galleria Mall →
+Sayers**. The mall is overgrown, visibly scavenged, and dangerous throughout;
+the concourse and intervening stores are the chapter, not a connector between
+two furnished ends. The first proof is a compelling, finishable chapter path,
 not a whole Valley, a feature inventory, or a greybox whose appearance cannot
 test the intended experience. Boswell's must read as a substantial two-floor
 department store, with real-scale paths, departments, vertical circulation,
@@ -35,7 +37,7 @@ The chapter should let a new player:
 | **1. Make the store traversable** | Correct keeper scale, two floors, stairs or escalator, wide connected aisles, counters and alternate routes; bake and verify navigation. | One person can walk the intended Boswell's path, get upstairs and back, use cover, escape a Sweeper and never leave the map accidentally. |
 | **2. Make the instrument matter** | Dress emergency orientation lights, give the lantern a readable physical presence, author one information read and one infrastructure use, and expose its notice cost through machine behavior. | The chapter remains navigable with the lantern off, yet a player must choose when and where to use it to advance. They can explain what using it cost. |
 | **3. Make a threat worth answering** | Give machines distinct jobs, directional sound and visible route commitments. Tune pursuit, contact, recovery and disengage around escape paths. | A fresh player can identify a cue and choose hide, detour or sprint. No pin, long input lock, unexplained hit or endless harassment is accepted. |
-| **4. Finish the chapter path** | Connect the clue, environmental puzzle and route change to the concourse and Sayers threshold; persist the meaningful result. | A build can be started, played to the chapter end and resumed without editor commands or a verbal walkthrough. |
+| **4. Finish the chapter path** | Connect clues, environmental puzzles and route changes across the whole mall to Sayers; persist the meaningful result. | A build can be started, played to the chapter end and resumed without editor commands or a verbal walkthrough. |
 | **5. Integrate the look and playtest** | Replace temporary shapes with selected licensed assets, authored materials and animation; mix sound; measure performance and run fresh-player sessions. This work starts in slice 1 and continues through every slice. | Players recognize a department store, use its geometry, read its lighting and want to continue. Failures found in play become the next work card. |
 
 Slices are an order for proving the game, not a ban on art or sound until the
@@ -52,8 +54,9 @@ credited because its C++ compiles or an asset exists on disk.
   replaces them. Do not mistake a green extraction suite for product progress.
 - Roblox implementation. `src/` and `default.project.json` are a frozen
   prototype, not the game target.
-- A large mall footprint before one dense, convincing crossing works. The
-  route to Sayers matters; empty floor area does not satisfy it.
+- An empty mall footprint. The whole Galleria crossing is the target, but each
+  stretch must earn its danger, scavenging, overgrowth, route choice, and story
+  purpose; raw floor area does not satisfy it.
 
 ## Existing code and data to reconcile
 

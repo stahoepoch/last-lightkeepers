@@ -4,7 +4,8 @@ Status: **chosen proposal, 2026-11-15. Not placed.** Story only. It sets no
 light, speed, or combat value and moves no map. Do not place story actors
 from any earlier draft of this chapter.
 
-The chosen opening is the witnessed grab at the lower entrance counter.
+The chosen opening is the witnessed grab at the east entrance counter
+on the lower floor, the perfume and jewelry counter.
 An earlier pass put dad's lantern on the atrium's upper landing, with a
 hood card, a marked key, a coat tied as a sign, and a second card at
 Sayers. That pass is retired. Nothing in this file asks for it.
@@ -90,9 +91,10 @@ different wall and is not this door.
 This is the scene to build. Landmarks only. Distances, brightness, and
 movement stay with their owners.
 
-The child starts down behind the lower entrance counter, the perfume and
+The child starts down behind the east entrance counter, the perfume and
 jewelry counter on the mall side of the escalator well. The counter is
-solid above a crouched body. A gap at the aisle end faces south.
+solid above a crouched body. A gap at the aisle end faces south. The
+opening map already uses that counter. This page does not move it.
 
 From that gap, looking south, the child sees the open aisle, the south
 grille, the header over the bars, and the storm in the entrance glass
@@ -109,8 +111,12 @@ The child is down, still, and unlit, with the counter between their body
 and that work, so the machine never has them as a target. It does not
 search the counter.
 
-The machine stops at the header on the counter's side of the grille, the
-side the gap can see. It lifts one bar. The chain runs. The grille rises.
+The machine stops at the release on the store side of the grille, near the
+eastern post, the hardware the gap can see. A hood shades the bar. In the
+storm light the child sees the roller's silhouette and the bar move. The
+fresh wear where the machine's grip scraped the bar is a close detail,
+and it waits for the lantern. The machine lifts the bar. The chain runs.
+The roller turns. The grille rises.
 The cluster is pushed through. A flat call of "Sayers" comes from the
 machine's direction during that push. Dad's lantern leaves his hand and
 lands on the open tile just outside the counter, toward the well, one
@@ -133,11 +139,12 @@ or keeps them down after the view. The fear after that is the open aisle
 between the counter and the lantern, and the longer open aisle back to
 the mouth, where the haul-machine's partner is still working the drag.
 
-What the child remembers, and can use: the bar on the counter side of the
-header, the way it traveled up and then down, and the sound of the chain.
-The lantern, once picked up, shows that same bar in the dark under the
-glass. It does not add a word. Working the bar the way the machine did
-raises the grille again.
+What the child remembers, and can use: the shaded bar by the eastern
+post, the roller above it, the way the bar traveled, and the sound of the
+chain. After the pickup, the lantern shows the fresh wear on that bar.
+Working the bar the way the machine did is the whole puzzle. The grille
+in the saved opening map does not move yet. When a runtime actor exists,
+that same bar is what raises it.
 
 ### What this scene needs that the project does not have
 
@@ -149,13 +156,172 @@ page does not ask anyone to build them in the map.
 | Dad, his brother, and two other people | No human meshes for them. The temporary keeper body is the mannequin sample, and it is the wrong actor for the four who are taken. |
 | A haul | Sweeper job sounds on disk are stock cues: notice, start, interrupt, filed. None of them is this push through a grille. |
 | The grille moving | The saved south grille is static bars. |
-| The lantern on the floor | The carried lantern is the instrument. There is no authored prop of dad's lantern waiting to be picked up. |
+| The lantern on the floor | The opening map places a placeholder pickup on that tile. It is not the issued lantern mesh. Taking it is not yet proof the player understood the step. |
 | The spoken name | No capture line. "Sayers" has to be heard as one short call from the machine's direction, not as dialogue written on a surface. |
 
 Four people and one machine are the whole cast. Faces are unnecessary.
 The silhouettes have to read against the lightning in the south glass:
 two men still on their feet, two shapes already being moved, one machine
 at the header.
+
+## How the child learns
+
+A puzzle here is a verb the building already performed, repeated by hand.
+The child is never told the next step in writing. They saw it, or the
+wreckage is still doing it. Fun is recognition while afraid: the right
+object is the one that just moved, the right direction is the mark that
+has not died, and the cost shows up as sound, a machine, or a darker
+room. Nothing in this night is a code, a set of matching symbols, or a
+count of pieces to collect. Nothing takes the controls away to make a
+point. The lesson lands when the child chooses the next step and the
+place answers.
+
+The order below is the order the hands learn it. Someone who already
+knows the night still performs every verb. Someone who is learning can
+meet the same verb early, on something small, and again when it matters.
+
+### The grammar
+
+Five facts. Every puzzle in the night is one of them again.
+
+- The taking is the only reason a door is a puzzle. A shop the haul did not touch can be entered, searched, and left. It does not hide a key, a code, or a second light.
+- A mark that stops is where the next object is. The child never searches the Galleria for a small thing. The drag ends at the release, at the closet they killed, and at the slammed door.
+- Looking has two distances. Emergency light and lightning show the shape. The lantern shows the fresh detail. The same lantern is how a machine notices a person.
+- A failed grab teaches. The sleeve in the bars can be taken hold of. It does not come back through. The bar is the verb that moved.
+- The child can leave any of this and run or hide. No interaction holds them, and none of them ends the night on a clock.
+
+### Stay down, then choose it
+
+The counter saved the child because they were below its top, still, and
+unlit, while the machine's work was the standing cluster. That fact is
+the stealth lesson, taught before the child has a verb for it. The proof
+comes after the grille. The chain-sound gives the aisle machine a new
+job, and it comes to the mouth. The counter, and the gondolas off that
+dragged aisle, are the same kind of solid the child just survived
+behind. Ducking there is a decision. Standing in the mouth is the other
+decision. Neither one freezes them.
+
+A child who fidgets at the counter before the pickup can learn the
+smaller version. The bottles and the jewelry pad on that counter will
+sound if they are knocked. The aisle machine can hear that. The grille
+is the loud version of the same fact.
+
+### One step into the open
+
+Dad's lantern is on the tile just outside the counter, toward the well.
+The safe gap does not contain it. Picking it up is the first chosen
+exposure. The hood is shut. There is nothing to read inside it. What the
+child gets is his light, and the knowledge that the useful thing was in
+the aisle the machine just used.
+
+### Look, then look close
+
+From the counter, storm light through the south glass shows the release
+as a silhouette: shade, roller, bar. That is enough to know which object
+moved. It is not enough to see the fresh wear. The lantern, held up to
+the bar, resolves that scrape. The child is not decoding a mark. They are
+confirming the grip they watched.
+
+The sleeve is the wrong verb, and it is allowed to fail. A hand on the
+cloth finds it caught, pulled outward, and stuck. Pulling it does not
+raise the grille and does not bring anyone back. That failure is the
+lesson: the thing that moved was the bar, not the coat. Then the hands
+do what the machine did. Get the shade out of the way. Put his light on
+the scrape. Move the bar the way it traveled. The chain runs. The roller
+turns. The grille rises and stays up. The chain is loud, and the light
+at the mouth is visible, so the aisle machine can come. The child is
+free to go through, duck behind the counter, or take a side aisle.
+
+Every later "the lantern shows it" puzzle is this one again: emergency
+light for the shape, his light for the detail, and a cost for standing
+there with it lit. A price card upstairs is the same rule on a smaller
+surface, so the store keeps teaching it after the door is open.
+
+### Follow the mark that still means something
+
+Two scuffs leave the struggle. The strong one runs to the grille and
+out. The weaker one starts toward the escalator and dies, because
+someone broke that way and was pulled back. The known hour trusts the
+strong scuff. The long hour can take the dead one.
+
+Up the escalator, the well, the chandelier, and the children's floor are
+intact and empty. Ordinary department names. Ordinary pickup tags. No
+person, and no line from him. The dead scuff is why. A mark that fades
+is a way that failed. The child learns to leave a beautiful room.
+
+The north dock is the other beautiful lie. It is a large dark opening
+and a truck door. No scuff goes there. One look is the whole puzzle.
+The storm the child cares about is still in the south glass.
+
+### Let the storm show the next dry step
+
+On the concourse the drag is wet and, in the low joint, underwater. A
+lightning flash, seen from the edge or from a shop mouth, shows where
+the mark continues and where the water sits. The same flash shows the
+child to anything in that wing. So the puzzle is when to look and when
+to move. Wait at cover, read the flash, walk the dry edge while it is
+dark again. The storm is not a clock. A child who hates waiting can
+search the edge by hand. Both ways leave them free to run.
+
+Open shops along that walk are cover, and they are also how a child
+loses the thread. A cut through a shop can be faster and can come out
+with no scuff in sight. Finding the drag again is the cost. The long
+night is allowed to pay it. The known hour stays with the mark.
+
+### Power is also their power
+
+At the elbow the marks end on a closet floor and the wing beyond is
+black, shutter down. The takers killed that run behind them. The court
+has other closets. They are dry, and their hardware is unworn. The drag
+and the fresh wear pick the one panel, the same scrape the lantern
+found on the grille bar. Throwing that breaker brings the emergency
+light back along the run and raises the shutter. It also wakes whatever
+machine was parked in the dark, and that machine starts a route the
+child can see and hear before stepping into it.
+
+This is the lesson the rest of the game is built on. Helping yourself
+through the building helps the things that work there. The child should
+feel clever and then hear the cost. They keep the lights. They also
+keep the freedom to hide, detour, or run. The breaker does not lock
+them in the closet.
+
+### A small thing in his light
+
+The public floor of the elbow is choked with what the haul shoved and
+with the water. The drag stops at a slammed metal door off the walk. In
+the emergency light the door is a shape. The key is in the struggle-wet
+immediately in front of that door, because that is where the mark stops.
+It is not somewhere else in the court. The lantern finds it the way it
+found the wear on the bar. Nothing is written on the key. It fits that
+door because it was lost by the people being forced through, and the
+scrape inside the duct is the rest of the sentence.
+
+The shaft is one corridor, not a maze. Rain on the metal, one way, his
+coat scrap where a body dragged, a grate that opens into the long wing
+on the same scrape. The metal is loud, so the bottles-on-the-counter
+lesson comes back as footsteps. Choosing the shaft means leaving the
+big lit room for a loud dark one. Coming out, the next flash shows
+Sayers. The fun is that the ugly hole was the continuation of the
+people, and the grand walk was the blockage.
+
+### The big door can be the wrong one
+
+Penhurst fills the side of the long wing. Its grille is down. The drag
+does not enter. A child who has been learning the floor walks past. A
+child who is still equating size with importance goes to the glass, sees
+no scuff and no sleeve, and comes back. The wing's machine is the
+pressure, not a guard posted on the wrong anchor. The lesson is to
+believe the mark over the landmark.
+
+### Being right does not make you early
+
+Sayers' grille is down. The drag goes in and does not come out. A lamp
+burns in a room beyond the glass. From the threshold, one flash shows
+the same cluster already leaving toward the auto-centre side. There is
+no lock to undo and no note to satisfy. The interaction is to arrive, to
+look, and to still have his lantern. The child did every verb correctly
+and lost them by minutes. That is the reason the next door matters. The
+chapter does not pay the chase back with a reunion.
 
 ## One cause, from the counter to Sayers
 
@@ -390,9 +556,9 @@ That list is historical.
 
 | | |
 | --- | --- |
-| What the keeper does | From behind the lower entrance counter, sees dad, his brother, and the others taken through the south grille. When the view returns input, steps into the aisle, takes his lantern off the tile, and works the same header bar the machine used. |
-| What emergency light already shows | The counter, the dragged aisle, the mouth, and the sleeve in the bars. |
-| What only the lantern resolves | The release in the dark under the header. Not a note, and not a route. The kid already saw the way. |
+| What the keeper does | From behind the east perfume and jewelry counter on the lower floor, sees dad, his brother, and the others taken through the south grille. When the view returns input, steps into the aisle, takes his lantern off the tile, tries the sleeve and finds it stuck, then works the same bar the machine used. |
+| What emergency light already shows | The counter, the dragged aisle, the mouth, the sleeve in the bars, and the release as a silhouette under the storm in the entrance glass. |
+| What only the lantern resolves | The fresh wear where the machine gripped the bar. Not a note, and not a route. The kid already saw the way. |
 | What changes | The grille rises and stays up. The concourse can be entered on the fresh drag marks. |
 | What wakes | The sound carries. The machine on the dragged aisle can come to the mouth. Counters and the side aisles are the way around it. |
 | What this job refuses | A prepared clue trail, a second lantern, a count of widgets, a payout, a dock extraction, a second player, a timer that ends the night, a long lock on movement after the grab, and any change to how bright a light is or how fast a person moves. |
@@ -407,7 +573,7 @@ kind of job, so the night does not change rules halfway across the court.
 
 | Gate | Job | Opens | Wakes |
 | --- | --- | --- | --- |
-| Elbow court | Throw the breaker the takers killed behind them. | The shutter on the long wing, and the emergency light along that run. | Whatever was parked in the dark on that run. |
+| Elbow court | Follow the drag to the one closet with fresh wear. The other closets are dry. Throw the breaker the takers killed. | The shutter on the long wing, and the emergency light along that run. | Whatever was parked in the dark on that run. |
 | Slammed maintenance door | Pick up the key that was dropped in the struggle, and open that door. | The ventilation shaft the group was forced into, out through a grate into the long wing. | The court, while the key and the door are being worked. The shaft is the storm on the metal, scrape marks, and a torn scrap of his coat. |
 
 ## Clues a builder can place
@@ -416,7 +582,7 @@ Objects and marks. Not a second quest list.
 
 | Where | Clue |
 | --- | --- |
-| Entrance counter | The gap he put the kid in. Sightline to the aisle and the mouth. |
+| East entrance counter, perfume and jewelry, lower floor | The gap he put the kid in. Sightline to the aisle and the mouth. Bottles and the jewelry pad will sound if they are knocked. |
 | Tile in front of that counter | His lantern, dropped, hood shut, nothing hidden in it. |
 | South grille | Torn coat sleeve in the bars, pulled outward. Drag through the opening. Grille down again. |
 | One lower aisle | Scored by the drag. A machine still on that line. A scuff toward the escalator that dies, because someone was pulled back. |
@@ -438,10 +604,10 @@ a marked hook, or a second card at Sayers.
 
 | Placement | Relative to | Player-facing clue |
 | --- | --- | --- |
-| The child, for the grab | Down behind the lower entrance counter, mall side of the escalator well. The gap faces the south grille. | South: bars, header, storm in the entrance glass. Back along the aisle: the well, the chandelier in the mirror, the empty north dock. |
+| The child, for the grab | Down behind the east entrance counter, perfume and jewelry, on the lower floor, mall side of the escalator well. The gap faces the south grille. | South: bars, header, storm in the entrance glass. Back along the aisle: the well, the chandelier in the mirror, the empty north dock. |
 | Dad, his brother, the two others, and the one machine | In the aisle between that counter and the south grille. The machine ends at the header on the counter's side. | Silhouettes in the lightning. One haul-sound. The bar travels up, the chain runs, the cluster goes through, the bar travels down, the grille crashes. "Sayers" once, from the machine's direction. |
 | The lantern | On the open tile just outside the counter, toward the well. Not under the counter, not on a landing, not under the chandelier. | A step out of cover. Hood shut. Nothing inside it. |
-| The release | The same header bar the machine used, under the south glass and above the bars. | The torn sleeve in the bars, pulled outward. The bar and the chain, which the child already saw move. The lantern makes the bar visible. Raising it is loud, and the machine still on the dragged aisle can come to the mouth. |
+| The release | Store side of the south grille, near the eastern post, under the entrance glass. Shade, roller, bar, and chain. | Storm light shows the silhouette. The lantern shows the fresh wear where the machine gripped the bar. The sleeve outside the bars points out. Working the bar is loud, and the machine still on the dragged aisle can come to the mouth. |
 
 ## Still proposals
 

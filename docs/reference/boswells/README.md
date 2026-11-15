@@ -87,9 +87,11 @@ displays block crouched sightlines. The current camera view is still a
 blockout with flat materials and dark surrounding departments. Visual
 completion and a played route remain open. The separate atrium canopy is
 smoked mirror beneath a solid roof, with a decorative glass-rod chandelier
-in the escalator well. The photographed exterior entrance glazing and its
-storm-light path into the atrium remain an architecture and lighting task;
-no canopy pane is an exterior skylight.
+in the escalator well. The south mall entrance is projecting glass,
+`MALL_GLASS_ENTRANCE`, in place of the old solid header. Saved traces from
+the inner face reach the rods at z 1120, 1280, and 1400, and a vertical
+line still hits the roof. Photo 14's lot frontage is not that bay. No
+canopy pane is an exterior window.
 
 The next fixture pass should choose one arrival-to-escalator sightline and one
 upper-floor furniture sightline, dress those with these distinct fixture types,

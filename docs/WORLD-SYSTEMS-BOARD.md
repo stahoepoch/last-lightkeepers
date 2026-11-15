@@ -22,7 +22,7 @@ outlived the people and circumstances that made those procedures safe.
 
 | Thing | Current truth | Source |
 | --- | --- | --- |
-| Opening chapter | A dense two-floor Boswell's teaches the game as the solo keeper crosses toward Sayers through part of the Galleria. The exact chapter boundary is still being authored. | `DECISIONS.md` 28, 43, 92; `ROADMAP.md` |
+| Opening chapter | Boswell's teaches the game as the solo keeper crosses the entire overgrown, scavenged, dangerous Galleria Mall to Sayers. The exact authored route is still being built. | Chris direction, 2026-11-14; `ROADMAP.md` |
 | Player role | A young Lightkeeper separated from his people seeks family and a way home. Recovery and material may matter, but a raid payout does not organize the journey. | `DECISIONS.md` 92; `GAME-THESIS.md` |
 | Light | The lantern reveals routes and value, and gives nearby systems reason to notice the keeper. It never repels enemies or accelerates the weather. | `DECISIONS.md` 5; `THE-LANTERN.md` |
 | Enemy intent | Machines contain, retrieve, clean, stock, route, restrain, and lock down. Their primary consequence is a dangerous state, not ordinary combat damage. | `DECISIONS.md` 47; `COMBAT.md` |
@@ -54,10 +54,10 @@ hands, route, or cargo**—not by merely adding health or damage.
 | System | What it believes | Scary, readable consequence | Player answer |
 | --- | --- | --- | --- |
 | **Sweeper** | An aisle must be clear. | Knocks loose carried items, pushes a crate away, or sweeps the keeper toward an unsafe route. | Stay dark and out of its lane; create a louder obstruction elsewhere; retrieve dropped cargo later. |
-| **Stocker / mannequin** | Inventory belongs in its assigned location. | Re-shelves a dropped bag, carries a loose object to a bay, or relocates an incapacitated keeper to a "holding" area. | Preserve the trail, break line of sight, use the lantern to read the destination, choose rescue versus extraction. |
+| **Stocker / mannequin** | Inventory belongs in its assigned location. | Re-shelves a dropped story item or carries it to a visible stock bay. | Preserve the trail, break line of sight, use the lantern to read the destination, and choose whether recovery is worth the detour. |
 | **Glimmer** | A fault needs reporting. | Tags the keeper and turns every later system into a response to that report. | Interrupt before the scan, hide, or make a decoy report elsewhere. |
-| **Window Walker / Ficus** | A display or growing area needs light and order. | Holds a keeper beneath their own bright lantern until other procedures converge. | Go dark before contact, cut a route, or have a second keeper pull the scene apart. |
-| **Warden** | Loss prevention. | Ends the fantasy that the building can be cleared; it converges on activity and forces departure. | Do not fight it. Leave, distract, or finish the extraction holdout. |
+| **Window Walker / Ficus** | A display or growing area needs light and order. | Holds a keeper beneath their own bright lantern until other procedures converge. | Go dark before contact, cut a route, or create an environmental distraction. |
+| **Warden** | Loss prevention. | Ends the fantasy that the building can be cleared; it converges on activity and forces a change of route. | Do not fight it. Hide, distract, or flee toward the chapter path. |
 
 **No arbitrary bag deletion.** If cargo is dropped, moved, or shelved, it stays
 in the world with a physical trail and a recoverable destination. The loss is
@@ -67,13 +67,13 @@ leave the player in a playable space, not a cutscene that removes agency.
 ## Distraction is a survival language
 
 The player needs ways to make a room unsafe somewhere other than where they
-stand. These are per-run, found or crafted survival tools—not a weapon build.
+stand. These are scarce chapter tools and environmental opportunities—not a
+weapon build.
 
 | Tool | What it changes | Why it is frightening |
 | --- | --- | --- |
 | Thrown object / noisemaker | Creates an audible fault or obstruction at a chosen position. | It can summon the wrong procedure, and sound carries farther than intended. |
 | Flare / temporary work light | Creates light somewhere the player is not. | It is a small sun: it reveals a route and feeds attention to the decoy location. |
-| Arc tap / service snare | Holds a single procedure for seconds. | It buys passage, never victory; failure leaves the keeper beside the machine they stopped. |
 | Loose pallet / cart / shutter | Changes the geometry using the building's own logistics. | The shortcut can become the next obstruction, and it may trap a teammate or cargo. |
 
 None of these repels enemies. They redirect existing jobs. This preserves the
@@ -89,12 +89,63 @@ that might get you out now, or keep it for the room you have not seen yet.
    turn on the lantern to understand the next room.
 3. **The first personal cost:** a needed crate or route clue requires raised
    lantern light and a hold. Something starts moving because of it.
-4. **The first escape, not victory:** a procedure displaces the player's cargo
+4. **The first escape, not victory:** a procedure displaces a needed item
    or closes the expected exit. The player gets out by reading a service mark,
    taking a detour, or drawing it away—not by killing the room.
 5. **The promise:** the recovered crate bears a stamp for a place the player
    has never visited. From a window, a distant light answers it. The store is
    enough for tonight; the valley becomes a future question.
+
+## Opening chapter candidate — Boswell's loading bay to safety
+
+Status: **proposed, updated 2026-11-14.** Chris's current opening shape. This
+is a chapter outline to test in Unreal for the whole-Galleria crossing, not a
+decision about the family's final fate.
+
+The player is dropped at Boswell's loading bay with their father and a small
+party. A routine loading-bay procedure turns wrong; before the player can
+properly enter the toy department, a machine catches the group's attention.
+The father gets the player free, but he and the others are taken or separated.
+He leaves his issued lantern behind.
+
+The first chapter is then a 1–3 hour survival crossing across the whole
+believable Galleria Mall. Its goal is not "complete the tutorial" but **reach
+a safe place and learn where the family went.** The player navigates blocked,
+overgrown, scavenged departments and concourse spaces; pursues physical clues;
+uses cover and service routes; solves small place-specific puzzles; and chooses
+when an item or route is worth the machine attention it creates.
+
+### Learning sequence
+
+| Beat | Player learns through need | Story result |
+| --- | --- | --- |
+| Loading-bay arrival | Movement, looking, cover, and that a machine has a legible work lane. | The family is present; the place is merely wrong. |
+| Father intervenes | Fleeing and separation, not combat. | The player is alone and needs a way through Boswell's. |
+| The dropped lantern | Pick up, carry, aim, and read light. | The father's equipment is a promise of connection, not a collectible. |
+| First machine response | Shutter/limit light, wait for a committed route, and create a distraction. | The player learns that the store reacts to procedure and visibility. |
+| First local reader | Scope the light onto an authored label, panel, or service mark; use it to open or redirect one route. | The lantern is a practical instrument, not a flashlight with lore attached. |
+| The mall crossing | Carry the lantern vocabulary through distinct overgrown, scavenged, dangerous mall stretches; read clues and solve route problems that move the player forward. | Sayers is a destination with a reason, not a map marker. |
+
+### Design constraints
+
+- The father being taken must preserve player control. The player is not held
+  in a long cutscene or asked to watch an unavoidable failure.
+- The lantern is learned in layers: **find → see → aim → shutter → mount →
+  operate an authored reader.** Each layer must solve a real immediate problem.
+- No combat tutorial. Distraction, hiding, route-reading, and flight are the
+  survival verbs.
+- Boswell's stays a real store: toy department, loading/service routes,
+  counters, stock rooms, stairs or escalators, and visible but initially
+  blocked destinations all make puzzles spatial rather than abstract.
+- A 1–3 hour opening needs several quiet intervals. Constant pursuit turns
+  fear into noise; each danger beat must leave a player with new knowledge,
+  access, or a clearer reason to continue.
+
+**First playable cut:** do not attempt the full three-hour chapter first. Prove
+the loading-bay separation, one lantern read, one light-cost response, one
+route-changing interaction, and one reachable safe-room/Sayers-facing end.
+If that twenty-to-thirty-minute cut does not make a player want the next room,
+more departments will only make the same problem longer.
 
 ## Expansion promises, not a content checklist
 
@@ -106,7 +157,7 @@ are played. Do not build these before Boswell's passes the slice test.
 | --- | --- | --- |
 | Rail yard | Goods are still routed and assembled. | Diversions, transport material, cargo routes, and a way to reassign shipments. |
 | Foundry / data works | The town is still making replacement parts and scheduling work. | Components, maintenance access, and proof that the system is actively supplied. |
-| Hospital | Triage and quarantine without living judgment. | Supplies, patient-routing knowledge, roof access/extraction promise. |
+| Hospital | Triage and quarantine without living judgment. | Supplies, patient-routing knowledge, and a future roof-route promise. |
 | Solar works | Power is collected and allocated by procedure. | A local control over which subsystems wake—not universal shutdown. |
 
 The world may look like a robot society thriving, but it is not a civilization
@@ -138,7 +189,7 @@ environment, or a recovered thing—not an explanation screen.
 | Idea | Smallest Boswell's test | Status |
 | --- | --- | --- |
 | Wrong crate | A recoverable crate bears a deeper-place department stamp, legible only under lantern light. | Build next |
-| Sweeper cargo displacement | A predictable lane knocks or routes a carried crate into a tagged stock bay; the player can recover it by using the lane or distracting it. | **BUILT** — notices at `aggroRadiusDark`, walks off-route, files within `ContactRange`. Bay tag still required. Debug HUD shows the cues; no authored sound yet. Play it on `LLK_Boswells_FirstRun` |
+| Sweeper item displacement | A predictable lane routes a needed crate or clue into a tagged stock bay; the player can recover it by using the lane or distracting it. | **LEGACY IMPLEMENTATION, NOT CURRENT-CHAPTER PROOF** — it must be re-evaluated against `GAME-THESIS.md` before it is claimed for Boswell's-to-Sayers. |
 | Mannequin shelving | A Stocker relocates dropped cargo to a visible assigned bay, leaving shelf tags and a route puzzle. | Proposed |
 | Lantern service port | One local routing panel lets the player bias a door/pallet procedure, trading one open route for another danger. | Proposed |
 | First decoy | One throwaway noise source pulls a patrol off a required hold long enough to cross. | Proposed |
@@ -152,15 +203,16 @@ environment, or a recovered thing—not an explanation screen.
 | Habitability as capability | Power, beds, food and growing space are permanent capability, never a consumable meter. They change what the crew can attempt. | Inbox — Chris, 2026-11-01 |
 | ~~Re-filed, not reprogrammed~~ | Withdrawn as the recommendation 2026-11-01: a structural ending, not a horrifying one. It implicates nothing the player did. See the endings section | Cut — reason logged |
 | Endings: A/B/C/D/E | Keepers are the valley’s maintenance; what you reclaim is a defense; Lanternhold is a building too; the filed are the current shift; restoration only relocates harm | Candidates — Chris, 2026-11-01 |
-| The hard run | Stand still in `LLK_Boswells_FirstRun`. The Sweeper takes the misrouted crate, or the player lights up and hears the interrupt. The dock is the only way home. | Proposed — 2026-11-02. The night below. Not a decision |
+| The hard run | Stand still in `LLK_Boswells_FirstRun`. The Sweeper takes the misrouted crate, or the player lights up and hears the interrupt. | **RETIRED AS A CHAPTER TARGET** — raid-era framing; keep only the encounter insight if it supports the crossing. |
 
 ## Working discipline
 
 - `DECISIONS.md`: binding calls only. Do not quietly promote a board idea.
 - This board: current mechanics/lore synthesis and pressure tests.
-- `VERTICAL-SLICE.md`: only what must ship in the 10–15 minute proof.
-- `ZONES.md`: later-place contracts only after the store loop works.
-- `COORDINATION.md`: ownership, file seams, and what is actively being built.
+- `ROADMAP.md`: the active Boswell's-to-Sayers chapter proof.
+- `PRODUCTION-CONTROL.md`: active work packages and evidence standards.
+- `HANDOFFS.md`: ownership, open items, and closure evidence.
+- `LANES.md`: binary-asset and source ownership.
 
 When an idea is cut, leave a one-line reason in the relevant pressure-test row.
 That keeps the same seductive dead ends from returning as "new" scope later.
