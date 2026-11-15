@@ -4,7 +4,9 @@ This verifies placements and two real sightline traces, not the capture scene,
 pickup interaction, or grille motion. Those require runtime and a play pass.
 """
 
+import configparser
 import math
+from pathlib import Path
 
 import unreal
 
@@ -23,6 +25,15 @@ def close_to(actual, expected, tolerance=1.0):
 
 def xyz(vector):
     return vector.x, vector.y, vector.z
+
+
+settings = configparser.ConfigParser()
+settings.read(Path(unreal.Paths.project_dir()) / "Config/DefaultEngine.ini",
+              encoding="utf-8-sig")
+for key in ("EditorStartupMap", "GameDefaultMap"):
+    require(settings.get("/Script/EngineSettings.GameMapsSettings", key,
+                         fallback="") == MAP,
+            key + " does not open the playable opening map")
 
 
 world = unreal.EditorLoadingAndSavingUtils.load_map(MAP)
