@@ -17,6 +17,9 @@ namespace
 	const FName WitnessTag(TEXT("LLK.Opening.LanternRead"));
 	const FName ReleaseTag(TEXT("LLK.Opening.GrilleRelease"));
 	const FName SegmentTag(TEXT("LLK.Opening.GrilleSegment"));
+	const FName StemTag(TEXT("LLK.Opening.GrilleStem"));
+	const FName LinkTag(TEXT("LLK.Opening.GrilleLink"));
+	const FName RollerTag(TEXT("LLK.Opening.GrilleRoller"));
 }
 
 ALLKOpeningGrille::ALLKOpeningGrille()
@@ -46,6 +49,22 @@ void ALLKOpeningGrille::BeginPlay()
 		if (Actor->ActorHasTag(ReleaseTag))
 		{
 			ReleaseBar = Actor;
+			ClosedBarLocation = Actor->GetActorLocation();
+		}
+		if (Actor->ActorHasTag(StemTag))
+		{
+			ReleaseStem = Actor;
+			ClosedStemLocation = Actor->GetActorLocation();
+		}
+		if (Actor->ActorHasTag(LinkTag))
+		{
+			ChainLink = Actor;
+			ClosedLinkLocation = Actor->GetActorLocation();
+		}
+		if (Actor->ActorHasTag(RollerTag))
+		{
+			HeaderRoller = Actor;
+			ClosedRollerRotation = Actor->GetActorRotation();
 		}
 		if (Actor->ActorHasTag(SegmentTag))
 		{
@@ -57,6 +76,10 @@ void ALLKOpeningGrille::BeginPlay()
 	{
 		UE_LOG(LogLLK, Error, TEXT("Opening grille incomplete: witness=%d release=%d segments=%d (expected 45)"),
 			Witness.IsValid(), ReleaseBar.IsValid(), Segments.Num());
+	}
+	if (!ReleaseStem.IsValid() || !ChainLink.IsValid() || !HeaderRoller.IsValid())
+	{
+		UE_LOG(LogLLK, Warning, TEXT("Opening grille release hardware is incomplete; the bars can still rise."));
 	}
 }
 
@@ -146,6 +169,25 @@ void ALLKOpeningGrille::Tick(float DeltaSeconds)
 	}
 	OpenAlpha = FMath::Min(1.f, OpenAlpha + DeltaSeconds / RaiseSeconds);
 	const float Eased = FMath::InterpEaseInOut(0.f, 1.f, OpenAlpha, 2.f);
+	// The player's hand moves the same physical bar the machine moved. The
+	// stem follows it, the chain link draws upward, and the roller turns while
+	// the bars lift. These are presentation pieces; collision stays on the bars.
+	if (AActor* Bar = ReleaseBar.Get())
+	{
+		Bar->SetActorLocation(ClosedBarLocation + FVector(0.f, 9.f, -23.f) * Eased);
+	}
+	if (AActor* Stem = ReleaseStem.Get())
+	{
+		Stem->SetActorLocation(ClosedStemLocation + FVector(0.f, 0.f, -20.f) * Eased);
+	}
+	if (AActor* Link = ChainLink.Get())
+	{
+		Link->SetActorLocation(ClosedLinkLocation + FVector(0.f, 0.f, 55.f) * Eased);
+	}
+	if (AActor* Roller = HeaderRoller.Get())
+	{
+		Roller->SetActorRotation(ClosedRollerRotation + FRotator(0.f, 0.f, 360.f * Eased));
+	}
 	for (int32 Index = 0; Index < Segments.Num(); ++Index)
 	{
 		AActor* Segment = Segments[Index].Get();

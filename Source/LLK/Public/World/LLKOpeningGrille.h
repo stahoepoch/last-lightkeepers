@@ -47,6 +47,13 @@ private:
 
 	TWeakObjectPtr<AActor> Witness;
 	TWeakObjectPtr<AActor> ReleaseBar;
+	TWeakObjectPtr<AActor> ReleaseStem;
+	TWeakObjectPtr<AActor> ChainLink;
+	TWeakObjectPtr<AActor> HeaderRoller;
+	FVector ClosedBarLocation = FVector::ZeroVector;
+	FVector ClosedStemLocation = FVector::ZeroVector;
+	FVector ClosedLinkLocation = FVector::ZeroVector;
+	FRotator ClosedRollerRotation = FRotator::ZeroRotator;
 	TArray<TWeakObjectPtr<AActor>> Segments;
 	TArray<FVector> ClosedLocations;
 	float OpenAlpha = 0.f;

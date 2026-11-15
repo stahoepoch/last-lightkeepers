@@ -33,6 +33,13 @@ require(len(segments) == 45, "grille segment count changed")
 require(all(a.static_mesh_component.get_editor_property("mobility") ==
             unreal.ComponentMobility.MOVABLE for a in segments),
         "a grille segment cannot move")
+for tag in ("LLK.Opening.GrilleRelease", "LLK.Opening.GrilleStem",
+            "LLK.Opening.GrilleLink", "LLK.Opening.GrilleRoller"):
+    pieces = tagged(tag)
+    require(len(pieces) == 1, "hardware tag missing or duplicated: " + tag)
+    require(pieces[0].static_mesh_component.get_editor_property("mobility") ==
+            unreal.ComponentMobility.MOVABLE,
+            "hardware is static: " + tag)
 
 witness = tagged("LLK.Opening.LanternRead")[0]
 read_point = witness.get_actor_location()
@@ -78,6 +85,7 @@ finally:
         actor.set_actor_location(point, False, False)
 
 message = ("BOSWELLS_OPENING_GRILLE_RUNTIME_VERIFY PASSED: saved controller, "
-           "read point, 45 movable bars, closed and raised crossing traces")
+           "read point, four movable mechanism parts, 45 movable bars, "
+           "closed and raised crossing traces")
 unreal.log(message)
 print(message)
