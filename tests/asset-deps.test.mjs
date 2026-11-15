@@ -198,6 +198,209 @@ console.log("\nCover fixtures");
   // FINDINGS-KIDS-FLOOR-STEALTH.md already used. Left to that.
 }
 
+console.log("\nCover placement");
+{
+  // The placement table in place_fixtures.py is the part of that script that
+  // has to be right BEFORE an editor sees it. A wrong height field or a
+  // centre-pivot z sinks a fixture into the deck, and the probe still passes,
+  // because the half of the fixture above the floor still blocks the trace.
+  // So it is checked here, with no engine, against the same committed OBJs.
+  const TRACE_CROUCHED_CM = 40;
+  const TRACE_STANDING_CM = 88;
+  const EYE_HEIGHT_CM = 152;
+
+  // The children's department footprint and the deck height, from the
+  // commandlet read of the committed map on 2026-11-15.
+  const DEPARTMENT = { xMin: -3900, xMax: -1100, yMin: -2050, yMax: -250 };
+  const DECK_Z = 662.5;
+
+  const objTop = (stem) => {
+    const path = join(root, "assets/models/boswells", `${stem}.obj`);
+    if (!existsSync(path)) return null;
+    let low = Infinity;
+    let high = -Infinity;
+    for (const line of readFileSync(path, "utf8").split("\n")) {
+      if (!line.startsWith("v ")) continue;
+      const z = Number(line.trim().split(/\s+/)[3]);
+      if (!Number.isFinite(z)) continue;
+      if (z < low) low = z;
+      if (z > high) high = z;
+    }
+    return { low, high };
+  };
+
+  const script = join(root, "assets/models/boswells/place_fixtures.py");
+  const src = existsSync(script) ? readFileSync(script, "utf8") : "";
+
+  check(
+    "the placement script is committed",
+    src.length > 0,
+    "assets/models/boswells/place_fixtures.py is missing",
+  );
+
+  if (src) {
+    const floorZ = Number((src.match(/^FLOOR_Z = ([\d.]+)/m) || [])[1]);
+    check(
+      "the deck height is the measured 662.5, not an approximation",
+      floorZ === DECK_Z,
+      `FLOOR_Z is ${floorZ}. All four slabs carrying the deck top out at ` +
+        `662.500 exactly; "about 663" is half a centimetre of fixture buried`,
+    );
+
+    // Base-pivot: the spawn z must be a bare FLOOR_Z. The failure this catches
+    // is the plausible one - reaching for Codex's centre-pivot cube
+    // convention, which would bury these three by 40, 51 and 95 cm.
+    //
+    // This asserts the spawn call's shape and nothing more. It first also
+    // asserted that "FLOOR_Z + <height>" appears nowhere in the file, which
+    // fired on the correct script: the probes build their trace points at
+    // FLOOR_Z + height by design, and must. A check that fails on correct
+    // code teaches the next person to edit the test, so it is gone rather
+    // than narrowed. The positive form already covers the real case - a
+    // centre-pivot spawn cannot match a bare FLOOR_Z.
+    check(
+      "fixtures spawn at the floor, as base-pivot meshes require",
+      /spec\["xy"\]\[1\],\s*FLOOR_Z\s*\)/.test(src),
+      "the spawn z is not a bare FLOOR_Z. These meshes have their origin at " +
+        "the base; FLOOR_Z + height/2 is the centre-pivot convention and " +
+        "sinks each one half its own height into the deck",
+    );
+
+    const entries = [
+      ...src.matchAll(
+        /dict\(mesh="([^"]+)",\s*label="([^"]+)",\s*xy=\(([-\d.]+),\s*([-\d.]+)\),\s*yaw=([-\d.]+),\s*size=\(([\d.]+),\s*([\d.]+)\),\s*height=([\d.]+),\s*blocks=\[([^\]]*)\],\s*clear=\[([^\]]*)\]/g,
+      ),
+    ].map((m) => ({
+      mesh: m[1],
+      label: m[2],
+      x: Number(m[3]),
+      y: Number(m[4]),
+      yaw: Number(m[5]),
+      sx: Number(m[6]),
+      sy: Number(m[7]),
+      height: Number(m[8]),
+      blocks: m[9],
+      clear: m[10],
+    }));
+
+    check(
+      "all three fixtures appear in the placement table",
+      entries.length === 3,
+      `parsed ${entries.length} placements. If the table was edited into a ` +
+        `shape this regex does not read, every check below silently passes ` +
+        `by testing nothing`,
+    );
+
+    const named = {
+      TRACE_CROUCHED_CM,
+      TRACE_STANDING_CM,
+      EYE_HEIGHT_CM,
+    };
+    const heights = (list) =>
+      list
+        .split(",")
+        .map((n) => named[n.trim()])
+        .filter(Number.isFinite);
+
+    for (const e of entries) {
+      const obj = objTop(e.mesh);
+      if (obj) {
+        check(
+          `${e.label} declares the height its mesh actually is`,
+          Math.abs(obj.high - e.height) < 0.5,
+          `the table says ${e.height} cm, the committed OBJ is ` +
+            `${obj.high.toFixed(1)} cm. Every blocks/clear decision is ` +
+            `derived from this number, so a drift here makes all of them lies`,
+        );
+      }
+
+      const blocks = heights(e.blocks);
+      const clears = heights(e.clear);
+
+      for (const h of blocks) {
+        check(
+          `${e.label} is tall enough to block the ${h} cm trace it claims`,
+          e.height > h,
+          `${e.height} cm cannot block a trace at ${h} cm. The editor reports ` +
+            `this as a probe failure only after spawning; catching it here ` +
+            `costs nothing`,
+        );
+      }
+      for (const h of clears) {
+        check(
+          `${e.label} is short enough to be clear at ${h} cm as it claims`,
+          e.height < h,
+          `${e.height} cm stands above a trace at ${h} cm, so "clear" is ` +
+            `unsatisfiable and the height control built on it proves nothing`,
+        );
+      }
+      check(
+        `${e.label} accounts for all three trace heights exactly once`,
+        blocks.length + clears.length === 3 &&
+          new Set([...blocks, ...clears]).size === 3,
+        `blocks and clear together name ${blocks.length + clears.length} of ` +
+          `the three trace heights. A height in neither list is a height ` +
+          `nothing checks, at a fixture whose whole purpose is that height`,
+      );
+    }
+
+    // Fixtures must not be laid over one another. This is the exact fault
+    // standing on this deck today - UPPER_BEDDING and UPPER_SEASONAL
+    // interpenetrate three racks and the sales desk because a rack grid was
+    // placed without checking what was already there - and it would be poor
+    // to file that handoff row from inside the commit that repeats it.
+    for (let i = 0; i < entries.length; i += 1) {
+      for (let j = i + 1; j < entries.length; j += 1) {
+        const a = entries[i];
+        const b = entries[j];
+        if (a.yaw !== 0 || b.yaw !== 0) {
+          check(
+            `${a.label} / ${b.label} overlap test understands their rotation`,
+            false,
+            "a placement is rotated and this check only compares " +
+              "axis-aligned footprints. Extend it before trusting it, " +
+              "rather than reading a pass that compared the wrong boxes",
+          );
+          continue;
+        }
+        const ox =
+          Math.min(a.x + a.sx / 2, b.x + b.sx / 2) -
+          Math.max(a.x - a.sx / 2, b.x - b.sx / 2);
+        const oy =
+          Math.min(a.y + a.sy / 2, b.y + b.sy / 2) -
+          Math.max(a.y - a.sy / 2, b.y - b.sy / 2);
+        check(
+          `${a.label} and ${b.label} do not interpenetrate`,
+          !(ox > 0 && oy > 0),
+          `they overlap by ${ox.toFixed(1)} x ${oy.toFixed(1)} cm`,
+        );
+      }
+    }
+
+    for (const e of entries) {
+      const x0 = e.x - e.sx / 2;
+      const x1 = e.x + e.sx / 2;
+      const y0 = e.y - e.sy / 2;
+      const y1 = e.y + e.sy / 2;
+      check(
+        `${e.label} stands inside the children's department`,
+        x0 >= DEPARTMENT.xMin && x1 <= DEPARTMENT.xMax &&
+          y0 >= DEPARTMENT.yMin && y1 <= DEPARTMENT.yMax,
+        `x ${x0.toFixed(0)}..${x1.toFixed(0)}, y ${y0.toFixed(0)}..` +
+          `${y1.toFixed(0)} falls outside the department footprint ` +
+          `x -3900..-1100, y -2050..-250`,
+      );
+    }
+
+    // Deliberately NOT checked here: whether each fixture actually blocks a
+    // sight line where it stands. That is a question about 30 other solids on
+    // the deck and the answer changes the moment anyone moves one, so it
+    // belongs to the trace probes in place_fixtures.py, which refuse to save
+    // the map when they fail. Re-implementing it from a copied actor list
+    // would be a second source of truth that goes stale quietly.
+  }
+}
+
 console.log(`\n${checks - failures}/${checks} passed`);
 if (failures > 0) {
   console.log(`${failures} FAILED\n`);
