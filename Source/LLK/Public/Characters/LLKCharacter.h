@@ -518,6 +518,17 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "LLK|Lantern")
 	TObjectPtr<UStaticMeshComponent> LanternGlass;
 
+	/**
+	 * Show or hide the whole carried instrument.
+	 *
+	 * The boy starts without a lantern, so the silhouette cannot be drawn in
+	 * his hand before he picks one up. Bound to the lantern component's
+	 * possession delegate rather than checked per frame: possession changes
+	 * about twice a run.
+	 */
+	UFUNCTION()
+	void OnLanternPossessionChanged(bool bHasLantern);
+
 	/** Temporary hard-surface silhouette: two caps, cage rails and a carry handle. */
 	UPROPERTY(VisibleAnywhere, Category = "LLK|Lantern")
 	TObjectPtr<UStaticMeshComponent> LanternTop;

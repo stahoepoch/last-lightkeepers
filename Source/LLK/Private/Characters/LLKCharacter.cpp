@@ -309,6 +309,15 @@ void ALLKCharacter::BeginPlay()
 		LanternLight->WatchLantern(Lantern);
 		Lantern->OnLanternStateChanged.AddDynamic(this, &ALLKCharacter::OnLanternVisualStateChanged);
 		OnLanternVisualStateChanged(Lantern->IsLanternOn(), ELLKLanternChangeReason::Replicated);
+
+		// Possession is a separate question from on/off and gets its own
+		// binding. Called once immediately for the same reason the line
+		// above is: a client that joined late has already replicated a
+		// state in, and the instrument must not be drawn in a hand that has
+		// not picked it up yet.
+		Lantern->OnLanternPossessionChanged.AddDynamic(
+			this, &ALLKCharacter::OnLanternPossessionChanged);
+		OnLanternPossessionChanged(Lantern->HasLantern());
 	}
 
 	if (Interactor != nullptr)
@@ -396,6 +405,31 @@ void ALLKCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	}
 
 	Super::EndPlay(EndPlayReason);
+}
+
+void ALLKCharacter::OnLanternPossessionChanged(bool bHasLantern)
+{
+	// The carried silhouette only. The glow and the spot are governed by
+	// on/off, and an unpossessed lantern cannot be on - the component
+	// refuses it at ApplyState - so there is no second place here that has
+	// to remember possession.
+	const TArray<UStaticMeshComponent*> Carried = {
+		LanternGlass, LanternTop, LanternBase,
+		LanternCageLeft, LanternCageRight, LanternHandle,
+		RemoteLanternGlass, RemoteLanternTop, RemoteLanternBase,
+		RemoteLanternCageLeft, RemoteLanternCageRight, RemoteLanternHandle
+	};
+
+	for (UStaticMeshComponent* Piece : Carried)
+	{
+		if (Piece != nullptr)
+		{
+			Piece->SetVisibility(bHasLantern);
+		}
+	}
+
+	UE_LOG(LogLLK, Log, TEXT("Keeper %s the lantern."),
+		bHasLantern ? TEXT("is carrying") : TEXT("is not carrying"));
 }
 
 void ALLKCharacter::OnLanternVisualStateChanged(bool bIsOn, ELLKLanternChangeReason Reason)

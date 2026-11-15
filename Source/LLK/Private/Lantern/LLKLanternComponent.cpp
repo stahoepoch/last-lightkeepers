@@ -17,6 +17,7 @@ void ULLKLanternComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 	// light reveal value and attract danger, so a crew has to be able to see
 	// who is lit in order to argue about it.
 	DOREPLIFETIME(ULLKLanternComponent, bLanternOn);
+	DOREPLIFETIME(ULLKLanternComponent, bHasLantern);
 }
 
 void ULLKLanternComponent::BeginPlay()
@@ -86,8 +87,63 @@ void ULLKLanternComponent::ForceOff(ELLKLanternChangeReason Reason)
 	ApplyState(false, Reason);
 }
 
+void ULLKLanternComponent::GrantLantern()
+{
+	const AActor* Owner = GetOwner();
+	if (Owner == nullptr || !Owner->HasAuthority() || bHasLantern)
+	{
+		return;
+	}
+
+	bHasLantern = true;
+	UE_LOG(LogLLK, Log, TEXT("Lantern taken: the keeper now has one."));
+	OnLanternPossessionChanged.Broadcast(true);
+}
+
+void ULLKLanternComponent::RevokeLantern()
+{
+	const AActor* Owner = GetOwner();
+	if (Owner == nullptr || !Owner->HasAuthority() || !bHasLantern)
+	{
+		return;
+	}
+
+	// Off BEFORE the possession flag drops. The other order would leave
+	// bLanternOn true on a keeper with no lantern, and the storm counts lit
+	// lanterns rather than asking who is holding them - so a light nobody
+	// holds would go on pressuring the room forever.
+	ApplyState(false, ELLKLanternChangeReason::NotPossessed);
+
+	bHasLantern = false;
+	UE_LOG(LogLLK, Log, TEXT("Lantern lost: the keeper no longer has one."));
+	OnLanternPossessionChanged.Broadcast(false);
+}
+
+void ULLKLanternComponent::OnRep_HasLantern()
+{
+	OnLanternPossessionChanged.Broadcast(bHasLantern);
+}
+
 void ULLKLanternComponent::ApplyState(bool bNewOn, ELLKLanternChangeReason Reason)
 {
+	// **Possession gates the one place the lantern can turn on.** Nothing
+	// downstream checks it, and nothing downstream needs to: the storm's lit
+	// count, the enemies' light field, relic legibility and the telemetry
+	// all ask IsLanternOn(), and this makes "on without a lantern" an
+	// unreachable state rather than a case each of them has to remember.
+	//
+	// Logged rather than silent. A keeper pressing the key and getting
+	// nothing is exactly the shape of the 2026-10-29 evening spent on a
+	// lantern that was toggling fine and was too dim to see - the fix for
+	// that was to make every state change say so, and a refusal is a state
+	// change that did not happen.
+	if (bNewOn && !bHasLantern)
+	{
+		UE_LOG(LogLLK, Log,
+			TEXT("Lantern stayed off: the keeper does not have one."));
+		return;
+	}
+
 	if (bLanternOn == bNewOn)
 	{
 		// Idempotent on purpose. A toggle that fires its delegate on every

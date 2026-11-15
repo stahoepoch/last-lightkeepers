@@ -38,11 +38,21 @@ enum class ELLKLanternChangeReason : uint8
 	/** `charge.autoOffAtEmpty`, once charge is real. Armed, never fired in v1. */
 	ChargeExhausted,
 	/** Replicated in from the server; the local client did not decide this. */
-	Replicated
+	Replicated,
+	/**
+	 * The keeper does not have the lantern. Not a choice either, and
+	 * distinct from `ForcedOffWhenDowned` on purpose: being knocked down is
+	 * a thing that happened to a keeper holding a light, and this is a
+	 * keeper who has no light to hold.
+	 */
+	NotPossessed
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 	FLLKLanternStateChanged, bool, bIsOn, ELLKLanternChangeReason, Reason);
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(
+	FLLKLanternPossessionChanged, bool, bHasLantern);
 
 UCLASS(ClassGroup = (LLK), meta = (BlueprintSpawnableComponent))
 class LLK_API ULLKLanternComponent : public UActorComponent
@@ -78,6 +88,38 @@ public:
 	bool DoesDownedForceLanternOff() const { return bForcedOffWhenDowned; }
 
 	/** Fires on server and clients alike, whenever the state actually changes. */
+	/**
+	 * Announced when the keeper gains or loses the lantern itself, which is
+	 * a different question from whether it is switched on.
+	 */
+	UPROPERTY(BlueprintAssignable, Category = "LLK|Lantern")
+	FLLKLanternPossessionChanged OnLanternPossessionChanged;
+
+	/**
+	 * **Does the keeper have a lantern at all.**
+	 *
+	 * The pawn has carried one since it was first written, switched off but
+	 * always in hand and always toggleable. The story says the child starts
+	 * without it, so possession is now state rather than an assumption.
+	 *
+	 * This gates `ApplyState`, which is the single place the lantern can
+	 * turn on - so every consumer downstream respects possession without
+	 * knowing it exists. The storm's lit-lantern count, the enemies' light
+	 * field, relic legibility and the telemetry all ask `IsLanternOn()`, and
+	 * an unpossessed lantern can never answer yes. That is deliberately an
+	 * invariant and not a filter applied in five places: a filter is
+	 * something a sixth consumer can forget.
+	 */
+	UFUNCTION(BlueprintPure, Category = "LLK|Lantern")
+	bool HasLantern() const { return bHasLantern; }
+
+	/** Server only. Idempotent. */
+	void GrantLantern();
+
+	/** Server only. Forces the light off first - you cannot leave a lit
+	 *  lantern burning in a hand that no longer holds one. */
+	void RevokeLantern();
+
 	UPROPERTY(BlueprintAssignable, Category = "LLK|Lantern")
 	FLLKLanternStateChanged OnLanternStateChanged;
 
@@ -125,6 +167,17 @@ protected:
 
 	UFUNCTION()
 	void OnRep_LanternOn();
+
+	UFUNCTION()
+	void OnRep_HasLantern();
+
+	/**
+	 * False until something in the world grants it. Replicated, because the
+	 * storm and the machines read the consequences of it on the server while
+	 * the owning client draws the instrument in its own hand.
+	 */
+	UPROPERTY(ReplicatedUsing = OnRep_HasLantern)
+	bool bHasLantern = false;
 
 	/** Applies a decided state and broadcasts. Server side. */
 	void ApplyState(bool bNewOn, ELLKLanternChangeReason Reason);
