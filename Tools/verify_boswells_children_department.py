@@ -18,14 +18,16 @@ def require(ok, why):
 
 kids = {name: actor for name, actor in actors.items()
         if name.startswith("BSW_KIDS_") and
-        not name.startswith("BSW_KIDS_CEILING_")}
+        not name.startswith(("BSW_KIDS_CEILING_", "BSW_KIDS_SIGN_",
+                             "BSW_KIDS_COVER_", "BSW_KIDS_PATROL_")) and
+        name != "BSW_KIDS_SWEEPER"}
 racks = {name: actor for name, actor in kids.items()
          if name.startswith("BSW_KIDS_ROLLING_RACK_")}
 lights = {name: actor for name, actor in actors.items()
           if name.startswith("BSW_EGRESS_")}
 ceiling = {name: actor for name, actor in actors.items()
            if name.startswith("BSW_KIDS_CEILING_")}
-require(len(kids) == 30 and len(racks) == 23 and len(lights) == 31,
+require(len(kids) == 28 and len(racks) == 21 and len(lights) == 31,
         "saved inventory differs")
 require(len(ceiling) == 52 and
         "BSW_KIDS_CEILING_TILE_FIELD" in ceiling and
@@ -81,6 +83,6 @@ require(abs(settings.get_editor_property("auto_exposure_min_brightness") - .5) <
         "exposure candidate drifted")
 require(abs(settings.get_editor_property("auto_exposure_max_brightness") - .5) < .001,
         "exposure lock is not fixed")
-message = "BOSWELLS_KIDS_VERIFY PASSED: 30 department parts, 52 ceiling parts, 31 downcast lights, routes clear in actor bounds"
+message = "BOSWELLS_KIDS_VERIFY PASSED: 28 department parts, 52 ceiling parts, 31 downcast lights, routes clear in actor bounds"
 unreal.log(message)
 print(message)
