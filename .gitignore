@@ -82,3 +82,7 @@ Saved/Logs/
 # tests/asset-deps.test.mjs, which tells you when it is missing or half-copied
 # instead of letting the map render null props in silence.
 /Content/Warehouse_Big_Pack/
+
+# Local third-party visual references supplied as chat attachments. Keep them
+# available for level work without publishing the photo pixels in Git.
+/docs/reference/boswells/source-photos/

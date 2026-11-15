@@ -31,7 +31,28 @@ and sales floor. **Meriden is a different building and the photographs are from
 escalator geometry, dimensions, or a 1990s material palette. The diagrams are
 low-resolution photos without a readable scale. Chris's memory in
 `docs/THE-MALL-IS-STILL-TRADING.md` section 13 remains the department authority
-for our 1990s room. No image from the blog is copied into this repository.
+for our 1990s room. Reference photos are saved locally in `source-photos/`,
+which Git ignores. They are for composition study, not in-game textures.
+
+### Local photo set, 2026-11-14
+
+Chris's fourteen attached department-store references are preserved in the
+ignored `source-photos/` folder. The numbered filenames follow the order in
+which the images were provided:
+
+| Files | Reference |
+| --- | --- |
+| `01`–`03` | Apparel racks, Young Men aisle, pillars, tile routes and ceiling rhythm. |
+| `04`–`06` | Furniture and toy signage, glass counter, and colored neon over stock. |
+| `07`–`09` | Mirrored atrium, entrance sales floor and women's apparel horizon. |
+| `10` | Escalator beneath the glass ceiling and chandelier; a required landmark. |
+| `11`–`12` | Children's racks, carpet and tile boundary, pillar and sales desk. |
+| `13` | Exterior glass entrance to the mall atrium. |
+| `14` | Exterior glass frontage at Boscov's entrance. |
+
+The local copies were checked against the supplied files by SHA-256 after
+copying. They are available to collaborators using this workspace, but a new
+Git clone must obtain the reference images separately.
 
 What the visit *does* show, and what the fixture pass should carry over as a
 retail design pattern:
@@ -55,15 +76,20 @@ fixture references, not textures or a measured plan. The bright trading
 store lighting in the photographs is not the game's emergency-light state.
 
 `Content/LLK_Boswells_ApparelPass.umap` now has an upper west children's
-slice: 23 short rolling racks, a desk, two non-colliding sage carpet islands,
+slice: 21 short rolling racks, two stocked cover displays, a desk, two
+non-colliding sage carpet islands,
 four dark edge strips, a pillar, and a lower ceiling with 100 cm tile seams.
 The two 300 cm cross aisles and the outer/atrium bypasses remain clear in
 the saved actor bounds. The ceiling uses six local visual fill lights; the
-broader map has 31 new downcast emergency route lights. The current camera
-view is still a blockout with flat materials, dark surrounding departments,
-and no authored retail sign lettering. Visual completion and a played route
-remain open. The separate atrium canopy is smoked glass beneath a solid roof;
-the photographed daylight skylight is still an environmental-lighting task.
+broader map has 31 new downcast emergency route lights. KIDS, BABIES, the
+sales desk, the directory and EXIT now have placed lettering. The cover
+displays block crouched sightlines. The current camera view is still a
+blockout with flat materials and dark surrounding departments. Visual
+completion and a played route remain open. The separate atrium canopy is
+smoked mirror beneath a solid roof, with a decorative glass-rod chandelier
+in the escalator well. The photographed exterior entrance glazing and its
+storm-light path into the atrium remain an architecture and lighting task;
+no canopy pane is an exterior skylight.
 
 The next fixture pass should choose one arrival-to-escalator sightline and one
 upper-floor furniture sightline, dress those with these distinct fixture types,
