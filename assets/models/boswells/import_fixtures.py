@@ -51,8 +51,18 @@ at placed instances found `SM_BSW_FoldedGoodsTable` and `SM_BSW_WallMerchBay`
 alike**, while both passed every check this script makes. Only
 `SM_BSW_ServiceCounter` blocks.
 
-The cause is fault 2's patch: a `KBoxElem` written straight onto the body
-setup is a struct the engine never cooks physics for. The asset reads
+CAUSE WITHDRAWN, same day. It was **Nanite**, not this file. Varying one
+thing at a time: Nanite on, clear; Nanite off with the collider untouched,
+blocks; Nanite off then rebuilt with `add_simple_collisions`, clear again.
+The hand-written `KBoxElem` was never the fault, and the engine's own build
+path is the one that produces a non-colliding box on these meshes. `962d506`
+flips the flag and nothing else. Nanite is not a full explanation either -
+all three meshes carry identical Nanite settings and the counter blocks with
+it on - so the mechanism is still unknown.
+
+The original diagnosis, left here because it is the instructive part: a
+`KBoxElem` written straight onto the body setup was assumed to be a struct
+the engine never cooks physics for. The asset reads
 box_elems 1, CTF_USE_SIMPLE_AND_COMPLEX, BlockAll, QUERY_AND_PHYSICS and
 correct colliding bounds, and a sight line goes through it.
 
@@ -144,7 +154,24 @@ def give_it_collision(mesh, stem):
     body = mesh.get_editor_property("body_setup")
     subsystem = unreal.get_editor_subsystem(unreal.StaticMeshEditorSubsystem)
 
-    # THE HEADLESS PATH IS GONE, AND DELETING IT IS THIS FILE'S MAIN REPAIR.
+    # THE HEADLESS PATH IS GONE - AND THE REASON GIVEN FOR DELETING IT WAS
+    # WRONG, SO THIS IS NOW PROVISIONAL. Read the whole comment before
+    # reinstating or trusting either branch.
+    #
+    # Measured after this was written: the hand-built KBoxElem DID collide,
+    # and `add_simple_collisions` on these meshes produces a box that does
+    # NOT. So the subsystem call below is not the safe choice this comment
+    # originally claimed - it is the one with evidence against it. It is left
+    # in place rather than reverted because flipping a second time on a third
+    # report is how this file got here, and because neither path has been
+    # verified by a trace at the point of import.
+    #
+    # **The check that settles it has never been run by anyone: nobody has
+    # measured the box's EXTENTS.** Both sides counted `box_elems == 1` and
+    # read a profile string. A box element of the wrong size, or of no size,
+    # satisfies every assert in this file and collides with nothing. That is
+    # one property read and it should come before any further argument about
+    # which build path to use.
     #
     # It used to build a `KBoxElem` by hand and write it onto the body setup's
     # aggregate geometry when the subsystem was absent. That produces a struct

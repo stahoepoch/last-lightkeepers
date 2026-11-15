@@ -92,6 +92,30 @@ fixes the trace to use eye height and deletes it."* This is that, on purpose.
 | ~~Default profile blocks `ECC_Visibility`~~ | ~~same~~ | **yes, and it proves nothing.** `collision_profile_name` reads a string |
 | **A trace fired at a placed fixture fails to see through it** | `place_fixtures.py` probes, commandlet, 2026-11-15 | **RUN, AND TWO OF THREE FAILED.** Counter blocks at 40 and 88 and is clear at 152, as designed. **Table and bay are missed at every height**, at every position, on simple and complex traces alike |
 
+> **THE CAUSE NAMED BELOW IS WITHDRAWN, same day. It was Nanite, and the
+> fallback I blamed was never the fault.** Varying one thing at a time in a
+> full editor: Nanite on, clear; Nanite off with the collider *untouched*,
+> blocks; Nanite off and then rebuilt with
+> `StaticMeshEditorSubsystem.add_simple_collisions`, clear again. So the
+> hand-written `KBoxElem` worked, and the engine's own build path is the one
+> that produces a box which does not collide on these meshes. `962d506` flips
+> the Nanite flag on the two failing meshes and nothing else, and verifies by
+> trace with the counter as a control in the same process.
+>
+> **And Nanite is not a sufficient explanation either.** All three meshes
+> carry identical Nanite settings - enabled, AUTO fallback, fallback percent
+> 1.0 - and the counter blocks with Nanite *on*. So "Nanite breaks collision"
+> cannot be the mechanism; something about these two meshes interacts with it.
+> The difference is in built data and it is **unexplained**. `962d506` is a
+> measured fix whose mechanism is not understood, which is worth having and
+> is not the same as a diagnosis.
+>
+> **Kept below rather than deleted**, because the reasoning that produced a
+> confident wrong cause is the part worth being able to re-read. It was built
+> out of a true observation - the asset-level assert proves nothing - and a
+> plausible mechanism that was never tested by varying it. Exactly the fault
+> it was written to describe, one level further up again.
+
 > **CORRECTION, 2026-11-15. Two of these three fixtures are not cover, and
 > the two struck rows above are why nobody noticed.**
 >

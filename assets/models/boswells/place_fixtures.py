@@ -389,6 +389,91 @@ def probe(world, spec):
     return problems
 
 
+def box_extents(mesh):
+    """The measurement nobody on either side of this has taken.
+
+    Every argument so far has counted `box_elems == 1` and read a profile
+    string. **A box element of the wrong size, or of no size, satisfies both
+    and collides with nothing.** One property read settles whether the build
+    path produced a usable box, and it should come before any further theory
+    about Nanite or world partition.
+    """
+    try:
+        body = mesh.get_editor_property("body_setup")
+        elems = body.get_editor_property("agg_geom").get_editor_property(
+            "box_elems")
+        return [(e.get_editor_property("x"), e.get_editor_property("y"),
+                 e.get_editor_property("z")) for e in elems]
+    except Exception as error:  # noqa: BLE001 - diagnostic, never fatal
+        return f"unreadable ({error})"
+
+
+def diagnose(world, spec, actor):
+    """Run only when a probe has already failed. Reports the facts that tell
+    the live hypotheses apart, rather than adding another one.
+
+    As of 2026-11-15 the open question is why these fixtures block at
+    (6000,0,0) and not at their authored coordinates on the deck, while the
+    counter blocks in both places. The candidates are the map's world
+    partition, the z height specifically, the body not being where the mesh is
+    drawn, and a degenerate collision box. Each line below rules one in or
+    out, and all of them are cheap reads or one extra spawn.
+    """
+    mesh = unreal.load_asset(f"{MESH_ROOT}/{spec['mesh']}")
+    x, y = spec["xy"]
+    report = [f"--- {spec['label']} ---"]
+
+    # Is the actor where we asked, and do its COLLIDING components have any
+    # extent at all? A body registered at the origin rather than at the spawn
+    # transform, and a mesh whose collision bounds are empty, both show here.
+    report.append(f"  actor location   {actor.get_actor_location()}")
+    try:
+        origin, extent = actor.get_actor_bounds(True)
+        report.append(f"  colliding bounds origin {origin} extent {extent}")
+    except Exception as error:  # noqa: BLE001
+        report.append(f"  colliding bounds unreadable ({error})")
+
+    report.append(f"  box elems (x,y,z) {box_extents(mesh)}")
+    component = actor.static_mesh_component
+    report.append(f"  collision enabled {component.get_collision_enabled()} "
+                  f"profile {component.get_collision_profile_name()}")
+
+    # Straight down onto the fixture from well above it. If this blocks while
+    # the horizontal probe does not, the body is present and the probe line is
+    # the problem; if it also misses, the body is not there.
+    top = unreal.Vector(x, y, FLOOR_Z + 400.0)
+    floor = unreal.Vector(x, y, FLOOR_Z + 1.0)
+    report.append(f"  trace down onto it: "
+                  f"{'BLOCK' if blocked(world, top, floor) else 'clear'}")
+
+    # Two duplicates of the same mesh in the same process and the same frame,
+    # each varying exactly one thing. Far away at the same z isolates x/y;
+    # same x/y at z 0 isolates the height. Both are destroyed again.
+    for label, where in (("far away, same z", unreal.Vector(x + 50000.0, y, FLOOR_Z)),
+                         ("same x/y, z=0", unreal.Vector(x, y, 0.0))):
+        twin = None
+        try:
+            twin = editor_actors().spawn_actor_from_class(
+                unreal.StaticMeshActor, where, unreal.Rotator(0.0, 0.0, 0.0))
+            twin.static_mesh_component.set_static_mesh(mesh)
+            twin.static_mesh_component.set_collision_profile_name("BlockAll")
+            half = spec["size"][1] / 2.0
+            start = unreal.Vector(where.x, where.y - half - 90.0,
+                                  where.z + TRACE_CROUCHED_CM)
+            end = unreal.Vector(where.x, where.y + half + 320.0,
+                                where.z + TRACE_CROUCHED_CM)
+            hit = blocked(world, start, end)
+            report.append(f"  twin {label}: "
+                          f"{'BLOCK' if hit else 'clear'} at 40 cm")
+        except Exception as error:  # noqa: BLE001
+            report.append(f"  twin {label}: could not test ({error})")
+        finally:
+            if twin is not None:
+                editor_actors().destroy_actor(twin)
+
+    return report
+
+
 def main():
     unreal.EditorLoadingAndSavingUtils.load_map(MAP)
     world = editor_world()
@@ -400,18 +485,30 @@ def main():
     for label in clear_previous():
         unreal.log(f"replaced previously placed {label}")
 
+    placed = {}
     for spec in PLACEMENTS:
-        place(spec)
+        placed[spec["label"]] = place(spec)
         unreal.log(f"placed {spec['label']} at {spec['xy']} z {FLOOR_Z} - "
                    f"{spec['why']}")
 
     problems = []
+    failed = []
     for spec in PLACEMENTS:
-        problems += probe(world, spec)
+        found = probe(world, spec)
+        problems += found
+        if found:
+            failed.append(spec)
 
     if problems:
         for problem in problems:
             unreal.log_error(problem)
+        # A failing run should hand back a diagnosis, not just a verdict. The
+        # process is already loaded, the actors are already standing there,
+        # and the reads below cost nothing next to another round trip.
+        unreal.log_warning("--- diagnostics for the failing fixtures ---")
+        for spec in failed:
+            for line in diagnose(world, spec, placed[spec["label"]]):
+                unreal.log_warning(line)
         raise RuntimeError(
             f"{len(problems)} problem(s). NOTHING SAVED - the map on disk is "
             f"untouched. Fix the positions and run again")
