@@ -25,6 +25,34 @@ rather than inferred later from how bright it looks.
 | Glass case interiors (jewellery, optical, toy) | **Yes**, tiny radius | The case lights the relic, not the aisle — so reading it means standing in a spot you know is lit. |
 | Mirrored ceiling islands | **No** | Reflections carry no light. See below. |
 | Restrooms / fitting rooms / service / basement | **No fixture** | True black, per `THE-STORE.md`. |
+| **Cover masters** — `SM_BSW_FoldedGoodsTable`, `SM_BSW_ServiceCounter`, `SM_BSW_WallMerchBay` | **No** — they emit nothing | Added 2026-11-14. Their job is to block a sight trace, and a fixture that lights the keeper hiding behind it is working against itself. See below. |
+
+## Cover and light must not be placed on top of each other
+
+The three cover masters in `FIXTURES-COVER-TWO-MASTERS.md` emit no light, which
+is the easy half. The hard half is what gets placed **beside** them.
+
+`aggroRadiusDark: 12` against `aggroRadiusLit: 38`. A keeper crouched behind
+the folded-goods table is hidden from a sight trace and, if that table sits
+inside a fluorescent island's radius, **noticed from three times further the
+moment the trace clears**. Geometry hides you; light tells the machine roughly
+where you went. Both are true at once and they are authored by different
+people in different passes.
+
+So a lit pool next to cover is not a mistake to forbid — it is the most
+interesting square metre on the floor, and it has to be deliberate:
+
+- **A glass case beside a counter** is good: the thing worth reading is in the
+  one spot the room knows is lit, and you must choose to stand in it.
+- **A fluorescent island over a folded-goods table** is bad by accident: the
+  fixture that exists to teach crouching sits in the one place crouching does
+  not help.
+- **The merchandise bay** is the exception that wants a pool near it rather
+  than on it. It blocks above the eye, so a keeper behind it is blind; a lit
+  aisle at one end is the only way to learn which end to leave by.
+
+Nothing here is a rule yet. It is the thing to check at placement, and
+placement is the map's, not this page's.
 
 The reason this matters more than it looks: `aggroRadiusDark: 12`,
 `aggroRadiusLit: 38`. Lit means seen from three times further. Every fixture
