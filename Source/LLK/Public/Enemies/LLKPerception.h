@@ -79,6 +79,22 @@ struct FLLKEnemyDef;
  * that noticed by `SightCone` would be a pass under a bool and is a failure
  * here.
  */
+/**
+ * How the keeper is moving, which is the only thing hearing reads.
+ *
+ * Three, because the player has three and no more: `ALLKCharacter::IsSprinting`,
+ * `ACharacter::bIsCrouched`, and otherwise walking. **Not a speed**, because a
+ * burdened keeper and a stumbled one are both slower without being quieter,
+ * and tying noise to velocity would make carrying a crate a stealth bonus.
+ */
+UENUM(BlueprintType)
+enum class ELLKGait : uint8
+{
+	Crouched,
+	Walking,
+	Sprinting
+};
+
 UENUM(BlueprintType)
 enum class ELLKNoticeSense : uint8
 {
@@ -338,4 +354,29 @@ namespace LLKPerception
 	 * where the value is used, not here.
 	 */
 	LLK_API float NoticeRangeStuds(const FLLKEnemyDef& Enemy, float Detectability);
+
+	/**
+	 * How far this family hears a keeper moving at this gait, in studs.
+	 * Returns **0 for a family with no authored hearing**, which today is all
+	 * of them — see `FLLKEnemyDef::HearingRadiusCrouch` for why that is the
+	 * safe default rather than an omission.
+	 *
+	 * In STUDS, like `NoticeRangeStuds` above and like everything in `data/`.
+	 * Row 61: the conversion happens where the value is used, not here.
+	 */
+	LLK_API float HearingRangeStuds(const FLLKEnemyDef& Enemy, ELLKGait Gait);
+
+	/**
+	 * Whether this family hears a keeper at this gait and distance.
+	 *
+	 * **Deliberately not an `FLLKNotice`.** `Notice` answers *where is the
+	 * keeper*; this answers *something moved over there*, and the two must not
+	 * be the same type, because every caller that can see a notice would
+	 * otherwise be able to treat a footstep as a sighting. Row 5 keeps light
+	 * as the sense that finds you; this one only ever sends a machine walking
+	 * to a place.
+	 *
+	 * A deaf family returns false at every distance, including zero.
+	 */
+	LLK_API bool Heard(const FLLKEnemyDef& Enemy, ELLKGait Gait, float DistanceStuds);
 }

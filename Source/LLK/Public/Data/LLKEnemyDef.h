@@ -93,6 +93,38 @@ struct FLLKEnemyDef : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Sweepers")
 	TOptional<bool> bAttractedToDroppedLoot;
 
+	/**
+	 * How far this family hears a keeper at each gait, in studs. Row 92's
+	 * *"the player must be able to hide"*, ratified by Chris 2026-11-14 at
+	 * **4 / 8 / 14** for Sweepers.
+	 *
+	 * **Unset is deaf, and that is the whole safety of landing this early.**
+	 * Until `data/enemies.json` carries the keys, every family leaves these
+	 * unset and behaves exactly as it does today: notice stays light and line
+	 * of sight, as it has been since the handoff. Nothing in the roster
+	 * changes until a value is authored for it.
+	 *
+	 * **Hearing is a notice, never a lock.** It wakes a walk toward where the
+	 * keeper *was*; it must not grant pursuit, a target or a swarm call. A
+	 * machine arriving at the place you left is what makes a sprint a decision
+	 * instead of a death.
+	 *
+	 * The derivation is in `docs/PROPOSAL-THE-MACHINES-SHOULD-HEAR.md`: the
+	 * ratios come from the 2D prototype Chris tuned by feel on 2026-11-12,
+	 * expressed against this family's own `aggroRadiusDark` rather than
+	 * converted from its pixels, because that world is not to scale. The
+	 * sprint radius is deliberately larger than the dark notice radius - **you
+	 * can be heard before you are seen**, which is the point of the sense.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Senses")
+	TOptional<float> HearingRadiusCrouch;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Senses")
+	TOptional<float> HearingRadiusWalk;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Senses")
+	TOptional<float> HearingRadiusSprint;
+
 	// Stockers.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Stockers")
 	TOptional<float> SightConeDegrees;

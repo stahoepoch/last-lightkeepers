@@ -295,4 +295,37 @@ namespace LLKPerception
 		// handed a plausible number nobody wrote down.
 		return 0.f;
 	}
+
+	float HearingRangeStuds(const FLLKEnemyDef& Enemy, ELLKGait Gait)
+	{
+		const TOptional<float>& Authored =
+			Gait == ELLKGait::Crouched ? Enemy.HearingRadiusCrouch
+			: Gait == ELLKGait::Sprinting ? Enemy.HearingRadiusSprint
+			: Enemy.HearingRadiusWalk;
+
+		// Unset is deaf, and so is a negative or non-finite value. The same
+		// argument as above: a family nobody has authored hearing for must
+		// hear nothing rather than inherit a default somebody would have to
+		// go looking for.
+		if (!Authored.IsSet() || !FMath::IsFinite(Authored.GetValue()))
+		{
+			return 0.f;
+		}
+		return FMath::Max(0.f, Authored.GetValue());
+	}
+
+	bool Heard(const FLLKEnemyDef& Enemy, ELLKGait Gait, float DistanceStuds)
+	{
+		const float Range = HearingRangeStuds(Enemy, Gait);
+
+		// Zero range is deaf at every distance INCLUDING zero, which is why
+		// this is `>` rather than `>=`. A deaf machine standing on top of the
+		// keeper still hears nothing, and that is the behaviour every family
+		// has today.
+		if (Range <= 0.f || !FMath::IsFinite(DistanceStuds) || DistanceStuds < 0.f)
+		{
+			return false;
+		}
+		return DistanceStuds <= Range;
+	}
 }

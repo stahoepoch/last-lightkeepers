@@ -499,6 +499,76 @@ if (!existsSync(assetPath)) {
   }
 }
 
+// ---- hearing: the sense that does not exist yet ------------------------
+//
+// Row 92 requires that a player can hide; Chris ratified hearing radii of
+// 4 / 8 / 14 studs on 2026-11-14 (`docs/PROPOSAL-THE-MACHINES-SHOULD-HEAR.md`).
+// The C++ side has landed deaf-by-default; `data/enemies.json` cannot carry
+// the keys until `Tools/import_data.py` admits them, because `exact()` makes
+// an unknown key a hard error and that file is Codex's (HANDOFFS P6).
+//
+// So this block guards the RULE now and the VALUES whenever they arrive. It
+// is written to pass in both states on purpose: a test that fails until
+// somebody else's lane moves is a test people learn to ignore.
+console.log("\nHearing");
+{
+  const defHeader = readFileSync(
+    join(root, "Source/LLK/Public/Data/LLKEnemyDef.h"), "utf8");
+  const perception = readFileSync(
+    join(root, "Source/LLK/Private/Enemies/LLKPerception.cpp"), "utf8");
+
+  for (const field of ["HearingRadiusCrouch", "HearingRadiusWalk", "HearingRadiusSprint"]) {
+    check(
+      `${field} is declared TOptional, so unset stays distinguishable from zero`,
+      new RegExp(`TOptional<float>\\s+${field};`).test(defHeader),
+      `absent must not become a zero somebody has to go looking for`,
+    );
+  }
+
+  check(
+    "a family with no authored hearing is deaf at every distance",
+    /Range <= 0\.f/.test(perception),
+    `LLKPerception::Heard no longer guards zero range. Every family in the ` +
+      `data is unset today, so losing this makes the whole roster hear ` +
+      `everything the moment a caller is wired up`,
+  );
+
+  check(
+    "hearing is not a notice, so no caller can mistake a footstep for a sighting",
+    /bool Heard\(/.test(perception) && !/FLLKNotice\s+Heard\(/.test(perception),
+    `Heard must return bool. Row 5 keeps light as the sense that finds you`,
+  );
+
+  // The values, if and when they land. Silent while the keys are absent.
+  for (const [name, row] of families) {
+    const gaits = ["hearingRadiusCrouch", "hearingRadiusWalk", "hearingRadiusSprint"]
+      .map((key) => row[key]);
+    if (gaits.every((value) => value === undefined)) continue;
+
+    const [crouch, walk, sprint] = gaits;
+    check(
+      `${name}: all three gaits are authored together`,
+      gaits.every((value) => typeof value === "number"),
+      `got ${JSON.stringify(gaits)} - a partial set makes one gait silently deaf`,
+    );
+    check(
+      `${name}: crouching is quieter than walking, which is quieter than sprinting`,
+      crouch < walk && walk < sprint,
+      `got ${crouch} / ${walk} / ${sprint}. If the order collapses, crouch ` +
+        `stops being a verb and becomes a slow walk`,
+    );
+    if (typeof row.aggroRadiusDark === "number") {
+      check(
+        `${name}: a sprint is heard from further than a dark keeper is seen`,
+        sprint > row.aggroRadiusDark,
+        `sprint ${sprint} against aggroRadiusDark ${row.aggroRadiusDark}. ` +
+          `Being heard before you are seen is the point of the sense; below ` +
+          `this, sight already covers every case and hearing is decoration`,
+      );
+    }
+  }
+}
+
 console.log(`\n${checks - failures}/${checks} passed`);
 if (failures > 0) {
   console.log(`${failures} FAILED\n`);
