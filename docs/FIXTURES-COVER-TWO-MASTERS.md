@@ -38,7 +38,7 @@ That is the point of having three rather than three sizes of the same idea.
 
 | | `SM_BSW_FoldedGoodsTable` | `SM_BSW_ServiceCounter` | `SM_BSW_WallMerchBay` |
 | --- | --- | --- | --- |
-| Footprint | **160 × 90 cm** | **186 × 71 cm** at the top | **240 × 70 cm** |
+| Footprint | **160 × 90 cm** | **186 × 71 cm** at the top | **240 × 74 cm** |
 | Height | **80 cm** | **102 cm** | **190 cm** |
 | Period | 30-inch soft-goods table | 40-inch service counter | double-sided merchandise gondola |
 | Hides a crouched keeper | **yes** | **yes** | **yes** |
@@ -85,10 +85,27 @@ fixes the trace to use eye height and deletes it."* This is that, on purpose.
 | Check | Where | Run? |
 | --- | --- | --- |
 | Generator refuses to write a fixture that breaks the cover rule | `make_fixture_kit.py` `cover_check` | **yes** — `table 0-80 (duck), counter 0-102 (stand and watch), bay 0-190 (hidden and blind)` |
-| The committed OBJs are still those heights | `tests/asset-deps.test.mjs` | **yes** — 15/15, inside 658 checks green |
-| Import lands at the authored height | `import_fixtures.py` `assert_it_is_cover` | **no — needs an editor** |
-| Simple box collision exists | same | **no** |
-| Default profile blocks `ECC_Visibility` | same | **no** |
+| The committed OBJs are still those heights | `tests/asset-deps.test.mjs` | **yes** — 17/17, inside 667 checks green |
+| OBJ vertex bounds, read independently before Unreal saw them | MCP session control read, 2026-11-14 | **yes** — 160×90×80, 186×71×102, 240×74×190, all on z=0 |
+| Import lands at the authored height | `import_fixtures.py` `assert_it_is_cover` | **yes** — 1:1, no scale factor, heights exact |
+| Simple box collision exists | same | **yes** — one box each, not several |
+| Default profile blocks `ECC_Visibility` | same | **yes** — `BlockAll` on all three |
+| **A trace fired at a placed fixture fails to see through it** | PIE, a placed map | **no — nothing is placed yet** |
+
+**Imported and verified 2026-11-14 by the MCP session, committed there as
+`1ee88b8`.** Four faults in `import_fixtures.py` had to be patched for it to
+run at all — the source path walked above the repo, `StaticMeshEditorSubsystem`
+is None outside a real editor, `BodyInstance` has no
+`set_collision_profile_name` in Python, and `EditorStaticMeshLibrary.add_simple_collisions`
+**returns -1 on failure without raising**, so the original would have carried
+on and asserted against collision it never added. All four are fixed in the
+committed script. The depth of the bay is **74 cm, not 70**: the shelf bands
+stand 2 cm proud of the carcass on each face, and the bounds are what counts.
+
+**State it at the level it was proven.** This is asset-level collision: the
+mesh carries a box and defaults to a profile that blocks the channel. Nothing
+is placed, so nothing has been sighted through. A trace at a placed fixture in
+PIE is still the only thing that proves cover in play.
 
 The generator's guarantee only covers the run that produced the file, which is
 why the test re-checks the committed mesh: these are committed art, not build

@@ -19,18 +19,35 @@ collision set to QueryOnly-Pawn is scenery. That is the single way these two
 assets can look finished and do nothing, so it is checked here and asserted at
 the end rather than assumed.
 
-NOT RUN YET
------------
-This has not been executed: there is no editor on the bridge that wrote it.
-The geometry it imports is verified (`make_fixture_kit.py` refuses to write a
-fixture that breaks the cover rule) but the import itself is unproven. Treat a
-clean run as the first evidence, not this comment.
+RUN ONCE, AND IT DID NOT RUN AS WRITTEN
+---------------------------------------
+2026-11-14: the MCP session ran this against the live editor and all three
+fixtures imported at 1:1, one box each, BlockAll. **Four faults in the first
+version had to be patched to get there**, and they are fixed here:
+
+  1. `SOURCE_DIR` walked one level ABOVE the repo. The uproject is at the
+     repo root, so `project_dir()` already is it.
+  2. `StaticMeshEditorSubsystem` is None outside a real editor, so the
+     collision call raised on NoneType in a commandlet.
+  3. `BodyInstance` has no `set_collision_profile_name` in Python; the
+     profile is an editor property.
+  4. `EditorStaticMeshLibrary.add_simple_collisions` returns **-1 on failure
+     and does not raise**, so the script carried on and asserted against
+     collision it had never added. That one was the dangerous one.
+
+What is proven is asset-level: the mesh carries a box and defaults to a
+profile that blocks `ECC_Visibility`. **Nothing has been placed and nothing
+has been sighted through.** A trace fired at a placed fixture is still the
+only thing that proves cover in play.
 """
 
 import unreal
 
 PACKAGE_PATH = "/Game/Props/Boswells"
-SOURCE_DIR = unreal.Paths.project_dir() + "../assets/models/boswells/"
+# The uproject sits at the repo root, so project_dir() IS the repo root. The
+# first version of this walked one level above it, to a directory that does
+# not exist.
+SOURCE_DIR = unreal.Paths.project_dir() + "assets/models/boswells/"
 
 FIXTURES = [
     ("SM_BSW_FoldedGoodsTable", 80.0),
@@ -38,14 +55,28 @@ FIXTURES = [
     ("SM_BSW_WallMerchBay", 190.0),
 ]
 
-# Palette slots the OBJs reference, mapped to what each must read as. Flat
-# blockout colour is what these replace, so each gets roughness and a tint
-# rather than a single base colour.
-MATERIALS = {
-    "MI_BSW_LaminateTop":   {"BaseColor": (0.26, 0.19, 0.14), "Roughness": 0.28, "Metallic": 0.0},
-    "MI_BSW_PaintedMetal":  {"BaseColor": (0.55, 0.57, 0.54), "Roughness": 0.46, "Metallic": 0.35},
-    "MI_BSW_CarcassPanel":  {"BaseColor": (0.60, 0.55, 0.45), "Roughness": 0.62, "Metallic": 0.0},
-    "MI_BSW_FoldedStock":   {"BaseColor": (0.24, 0.31, 0.43), "Roughness": 0.88, "Metallic": 0.0},
+# The OBJs reference BoswellsFixtures.mtl, so an import with materials enabled
+# brings all 17 palette colours in as loose assets in the package root. They
+# are not junk - the mesh slots point at them and every fixture in the kit
+# shares them - but they land unparameterised and in the wrong folder.
+#
+# Rather than build a parallel set of four MI_BSW_* instances that nothing is
+# assigned to, which is what the first version did, these are the surface
+# treatments the palette names need in order to stop reading as flat tint.
+# Everything not listed keeps whatever the import gave it.
+PALETTE_SURFACES = {
+    "oat":         {"Roughness": 0.28, "Metallic": 0.0},   # laminate top
+    "cream":       {"Roughness": 0.34, "Metallic": 0.0},   # laminate carcass
+    "dark_wood":   {"Roughness": 0.30, "Metallic": 0.0},   # counter top
+    "white_steel": {"Roughness": 0.46, "Metallic": 0.35},  # painted metal
+    "steel":       {"Roughness": 0.52, "Metallic": 0.45},
+    "charcoal":    {"Roughness": 0.58, "Metallic": 0.20},  # toe kicks
+    "denim":       {"Roughness": 0.88, "Metallic": 0.0},   # folded stock
+    "burgundy":    {"Roughness": 0.88, "Metallic": 0.0},
+    "mint":        {"Roughness": 0.88, "Metallic": 0.0},
+    "rose":        {"Roughness": 0.88, "Metallic": 0.0},
+    "sky":         {"Roughness": 0.88, "Metallic": 0.0},
+    "butter":      {"Roughness": 0.88, "Metallic": 0.0},
 }
 
 
@@ -66,48 +97,88 @@ def import_mesh(stem):
 
 
 def give_it_collision(mesh, stem):
-    """Simple box collision, then the profile that makes it cover.
+    """One box collider sized to the mesh, then the profile that makes it
+    cover.
 
     Box rather than complex-as-simple on purpose: these are convex fixtures,
     a box is the cheapest thing a sight trace can hit, and complex collision
     is not used by line traces against a mesh set to simple.
-    """
-    subsystem = unreal.get_editor_subsystem(unreal.StaticMeshEditorSubsystem)
-    subsystem.remove_collisions(mesh)
-    subsystem.add_simple_collisions(mesh, unreal.ScriptingCollisionShapeType.BOX)
 
+    **The box is built directly rather than asked for.** The first version
+    called `EditorStaticMeshLibrary.add_simple_collisions`, which returns -1
+    on failure and does not raise - so the script carried on and asserted
+    against collision it had never added. A silent -1 that still reports
+    success is worse than a crash, and it is the kind of failure the asserts
+    at the end of this file exist to catch. `StaticMeshEditorSubsystem` is the
+    supported route but is None outside a real editor, so it is used when it
+    is there and the element is built by hand when it is not.
+    """
     body = mesh.get_editor_property("body_setup")
+    subsystem = unreal.get_editor_subsystem(unreal.StaticMeshEditorSubsystem)
+
+    if subsystem is not None:
+        subsystem.remove_collisions(mesh)
+        subsystem.add_simple_collisions(mesh, unreal.ScriptingCollisionShapeType.BOX)
+    else:
+        # Headless. Build the element ourselves from the mesh bounds; note the
+        # K prefix - `unreal.BoxElem` does not exist.
+        bounds = mesh.get_bounds()
+        extent = bounds.box_extent
+        box = unreal.KBoxElem()
+        box.set_editor_property("center", bounds.origin)
+        box.set_editor_property("x", extent.x * 2.0)
+        box.set_editor_property("y", extent.y * 2.0)
+        box.set_editor_property("z", extent.z * 2.0)
+        aggregate = body.get_editor_property("agg_geom")
+        aggregate.set_editor_property("box_elems", [box])
+        body.set_editor_property("agg_geom", aggregate)
+
     body.set_editor_property("collision_trace_flag",
                              unreal.CollisionTraceFlag.CTF_USE_SIMPLE_AND_COMPLEX)
     # The profile placed components inherit. BlockAll blocks Visibility, which
-    # is the channel the sight trace actually uses.
-    default_instance = body.get_editor_property("default_instance")
-    default_instance.set_collision_profile_name("BlockAll")
+    # is the channel the sight trace actually uses. `BodyInstance` has no
+    # `set_collision_profile_name` in Python; it is an editor property.
+    body.get_editor_property("default_instance").set_editor_property(
+        "collision_profile_name", "BlockAll")
     unreal.EditorAssetLibrary.save_loaded_asset(mesh)
 
 
-def build_materials():
-    tools = unreal.AssetToolsHelpers.get_asset_tools()
-    parent = unreal.load_asset("/Engine/BasicShapes/BasicShapeMaterial")
-    made = []
-    for name, params in MATERIALS.items():
-        path = f"{PACKAGE_PATH}/Materials/{name}"
-        if unreal.EditorAssetLibrary.does_asset_exist(path):
-            made.append(path)
+def tidy_palette_materials():
+    """Give the imported palette materials a surface, and move them out of the
+    package root.
+
+    The OBJ import creates one material per `.mtl` entry - 17 of them, named
+    for the palette, landing beside the meshes rather than under Materials/.
+    Every fixture in the kit shares that palette, so these ARE the right
+    materials; they just arrive as flat colour in the wrong folder.
+
+    Touched, not rebuilt: a parallel set of MI_BSW_* instances assigned to
+    nothing is what the first version of this file produced, and a second
+    material system beside a working one is the same mistake as a second
+    fixture generator.
+
+    Unproven. Everything here is best-effort and logs rather than raising,
+    because a material that failed to move is cosmetic while a fixture that
+    failed to block is not.
+    """
+    moved = []
+    for name, params in PALETTE_SURFACES.items():
+        loose = f"{PACKAGE_PATH}/{name}"
+        if not unreal.EditorAssetLibrary.does_asset_exist(loose):
             continue
-        factory = unreal.MaterialInstanceConstantFactoryNew()
-        instance = tools.create_asset(name, f"{PACKAGE_PATH}/Materials",
-                                      unreal.MaterialInstanceConstant, factory)
-        unreal.MaterialEditingLibrary.set_material_instance_parent(instance, parent)
-        colour = params["BaseColor"]
-        unreal.MaterialEditingLibrary.set_material_instance_vector_parameter_value(
-            instance, "Color", unreal.LinearColor(colour[0], colour[1], colour[2], 1.0))
-        for scalar in ("Roughness", "Metallic"):
-            unreal.MaterialEditingLibrary.set_material_instance_scalar_parameter_value(
-                instance, scalar, params[scalar])
-        unreal.EditorAssetLibrary.save_loaded_asset(instance)
-        made.append(path)
-    return made
+        material = unreal.load_asset(loose)
+        try:
+            for scalar, value in params.items():
+                material.set_editor_property(scalar.lower(), value)
+            unreal.EditorAssetLibrary.save_loaded_asset(material)
+        except Exception as error:  # noqa: BLE001 - cosmetic, never fatal
+            unreal.log_warning(f"{name}: could not set surface ({error})")
+        target = f"{PACKAGE_PATH}/Materials/{name}"
+        if unreal.EditorAssetLibrary.rename_asset(loose, target):
+            moved.append(target)
+        else:
+            unreal.log_warning(f"{name}: left in the package root")
+    return moved
 
 
 def assert_it_is_cover(mesh, stem, expected_top_cm):
@@ -130,7 +201,8 @@ def assert_it_is_cover(mesh, stem, expected_top_cm):
         problems.append(f"{stem} has no simple box collision, so a sight trace "
                         f"passes straight through it")
 
-    profile = body.get_editor_property("default_instance").get_collision_profile_name()
+    profile = body.get_editor_property("default_instance").get_editor_property(
+        "collision_profile_name")
     if str(profile) not in ("BlockAll", "BlockAllDynamic"):
         problems.append(f"{stem} defaults to collision profile '{profile}'. The "
                         f"sight trace runs on ECC_Visibility; a profile that "
@@ -146,8 +218,8 @@ def main():
         give_it_collision(mesh, stem)
         problems += assert_it_is_cover(mesh, stem, expected_top)
 
-    for path in build_materials():
-        unreal.log(f"material ready: {path}")
+    for path in tidy_palette_materials():
+        unreal.log(f"palette material filed: {path}")
 
     if problems:
         for problem in problems:
