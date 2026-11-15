@@ -85,15 +85,54 @@ fixes the trace to use eye height and deletes it."* This is that, on purpose.
 | Check | Where | Run? |
 | --- | --- | --- |
 | Generator refuses to write a fixture that breaks the cover rule | `make_fixture_kit.py` `cover_check` | **yes** — `table 0-80 (duck), counter 0-102 (stand and watch), bay 0-190 (hidden and blind)` |
-| The committed OBJs are still those heights | `tests/asset-deps.test.mjs` | **yes** — 17/17, inside 667 checks green |
+| The committed OBJs are still those heights | `tests/asset-deps.test.mjs` | **yes** — 47/47, inside 697 checks green |
 | OBJ vertex bounds, read independently before Unreal saw them | MCP session control read, 2026-11-14 | **yes** — 160×90×80, 186×71×102, 240×74×190, all on z=0 |
-| Import lands at the authored height | `import_fixtures.py` `assert_it_is_cover` | **yes** — 1:1, no scale factor, heights exact |
-| Simple box collision exists | same | **yes** — one box each, not several |
-| Default profile blocks `ECC_Visibility` | same | **yes** — `BlockAll` on all three |
-| **A trace fired at a placed fixture fails to see through it** | PIE, a placed map | **no — nothing is placed yet** |
+| Import lands at the authored height | `import_fixtures.py` | **yes** — 1:1, no scale factor, heights exact |
+| ~~Simple box collision exists~~ | ~~same~~ | **yes, and it proves nothing.** `box_elems` counts a struct |
+| ~~Default profile blocks `ECC_Visibility`~~ | ~~same~~ | **yes, and it proves nothing.** `collision_profile_name` reads a string |
+| **A trace fired at a placed fixture fails to see through it** | `place_fixtures.py` probes, commandlet, 2026-11-15 | **RUN, AND TWO OF THREE FAILED.** Counter blocks at 40 and 88 and is clear at 152, as designed. **Table and bay are missed at every height**, at every position, on simple and complex traces alike |
+
+> **CORRECTION, 2026-11-15. Two of these three fixtures are not cover, and
+> the two struck rows above are why nobody noticed.**
+>
+> A Visibility trace at placed instances finds `SM_BSW_FoldedGoodsTable` and
+> `SM_BSW_WallMerchBay` missed at 40, 88 and 152 cm, at six positions across
+> the department, on both simple and complex traces — including a trace fired
+> straight down from 400 cm. `SM_BSW_ServiceCounter` blocks correctly
+> everywhere, which is what proves the instrument was live.
+>
+> Both failing assets still pass every asset-level check today: `box_elems` 1,
+> `CTF_USE_SIMPLE_AND_COMPLEX`, `BlockAll`, `QUERY_AND_PHYSICS`, correct
+> colliding bounds. **The editor-side struct says cover and the physics scene
+> disagrees.** The cause is that `import_fixtures.py` wrote a `KBoxElem`
+> directly onto the body setup when `StaticMeshEditorSubsystem` was absent,
+> and the engine never cooked physics data for it.
+>
+> **This is the `add_simple_collisions` returns -1 fault one level up: from an
+> unchecked return to an unverified claim.** The first version asserted
+> against collision it had never added. The second asserted against collision
+> that existed as data and not as physics. Both times the assert was the thing
+> that was too weak, and both times it read as rigour — the row below this one
+> said *"a trace at a placed fixture is still the only thing that proves cover
+> in play"*, and that sentence was describing a live defect rather than
+> guarding against a future one.
+>
+> No headless repair exists, measured rather than assumed: `BodySetup` exposes
+> no `InvalidatePhysicsData` and no `CreatePhysicsMeshes`, rewriting the
+> element through the property setter leaves it clear, and
+> `CTF_USE_COMPLEX_AS_SIMPLE` does not help because the complex trace is clear
+> too. `StaticMeshEditorSubsystem.add_simple_collisions` is the engine's own
+> build path and it is editor-only. **The repair needs the editor open; the
+> placement needs it closed.**
+>
+> The hand-built fallback is deleted rather than fixed, because a fallback
+> that cannot work converts *"this cannot run here"* into *"this ran and
+> produced cover"*. `tests/asset-deps.test.mjs` now fails if it returns.
 
 **Imported and verified 2026-11-14 by the MCP session, committed there as
-`1ee88b8`.** Four faults in `import_fixtures.py` had to be patched for it to
+`1ee88b8`.** ~~Verified~~ — **that word is withdrawn; see the correction
+above.** The import ran and the assets exist; what was verified was their
+configuration, not their collision. Four faults in `import_fixtures.py` had to be patched for it to
 run at all — the source path walked above the repo, `StaticMeshEditorSubsystem`
 is None outside a real editor, `BodyInstance` has no
 `set_collision_profile_name` in Python, and `EditorStaticMeshLibrary.add_simple_collisions`

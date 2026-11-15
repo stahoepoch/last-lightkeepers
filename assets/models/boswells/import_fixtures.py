@@ -28,7 +28,10 @@ version had to be patched to get there**, and they are fixed here:
   1. `SOURCE_DIR` walked one level ABOVE the repo. The uproject is at the
      repo root, so `project_dir()` already is it.
   2. `StaticMeshEditorSubsystem` is None outside a real editor, so the
-     collision call raised on NoneType in a commandlet.
+     collision call raised on NoneType in a commandlet. **The fix for this
+     one was itself the bug** - see below. Patching it with a hand-built
+     `KBoxElem` turned a loud crash into two silently uncollidable assets,
+     and a crash would have been the better outcome by a wide margin.
   3. `BodyInstance` has no `set_collision_profile_name` in Python; the
      profile is an editor property.
   4. `EditorStaticMeshLibrary.add_simple_collisions` returns **-1 on failure
@@ -39,6 +42,31 @@ What is proven is asset-level: the mesh carries a box and defaults to a
 profile that blocks `ECC_Visibility`. **Nothing has been placed and nothing
 has been sighted through.** A trace fired at a placed fixture is still the
 only thing that proves cover in play.
+
+AND THAT CAVEAT TURNED OUT TO BE THE WHOLE STORY, 2026-11-15
+------------------------------------------------------------
+It was written as a disclaimer and it was describing a live defect. A trace
+at placed instances found `SM_BSW_FoldedGoodsTable` and `SM_BSW_WallMerchBay`
+**missed at every height, at every position, on simple and complex traces
+alike**, while both passed every check this script makes. Only
+`SM_BSW_ServiceCounter` blocks.
+
+The cause is fault 2's patch: a `KBoxElem` written straight onto the body
+setup is a struct the engine never cooks physics for. The asset reads
+box_elems 1, CTF_USE_SIMPLE_AND_COMPLEX, BlockAll, QUERY_AND_PHYSICS and
+correct colliding bounds, and a sight line goes through it.
+
+**This is the `add_simple_collisions` returns -1 fault moved up one level:
+from an unchecked return to an unverified claim.** The first version asserted
+against collision it had never added; this version asserted against collision
+that existed as data and not as physics. Both times the assert was the thing
+that was too weak, and both times it looked like rigour.
+
+Two changes came out of it. The headless fallback is deleted rather than
+repaired, because there is no headless way to cook collision and a fallback
+that cannot work only converts "this cannot run here" into "this ran and
+produced cover". And this script no longer claims the fixtures block anything
+- it claims they are configured, which is what it can actually see.
 """
 
 import unreal
@@ -116,22 +144,58 @@ def give_it_collision(mesh, stem):
     body = mesh.get_editor_property("body_setup")
     subsystem = unreal.get_editor_subsystem(unreal.StaticMeshEditorSubsystem)
 
-    if subsystem is not None:
-        subsystem.remove_collisions(mesh)
-        subsystem.add_simple_collisions(mesh, unreal.ScriptingCollisionShapeType.BOX)
+    # THE HEADLESS PATH IS GONE, AND DELETING IT IS THIS FILE'S MAIN REPAIR.
+    #
+    # It used to build a `KBoxElem` by hand and write it onto the body setup's
+    # aggregate geometry when the subsystem was absent. That produces a struct
+    # which reads perfectly - box_elems 1, correct extents, BlockAll,
+    # QUERY_AND_PHYSICS - and which **the engine never cooks physics data
+    # for**, so a Visibility trace passes straight through the finished asset.
+    #
+    # It shipped. `1ee88b8` is titled "Three cover fixtures imported, boxed and
+    # blocking Visibility"; measured by trace on 2026-11-15, two of the three
+    # are missed at every height, at every position, on simple and complex
+    # traces alike. Only the counter blocks, and the plausible reason is that
+    # it was the one processed while a live editor was attached.
+    #
+    # There is no headless repair, and that was measured rather than assumed:
+    # `BodySetup` exposes no `InvalidatePhysicsData`, no `CreatePhysicsMeshes`,
+    # nothing with "phys", "cook" or "invalidate" on it at all; rewriting the
+    # element through the property setter leaves it clear; and
+    # CTF_USE_COMPLEX_AS_SIMPLE does not help because the complex trace is
+    # clear too - there is no cooked collision of either kind to fall back on.
+    #
+    # So a fallback that cannot work is worse than no fallback: it turns "this
+    # cannot run here" into "this ran and produced cover", which is the exact
+    # trade the rest of this file exists to refuse.
+    if subsystem is None:
+        raise RuntimeError(
+            "StaticMeshEditorSubsystem is None, so this is not a real editor "
+            "and simple collision cannot be built. It is the engine's only "
+            "build path and it is editor-only. Nothing has been changed. Do "
+            "NOT hand-write a KBoxElem instead: it produces an asset that "
+            "passes every asset-level check and that a sight trace goes "
+            "straight through")
+
+    subsystem.remove_collisions(mesh)
+    added = subsystem.add_simple_collisions(
+        mesh, unreal.ScriptingCollisionShapeType.BOX)
+
+    # Checked by VALUE, not truthiness. This call returns the index of the
+    # element it added and -1 on failure, so `if not added` is False for -1
+    # and would wave the failure through - the identical mistake to the one
+    # this file's docstring already records, written while fixing it. An
+    # index of 0 is a success and is falsy; -1 is a failure and is truthy.
+    if isinstance(added, bool):
+        ok = added
+    elif isinstance(added, int):
+        ok = added >= 0
     else:
-        # Headless. Build the element ourselves from the mesh bounds; note the
-        # K prefix - `unreal.BoxElem` does not exist.
-        bounds = mesh.get_bounds()
-        extent = bounds.box_extent
-        box = unreal.KBoxElem()
-        box.set_editor_property("center", bounds.origin)
-        box.set_editor_property("x", extent.x * 2.0)
-        box.set_editor_property("y", extent.y * 2.0)
-        box.set_editor_property("z", extent.z * 2.0)
-        aggregate = body.get_editor_property("agg_geom")
-        aggregate.set_editor_property("box_elems", [box])
-        body.set_editor_property("agg_geom", aggregate)
+        ok = added is not None
+    if not ok:
+        raise RuntimeError(
+            f"{stem}: add_simple_collisions returned {added!r} and built no "
+            f"box. Nothing below is true and nothing has been saved")
 
     body.set_editor_property("collision_trace_flag",
                              unreal.CollisionTraceFlag.CTF_USE_SIMPLE_AND_COMPLEX)
@@ -182,9 +246,19 @@ def tidy_palette_materials():
 
 
 def assert_it_is_cover(mesh, stem, expected_top_cm):
-    """The two things that make these assets worth importing, checked rather
-    than hoped for: the silhouette is the height it was authored at, and the
-    collider blocks the channel sight is traced on."""
+    """What the asset's own properties can be made to admit - and that is less
+    than it sounds, which is the whole lesson of this file.
+
+    These three checks all passed on all three fixtures on 2026-11-15 while
+    two of them were invisible to a Visibility trace. **An asset-level check
+    cannot tell configured collision from working collision.** box_elems
+    counts a struct; collision_profile_name reads a string; neither consults
+    the physics scene. Keep them - they catch a failed import and a wrong
+    profile, which are real - but do not read a pass here as cover.
+
+    Cover is proven by a trace at a placed instance, and the only thing in
+    this kit that does that is place_fixtures.py, which refuses to save the
+    map when a fixture does not block."""
     problems = []
 
     bounds = mesh.get_bounds()
@@ -226,8 +300,14 @@ def main():
             unreal.log_error(problem)
         raise RuntimeError(f"{len(problems)} fixture(s) imported but are not cover")
 
-    unreal.log("Both fixtures imported, boxed and blocking Visibility. "
-               "No map was opened or saved.")
+    unreal.log(
+        f"{len(FIXTURES)} fixtures imported at their authored heights, each "
+        f"carrying one box element and defaulting to BlockAll. No map was "
+        f"opened or saved.\n"
+        f"NOT PROVEN HERE: that any of them blocks a sight trace. That needs "
+        f"a trace at a placed instance, and place_fixtures.py is what runs "
+        f"it. On 2026-11-15 every check above passed on all three fixtures "
+        f"while two of them were missed by a trace at every height.")
 
 
 if __name__ == "__main__":

@@ -117,6 +117,18 @@ TRACE_CROUCHED_CM = 40.0
 TRACE_STANDING_CM = 88.0
 EYE_HEIGHT_CM = 152.0
 
+# 5.8 exposes the channel by name, which settles what TRACE_TYPE_QUERY1 only
+# implied - the older name is the first built-in trace channel, and reading
+# Config/DefaultEngine.ini for an absent [/Script/Engine.CollisionProfile]
+# section was the long way round to the same answer. getattr rather than a
+# straight switch because the named form is reported, not verified here, and a
+# missing enum member would take the script down at import; the numbered form
+# is measured working. Whichever resolves, prove_the_instrument checks it
+# against known geometry before anything is spawned, which is the only
+# guarantee that matters.
+TRACE_CHANNEL = getattr(unreal.TraceTypeQuery, "ECC_VISIBILITY",
+                        unreal.TraceTypeQuery.TRACE_TYPE_QUERY1)
+
 # All three meshes are BASE-PIVOT: local bounds origin z equals the half-height,
 # so the base sits at local z 0 and the actor goes at FLOOR_Z exactly. Codex's
 # cube-built blocks are centre-pivot and go at FLOOR_Z + height/2. Getting that
@@ -207,10 +219,25 @@ def place(spec):
         raise RuntimeError(f"{spec['mesh']} is not imported. Run "
                            f"import_fixtures.py first; nothing saved")
 
-    actor = editor_actors().spawn_actor_from_object(
-        mesh,
+    # spawn_actor_from_class, not spawn_actor_from_object. The latter returns
+    # None in a commandlet and the next line dies on NoneType - the same
+    # family as StaticMeshEditorSubsystem being None headless. This is the
+    # route all eleven Tools/ build scripts use, and set_static_mesh returns a
+    # bool that is checked rather than assumed, because an actor that spawned
+    # with no mesh on it is an invisible nothing that still passes a label
+    # check.
+    actor = editor_actors().spawn_actor_from_class(
+        unreal.StaticMeshActor,
         unreal.Vector(spec["xy"][0], spec["xy"][1], FLOOR_Z),
         unreal.Rotator(0.0, 0.0, spec["yaw"]))
+    if actor is None:
+        raise RuntimeError(
+            f"{spec['label']} did not spawn. Nothing saved")
+    if not actor.static_mesh_component.set_static_mesh(mesh):
+        raise RuntimeError(
+            f"{spec['label']} spawned but {spec['mesh']} would not attach to "
+            f"it, so it is an empty actor standing where cover should be. "
+            f"Nothing saved")
     actor.set_actor_label(spec["label"])
     # The repo's working idiom, from build_boswells_kids_stealth.py:107, with
     # an explicit unreal.Name rather than a str left to coerce. This matters
@@ -236,47 +263,35 @@ def place(spec):
 def blocked(world, start, end):
     """One Visibility trace. True means something is in the way.
 
-    `UKismetSystemLibrary::LineTraceSingle` returns `bool` and takes
-    `FHitResult& OutHit`, and UE's Python binding collapses that shape into a
-    `(bool, HitResult)` tuple - the out param is dropped from the call
-    signature and appended to the result. So the obvious `hit is not None` is
-    **always true**, a tuple being never None, and every trace would read as
-    blocked: the `blocks` checks would pass for the wrong reason and every
-    `clear` check and control would fail. It fails safe, in that nothing gets
-    saved, but it proves nothing.
+    MEASURED, 2026-11-15, after a round trip that cost a cycle. The binding
+    returns an `FHitResult` for a blocking hit and `None` otherwise: a line
+    across the 44 cm sales column returns a HitResult, a line down the open
+    cross aisle returns None. So `result is not None` is the whole test.
 
-    Rather than assert which shape the binding returns, this reads a bool out
-    of either and `prove_the_instrument` below checks the answer against
-    geometry whose answer is already known.
+    **There is no more careful version of this available.** Every field on a
+    Python `HitResult` in UE 5.8 is protected and unreadable - `bBlockingHit`,
+    `Distance`, `Location` and `Time` all refuse - and
+    `GameplayStatics.break_hit_result` is not in the bindings. The return
+    itself is the only signal there is.
+
+    This was briefly rewritten to unpack a `(bool, HitResult)` tuple, on a
+    warning that the binding collapsed the out param into the return. The
+    warning was a guess and it was wrong, and the rewrite's HitResult branch
+    raised on the one shape that actually occurs. **The lesson is not "the
+    guess was wrong"** - it is that the defensive branch added to survive an
+    unverified claim read a property nobody had verified was readable, so the
+    hedge was more fragile than the thing it hedged. `prove_the_instrument`
+    below is the honest version of that instinct: it does not speculate about
+    the shape, it checks the answer against geometry whose answer is known.
     """
     result = unreal.SystemLibrary.line_trace_single(
         world, start, end,
-        unreal.TraceTypeQuery.TRACE_TYPE_QUERY1,
+        TRACE_CHANNEL,
         False,                      # simple collision, as the game traces
         [],
         unreal.DrawDebugTrace.NONE,
         True)
-
-    # (bool, HitResult) - the documented binding for a bool return with one
-    # out param. The bool is "did this hit a BLOCKING object", which is the
-    # question, and is stricter than the hit struct being present: a trace can
-    # return a hit that merely overlapped.
-    if isinstance(result, tuple):
-        return bool(result[0])
-    # A bare bool, if the binding ever changes to drop the out param.
-    if isinstance(result, bool):
-        return result
-    # A bare HitResult-or-None. Read its own blocking flag rather than its
-    # existence, for the same reason as above.
-    if result is None:
-        return False
-    try:
-        return bool(result.get_editor_property("blocking_hit"))
-    except Exception:
-        raise RuntimeError(
-            f"line_trace_single returned a {type(result).__name__} this "
-            f"script cannot read. Nothing has been changed. Do not guess: a "
-            f"trace whose result is misread reports cover that is not there")
+    return result is not None
 
 
 def prove_the_instrument(world):

@@ -429,6 +429,46 @@ console.log("\nCover placement");
         "protecting the map from this script",
     );
 
+    // Two guards on the import script, for a defect that actually shipped.
+    // 1ee88b8 was titled "imported, boxed and blocking Visibility"; a trace on
+    // 2026-11-15 found two of the three fixtures missed at every height. The
+    // cause was a hand-built KBoxElem written when StaticMeshEditorSubsystem
+    // was absent - a struct the engine never cooks physics for, which reads
+    // correct in every asset-level check and which sight goes straight
+    // through. These two stop it coming back by the route it came.
+    const importSrc = existsSync(
+      join(root, "assets/models/boswells/import_fixtures.py"),
+    )
+      ? readFileSync(join(root, "assets/models/boswells/import_fixtures.py"), "utf8")
+      : "";
+
+    check(
+      "the import script builds no collision by hand",
+      importSrc.length > 0 && !/^\s*box\s*=\s*unreal\.KBoxElem\(\)/m.test(importSrc),
+      "a KBoxElem written straight onto a body setup produces an asset with " +
+        "box_elems 1, BlockAll and correct bounds that a Visibility trace " +
+        "passes through. There is no headless way to cook collision - " +
+        "BodySetup exposes no InvalidatePhysicsData and no " +
+        "CreatePhysicsMeshes - so the only correct behaviour without an " +
+        "editor is to refuse",
+    );
+    // Stated as a positive. The first version of this searched the success
+    // log for "blocking Visibility" and asserted its absence, which broke two
+    // ways: the regex could not step over the ")" inside len(FIXTURES), and a
+    // bare phrase search would have fired on the docstring, where that phrase
+    // legitimately appears quoting the commit this defect shipped in. Proving
+    // a disclaimer present is both easier to get right and the thing actually
+    // wanted.
+    check(
+      "the import script says what it did NOT prove",
+      importSrc.length > 0 && /NOT PROVEN HERE/.test(importSrc),
+      "box_elems counts a struct and collision_profile_name reads a string; " +
+        "neither consults the physics scene. Every check in that script " +
+        "passed on all three fixtures while two of them were not cover, so " +
+        "its success message has to name the gap rather than leave the " +
+        "reader to assume it was covered",
+    );
+
     // Deliberately NOT checked here: whether each fixture actually blocks a
     // sight line where it stands. That is a question about 30 other solids on
     // the deck and the answer changes the moment anyone moves one, so it
