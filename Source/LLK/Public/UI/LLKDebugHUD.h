@@ -211,6 +211,9 @@ protected:
 	/** The lantern on the floor, when it is within reach and in view. */
 	void DrawLanternPrompt(const ALLKLanternPickup* Pickup);
 
+	/** At the actual release mark, with the lantern requirement in the prompt. */
+	void DrawOpeningGrillePrompt(const class ALLKOpeningGrille* Grille, const class APawn* Keeper);
+
 	void DrawCasualtyPrompt(const class ULLKVitalsComponent* Casualty);
 
 	/**

@@ -17,6 +17,7 @@
 #include "Components/BoxComponent.h"
 #include "Run/LLKExtractionZone.h"
 #include "Net/UnrealNetwork.h"
+#include "World/LLKOpeningGrille.h"
 
 ULLKInteractorComponent::ULLKInteractorComponent()
 {
@@ -67,6 +68,7 @@ void ULLKInteractorComponent::TickComponent(
 	// Resolved on the same beat as the others so the prompt cannot describe
 	// one frame's world while E acts on another's.
 	FocusedLantern = ResolveLanternPickup();
+	FocusedOpeningGrille = ResolveOpeningGrille();
 
 	ULLKRelicComponent* Found = FocusedCasualty != nullptr ? nullptr : FindFocus();
 	if (Found == Focused)
@@ -236,7 +238,8 @@ void ULLKInteractorComponent::BeginInteract()
 	// HANDOFFS is explicit that the fix for a hidden prompt is never to
 	// reorder these, so the new focus is added to the condition instead.
 	if (FocusedCasualty == nullptr && Focused == nullptr
-		&& FocusedLantern == nullptr && FocusedZone != nullptr)
+		&& FocusedLantern == nullptr && FocusedOpeningGrille == nullptr
+		&& FocusedZone != nullptr)
 	{
 		ServerBeginExtractionCall(FocusedZone);
 		return;
@@ -257,7 +260,39 @@ void ULLKInteractorComponent::BeginInteract()
 		return;
 	}
 
+	if (FocusedOpeningGrille != nullptr)
+	{
+		ServerReleaseOpeningGrille(FocusedOpeningGrille);
+		return;
+	}
+
 	TryTakeFocused();
+}
+
+ALLKOpeningGrille* ULLKInteractorComponent::ResolveOpeningGrille() const
+{
+	const APawn* Keeper = Cast<APawn>(GetOwner());
+	if (Keeper == nullptr || GetWorld() == nullptr)
+	{
+		return nullptr;
+	}
+	for (TActorIterator<ALLKOpeningGrille> It(GetWorld()); It; ++It)
+	{
+		if (It->CanFocus(Keeper))
+		{
+			return *It;
+		}
+	}
+	return nullptr;
+}
+
+void ULLKInteractorComponent::ServerReleaseOpeningGrille_Implementation(ALLKOpeningGrille* Candidate)
+{
+	// The same resolver runs on both sides; the client does not grant itself a door.
+	if (Candidate != nullptr && ResolveOpeningGrille() == Candidate)
+	{
+		Candidate->TryRelease(Cast<APawn>(GetOwner()));
+	}
 }
 
 ALLKLanternPickup* ULLKInteractorComponent::ResolveLanternPickup() const

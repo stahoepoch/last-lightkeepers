@@ -35,6 +35,7 @@
 
 class ALLKExtractionZone;
 class ALLKLanternPickup;
+class ALLKOpeningGrille;
 class ALLKCharacter;
 class ULLKRelicComponent;
 class ULLKVitalsComponent;
@@ -156,6 +157,10 @@ public:
 	 */
 	UFUNCTION(BlueprintPure, Category = "LLK|Interaction")
 	ALLKLanternPickup* GetFocusedLantern() const { return FocusedLantern; }
+
+	/** The shaded opening release in reach and view; prompt and E share it. */
+	UFUNCTION(BlueprintPure, Category = "LLK|Interaction")
+	ALLKOpeningGrille* GetFocusedOpeningGrille() const { return FocusedOpeningGrille; }
 
 	/**
 	 * How close the keeper's eye must be to the lantern, in cm.
@@ -287,6 +292,14 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<ALLKLanternPickup> FocusedLantern;
+
+	UPROPERTY()
+	TObjectPtr<ALLKOpeningGrille> FocusedOpeningGrille;
+
+	ALLKOpeningGrille* ResolveOpeningGrille() const;
+
+	UFUNCTION(Server, Reliable)
+	void ServerReleaseOpeningGrille(ALLKOpeningGrille* Candidate);
 
 	/**
 	 * Reach, aim and a clear line, in one place.

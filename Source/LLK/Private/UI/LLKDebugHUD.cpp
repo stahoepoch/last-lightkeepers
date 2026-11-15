@@ -21,6 +21,7 @@
 #include "Run/LLKExtractionZone.h"
 #include "Storm/LLKZonePressureSubsystem.h"
 #include "UI/LLKExtractionReadout.h"
+#include "World/LLKOpeningGrille.h"
 
 namespace
 {
@@ -694,6 +695,34 @@ void ALLKDebugHUD::DrawLanternPrompt(const ALLKLanternPickup* Pickup)
 	Canvas->DrawItem(Item);
 }
 
+void ALLKDebugHUD::DrawOpeningGrillePrompt(const ALLKOpeningGrille* Grille, const APawn* Keeper)
+{
+	if (Grille == nullptr || Canvas == nullptr)
+	{
+		return;
+	}
+	const FVector Screen = Canvas->Project(Grille->GetReadPoint());
+	UFont* Font = GEngine != nullptr ? GEngine->GetMediumFont() : nullptr;
+	if (Screen.Z <= 0.f || Font == nullptr)
+	{
+		return;
+	}
+	const bool bReadable = Grille->CanRelease(Keeper);
+	const FString Label = bReadable
+		? TEXT("[E]  Pull the worn grille release")
+		: TEXT("A release in shadow. Aim the lit lantern at its wear mark.");
+	const FLinearColor Colour = bReadable ? ColourCause : ColourQuiet;
+	const float Scale = GetUIScale();
+	float Width = 0.f;
+	float Height = 0.f;
+	Canvas->TextSize(Font, Label, Width, Height, Scale, Scale);
+	FCanvasTextItem Item(FVector2D(Screen.X - Width * 0.5f,
+		Screen.Y + 16.f * Scale), FText::FromString(Label), Font, Colour);
+	Item.Scale = FVector2D(Scale, Scale);
+	Item.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.9f));
+	Canvas->DrawItem(Item);
+}
+
 void ALLKDebugHUD::DrawWorldPrompt()
 {
 	// Named RunWorld because a `FVector World` position already lives further
@@ -823,6 +852,11 @@ void ALLKDebugHUD::DrawWorldPrompt()
 	if (const ALLKLanternPickup* Pickup = Interactor->GetFocusedLantern())
 	{
 		DrawLanternPrompt(Pickup);
+		return;
+	}
+	if (const ALLKOpeningGrille* Grille = Interactor->GetFocusedOpeningGrille())
+	{
+		DrawOpeningGrillePrompt(Grille, Character);
 		return;
 	}
 
