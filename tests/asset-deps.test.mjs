@@ -614,6 +614,49 @@ console.log("\nCover placement");
       );
     }
 
+    // Four guards on the collision-proxy design, chosen by Chris on
+    // 2026-11-15 after the fault was localized to import_fixtures.py but not
+    // fixed. Two of the three imported meshes are missed by a Visibility
+    // trace everywhere, so cover comes from a hidden engine cube scaled to
+    // the fixture's own measured bounds instead of from the mesh's body.
+    //
+    // It is a workaround over an undiagnosed fault. These guards exist
+    // because the most likely way it goes wrong is not failing - it is
+    // someone later "tidying" it back toward the shape that looks right and
+    // does not work.
+    const proxied = ["SM_BSW_FoldedGoodsTable", "SM_BSW_WallMerchBay"];
+
+    check(
+      "the two meshes that block nothing are given a collision proxy",
+      proxied.every((m) => new RegExp(`PROXY_COVER[\\s\\S]{0,200}${m}`).test(src)),
+      "PROXY_COVER names which fixtures cannot carry their own collision. " +
+        "A fixture dropped from that set silently becomes scenery with no " +
+        "cover, which is exactly the state this whole day was spent finding",
+    );
+    check(
+      "a proxied mesh is set NoCollision, so one body owns the sightline",
+      /"NoCollision" if spec\["mesh"\] in PROXY_COVER else "BlockAll"/.test(src),
+      "if the mesh keeps BlockAll alongside its proxy there are two bodies " +
+        "claiming the same cover. Today two of them block nothing, so the " +
+        "claim is false - and the day the import bug is fixed they would " +
+        "start colliding with no commit to point at",
+    );
+    check(
+      "the proxy carries the re-run tag, so a second run replaces it",
+      /def place_proxy[\s\S]{0,1600}?unreal\.Name\(TAG\)/.test(src),
+      "clear_previous() finds its own work by that tag. An untagged proxy " +
+        "survives the next run and a second one is stacked on it, so the " +
+        "floor quietly accumulates invisible collision nobody placed",
+    );
+    check(
+      "the proxy is centre-pivot while the fixtures stay base-pivot",
+      /def place_proxy[\s\S]{0,900}?FLOOR_Z \+ spec\["height"\] \/ 2\.0/.test(src),
+      "the engine cube's origin is its centre; the fixture meshes' origin " +
+        "is their base. The two must be spawned differently, and making " +
+        "them agree is the plausible tidy-up that buries a proxy half its " +
+        "height in the deck while still passing every other check",
+    );
+
     // Deliberately NOT checked here: whether each fixture actually blocks a
     // sight line where it stands. That is a question about 30 other solids on
     // the deck and the answer changes the moment anyone moves one, so it
