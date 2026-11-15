@@ -279,11 +279,49 @@ void ULLKLanternLightComponent::ApplyActiveLevel()
 	// GetGameplayRadiusCm could read it.
 	SetAttenuationRadius(LLKUnits::DistanceFromStuds(Level.RadiusStuds));
 
-	// Outer is the authored angle - the edge of what is lit, and the half
-	// other systems read. Inner is a fraction of it and stays in code,
-	// because it softens the falloff and changes nothing about reach.
-	SetOuterConeAngle(Level.ConeAngleDegrees);
-	SetInnerConeAngle(Level.ConeAngleDegrees * InnerConeFraction);
+	// `coneAngleDegrees` IS THE FULL BEAM. Unreal's setter takes a half
+	// angle, measured from the light's axis, so the authored number is
+	// halved on the way in.
+	//
+	// It was passed straight through until 2026-11-15, which meant the
+	// authored 110 asked for a 220-degree cone and the engine clamped it to
+	// 88.9 - `SpotLightComponent.cpp:39` - giving a 177.8-degree wash. The
+	// data file's own note says the cone should leave "darkness outside the
+	// keeper's chosen direction"; there was no such direction. See
+	// docs/FINDINGS-LANTERN-CONE-IS-A-HEMISPHERE.md.
+	//
+	// The inner angle is derived from the HALVED outer, not from the
+	// authored full beam. Halving only the outer would quietly double the
+	// inner-to-outer ratio and trade one wrong beam shape for another - the
+	// bright core would grow to half the beam instead of a quarter of it.
+	const float OuterHalfAngleDegrees = Level.ConeAngleDegrees * 0.5f;
+	SetOuterConeAngle(OuterHalfAngleDegrees);
+	SetInnerConeAngle(OuterHalfAngleDegrees * InnerConeFraction);
+
+	// Say so if the renderer is about to disagree with the author. The clamp
+	// is silent, and a silent clamp on the number that decides what the
+	// player can see is the whole reason this comment exists.
+	const float EffectiveOuter = GetEffectiveOuterConeDegrees();
+	if (!FMath::IsNearlyEqual(EffectiveOuter, OuterHalfAngleDegrees, 0.05f))
+	{
+		UE_LOG(LogLLK, Warning,
+			TEXT("Lantern cone: authored full beam %.1f asks for a %.1f "
+				 "half-angle, and the renderer clamps it to %.1f. The light "
+				 "you see is a %.1f degree cone, not the authored %.1f."),
+			Level.ConeAngleDegrees, OuterHalfAngleDegrees, EffectiveOuter,
+			EffectiveOuter * 2.f, Level.ConeAngleDegrees);
+	}
+}
+
+float ULLKLanternLightComponent::GetEffectiveOuterConeDegrees() const
+{
+	// What the RENDERER uses, not what was authored. The engine's own clamp
+	// is asked the question rather than a copy of it being maintained here -
+	// a second clamp in this file would be one more number that stops
+	// agreeing the day Epic changes theirs.
+	const FVector2f Clamped =
+		USpotLightComponent::GetClampedConeAngles(InnerConeAngle, OuterConeAngle);
+	return FMath::RadiansToDegrees(Clamped.Y);
 }
 
 bool ULLKLanternLightComponent::SetActiveLevelIndex(int32 Index)

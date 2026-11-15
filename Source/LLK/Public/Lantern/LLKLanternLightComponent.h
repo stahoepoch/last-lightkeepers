@@ -189,6 +189,20 @@ public:
 	// lantern instead of presenting a hard flashlight core.
 	float InnerConeFraction = 0.24f;
 
+	/**
+	 * The outer cone the RENDERER will use, in degrees, after Unreal's clamp.
+	 *
+	 * `OuterConeAngle` is what was asked for; this is what is drawn. They
+	 * differ above 88.9 degrees and nothing says so - which is how a 110
+	 * authored on the assumption of a full beam spent weeks rendering as a
+	 * 177.8-degree hemisphere while a test asserting `OuterConeAngle == 110`
+	 * passed on every run.
+	 *
+	 * Exists so a test can read the half the player actually gets.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "LLK|Lantern")
+	float GetEffectiveOuterConeDegrees() const;
+
 protected:
 	UFUNCTION()
 	void OnLanternStateChanged(bool bIsOn, ELLKLanternChangeReason Reason);

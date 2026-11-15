@@ -85,11 +85,30 @@ bool FLLKLanternLightTest::RunTest(const FString& Parameters)
 		Light->AttenuationRadius, LLKUnits::DistanceFromStuds(30.f));
 	TestEqual(TEXT("which is 840cm, not 30"), Light->AttenuationRadius, 840.f);
 
-	// 5. The authored angle is the OUTER cone. Applied to the inner one the
-	//    lit area would be wrong while every number in the asset was right.
-	TestEqual(TEXT("the authored angle is the outer cone"), Light->OuterConeAngle, 110.f);
+	// 5. The authored angle is the FULL beam, and Unreal's outer cone is a
+	//    half angle. This asserted `OuterConeAngle == 110` until 2026-11-15,
+	//    which was true of the property and false of the image: the renderer
+	//    clamps at 88.9, so the light drawn was a 177.8-degree wash while
+	//    this line passed. A test that reads the number the renderer discards
+	//    is the same fault as counting a collision box on a mesh with no
+	//    physics body.
+	TestEqual(TEXT("the authored full beam is halved into the outer cone"),
+		Light->OuterConeAngle, 55.f);
 	TestTrue(TEXT("and the inner cone is strictly inside it"),
 		Light->InnerConeAngle < Light->OuterConeAngle && Light->InnerConeAngle > 0.f);
+
+	//    The one that would have caught it: what the RENDERER uses. Below the
+	//    clamp these agree, and the day somebody authors a wider beam they
+	//    stop agreeing and this fails instead of the image quietly changing.
+	TestEqual(TEXT("and the renderer is not clamping it"),
+		Light->GetEffectiveOuterConeDegrees(), Light->OuterConeAngle, 0.05f);
+	TestTrue(TEXT("so the drawn beam is the authored one, not a hemisphere"),
+		Light->GetEffectiveOuterConeDegrees() * 2.f < 170.f);
+
+	//    The ratio the halving must not have changed: a quarter of the beam
+	//    is the bright core, not half of it.
+	TestEqual(TEXT("the inner cone is still a quarter of the outer"),
+		Light->InnerConeAngle / Light->OuterConeAngle, 0.24f, 0.001f);
 
 	TestEqual(TEXT("intensity reached the light"), Light->Intensity, 25.f);
 
