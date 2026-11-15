@@ -5,6 +5,44 @@ edits — this was read-only, as asked.** Written for row 92's terms: a player
 must be able to *"move through a believable store, hide, flee"*. This is about
 the hide and the flee.
 
+> ## ⚠ SUPERSEDED FOR THE CURRENT MAP — do not cite these conclusions
+>
+> **Commit `7c737df` ("Build children's-floor signs and hide encounter")
+> rebuilt this floor on 2026-11-14, after these measurements were taken.**
+> Verified against the live map on 2026-11-15 by commandlet read. Four things
+> below are no longer the map:
+>
+> 1. **"There is no Sweeper up there."** There is now: `BSW_KIDS_SWEEPER`, an
+>    `LLKSweeper`, at `(-850, -1300, 750.5)`.
+> 2. **"Nothing patrols the children's department."** Three live points do:
+>    `BSW_KIDS_PATROL_1/2/3` at `(-1750,-1300)`, `(-850,-1300)`, `(-850,-250)`.
+> 3. **The three `ANCHOR_PATROL` markers are still at `z = 110`** — that part
+>    holds — but they were retagged `LLK.Patrol` → `LLK.Patrol.Lower` and are
+>    inert, and `ANCHOR_SWEEPER_CONCOURSE` was deleted. The lower floor now has
+>    no Sweeper and no live patrol.
+> 4. **"Ducking behind a rack is the wrong move"** is still true of the 21
+>    remaining racks, but two racks at `(-2150, -1650)` and `(-2150, -500)` were
+>    replaced with solid displays collidable to **78 cm above the floor**,
+>    built specifically so that crouching works. The rack count is 21, not 23.
+>
+> **Two further corrections to what is written below.** The column is
+> **44 × 44 cm** — narrower than a standing capsule, so the claim that it is
+> real cover needs re-measuring, not quoting. And the floor is at **z = 662.500
+> exactly**, not "≈663"; all three cover fixtures are base-pivot and belong at
+> that z, not at floor + height/2.
+>
+> The sight and escape conclusions below were taken against a deck with no
+> displays, no patrol and no machine on it. **They do not describe the deck as
+> it now stands and have not been re-run.** The geometry tables are still
+> correct for the geometry they name; the play conclusions are not.
+>
+> Full current-state read, with every collidable actor's bounds and a free-floor
+> grid: the layout read left for the MCP session in this group's shared notes,
+> `KIDS-DECK-LAYOUT-READ.md`. It also records four pre-existing collidable
+> intersections on this deck (`UPPER_BEDDING` and `UPPER_SEASONAL` against
+> three racks and the sales desk) that confound any cover reading taken in
+> those two aisles.
+
 Codex asked for Sweeper **sight, hearing and escape** around the new racks and
 column. Two of those three have answers. The third does not exist.
 
