@@ -46,6 +46,7 @@ def trace(name, start, end, expected):
 require("ROUTE_SOUTH_HEADER" not in actors, "old header still seals glass")
 for name in ("ROUTE_SOUTH_LINTEL", "MALL_GLASS_ENTRANCE",
              "MALL_GLASS_RETURN_W", "MALL_GLASS_RETURN_E",
+             "MALL_ENTRANCE_APPROACH_FLOOR",
              "ROUTE_MALL_GRILLE_22", "ANCHOR_UPPER_SOUTH",
              "ANCHOR_FULL_ROOF", "ROUTE_SOUTH_WALL_W",
              "ROUTE_SOUTH_WALL_E"):
@@ -56,6 +57,17 @@ require(all(abs(a - b) < 1 for a, b in zip(
 require(all(abs(a - b) < 1 for a, b in zip(
     bounds(actors["MALL_GLASS_ENTRANCE"]),
     (-900, 900, -2880, -2876, 280, 1468))), "front glass bounds drifted")
+require(all(abs(a - b) < 1 for a, b in zip(
+    bounds(actors["MALL_ENTRANCE_APPROACH_FLOOR"]),
+    (-900, 900, -3100, -2680, -30, 0))),
+    "glass bay or exterior approach lost its floor")
+require(actors["MALL_ENTRANCE_APPROACH_FLOOR"].get_actor_enable_collision(),
+        "approach floor no longer blocks movement")
+for name, expected in (
+        ("MALL_GLASS_RETURN_W", (-900, -896, -2880, -2680, 0, 1468)),
+        ("MALL_GLASS_RETURN_E", (896, 900, -2880, -2680, 0, 1468))):
+    require(all(abs(a - b) < 1 for a, b in zip(bounds(actors[name]), expected)),
+            "side glazing floats or moved: " + name)
 for name, expected in (
         ("ROUTE_SOUTH_WALL_W", (-4370, -900, -2720, -2680, 0, 1500)),
         ("ROUTE_SOUTH_WALL_E", (900, 4370, -2720, -2680, 0, 1500)),
@@ -112,6 +124,14 @@ trace("sky_still_blocked", (0, 0, 2000),
 trace("grille_still_closed", (0, -2600, 100),
       (0, -2800, 100), "ROUTE_MALL_GRILLE_22")
 
+# These foot-height traces failed before the support correction. A pane that
+# hangs over empty space looks plausible from a distant screenshot and still
+# drops any future player who reaches the exterior face.
+for x, y in ((0, -2750), (0, -2800), (0, -3000),
+             (-800, -2800), (800, -2800)):
+    trace("approach_floor_{}_{}".format(x, y), (x, y, 150),
+          (x, y, -150), "MALL_ENTRANCE_APPROACH_FLOOR")
+
 roof = bounds(actors["ANCHOR_FULL_ROOF"])
 require(abs(roof[4] - 1487.5) < 1, "roof underside changed")
 canopy = {n: a for n, a in actors.items() if n.startswith("BSW_CANOPY_GLASS_")}
@@ -154,6 +174,7 @@ out = (Path(__file__).resolve().parent.parent / "Saved" / "Temp" /
        "verify_boswells_mall_glass_entrance.json")
 out.parent.mkdir(parents=True, exist_ok=True)
 out.write_text(json.dumps(results, indent=2), encoding="utf-8")
-message = "BOSWELLS_MALL_GLASS_VERIFY PASSED: 10 traces, sealed roof and grille, unchanged light budget"
+message = ("BOSWELLS_MALL_GLASS_VERIFY PASSED: 15 traces, supported glass bay, "
+           "sealed roof and grille, unchanged light budget")
 unreal.log(message)
 print(message)

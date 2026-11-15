@@ -29,6 +29,7 @@ require(not any(n.startswith(PREFIX) or n == "ROUTE_SOUTH_LINTEL"
 for name in ("ROUTE_SOUTH_HEADER", "ROUTE_SOUTH_WALL_W",
              "ROUTE_SOUTH_WALL_E", "ROUTE_MALL_GRILLE_22",
              "ANCHOR_UPPER_SOUTH", "ANCHOR_FULL_ROOF",
+             "ANCHOR_FULL_FLOOR_LOWER",
              "BSW_CANOPY_GLASS_02_02"):
     require(name in before, "required shell actor absent: " + name)
 
@@ -126,9 +127,17 @@ block("ROUTE_SOUTH_LINTEL", -900, 900, -2720, -2680, 1468, 1500, teal)
 block("MALL_GLASS_ENTRANCE", -900, 900, -2880, -2876,
       280, 1468, glass)
 block("MALL_GLASS_RETURN_W", -900, -896, -2880, -2680,
-      280, 1468, glass)
+      0, 1468, glass)
 block("MALL_GLASS_RETURN_E", 896, 900, -2880, -2680,
-      280, 1468, glass)
+      0, 1468, glass)
+
+# The frontage projects beyond the old store floor at y=-2700. Without a
+# landing, the open 280 cm entry under the glass leads straight into a void.
+# This 4.2 m slab supports the 2 m glazed bay plus a 2.2 m exterior approach;
+# it is not a claim that the rest of the Galleria concourse is built.
+floor_material = before["ANCHOR_FULL_FLOOR_LOWER"].static_mesh_component.get_material(0)
+block("MALL_ENTRANCE_APPROACH_FLOOR", -900, 900, -3100, -2680,
+      -30, 0, floor_material)
 
 # Retail curtain-wall rhythm, teal as in the supplied exterior atrium photo.
 # No central vertical mullion or horizontal at 1120/1280/1400: the measured
@@ -146,7 +155,9 @@ for side, xmin, xmax in (("W", -905, -895), ("E", 895, 905)):
 after = {a.get_actor_label(): a for a in subsystem.get_all_level_actors()}
 require("ROUTE_SOUTH_HEADER" not in after and
         "ROUTE_SOUTH_LINTEL" in after and
-        "ROUTE_MALL_GRILLE_22" in after, "entrance shell incomplete")
+        "ROUTE_MALL_GRILLE_22" in after and
+        "MALL_ENTRANCE_APPROACH_FLOOR" in after,
+        "entrance shell incomplete")
 require(sum(n.startswith(PREFIX) for n in after) == 15,
         "entrance actor inventory differs")
 for asset in (glass, teal):
