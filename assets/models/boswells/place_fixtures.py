@@ -123,9 +123,23 @@ PROXY_COVER = {"SM_BSW_FoldedGoodsTable", "SM_BSW_WallMerchBay"}
 FLOOR_Z = 662.5
 
 # The heights the game asks its question at.
-TRACE_CROUCHED_CM = 40.0
-TRACE_STANDING_CM = 88.0
-EYE_HEIGHT_CM = 152.0
+# The keeper's body, and these three numbers are the whole reason this kit
+# exists at the sizes it does. They are NOT independent of the game: sight is
+# traced between capsule centres and the player looks out from the camera, so
+# all three are functions of the capsule authored in
+# Source/LLK/Private/Lantern/LLKLanternFeel.cpp.
+#
+# He is a boy, 145 cm, since 2026-11-15. He was a 176 cm adult before that,
+# which Chris found by standing next to the racks. Written the same way the
+# C++ writes it - one authored height and one scale - so the two can be
+# compared mechanically instead of by eye. tests/asset-deps.test.mjs fails if
+# they drift.
+KEEPER_HEIGHT_CM = 145.0
+_K = KEEPER_HEIGHT_CM / 176.0
+
+TRACE_STANDING_CM = 88.0 * _K
+TRACE_CROUCHED_CM = 40.0 * _K
+EYE_HEIGHT_CM = (88.0 + 64.0) * _K
 
 # 5.8 exposes the channel by name, which settles what TRACE_TYPE_QUERY1 only
 # implied - the older name is the first built-in trace channel, and reading
@@ -147,7 +161,7 @@ PLACEMENTS = [
     dict(mesh="SM_BSW_FoldedGoodsTable",
          label="BSW_KIDS_COVER_WEST_TABLE",
          xy=(-3400.0, -1150.0), yaw=0.0,
-         size=(160.0, 90.0), height=80.0,
+         size=(160.0, 90.0), height=69.0,
          blocks=[TRACE_CROUCHED_CM],
          clear=[TRACE_STANDING_CM, EYE_HEIGHT_CM],
          control=-130.0,

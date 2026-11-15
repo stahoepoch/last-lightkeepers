@@ -137,33 +137,56 @@ check(
 // light anchor is derived from it. This guard caught the move when it happened
 // and now holds the single-authority property rather than the old location.
 const feel = read("Source", "LLK", "Private", "Lantern", "LLKLanternFeel.cpp");
+
+// The keeper's eye, derived the same way the C++ derives it so the two
+// cannot drift. 145 cm boy since 2026-11-15; 176 cm adult before that, which
+// is why every rule below used to say 152.
+const KEEPER_HEIGHT_CM = 145;
+const EYE_HEIGHT_CM = (88 + 64) * (KEEPER_HEIGHT_CM / 176);
 check(
   "eye height is declared once, in LLKLanternFeel",
-  feel.includes("KeeperEyeHeightCm = 152.f"),
+  // 2026-11-15: the keeper became a boy and this literal went away on
+  // purpose. The old guard asked that 152 be declared exactly once;
+  // the better guarantee is that it is declared NOWHERE - the eye is
+  // now computed from the capsule half-height and the camera offset,
+  // so there is no number to forget to update. This asserts the
+  // derivation rather than a value, which is what the constant's own
+  // comment asked for when it warned that two copies "stop agreeing
+  // the day a capsule changes".
+  feel.includes("KeeperEyeHeightCm =") &&
+    feel.includes("KeeperCapsuleHalfHeightCm + ") &&
+    !/KeeperEyeHeightCm\s*=\s*[0-9]/.test(feel),
 );
 check(
   "and map readiness defers to it rather than re-declaring 152",
   impl.includes("LLKLanternFeel::KeeperEyeHeightCm") && !impl.includes("= 152.f"),
   "two copies of a number derived from two engine defaults stop agreeing the day a capsule changes",
 );
-check("and 152 in the document", doc.includes("152"));
+// The document has to carry the CURRENT eye, not a number that was
+// right until the capsule changed. 2026-11-15: the keeper became a
+// 145 cm boy, so the eye is 125 and the two numbers it comes from are
+// the boy's capsule half-height and camera offset, not the adult's.
+check("and the boy's eye height in the document", doc.includes("125"));
 check(
   "and the document says which two numbers it came from",
-  doc.includes("64") && doc.includes("88"),
-  "an unexplained 152 is a number nobody can check against a changed capsule",
+  doc.includes("72.5") && doc.includes("52.7"),
+  "an unexplained eye height is a number nobody can check against a " +
+    "changed capsule, which is exactly what happened when the keeper " +
+    "stopped being an adult",
 );
 
 const shelf = plan.match(/ShelfHeightStuds = ([\d.]+)f/)?.[1];
 check(
   `the plan's shelving (${shelf} studs) clears eye height`,
-  parseFloat(shelf) * 28 > 152,
-  "shelving at or below 152cm reads as cover and occludes nothing",
+  parseFloat(shelf) * 28 > EYE_HEIGHT_CM,
+  `shelving at or below the keeper's ${EYE_HEIGHT_CM.toFixed(0)}cm eye reads ` +
+    `as cover and occludes nothing`,
 );
 
 const counter = plan.match(/CounterHeightStuds = ([\d.]+)f/)?.[1];
 check(
   `and the plan's counters (${counter} studs) deliberately do not`,
-  parseFloat(counter) * 28 < 152,
+  parseFloat(counter) * 28 < EYE_HEIGHT_CM,
   "the floor needs both, or 'get behind something' has one answer",
 );
 

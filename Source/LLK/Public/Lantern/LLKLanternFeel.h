@@ -261,6 +261,33 @@ namespace LLKLanternFeel
 	 * to the thing most likely to break it, and
 	 * `tests/map-readiness.test.mjs` asserts that nobody re-declares it.
 	 */
+	/**
+	 * The keeper's body, and the one place it is authored.
+	 *
+	 * **He is a boy.** `DECISIONS.md` row 89: *"one player, one lantern, and
+	 * the boy is alone."* Until 2026-11-15 the capsule was Unreal's default
+	 * 88cm half-height with the camera 64 above it - a 176cm adult - which
+	 * Chris found by standing in the children's department: *"if you put
+	 * yourself at the height of the counters and the clothes racks, the
+	 * person towers over it."* He was right, and the furniture was not the
+	 * problem. Every garment rack in that department is 145-166cm and the
+	 * adult eye was 152, so he looked straight out over the tops of all of
+	 * them and nothing on the floor was a wall.
+	 *
+	 * **Everything here is one scale factor applied to those old defaults**,
+	 * so the proportions that worked are preserved and only the size moves.
+	 * `KeeperScale` is the single number to change; the rest follow, and the
+	 * eye is COMPUTED rather than re-authored, because the header below used
+	 * to warn that two copies of it "stop agreeing the day a capsule
+	 * changes" - and the capsule has now changed.
+	 */
+	LLK_API extern const float KeeperScale;
+	LLK_API extern const float KeeperHeightCm;
+	LLK_API extern const float KeeperCapsuleHalfHeightCm;
+	LLK_API extern const float KeeperCapsuleRadiusCm;
+	LLK_API extern const float KeeperCrouchedHalfHeightCm;
+	LLK_API extern const float KeeperCameraRelativeZCm;
+
 	LLK_API extern const float KeeperEyeHeightCm;
 
 	/**

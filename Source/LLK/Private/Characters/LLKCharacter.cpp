@@ -17,6 +17,7 @@
 #include "Materials/MaterialInterface.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "LLK.h"
+#include "Lantern/LLKLanternFeel.h"
 #include "Lantern/LLKLanternComponent.h"
 #include "Lantern/LLKLanternLightComponent.h"
 #include "Characters/LLKVitalsComponent.h"
@@ -36,8 +37,18 @@ ALLKCharacter::ALLKCharacter()
 	// Row 44: the camera is the keeper's head, not a setting on a boom. There
 	// is no spring arm and no third-person branch to keep working.
 	FirstPersonCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
+	// The keeper is a boy, and his dimensions are authored in one place -
+	// LLKLanternFeel - because the eye height the whole light and sight
+	// system reads is DERIVED from the capsule and this camera offset. A
+	// capsule set here and an eye declared there is exactly the pair that
+	// header warns about.
+	GetCapsuleComponent()->InitCapsuleSize(
+		LLKLanternFeel::KeeperCapsuleRadiusCm,
+		LLKLanternFeel::KeeperCapsuleHalfHeightCm);
+
 	FirstPersonCamera->SetupAttachment(GetCapsuleComponent());
-	FirstPersonCamera->SetRelativeLocation(FVector(0.f, 0.f, 64.f));
+	FirstPersonCamera->SetRelativeLocation(
+		FVector(0.f, 0.f, LLKLanternFeel::KeeperCameraRelativeZCm));
 	FirstPersonCamera->bUsePawnControlRotation = true;
 
 	// The UEFN mannequin is intentionally a co-op presentation body for now,
@@ -53,7 +64,14 @@ ALLKCharacter::ALLKCharacter()
 	if (KeeperBody.Succeeded())
 	{
 		GetMesh()->SetSkeletalMesh(KeeperBody.Object);
-		GetMesh()->SetRelativeLocation(FVector(0.f, 0.f, -89.f));
+		// Feet on the capsule's floor, whatever the capsule is. The -89
+		// here was the adult half-height plus one, and it would have left
+		// a boy hanging 16cm in the air. The body is SetOwnerNoSee and
+		// co-op is gone (row 89), so almost nobody will ever see it - but
+		// an adult mannequin on a boy's capsule is still wrong and is
+		// flagged in the proposal rather than quietly scaled here.
+		GetMesh()->SetRelativeLocation(FVector(
+			0.f, 0.f, -(LLKLanternFeel::KeeperCapsuleHalfHeightCm + 1.f)));
 		GetMesh()->SetRelativeRotation(FRotator(0.f, -90.f, 0.f));
 		GetMesh()->SetOwnerNoSee(true);
 		GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -200,6 +218,13 @@ ALLKCharacter::ALLKCharacter()
 
 		Movement->bOrientRotationToMovement = false;
 		Movement->NavAgentProps.bCanCrouch = true;
+		// Crouch scales with the boy too. Unreal's stock 40 was the crouched
+		// half-height the whole children's-floor cover study was measured
+		// against; leaving it while the standing capsule shrank would have
+		// made his crouch almost the same height as his stand, and the
+		// difference between the two is the entire stealth mechanic.
+		Movement->SetCrouchedHalfHeight(
+			LLKLanternFeel::KeeperCrouchedHalfHeightCm);
 		// Crouching must not silently un-crouch under a low ceiling into a
 		// stand the player did not ask for; keep the capsule honest instead.
 		Movement->bCanWalkOffLedgesWhenCrouching = true;

@@ -236,23 +236,55 @@ def kids_sales_desk():
 #
 # These two are the deliberate answer, and they are solid to the floor so there
 # is no band to fall below.
-TRACE_CROUCHED_CM = 40.0
-TRACE_STANDING_CM = 88.0
-EYE_HEIGHT_CM = 152.0
+# The keeper's body, and these three numbers are the whole reason this kit
+# exists at the sizes it does. They are NOT independent of the game: sight is
+# traced between capsule centres and the player looks out from the camera, so
+# all three are functions of the capsule authored in
+# Source/LLK/Private/Lantern/LLKLanternFeel.cpp.
+#
+# He is a boy, 145 cm, since 2026-11-15. He was a 176 cm adult before that,
+# which Chris found by standing next to the racks. Written the same way the
+# C++ writes it - one authored height and one scale - so the two can be
+# compared mechanically instead of by eye. tests/asset-deps.test.mjs fails if
+# they drift.
+KEEPER_HEIGHT_CM = 145.0
+_K = KEEPER_HEIGHT_CM / 176.0
+
+TRACE_STANDING_CM = 88.0 * _K
+TRACE_CROUCHED_CM = 40.0 * _K
+EYE_HEIGHT_CM = (88.0 + 64.0) * _K
 
 
 def folded_goods_table():
-    """A 30-inch folded-stock table. Blocks a crouched keeper and NOT a
+    """A 24-inch folded-stock table. Blocks a crouched keeper and NOT a
     standing one: you have to duck behind it, and because the whole silhouette
     stays under chest height it never looks like something you could stand
-    behind. That misreading is what the racks already cost us."""
+    behind. That misreading is what the racks already cost us.
+
+    **Was a 30-inch table, 80 cm to the top of the folded stock, until
+    2026-11-15.** It stopped working the moment the keeper became a boy: a
+    145 cm boy's traced standing centre is 72.5 cm, so an 80 cm table hid him
+    standing as well as crouched and the floor lost the one fixture that
+    teaches ducking. `cover_check` refused to write it, which is the whole
+    reason that function exists.
+
+    The fix is a dimension, not a rule. To mean *duck behind this* the
+    silhouette has to sit strictly between his crouched 33 cm and his
+    standing 72.5, and retail nesting tables come in a 24 / 27 / 30 inch set -
+    61, 69 and 76 cm. A 24-inch table carrying 8 cm of folded stock tops out
+    at 69, inside the band with 3.5 cm to spare, and is an ordinary piece of
+    shop furniture rather than something shrunk to suit a trace.
+
+    **Only the table moved.** The counter at 102 and the bay at 190 keep
+    their roles exactly - stand-hide-watch and hidden-and-blind - because a
+    boy's eye at 125 is still above the counter and still below the bay."""
     mesh = Mesh()
     mesh.box(0, 0, 5, 134, 64, 10, "steel")             # toe recess, 0-10
-    mesh.box(0, 0, 37, 150, 80, 54, "white_steel")      # painted plinth, 10-64
-    mesh.box(0, 0, 68, 160, 90, 8, "oat")               # laminate top, 64-72
+    mesh.box(0, 0, 31, 150, 80, 43, "white_steel")      # painted plinth, 10-53
+    mesh.box(0, 0, 57, 160, 90, 8, "oat")               # laminate top, 53-61
     for x, y, colour in ((-38, -20, "denim"), (38, -20, "cream"),
                          (-38, 20, "burgundy"), (38, 20, "mint")):
-        mesh.box(x, y, 76, 36, 34, 8, colour)           # folded stock, 72-80
+        mesh.box(x, y, 65, 36, 34, 8, colour)           # folded stock, 61-69
     mesh.write("SM_BSW_FoldedGoodsTable")
     return mesh
 

@@ -108,9 +108,13 @@ for (const [rel, min] of EXPECTED) {
 // these files are committed art, not build output.
 console.log("\nCover fixtures");
 {
-  const TRACE_CROUCHED_CM = 40;
-  const TRACE_STANDING_CM = 88;
-  const EYE_HEIGHT_CM = 152;
+  // Functions of the capsule, not constants. See make_fixture_kit.py; the
+  // keeper is a 145 cm boy as of 2026-11-15 and was a 176 cm adult before.
+  const KEEPER_HEIGHT_CM = 145;
+  const K = KEEPER_HEIGHT_CM / 176;
+  const TRACE_CROUCHED_CM = 40 * K;
+  const TRACE_STANDING_CM = 88 * K;
+  const EYE_HEIGHT_CM = (88 + 64) * K;
 
   const topOf = (stem) => {
     const path = join(root, "assets/models/boswells", `${stem}.obj`);
@@ -205,9 +209,13 @@ console.log("\nCover placement");
   // centre-pivot z sinks a fixture into the deck, and the probe still passes,
   // because the half of the fixture above the floor still blocks the trace.
   // So it is checked here, with no engine, against the same committed OBJs.
-  const TRACE_CROUCHED_CM = 40;
-  const TRACE_STANDING_CM = 88;
-  const EYE_HEIGHT_CM = 152;
+  // Functions of the capsule, not constants. See make_fixture_kit.py; the
+  // keeper is a 145 cm boy as of 2026-11-15 and was a 176 cm adult before.
+  const KEEPER_HEIGHT_CM = 145;
+  const K = KEEPER_HEIGHT_CM / 176;
+  const TRACE_CROUCHED_CM = 40 * K;
+  const TRACE_STANDING_CM = 88 * K;
+  const EYE_HEIGHT_CM = (88 + 64) * K;
 
   // The children's department footprint and the deck height, from the
   // commandlet read of the committed map on 2026-11-15.

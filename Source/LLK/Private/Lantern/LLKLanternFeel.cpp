@@ -4,7 +4,29 @@ namespace LLKLanternFeel
 {
 	// 88cm capsule half-height plus the camera's authored 64cm. See the header
 	// for why this is the only declaration of it in the project.
-	const float KeeperEyeHeightCm = 152.f;
+	// The adult the keeper used to be, kept as the reference the scale is
+	// taken from rather than deleted: capsule 88 half-height, 34 radius,
+	// crouched 40, camera +64, eye 152. Those were Unreal's defaults plus one
+	// authored camera offset, and every cover fixture on the children's floor
+	// was measured against them.
+	//
+	// 145cm is a boy of about eleven. One number; everything else follows.
+	const float KeeperHeightCm = 145.f;
+	const float KeeperScale = KeeperHeightCm / 176.f;
+
+	const float KeeperCapsuleHalfHeightCm = 88.f * KeeperScale;
+	const float KeeperCapsuleRadiusCm = 34.f * KeeperScale;
+	const float KeeperCrouchedHalfHeightCm = 40.f * KeeperScale;
+	const float KeeperCameraRelativeZCm = 64.f * KeeperScale;
+
+	// DERIVED, not authored. The old comment on this constant warned that two
+	// copies of it "stop agreeing the day a capsule changes, and the one that
+	// would be noticed last is the one that decides what enemies hunt." The
+	// capsule has now changed, so the warning is answered by construction:
+	// there is no 152 to forget to update, because there is no literal here
+	// at all.
+	const float KeeperEyeHeightCm =
+		KeeperCapsuleHalfHeightCm + KeeperCameraRelativeZCm;
 
 	namespace
 	{

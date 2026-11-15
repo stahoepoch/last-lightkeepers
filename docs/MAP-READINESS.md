@@ -111,12 +111,23 @@ list (not component tags):
 disagrees with its own name. Fewer or more than two actors per tag is itself
 reported, because a lane with one end is not a lane.
 
-### Eye height is 152 cm, which is 5.43 studs
+### Eye height is 125 cm, which is 4.47 studs
 
 The camera sits 64 cm above the capsule's centre
 (`Source/LLK/Private/Characters/LLKCharacter.cpp:30`) and the capsule's default
 half-height is 88 cm, so a keeper's eye — and therefore every sightline trace —
-is **152 cm above the floor**.
+is **125 cm above the floor**.
+
+**It was 152 until 2026-11-15**, when the keeper stopped being a 176 cm adult
+and became the boy the fiction has always said he is (`DECISIONS.md` row 89,
+*"one player, one lantern, and the boy is alone"*). Chris found it by
+standing in the children's department next to the racks: the furniture was
+correctly sized and the person was not.
+
+The two numbers it comes from are the boy's capsule half-height **72.5** and
+his camera offset **52.7**, both of which are themselves one scale factor
+applied to the old adult defaults. Nothing re-declares the eye any more - it
+is computed in `LLKLanternFeel.cpp`, so there is no literal to forget.
 
 That is the number a sight break has to beat, and it is why the floor plan's
 shelving is 6 studs (168 cm) and its counters are 3.2 studs (90 cm). The
