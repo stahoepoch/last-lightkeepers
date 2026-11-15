@@ -134,6 +134,71 @@ def import_mesh(stem):
     return mesh
 
 
+def turn_nanite_off(mesh, stem):
+    """Nanite has no business on these meshes, and it is the current suspect
+    for why two of them block a sight trace only sometimes.
+
+    **The design argument stands on its own, before any bug.** These fixtures
+    are 42, 24 and 252 triangles. Nanite is a renderer for geometry dense
+    enough that the triangles stop mattering individually; on a 24-triangle
+    box it buys nothing and adds a second representation of the asset that
+    can disagree with the first. For a prop whose entire job is to stop a
+    line trace, that trade is bad at any price.
+
+    **The empirical argument is weaker and is flagged as such.** Flipping this
+    flag on already-built assets took them from blocking nowhere to blocking
+    *sometimes*, which is not a fix. Setting it at import is a different
+    thing: the asset is built once, without Nanite, rather than inheriting a
+    Nanite build and having the flag contradict it afterwards.
+
+    A note for whoever tests this: the one fixture that has always worked,
+    `SM_BSW_ServiceCounter`, is also the smallest at 24 triangles - plausibly
+    below the size where Nanite actually builds cluster data, which would mean
+    it has been effectively non-Nanite all along regardless of its flag. That
+    would explain why three meshes with identical settings behave differently,
+    which configuration alone never has. **It is a hypothesis and the test is
+    cheap**: read whether each asset has built Nanite data, not whether the
+    box is ticked.
+
+    Nothing here is asserted to work. `place_fixtures.py` pre-flights every
+    mesh with a trace before it places anything, and that is where this is
+    proven or caught.
+    """
+    subsystem = unreal.get_editor_subsystem(unreal.StaticMeshEditorSubsystem)
+    applied = None
+
+    # Prefer the subsystem call, which applies the change and rebuilds, over
+    # writing the struct and hoping the build follows.
+    #
+    # This is a getattr preference, which is the shape that went wrong in
+    # `blocked()` earlier today - so the difference is worth stating. There,
+    # the fallback WAS the verification, so an unverified branch could pass
+    # itself off as proof. Here both branches are legitimate ways to ask for
+    # the same thing and neither is trusted: the pre-flight trace in
+    # place_fixtures.py is the verification, and it is somewhere else.
+    setter = getattr(subsystem, "set_nanite_settings", None)
+    settings = mesh.get_editor_property("nanite_settings")
+    settings.set_editor_property("enabled", False)
+
+    if setter is not None:
+        try:
+            setter(mesh, settings, True)
+            applied = "StaticMeshEditorSubsystem.set_nanite_settings"
+        except Exception as error:  # noqa: BLE001
+            unreal.log_warning(f"{stem}: set_nanite_settings refused ({error})")
+
+    if applied is None:
+        mesh.set_editor_property("nanite_settings", settings)
+        applied = "nanite_settings property (no rebuild requested)"
+
+    still_on = mesh.get_editor_property("nanite_settings").get_editor_property(
+        "enabled")
+    if still_on:
+        raise RuntimeError(
+            f"{stem}: Nanite is still enabled after {applied}. Nothing saved")
+    unreal.log(f"{stem}: Nanite off via {applied}")
+
+
 def give_it_collision(mesh, stem):
     """One box collider sized to the mesh, then the profile that makes it
     cover.
@@ -316,6 +381,12 @@ def main():
     problems = []
     for stem, expected_top in FIXTURES:
         mesh = import_mesh(stem)
+        # Nanite OFF before collision is built, not after. Flipping the flag
+        # on an asset that already has a Nanite build is what produced a
+        # result that would not sit still; the point of doing it here is that
+        # the collision is then built against a mesh with one representation
+        # rather than two.
+        turn_nanite_off(mesh, stem)
         give_it_collision(mesh, stem)
         problems += assert_it_is_cover(mesh, stem, expected_top)
 

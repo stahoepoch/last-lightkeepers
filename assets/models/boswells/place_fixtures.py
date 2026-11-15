@@ -260,6 +260,46 @@ def place(spec):
     return actor
 
 
+# How many times every trace is fired before its answer is believed, and the
+# reason the number is not 1.
+#
+# Two wrong claims landed today on single green observations - an asset-level
+# assert that counted boxes, and a Nanite fix verified once - against a system
+# that has since been shown to give different answers to the identical
+# question in different processes AND in the same process minutes apart. A
+# flaky result read once is indistinguishable from a true one.
+#
+# So a trace is not a measurement here; the agreement of several is. Traces
+# are cheap and there are a few dozen of them, so this costs nothing worth
+# counting.
+TRACE_REPEATS = 5
+
+
+def blocked_stable(world, start, end, what):
+    """Fire the same trace TRACE_REPEATS times and refuse to summarise a
+    disagreement.
+
+    **Disagreement is its own outcome, not a tie to be broken.** A majority
+    vote here would be the most dangerous thing in this file: it would convert
+    "this system is not reproducible" into a clean boolean and let the
+    placement proceed on it. That is precisely the failure that put two wrong
+    claims in the log today. So this returns the answer only when every run
+    agrees, and raises when they do not.
+    """
+    answers = [blocked(world, start, end) for _ in range(TRACE_REPEATS)]
+    if all(answers):
+        return True
+    if not any(answers):
+        return False
+    raise RuntimeError(
+        f"UNSTABLE: {what} gave {sum(answers)} blocked and "
+        f"{len(answers) - sum(answers)} clear out of {len(answers)} identical "
+        f"traces in one process. Nothing has been saved. This is not a "
+        f"failed check - it is the check reporting that the thing it "
+        f"measures does not hold still, and no number of further runs fixes "
+        f"that. Do not place cover on a body that flickers")
+
+
 def blocked(world, start, end):
     """One Visibility trace. True means something is in the way.
 
@@ -326,7 +366,8 @@ def prove_the_instrument(world):
         for height in (TRACE_CROUCHED_CM, TRACE_STANDING_CM, EYE_HEIGHT_CM):
             s = unreal.Vector(start.x, start.y, FLOOR_Z + height)
             e = unreal.Vector(end.x, end.y, FLOOR_Z + height)
-            got = blocked(world, s, e)
+            got = blocked_stable(world, s, e,
+                                 f"instrument {label} @{height:.0f}")
             if got != expected:
                 raise RuntimeError(
                     f"INSTRUMENT FAILED: {label} at {height:.0f} cm read "
@@ -337,6 +378,67 @@ def prove_the_instrument(world):
                     f"how line_trace_single's result is being read")
     unreal.log("instrument proven: the column blocks and the open aisle does "
                "not, at 40, 88 and 152 cm")
+
+
+def preflight_the_fixtures(world):
+    """Prove each fixture mesh blocks ANYWHERE before placing it anywhere.
+
+    The instrument check above proves the trace works, using the map's own
+    geometry. It does not prove the three assets do, and that gap is exactly
+    where two of them hid: they passed every asset-level check, they had a
+    working instrument fired at them, and they blocked nothing.
+
+    So each mesh is spawned well clear of the department, traced across its
+    short axis at every height it claims to block, and destroyed again. A
+    fixture that cannot block in empty space will certainly not block on a
+    shop floor, and finding that out here costs one spawn instead of a map
+    edit and a round trip.
+
+    Suggested by the session that found the asset defect, with the right
+    reasoning: this would have caught it on the first run instead of the
+    ninth.
+    """
+    problems = []
+    for spec in PLACEMENTS:
+        mesh = unreal.load_asset(f"{MESH_ROOT}/{spec['mesh']}")
+        if mesh is None:
+            problems.append(f"{spec['mesh']} is not imported")
+            continue
+
+        where = unreal.Vector(60000.0, 0.0, 0.0)
+        half = spec["size"][1] / 2.0
+        twin = editor_actors().spawn_actor_from_class(
+            unreal.StaticMeshActor, where, unreal.Rotator(0.0, 0.0, 0.0))
+        try:
+            if twin is None or not twin.static_mesh_component.set_static_mesh(
+                    mesh):
+                problems.append(f"{spec['mesh']} would not spawn for preflight")
+                continue
+            twin.static_mesh_component.set_collision_profile_name("BlockAll")
+            for height in spec["blocks"]:
+                start = unreal.Vector(where.x, where.y - half - 90.0,
+                                      where.z + height)
+                end = unreal.Vector(where.x, where.y + half + 320.0,
+                                    where.z + height)
+                if not blocked_stable(world, start, end,
+                                      f"preflight {spec['mesh']} @{height:.0f}"):
+                    problems.append(
+                        f"{spec['mesh']} does not block at {height:.0f} cm in "
+                        f"EMPTY SPACE, so it is not cover anywhere. Its "
+                        f"collision is broken at the asset, not at the "
+                        f"position - re-import it rather than moving it")
+        finally:
+            if twin is not None:
+                editor_actors().destroy_actor(twin)
+
+    if problems:
+        for problem in problems:
+            unreal.log_error(problem)
+        raise RuntimeError(
+            f"{len(problems)} fixture(s) are not cover before placement was "
+            f"even attempted. The map has not been touched")
+    unreal.log("preflight: all three meshes block in empty space, "
+               f"{TRACE_REPEATS} consecutive traces each")
 
 
 def probe(world, spec):
@@ -361,13 +463,15 @@ def probe(world, spec):
         return keeper, machine
 
     for height in spec["blocks"]:
-        if not blocked(world, *pair(height)):
+        if not blocked_stable(world, *pair(height),
+                              what=f"{spec['label']} blocks @{height:.0f}"):
             problems.append(
                 f"{spec['label']}: a keeper at {height:.0f} cm is VISIBLE "
                 f"through it. Blocking that height is the only thing that "
                 f"makes this cover")
         # Spatial control: past the end of the fixture, must be clear.
-        if blocked(world, *pair(height, ctl)):
+        if blocked_stable(world, *pair(height, ctl),
+                          what=f"{spec['label']} control @{height:.0f}"):
             problems.append(
                 f"{spec['label']}: the open-floor control at {height:.0f} cm "
                 f"(slid {ctl:+.0f} cm along its length) ALSO blocked, so the "
@@ -379,7 +483,8 @@ def probe(world, spec):
         # hidden at the chest while your eye looks over the top is the one
         # good accident on this floor, and it should fail loudly if a position
         # takes it away.
-        if blocked(world, *pair(height)):
+        if blocked_stable(world, *pair(height),
+                          what=f"{spec['label']} clear @{height:.0f}"):
             problems.append(
                 f"{spec['label']} is required to be CLEAR at {height:.0f} cm "
                 f"and is blocked. Either the fixture is taller than authored "
@@ -443,8 +548,11 @@ def diagnose(world, spec, actor):
     # the problem; if it also misses, the body is not there.
     top = unreal.Vector(x, y, FLOOR_Z + 400.0)
     floor = unreal.Vector(x, y, FLOOR_Z + 1.0)
-    report.append(f"  trace down onto it: "
-                  f"{'BLOCK' if blocked(world, top, floor) else 'clear'}")
+    # Counted, not sampled. The whole open question is whether this body
+    # answers the same way twice, so a diagnostic that fires once and prints
+    # BLOCK or clear is throwing away the only interesting variable.
+    down = sum(blocked(world, top, floor) for _ in range(TRACE_REPEATS))
+    report.append(f"  trace down onto it: {down}/{TRACE_REPEATS} blocked")
 
     # Two duplicates of the same mesh in the same process and the same frame,
     # each varying exactly one thing. Far away at the same z isolates x/y;
@@ -462,9 +570,10 @@ def diagnose(world, spec, actor):
                                   where.z + TRACE_CROUCHED_CM)
             end = unreal.Vector(where.x, where.y + half + 320.0,
                                 where.z + TRACE_CROUCHED_CM)
-            hit = blocked(world, start, end)
-            report.append(f"  twin {label}: "
-                          f"{'BLOCK' if hit else 'clear'} at 40 cm")
+            hits = sum(blocked(world, start, end)
+                       for _ in range(TRACE_REPEATS))
+            report.append(f"  twin {label}: {hits}/{TRACE_REPEATS} blocked "
+                          f"at 40 cm")
         except Exception as error:  # noqa: BLE001
             report.append(f"  twin {label}: could not test ({error})")
         finally:
@@ -481,6 +590,7 @@ def main():
     # Before anything is spawned, and before any map change: does a trace in
     # this process actually answer the question?
     prove_the_instrument(world)
+    preflight_the_fixtures(world)
 
     for label in clear_previous():
         unreal.log(f"replaced previously placed {label}")

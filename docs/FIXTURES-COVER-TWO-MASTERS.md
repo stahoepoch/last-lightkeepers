@@ -92,6 +92,34 @@ fixes the trace to use eye height and deletes it."* This is that, on purpose.
 | ~~Default profile blocks `ECC_Visibility`~~ | ~~same~~ | **yes, and it proves nothing.** `collision_profile_name` reads a string |
 | **A trace fired at a placed fixture fails to see through it** | `place_fixtures.py` probes, commandlet, 2026-11-15 | **RUN, AND TWO OF THREE FAILED.** Counter blocks at 40 and 88 and is clear at 152, as designed. **Table and bay are missed at every height**, at every position, on simple and complex traces alike |
 
+> **AND THAT WITHDRAWAL'S REPLACEMENT IS WITHDRAWN TOO, same day. The result
+> does not hold still.** `33501c5`: the identical question - same mesh, same
+> coordinates, same height - answered BLOCK and then clear in the same
+> process minutes apart, and six trace geometries in one process all came
+> back clear on a fixture that had blocked moments before. Position, height,
+> trace length, start distance, process type and `set_collision_profile_name`
+> are all ruled out. `962d506` took the two meshes from blocking *nowhere* to
+> blocking *sometimes*, which is not a fix, and it was presented as proof on
+> a single green run - the third time today a single observation of a flaky
+> system has been published as a finding.
+>
+> **So the acceptance bar changes, and that is the durable part of this.**
+> Every trace is now fired five times and disagreement between repeats is its
+> own outcome: `place_fixtures.py` raises UNSTABLE rather than summarising.
+> A majority vote would be the most dangerous line in the kit - it converts
+> *"this does not hold still"* into a clean boolean and lets the placement
+> proceed on it. Every mesh must also block in empty space before anything is
+> placed, which would have caught the original defect on the first run
+> instead of the ninth.
+>
+> **Nanite is off at import rather than flipped afterwards.** These fixtures
+> are 42, 24 and 252 triangles; Nanite buys nothing at that size and adds a
+> second representation that can disagree with the first, which is a bad
+> trade at any price for a prop whose only job is to stop a line trace.
+> Flipping the flag on an already-built asset is what produced the
+> intermittency; building without it is a different thing. **Still
+> unproven** - the pre-flight is where it gets caught if it did not work.
+
 > **THE CAUSE NAMED BELOW IS WITHDRAWN, same day. It was Nanite, and the
 > fallback I blamed was never the fault.** Varying one thing at a time in a
 > full editor: Nanite on, clear; Nanite off with the collider *untouched*,

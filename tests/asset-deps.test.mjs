@@ -414,7 +414,16 @@ console.log("\nCover placement");
     const called = instrumentCall.exec(src);
     check(
       "the trace instrument is proven against known geometry before spawning",
-      called !== null && called.index < src.indexOf("for spec in PLACEMENTS:"),
+      (() => {
+        // Must precede the placement, and also the PREFLIGHT: the preflight
+        // fires traces of its own, so proving the instrument after it would
+        // be checking the ruler after measuring with it.
+        const preflight = /^[ \t]+preflight_the_fixtures\(world\)[ \t]*$/m
+          .exec(src);
+        const placement = src.indexOf('placed[spec["label"]] = place(spec)');
+        return called !== null && preflight !== null && placement >= 0 &&
+          called.index < preflight.index && called.index < placement;
+      })(),
       "every way the trace can break - a tuple result read for truthiness, a " +
         "None world, the wrong channel - gives a uniform answer, so the " +
         "probes cannot detect it. Two traces with opposite known answers can, " +
@@ -467,6 +476,55 @@ console.log("\nCover placement");
         "passed on all three fixtures while two of them were not cover, so " +
         "its success message has to name the gap rather than leave the " +
         "reader to assume it was covered",
+    );
+
+    // Three guards on the acceptance bar itself, added after the same
+    // question was shown to get different answers in different processes and
+    // in one process minutes apart. Two wrong claims landed today on single
+    // green observations, so "it passed" is no longer a thing this kit is
+    // allowed to say from one trace.
+    // ANCHOR NOTE. These two orderings were first anchored on
+    // "for spec in PLACEMENTS:", which stopped meaning "where placement
+    // starts" the moment preflight_the_fixtures grew a loop over the same
+    // list higher up the file - so indexOf found the preflight and both
+    // guards went green on the wrong line. Third anchor today to match text
+    // that existed somewhere else for another reason. Anchored now on the
+    // one statement that IS the placement, and if that line is ever renamed
+    // these fail loudly rather than quietly passing.
+    check(
+      "a trace is fired more than once before its answer is believed",
+      /^TRACE_REPEATS = ([2-9]|\d\d+)$/m.test(src),
+      "TRACE_REPEATS is 1 or missing. A flaky result read once is " +
+        "indistinguishable from a true one, and that is how both of today's " +
+        "wrong claims were made",
+    );
+    check(
+      "disagreement between repeats raises rather than being summarised",
+      /raise RuntimeError\(\s*\n?\s*f?"UNSTABLE/.test(src) ||
+        /"UNSTABLE:/.test(src),
+      "repeats that disagree must be their own outcome. A majority vote " +
+        "would convert \"this does not hold still\" into a clean boolean " +
+        "and let the placement proceed on it, which is the single most " +
+        "dangerous thing this file could do",
+    );
+    check(
+      "every mesh is proven to block in empty space before anything is placed",
+      (() => {
+        // Two traps in one line, both hit earlier today, both rewritten here
+        // rather than patched. /preflight_the_fixtures\(world\)/ also matches
+        // its own "def" line, so the call could be deleted and the regex
+        // still pass. And String.search returns -1 when it finds nothing, so
+        // "-1 < indexOf(...)" is TRUE and a missing call reads as a correctly
+        // ordered one - the same negative-sentinel trap as
+        // add_simple_collisions returning -1 where "if not" waves it through.
+        // Match the call explicitly, require it to exist, then compare.
+        const call = /^[ \t]+preflight_the_fixtures\(world\)[ \t]*$/m.exec(src);
+        const placement = src.indexOf('placed[spec["label"]] = place(spec)');
+        return call !== null && placement >= 0 && call.index < placement;
+      })(),
+      "the instrument check proves the TRACE works, not that the ASSETS do " +
+        "- and that is the exact gap two broken fixtures hid in. A mesh " +
+        "that cannot block in empty space will not block on a shop floor",
     );
 
     // Deliberately NOT checked here: whether each fixture actually blocks a
