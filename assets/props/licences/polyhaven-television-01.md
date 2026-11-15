@@ -67,10 +67,28 @@ project and migrated with Unreal's own Migrate into
 ratio of 1.0000. The normal is `TC_NORMALMAP`, sRGB off, **green channel not
 flipped** (nor_dx is the DirectX convention Unreal expects); `arm` is
 `TC_MASKS` with sRGB off; `diff` is sRGB colour. One LOD, one convex collision
-primitive, one material slot. **No material was built and none is wired** —
-material import was disabled on purpose, because the FBX's own references point
-at `nor_gl` and at roughness/metallic EXRs that were never downloaded, so the
-mesh renders untextured until somebody authors a material from these three maps.
+primitive, one material slot.
+
+**Material, authored 2026-11-14.** The FBX's own materials were deliberately
+not imported — its references point at `nor_gl` and at roughness/metallic EXRs
+that were never downloaded, so an import default would have wired the wrong
+normal and missed two maps. `M_Television_01` was built by hand instead, in the
+intake project, and migrated: `diff` → Base Color, `nor_dx` → Normal, and the
+packed `arm` split channel by channel — **R → Ambient Occlusion, G → Roughness,
+B → Metallic**. All five connections reported good, and the migrated package
+matches the intake copy at 6,834 bytes with the same three texture references.
+
+**One step is still outstanding.** The mesh's own material slot is assigned in
+the intake project but *not* in this repository's copy: re-migrating the mesh
+failed with a Windows sharing violation, because the game project's editor was
+open and holding `Television_01_2k.uasset`. Nothing is wrong with either asset
+— the material simply has to be assigned to the mesh once the editor is not
+holding the file, or set per-instance when the prop is placed. **The ordering
+lesson is worth more than the fix:** migrate once, after the asset is final.
+The first migrate ran before the material existed, and Unreal's migrate
+defaults to `AssetMigrationConflict.SKIP`, so the second pass silently changed
+nothing until the conflict behaviour was set to `OVERWRITE` — at which point
+the file lock, not the option, was the blocker.
 `ASSET-INTAKE.md` step 7 says to check Git LFS before pushing — `*.fbx` and
 `*.tga` are LFS patterns. ~~The LFS pre-push path is currently failing~~ —
 **no longer true: X6 closed 2026-11-05 by `ea928d3`, and `0c0c921` pushed a
