@@ -6,6 +6,8 @@
 #include "Lantern/LLKLanternComponent.h"
 #include "Net/UnrealNetwork.h"
 
+TArray<TWeakObjectPtr<ALLKLanternPickup>> ALLKLanternPickup::LivePickups;
+
 ALLKLanternPickup::ALLKLanternPickup()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -26,6 +28,54 @@ void ALLKLanternPickup::GetLifetimeReplicatedProps(
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(ALLKLanternPickup, bTaken);
+}
+
+void ALLKLanternPickup::BeginPlay()
+{
+	Super::BeginPlay();
+	LivePickups.AddUnique(this);
+}
+
+void ALLKLanternPickup::EndPlay(const EEndPlayReason::Type Reason)
+{
+	LivePickups.Remove(this);
+	Super::EndPlay(Reason);
+}
+
+TArray<ALLKLanternPickup*> ALLKLanternPickup::GetLivePickups(const UWorld* World)
+{
+	TArray<ALLKLanternPickup*> Out;
+	if (World == nullptr)
+	{
+		return Out;
+	}
+
+	// Compacted as it goes. A stale weak entry is harmless to skip, and
+	// leaving it would make this list grow by one every time a level
+	// reloads without anything noticing.
+	for (int32 Index = LivePickups.Num() - 1; Index >= 0; --Index)
+	{
+		ALLKLanternPickup* Pickup = LivePickups[Index].Get();
+		if (Pickup == nullptr)
+		{
+			LivePickups.RemoveAt(Index);
+			continue;
+		}
+		if (Pickup->GetWorld() == World)
+		{
+			Out.Add(Pickup);
+		}
+	}
+	return Out;
+}
+
+FVector ALLKLanternPickup::GetInteractionPoint() const
+{
+	if (Body != nullptr)
+	{
+		return Body->Bounds.Origin;
+	}
+	return GetActorLocation();
 }
 
 bool ALLKLanternPickup::GrantTo(ALLKCharacter* Keeper)

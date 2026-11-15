@@ -44,6 +44,15 @@ bool FLLKLanternStateTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("an unowned lantern does not flip itself"), Lantern->IsLanternOn());
 	TestEqual(TEXT("and does not broadcast"), Listener->Count, 0);
 
+	// 1b. **A lantern he does not have cannot be lit**, and that is checked
+	//     through the same ApplyState the server reaches - so this is the
+	//     real gate and not a client-side courtesy. Added 2026-11-15.
+	Lantern->ApplyStateForTest(true, ELLKLanternChangeReason::PlayerToggled);
+	TestFalse(TEXT("an unpossessed lantern stays off"), Lantern->IsLanternOn());
+	TestEqual(TEXT("and does not broadcast"), Listener->Count, 0);
+
+	Lantern->GrantLanternForTest();
+
 	// 2. The authority path. ApplyState is what the server reaches after the
 	//    RPC, so this is the decision the whole game reads.
 	Lantern->ApplyStateForTest(true, ELLKLanternChangeReason::PlayerToggled);

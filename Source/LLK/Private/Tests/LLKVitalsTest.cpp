@@ -151,6 +151,10 @@ bool FLLKVitalsTest::RunTest(const FString& Parameters)
 	Keeper->AddInstanceComponent(OwnedVitals);
 	OwnedVitals->SetRulesForTest(0.f, 0.f, true, false);
 
+	// The keeper has to have a lantern before one can be lit. Added
+	// 2026-11-15 with possession: this is the new precondition, not a
+	// workaround for it.
+	Lantern->GrantLanternForTest();
 	Lantern->ApplyStateForTest(true, ELLKLanternChangeReason::PlayerToggled);
 	TestTrue(TEXT("the keeper's lantern is lit before they go down"), Lantern->IsLanternOn());
 

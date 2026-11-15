@@ -53,6 +53,7 @@
 #include "LLKDebugHUD.generated.h"
 
 class ULLKZonePressureSubsystem;
+class ALLKLanternPickup;
 
 UCLASS()
 class LLK_API ALLKDebugHUD : public AHUD
@@ -207,6 +208,9 @@ protected:
 	 * than beside it. Four people on voice chat need to see WHO is down and
 	 * HOW FAR a rescue has got without asking.
 	 */
+	/** The lantern on the floor, when it is within reach and in view. */
+	void DrawLanternPrompt(const ALLKLanternPickup* Pickup);
+
 	void DrawCasualtyPrompt(const class ULLKVitalsComponent* Casualty);
 
 	/**

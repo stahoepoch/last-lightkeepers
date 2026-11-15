@@ -34,6 +34,8 @@
 #include "LLKInteractorComponent.generated.h"
 
 class ALLKExtractionZone;
+class ALLKLanternPickup;
+class ALLKCharacter;
 class ULLKRelicComponent;
 class ULLKVitalsComponent;
 
@@ -145,6 +147,37 @@ public:
 	UFUNCTION(BlueprintPure, Category = "LLK|Interact")
 	ALLKExtractionZone* GetFocusedZone() const { return FocusedZone; }
 
+	/**
+	 * The lantern this keeper could pick up, or null.
+	 *
+	 * **The prompt and the key read this same pointer**, which is the whole
+	 * guarantee this component exists for. It is resolved by
+	 * `ResolveLanternPickup` and nothing else computes its own answer.
+	 */
+	UFUNCTION(BlueprintPure, Category = "LLK|Interaction")
+	ALLKLanternPickup* GetFocusedLantern() const { return FocusedLantern; }
+
+	/**
+	 * How close the keeper's eye must be to the lantern, in cm.
+	 *
+	 * Measured eye-to-lantern rather than foot-to-foot, because a child
+	 * bending for something on the floor is mostly closing a vertical gap.
+	 * His eye is 125 cm up and the lantern's body sits about 10 cm off the
+	 * tile, so 150 cm of slant range is roughly 80 cm of standing distance -
+	 * close enough that **he has to come out from behind the counter**,
+	 * which is the point. A counter is 70-85 cm deep on its own.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Interaction")
+	float LanternReachCm = 150.f;
+
+	/**
+	 * How nearly he has to be looking at it: the cosine of the half-angle.
+	 * 0.85 is about 32 degrees off centre.
+	 */
+	UPROPERTY(EditDefaultsOnly, Category = "LLK|Interaction",
+		meta = (ClampMin = "0", ClampMax = "1"))
+	float LanternMinAimDot = 0.85f;
+
 	/** Press: begin a hold, or spend the anchor revive if this keeper is the one down. */
 	UFUNCTION(BlueprintCallable, Category = "LLK|Interact")
 	void BeginInteract();
@@ -251,6 +284,26 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<ALLKExtractionZone> FocusedZone;
+
+	UPROPERTY()
+	TObjectPtr<ALLKLanternPickup> FocusedLantern;
+
+	/**
+	 * Reach, aim and a clear line, in one place.
+	 *
+	 * **Called by the search to drive the prompt AND by the server before it
+	 * grants**, so the two cannot disagree about which actor is in play. The
+	 * server does not trust the client's answer: it recomputes its own and
+	 * only grants when they name the same lantern.
+	 */
+	ALLKLanternPickup* ResolveLanternPickup() const;
+
+	UFUNCTION(Server, Reliable)
+	void ServerTakeLantern(ALLKLanternPickup* Candidate);
+
+	/** Grants and says so when it did not. Separate only so the refusal is
+	 *  logged in one place rather than at every call site. */
+	static bool Pickup_GrantAndReport(ALLKLanternPickup* Pickup, ALLKCharacter* Keeper);
 
 	/** Who we asked the server to revive, so releasing E cancels the right hold. */
 	UPROPERTY()

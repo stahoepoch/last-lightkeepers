@@ -1,4 +1,6 @@
 #include "Loot/LLKInteractorComponent.h"
+#include "Lantern/LLKLanternFeel.h"
+#include "Lantern/LLKLanternPickup.h"
 
 #include "Camera/CameraComponent.h"
 #include "Engine/World.h"
@@ -8,6 +10,7 @@
 #include "LLKUnits.h"
 #include "Lantern/LLKLanternLightComponent.h"
 #include "Storm/LLKZonePressureSubsystem.h"
+#include "Characters/LLKCharacter.h"
 #include "Characters/LLKVitalsComponent.h"
 #include "Loot/LLKRelicComponent.h"
 #include "Run/LLKExtractionSubsystem.h"
@@ -60,6 +63,10 @@ void ULLKInteractorComponent::TickComponent(
 	// keeper standing in the bay reaching for a brooch on the dock floor takes
 	// the brooch. Looking away from it is how they call.
 	FocusedZone = FindZone();
+
+	// Resolved on the same beat as the others so the prompt cannot describe
+	// one frame's world while E acts on another's.
+	FocusedLantern = ResolveLanternPickup();
 
 	ULLKRelicComponent* Found = FocusedCasualty != nullptr ? nullptr : FindFocus();
 	if (Found == Focused)
@@ -223,7 +230,13 @@ void ULLKInteractorComponent::BeginInteract()
 	// The zone is checked after a casualty and after loot, and `TryTakeFocused`
 	// is a no-op with nothing focused, so the order below reads as: a body,
 	// then a thing you are looking at, then the bay you are standing in.
-	if (FocusedCasualty == nullptr && Focused == nullptr && FocusedZone != nullptr)
+	// The lantern joins this gate rather than being bolted on after it. The
+	// zone prompt is suppressed in exactly the cases where E would do
+	// something else, and a fourth thing E can do is a fourth case - C13 in
+	// HANDOFFS is explicit that the fix for a hidden prompt is never to
+	// reorder these, so the new focus is added to the condition instead.
+	if (FocusedCasualty == nullptr && Focused == nullptr
+		&& FocusedLantern == nullptr && FocusedZone != nullptr)
 	{
 		ServerBeginExtractionCall(FocusedZone);
 		return;
@@ -236,7 +249,137 @@ void ULLKInteractorComponent::BeginInteract()
 		return;
 	}
 
+	// Above loot, below a body. It is the one instrument and a gate on the
+	// opening; a brooch can wait the half second it takes to look away.
+	if (FocusedLantern != nullptr)
+	{
+		ServerTakeLantern(FocusedLantern);
+		return;
+	}
+
 	TryTakeFocused();
+}
+
+ALLKLanternPickup* ULLKInteractorComponent::ResolveLanternPickup() const
+{
+	const AActor* Owner = GetOwner();
+	const APawn* Pawn = Cast<APawn>(Owner);
+	if (Pawn == nullptr)
+	{
+		return nullptr;
+	}
+
+	UWorld* World = Pawn->GetWorld();
+	if (World == nullptr)
+	{
+		return nullptr;
+	}
+
+	// The project's one authority on where a keeper's eye is. Reusing it
+	// means this moved with the boy when the capsule shrank, instead of
+	// being a second 152 nobody updated.
+	const FVector Eye = LLKLanternFeel::GameplayLightPosition(
+		Pawn->GetActorLocation(), LLKLanternFeel::KeeperEyeHeightCm);
+
+	// GetBaseAimRotation, not the actor's forward: the pawn turns with the
+	// controller in yaw only, and a child reaching for something on the
+	// floor is looking almost straight down. Aim including pitch is also
+	// what the server has for a remote pawn.
+	//
+	// **Its pitch is quantised to a byte off the owning client**, about 1.4
+	// degrees a step, so at the exact edge of the aim cone the server can
+	// disagree with the client that asked. That fails CLOSED - the grant is
+	// refused and the player presses again - which is the right direction
+	// for a disagreement about whether someone was looking at something.
+	const FVector Aim = Pawn->GetBaseAimRotation().Vector();
+
+	ALLKLanternPickup* Best = nullptr;
+	float BestDot = LanternMinAimDot;
+
+	for (ALLKLanternPickup* Pickup : ALLKLanternPickup::GetLivePickups(World))
+	{
+		if (Pickup == nullptr || Pickup->IsTaken())
+		{
+			continue;
+		}
+
+		const FVector Point = Pickup->GetInteractionPoint();
+		const FVector ToPickup = Point - Eye;
+		const float Distance = ToPickup.Size();
+		if (Distance > LanternReachCm || Distance <= KINDA_SMALL_NUMBER)
+		{
+			continue;
+		}
+
+		const float Dot = FVector::DotProduct(Aim, ToPickup / Distance);
+		if (Dot < BestDot)
+		{
+			continue;
+		}
+
+		// Clear line of sight. The body is NoCollision, so it cannot block
+		// this itself - any blocking hit between the eye and the lantern is
+		// something else in the way, which is exactly the question.
+		FCollisionQueryParams Params(SCENE_QUERY_STAT(LLKLanternReach), false, Pawn);
+		FHitResult Hit;
+		if (World->LineTraceSingleByChannel(Hit, Eye, Point, ECC_Visibility, Params))
+		{
+			continue;
+		}
+
+		Best = Pickup;
+		BestDot = Dot;
+	}
+
+	return Best;
+}
+
+void ULLKInteractorComponent::ServerTakeLantern_Implementation(
+	ALLKLanternPickup* Candidate)
+{
+	// **Recomputed, not trusted.** The client sends what it resolved; the
+	// server resolves again from its own view of reach, aim and
+	// obstruction, and grants only if the two name the same lantern. A
+	// client that asks for a pickup across the room, through a wall, or
+	// while facing away gets nothing, and so does one that asks for a
+	// different lantern than the one it is being shown a prompt for.
+	ALLKLanternPickup* Mine = ResolveLanternPickup();
+	if (Mine == nullptr || Mine != Candidate)
+	{
+		return;
+	}
+
+	ALLKCharacter* Keeper = Cast<ALLKCharacter>(GetOwner());
+	if (Keeper == nullptr)
+	{
+		return;
+	}
+
+	// The return value is the point of it. GrantTo refuses a keeper who
+	// already has one, a pickup already taken, and a missing component -
+	// and a caller that ignored the bool would clear the prompt and leave
+	// the boy empty-handed with nothing logged.
+	if (!Pickup_GrantAndReport(Mine, Keeper))
+	{
+		return;
+	}
+
+	FocusedLantern = nullptr;
+}
+
+bool ULLKInteractorComponent::Pickup_GrantAndReport(
+	ALLKLanternPickup* Pickup, ALLKCharacter* Keeper)
+{
+	if (Pickup->GrantTo(Keeper))
+	{
+		return true;
+	}
+
+	UE_LOG(LogLLK, Warning,
+		TEXT("Lantern pickup refused for %s; the prompt and the grant "
+			 "disagreed about whether it could be taken."),
+		*Keeper->GetName());
+	return false;
 }
 
 void ULLKInteractorComponent::EndInteract()

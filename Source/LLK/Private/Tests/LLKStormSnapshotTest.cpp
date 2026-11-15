@@ -170,6 +170,8 @@ bool FLLKZonePressureSnapshotTest::RunTest(const FString& Parameters)
 	for (ULLKLanternComponent* Lantern : {First, Second, Third})
 	{
 		Server->RegisterLantern(Lantern);
+		// Possession first; a lantern nobody has cannot be lit.
+		Lantern->GrantLanternForTest();
 		Lantern->ApplyStateForTest(true, ELLKLanternChangeReason::PlayerToggled);
 	}
 

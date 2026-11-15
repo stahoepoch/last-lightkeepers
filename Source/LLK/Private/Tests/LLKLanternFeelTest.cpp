@@ -92,7 +92,8 @@ bool FLLKLanternFeelTest::RunTest(const FString& Parameters)
 			Capsule, LLKLanternFeel::KeeperEyeHeightCm);
 
 		TestEqual(TEXT("the gameplay anchor is the capsule plus the authored eye height"),
-			Anchor, FVector(1200.f, -400.f, 90.f + 152.f));
+			Anchor,
+			FVector(1200.f, -400.f, 90.f + LLKLanternFeel::KeeperEyeHeightCm));
 
 		// Run the filter hard for two seconds and assert the anchor is
 		// untouched. It cannot be otherwise - GameplayLightPosition takes no

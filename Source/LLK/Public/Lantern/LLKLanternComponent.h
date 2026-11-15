@@ -139,6 +139,17 @@ public:
 	 * route to it.
 	 */
 	void ApplyStateForTest(bool bNewOn, ELLKLanternChangeReason Reason) { ApplyState(bNewOn, Reason); }
+
+	/**
+	 * Possession, for tests that have no owning actor to grant it.
+	 *
+	 * `GrantLantern` needs an owner with authority, and these components are
+	 * built on the transient package with no owner at all - the same reason
+	 * `ApplyStateForTest` exists. Kept as a separate hook rather than
+	 * loosening `GrantLantern`, because "the server decides who gets the
+	 * lantern" is the rule and a test is not a reason to weaken it.
+	 */
+	void GrantLanternForTest() { bHasLantern = true; }
 #endif
 
 protected:

@@ -53,6 +53,37 @@ public:
 	UFUNCTION(BlueprintPure, Category = "LLK|Lantern")
 	bool IsTaken() const { return bTaken; }
 
+	/**
+	 * Where the lantern is reached for.
+	 *
+	 * The body's bounds centre, not the actor origin. A lantern standing on
+	 * a tile has its pivot at the tile, and a line traced to that point ends
+	 * inside the floor - so an obstruction check aimed at the origin reports
+	 * the floor blocking the lantern, every time, from everywhere.
+	 */
+	UFUNCTION(BlueprintPure, Category = "LLK|Lantern")
+	FVector GetInteractionPoint() const;
+
+	/**
+	 * Every pickup alive in this world.
+	 *
+	 * **A registry rather than a collision query, because the body is
+	 * NoCollision on purpose** - a prop on the floor should not be something
+	 * the player can get stuck on in a doorway. That decision makes it
+	 * invisible to every overlap and hit trace, so the interactor cannot
+	 * find it the way it finds a relic, and something has to know it exists.
+	 *
+	 * There is exactly one lantern in the game, so this list is one entry
+	 * long and iterating it is free. Weak pointers, filtered by world, so a
+	 * PIE session cannot see an editor-world actor.
+	 *
+	 * **Nothing here reads an actor label.** The opening's lantern is
+	 * labelled `BSW_OPENING_LANTERN` for a human reading the outliner;
+	 * gameplay finds it by class and registration, so renaming it in the
+	 * editor breaks nothing.
+	 */
+	static TArray<ALLKLanternPickup*> GetLivePickups(const UWorld* World);
+
 protected:
 	/**
 	 * The lantern as it lies. Visual only - this is a prop on the floor, not
@@ -75,4 +106,12 @@ protected:
 
 	virtual void GetLifetimeReplicatedProps(
 		TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type Reason) override;
+
+private:
+	/** Registered on BeginPlay, removed on EndPlay. Weak, so a destroyed
+	 *  pickup cannot keep itself alive in here. */
+	static TArray<TWeakObjectPtr<ALLKLanternPickup>> LivePickups;
 };

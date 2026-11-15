@@ -1,4 +1,5 @@
 #include "UI/LLKDebugHUD.h"
+#include "Lantern/LLKLanternPickup.h"
 
 #include "Engine/Canvas.h"
 #include "Engine/Engine.h"
@@ -318,7 +319,12 @@ void ALLKDebugHUD::DrawExtraction()
 	const bool bAtZone = Interactor != nullptr
 		&& Interactor->GetFocusedZone() != nullptr
 		&& Interactor->GetFocusedCasualty() == nullptr
-		&& Interactor->GetFocused() == nullptr;
+		&& Interactor->GetFocused() == nullptr
+		// The lantern is a fourth thing E can do, so it is a fourth thing
+		// that must silence the zone prompt. C13 records what happens when
+		// a focus is added without extending this: the prompt offers a key
+		// that does something else.
+		&& Interactor->GetFocusedLantern() == nullptr;
 
 	// **The nearest authored exit, for the objective line.** Found here rather
 	// than passed through the snapshot, because which exit is closest is a
@@ -633,6 +639,61 @@ void ALLKDebugHUD::DrawDownedPanel(const ULLKVitalsComponent* Own)
 	}
 }
 
+void ALLKDebugHUD::DrawLanternPrompt(const ALLKLanternPickup* Pickup)
+{
+	if (Pickup == nullptr || Canvas == nullptr)
+	{
+		return;
+	}
+
+	// The point the interactor reached for, not the actor origin - so the
+	// marker sits on the lantern rather than on the tile under it, and the
+	// thing the player aims at is the thing the prompt is drawn on.
+	const FVector Screen = Canvas->Project(Pickup->GetInteractionPoint());
+	if (Screen.Z <= 0.f)
+	{
+		return;
+	}
+
+	UFont* Font = GEngine != nullptr ? GEngine->GetMediumFont() : nullptr;
+	if (Font == nullptr)
+	{
+		return;
+	}
+
+	const float Scale = GetUIScale();
+	const float Half = BracketHalfSize * Scale;
+	const FVector2D Centre(Screen.X, Screen.Y);
+	const FString Label = TEXT("[E]  Take the lantern");
+
+	const float Arm = Half * 0.45f;
+	const float Thickness = FMath::Max(1.f, 2.f * Scale);
+	const TArray<FVector2D> Corners = {
+		FVector2D(-Half, -Half), FVector2D(Half, -Half),
+		FVector2D(-Half, Half), FVector2D(Half, Half)};
+
+	for (const FVector2D& Corner : Corners)
+	{
+		const FVector2D At = Centre + Corner;
+		const float SignX = Corner.X < 0.f ? 1.f : -1.f;
+		const float SignY = Corner.Y < 0.f ? 1.f : -1.f;
+		Canvas->K2_DrawLine(At, At + FVector2D(Arm * SignX, 0.f), Thickness, ColourCause);
+		Canvas->K2_DrawLine(At, At + FVector2D(0.f, Arm * SignY), Thickness, ColourCause);
+	}
+
+	float TextWidth = 0.f;
+	float TextHeight = 0.f;
+	const float LabelScale = 1.1f * Scale;
+	Canvas->TextSize(Font, Label, TextWidth, TextHeight, LabelScale, LabelScale);
+
+	FCanvasTextItem Item(
+		FVector2D(Centre.X - TextWidth * 0.5f, Centre.Y + Half + 6.f * Scale),
+		FText::FromString(Label), Font, ColourCause);
+	Item.Scale = FVector2D(LabelScale, LabelScale);
+	Item.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.9f));
+	Canvas->DrawItem(Item);
+}
+
 void ALLKDebugHUD::DrawWorldPrompt()
 {
 	// Named RunWorld because a `FVector World` position already lives further
@@ -752,6 +813,16 @@ void ALLKDebugHUD::DrawWorldPrompt()
 	if (const ULLKVitalsComponent* Casualty = Interactor->GetFocusedCasualty())
 	{
 		DrawCasualtyPrompt(Casualty);
+		return;
+	}
+
+	// Above loot and below a body, matching ULLKInteractorComponent::
+	// BeginInteract exactly. The ranking lives there; this follows it rather
+	// than deciding again, which is what keeps the prompt and the key
+	// describing the same action.
+	if (const ALLKLanternPickup* Pickup = Interactor->GetFocusedLantern())
+	{
+		DrawLanternPrompt(Pickup);
 		return;
 	}
 

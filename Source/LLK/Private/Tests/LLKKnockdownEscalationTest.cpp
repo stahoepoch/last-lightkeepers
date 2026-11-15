@@ -98,6 +98,10 @@ bool FLLKKnockdownEscalationTest::RunTest(const FString& Parameters)
 	// Nothing was designed for that - it falls out of two locked rules
 	// meeting, and it is thematically exact: a contained keeper has stopped
 	// lighting the building up.
+	// The keeper has to have a lantern before one can be lit. Added
+	// 2026-11-15 with possession: this is the new precondition, not a
+	// workaround for it.
+	Lantern->GrantLanternForTest();
 	Lantern->ApplyStateForTest(true, ELLKLanternChangeReason::PlayerToggled);
 	TestEqual(TEXT("a standing keeper with a lit lantern counts as one lit lantern"),
 		Storm->GetLitLanternCount(), 1);
