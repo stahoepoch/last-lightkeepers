@@ -432,8 +432,15 @@ def prove_the_instrument(world):
                     f"would be meaningless, so nothing was spawned and "
                     f"nothing saved. Check the trace channel, the world, and "
                     f"how line_trace_single's result is being read")
-    unreal.log("instrument proven: the column blocks and the open aisle does "
-               "not, at 40, 88 and 152 cm")
+    # Printed from the constants, not spelled out. This line said "at 40, 88
+    # and 152 cm" for one run after the keeper became a boy, while actually
+    # tracing 33 / 72 / 125 - a log that describes the old character is the
+    # same lie as a test that asserts against one, and it is the sort that
+    # gets read back later as evidence.
+    unreal.log(
+        f"instrument proven: the column blocks and the open aisle does not, "
+        f"at {TRACE_CROUCHED_CM:.0f}, {TRACE_STANDING_CM:.0f} and "
+        f"{EYE_HEIGHT_CM:.0f} cm")
 
 
 def preflight_the_fixtures(world):

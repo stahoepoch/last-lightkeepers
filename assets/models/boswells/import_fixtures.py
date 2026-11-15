@@ -88,7 +88,8 @@ PACKAGE_PATH = "/Game/Props/Boswells"
 SOURCE_DIR = unreal.Paths.project_dir() + "assets/models/boswells/"
 
 FIXTURES = [
-    ("SM_BSW_FoldedGoodsTable", 80.0),
+    # 69, not 80: a 24-inch nesting table since the keeper became a boy.
+    ("SM_BSW_FoldedGoodsTable", 69.0),
     ("SM_BSW_ServiceCounter", 102.0),
     ("SM_BSW_WallMerchBay", 190.0),
 ]

@@ -665,6 +665,28 @@ console.log("\nCover placement");
         "height in the deck while still passing every other check",
     );
 
+    // The fixture heights live in THREE files - the generator builds them,
+    // import_fixtures asserts them after import, and place_fixtures scales
+    // the collision proxy from them. They went out of agreement the moment
+    // the table was resized: the import still expected 80 and refused the
+    // 69 it got, which is the check working, but only after a full editor
+    // run. Comparing them here costs nothing and catches it before.
+    const importHeights = Object.fromEntries(
+      [...importSrc.matchAll(/\("(SM_BSW_\w+)",\s*([\d.]+)\)/g)]
+        .map((m) => [m[1], Number(m[2])]),
+    );
+    for (const e of entries) {
+      const expected = importHeights[e.mesh];
+      check(
+        `${e.mesh} is the same height to the importer and the placer`,
+        expected !== undefined && Math.abs(expected - e.height) < 0.5,
+        `import_fixtures expects ${expected} cm, place_fixtures places ` +
+          `${e.height}. Whichever is wrong, the editor only finds out after ` +
+          `booting, and the one that is silent is the placer - a proxy ` +
+          `scaled to the wrong height is cover of the wrong size`,
+      );
+    }
+
     // Deliberately NOT checked here: whether each fixture actually blocks a
     // sight line where it stands. That is a question about 30 other solids on
     // the deck and the answer changes the moment anyone moves one, so it
