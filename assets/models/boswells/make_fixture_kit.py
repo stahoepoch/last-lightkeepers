@@ -1,4 +1,4 @@
-"""Generate portable, centimeter-scale Boswell's apparel fixture masters.
+"""Generate portable, centimeter-scale Boswell's retail fixture masters.
 
 These are deliberately simple authored retail silhouettes for the first
 traversal slice. Re-run this script to rebuild the OBJ/MTL sources.
@@ -19,6 +19,14 @@ COLORS = {
     "oat": (0.57, 0.50, 0.40),
     "cream": (0.72, 0.66, 0.55),
     "denim": (0.25, 0.34, 0.47),
+    "white_steel": (0.68, 0.70, 0.67),
+    "rose": (0.53, 0.27, 0.35),
+    "sky": (0.30, 0.47, 0.58),
+    "mint": (0.33, 0.52, 0.43),
+    "lavender": (0.49, 0.40, 0.58),
+    "butter": (0.66, 0.54, 0.27),
+    "sage_sign": (0.33, 0.43, 0.28),
+    "charcoal": (0.06, 0.08, 0.09),
 }
 GARMENTS = ("navy", "burgundy", "pine", "oat", "denim", "cream")
 
@@ -138,6 +146,41 @@ def round_rack():
     mesh.write("SM_BSW_RoundRack")
 
 
+def kids_rolling_rack():
+    """Low, wheeled children\'s rail like the photographed sales floor."""
+    mesh = Mesh()
+    for x in (-67, 67):
+        for y in (-30, 30):
+            mesh.cylinder(x, y, 0, 7, 5, "steel", 8)
+            mesh.box(x, y, 8, 12, 12, 3, "dark_wood")
+    for x in (-65, 65):
+        mesh.box(x, 0, 76, 4, 58, 138, "white_steel")
+    mesh.box(0, 0, 139, 132, 5, 5, "white_steel")
+    mesh.box(0, 0, 15, 132, 45, 4, "white_steel")
+    colors = ("rose", "sky", "mint", "lavender", "butter", "cream")
+    for i, x in enumerate((-52, -31, -10, 11, 32, 53)):
+        color = colors[i]
+        mesh.box(x, 0, 105, 5, 30, 48, color)
+        mesh.box(x, -21, 120, 5, 15, 25, color)
+        mesh.box(x, 21, 120, 5, 15, 25, color)
+        mesh.box(x, 0, 130, 6, 20, 3, "dark_wood")
+    mesh.write("SM_BSW_KidsRollingRack")
+
+
+def kids_sales_desk():
+    mesh = Mesh()
+    mesh.box(0, 0, 42, 160, 74, 84, "cream")
+    mesh.box(0, -38, 90, 166, 9, 10, "dark_wood")
+    mesh.box(0, 0, 91, 174, 84, 6, "oat")
+    mesh.box(-45, 7, 102, 38, 24, 16, "charcoal")
+    mesh.box(52, 14, 96, 25, 20, 4, "white_steel")
+    # The short sign mast is structural wayfinding, not game information.
+    for x in (-59, 59):
+        mesh.box(x, 30, 148, 3, 3, 105, "white_steel")
+    mesh.box(0, 30, 193, 122, 4, 32, "sage_sign")
+    mesh.write("SM_BSW_KidsSalesDesk")
+
+
 def main():
     with (ROOT / "BoswellsFixtures.mtl").open("w", encoding="utf-8") as file:
         file.write("# Authored palette for Boswell's fixture masters\n")
@@ -146,6 +189,8 @@ def main():
     clothing_run()
     four_way()
     round_rack()
+    kids_rolling_rack()
+    kids_sales_desk()
 
 
 if __name__ == "__main__":

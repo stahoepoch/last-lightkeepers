@@ -45,6 +45,26 @@ retail design pattern:
 | Photos show a pale drop ceiling with a regular field of recessed panels, square structural columns, polished tile in some aisles, and softer floor treatment in others. | Build a consistent ceiling and column rhythm before local clutter. Floor changes should help identify departments, while emergency lighting still follows `FIXTURE-LIGHT-CONTRACT.md`. The bright trading-store exposure in these photos is not the game's light level. |
 | The author reports navigating an aisle with a stroller. | Check our intended customer routes with keeper and Sweeper collision in Unreal. A stroller anecdote does not give a usable aisle width, so retain the project's measured clearances. |
 
+### Children's department photo pass, 2026-11-14
+
+Chris's two additional reference photos show short white rolling apparel
+racks, a carpeted sales area, a tile customer route at its edge, a pillar,
+and a sales desk. They also show how a low grid ceiling makes stock and
+department boundaries readable at human scale. These are composition and
+fixture references, not textures or a measured plan. The bright trading
+store lighting in the photographs is not the game's emergency-light state.
+
+`Content/LLK_Boswells_ApparelPass.umap` now has an upper west children's
+slice: 23 short rolling racks, a desk, two non-colliding sage carpet islands,
+four dark edge strips, a pillar, and a lower ceiling with 100 cm tile seams.
+The two 300 cm cross aisles and the outer/atrium bypasses remain clear in
+the saved actor bounds. The ceiling uses six local visual fill lights; the
+broader map has 31 new downcast emergency route lights. The current camera
+view is still a blockout with flat materials, dark surrounding departments,
+and no authored retail sign lettering. Visual completion and a played route
+remain open. The separate atrium canopy is smoked glass beneath a solid roof;
+the photographed daylight skylight is still an environmental-lighting task.
+
 The next fixture pass should choose one arrival-to-escalator sightline and one
 upper-floor furniture sightline, dress those with these distinct fixture types,
 and test navigation. This reference does not justify copying the Meriden plan
@@ -64,10 +84,11 @@ still needs a PIE walk, capsule clearance, and a navigation build. Run
 `Tools/run_editor_python.ps1 -Script Tools/verify_boswells_route_pass.py`
 to repeat the 13 saved-collision checks.
 
-**Still unbuilt:** these plan files do not populate the map's fixture sockets.
-The elevator, real escalator art, back-of-house rooms, mall concourse,
-retail meshes, child-height sightlines, lighting, and a complete played
-route remain. The grid check tests horizontal plan connectivity only.
+**Still unbuilt:** most fixture sockets beyond the lower apparel pass and
+upper children's slice. The elevator, real escalator art, back-of-house
+rooms, mall concourse, child-height sightlines, finished lighting, and a
+complete played route remain. The grid check tests horizontal plan
+connectivity only.
 
 ## First-run room: walked 28 × 18 m test space
 

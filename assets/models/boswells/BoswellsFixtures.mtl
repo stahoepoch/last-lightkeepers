@@ -53,3 +53,51 @@ Ka 0 0 0
 Ks 0.08 0.08 0.08
 Ns 12
 
+newmtl white_steel
+Kd 0.68 0.7 0.67
+Ka 0 0 0
+Ks 0.08 0.08 0.08
+Ns 12
+
+newmtl rose
+Kd 0.53 0.27 0.35
+Ka 0 0 0
+Ks 0.08 0.08 0.08
+Ns 12
+
+newmtl sky
+Kd 0.3 0.47 0.58
+Ka 0 0 0
+Ks 0.08 0.08 0.08
+Ns 12
+
+newmtl mint
+Kd 0.33 0.52 0.43
+Ka 0 0 0
+Ks 0.08 0.08 0.08
+Ns 12
+
+newmtl lavender
+Kd 0.49 0.4 0.58
+Ka 0 0 0
+Ks 0.08 0.08 0.08
+Ns 12
+
+newmtl butter
+Kd 0.66 0.54 0.27
+Ka 0 0 0
+Ks 0.08 0.08 0.08
+Ns 12
+
+newmtl sage_sign
+Kd 0.33 0.43 0.28
+Ka 0 0 0
+Ks 0.08 0.08 0.08
+Ns 12
+
+newmtl charcoal
+Kd 0.06 0.08 0.09
+Ka 0 0 0
+Ks 0.08 0.08 0.08
+Ns 12
+
