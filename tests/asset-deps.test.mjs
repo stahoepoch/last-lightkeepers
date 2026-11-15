@@ -164,6 +164,22 @@ console.log("\nCover fixtures");
       counter.high > TRACE_STANDING_CM,
       `tops at ${counter.high} cm against a standing trace at ${TRACE_STANDING_CM}`,
     );
+    const bay = topOf("SM_BSW_WallMerchBay");
+    if (bay) {
+      check(
+        "the merchandise bay reaches the floor",
+        bay.low <= 0.01,
+        `lowest vertex ${bay.low} cm`,
+      );
+      check(
+        "the merchandise bay blocks above eye height, so it hides and blinds",
+        bay.high > EYE_HEIGHT_CM,
+        `tops at ${bay.high} cm against a ${EYE_HEIGHT_CM} cm eye. Its whole ` +
+          `job is to be the cover you cannot see over; below this the floor ` +
+          `has two kinds of cover instead of three`,
+      );
+    }
+
     check(
       "and stays below eye height, so the keeper can watch over it",
       counter.high < EYE_HEIGHT_CM,

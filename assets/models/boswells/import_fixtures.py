@@ -35,6 +35,7 @@ SOURCE_DIR = unreal.Paths.project_dir() + "../assets/models/boswells/"
 FIXTURES = [
     ("SM_BSW_FoldedGoodsTable", 80.0),
     ("SM_BSW_ServiceCounter", 102.0),
+    ("SM_BSW_WallMerchBay", 190.0),
 ]
 
 # Palette slots the OBJs reference, mapped to what each must read as. Flat

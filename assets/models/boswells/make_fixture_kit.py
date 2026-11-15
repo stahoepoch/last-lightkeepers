@@ -228,7 +228,40 @@ def service_counter():
     return mesh
 
 
-def cover_check(table, counter):
+def wall_merch_bay():
+    """A double-sided merchandise gondola. Blocks at every traced height AND
+    above the eye, so it is the third kind of cover and the only one that
+    costs you something: you are completely hidden and completely blind.
+
+    The findings' second recommendation was *"give the floor more than one
+    column"* - one dependable blocker in a department this size means one
+    hiding place. This is a blocker that is furniture rather than structure,
+    so it can be placed where the stealth needs it instead of where the
+    building happens to hold the roof up.
+
+    Long on purpose. A 240 cm run breaks a sightline and makes the player
+    choose an end to go round, which is a decision; a narrow blocker is just
+    a pillar you strafe past."""
+    mesh = Mesh()
+    mesh.box(0, 0, 5, 228, 62, 10, "charcoal")           # plinth, 0-10
+    mesh.box(0, 0, 100, 240, 70, 180, "white_steel")     # carcass, 10-190
+    # Shelf bands, both faces. These are what make it read as merchandising
+    # rather than a wall, and they catch the lantern at different heights.
+    for z in (46, 86, 126, 166):
+        for y in (-34, 34):
+            mesh.box(0, y, z, 236, 6, 5, "steel")
+    # Faced stock on the shelves, alternating so neither side reads as empty.
+    palette = ("denim", "oat", "rose", "sky", "mint", "butter")
+    for index, z in enumerate((54, 94, 134, 174)):
+        for side, y in ((0, -30), (1, 30)):
+            for slot in range(4):
+                x = -90 + slot * 60
+                mesh.box(x, y, z, 52, 10, 14, palette[(index * 2 + side + slot) % len(palette)])
+    mesh.write("SM_BSW_WallMerchBay")
+    return mesh
+
+
+def cover_check(table, counter, bay=None):
     """These two exist for a rule, so the rule is checked here rather than
     trusted. A fixture that silently stops being cover is the failure the
     racks already demonstrated, and it cost a live editor session to find."""
@@ -260,11 +293,26 @@ def cover_check(table, counter):
                         f"{EYE_HEIGHT_CM:.0f} cm eye, so the keeper can no "
                         f"longer see over it")
 
+    if bay is not None:
+        b_low, b_high = extent(bay)
+        if b_low > 0.01:
+            problems.append("the merchandise bay does not reach the floor")
+        if b_high <= EYE_HEIGHT_CM:
+            problems.append(f"the bay tops at {b_high:.0f} cm, at or below the "
+                            f"{EYE_HEIGHT_CM:.0f} cm eye. Its whole job is to be "
+                            f"the cover you cannot see over - if the player can "
+                            f"watch from behind it, it is a tall counter and the "
+                            f"floor has two of those instead of three kinds")
+
     if problems:
         raise SystemExit("cover rule broken:\n  - " + "\n  - ".join(problems))
-    print(f"cover ok: table 0-{t_high:.0f}, counter 0-{c_high:.0f}, "
-          f"against crouch {TRACE_CROUCHED_CM:.0f} / stand "
-          f"{TRACE_STANDING_CM:.0f} / eye {EYE_HEIGHT_CM:.0f}")
+
+    line = (f"cover ok: table 0-{t_high:.0f} (duck), "
+            f"counter 0-{c_high:.0f} (stand and watch)")
+    if bay is not None:
+        line += f", bay 0-{extent(bay)[1]:.0f} (hidden and blind)"
+    print(line + f", against crouch {TRACE_CROUCHED_CM:.0f} / stand "
+                 f"{TRACE_STANDING_CM:.0f} / eye {EYE_HEIGHT_CM:.0f}")
 
 
 def main():
@@ -277,7 +325,7 @@ def main():
     round_rack()
     kids_rolling_rack()
     kids_sales_desk()
-    cover_check(folded_goods_table(), service_counter())
+    cover_check(folded_goods_table(), service_counter(), wall_merch_bay())
 
 
 if __name__ == "__main__":

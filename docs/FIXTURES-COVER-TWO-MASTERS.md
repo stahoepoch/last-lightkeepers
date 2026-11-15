@@ -1,4 +1,10 @@
-# Two fixtures that are actually cover
+# Three fixtures that are actually cover
+
+> **Updated 2026-11-14, same day.** A third master was added after the first
+> two: `SM_BSW_WallMerchBay`, for the findings' second recommendation —
+> *"give the floor more than one column. One dependable blocker in a
+> department this size means one hiding place."* The file keeps its name so
+> links to it do not rot.
 
 Status: **source meshes and import script delivered, 2026-11-14. Not imported,
 not placed, no map touched.** `LLK_Boswells_ApparelPass.umap` is Codex's and
@@ -27,16 +33,30 @@ lacked was anything solid to the floor.
 
 ## The two masters
 
-| | `SM_BSW_FoldedGoodsTable` | `SM_BSW_ServiceCounter` |
-| --- | --- | --- |
-| Footprint | **160 × 90 cm** | **186 × 71 cm** at the top, 180 × 57 carcass |
-| Height | **80 cm** | **102 cm** |
-| Period | 30-inch soft-goods table | 40-inch service counter |
-| Hides a crouched keeper | **yes** | **yes** |
-| Hides a standing keeper | **no — this is the point** | **yes** |
-| Keeper can see over it | yes | **yes, by 50 cm** |
-| Parts | toe recess 0–10, painted plinth 10–64, laminate top 64–72, four folded stacks 72–80 | toe recess 0–10, carcass 10–96, painted apron 88–96, laminate top 96–102 |
-| Materials | `white_steel`, `steel`, `oat`, and `denim` / `cream` / `burgundy` / `mint` stock | `charcoal`, `cream`, `white_steel`, `dark_wood` |
+**Three kinds of cover, and each one costs the player something different.**
+That is the point of having three rather than three sizes of the same idea.
+
+| | `SM_BSW_FoldedGoodsTable` | `SM_BSW_ServiceCounter` | `SM_BSW_WallMerchBay` |
+| --- | --- | --- | --- |
+| Footprint | **160 × 90 cm** | **186 × 71 cm** at the top | **240 × 70 cm** |
+| Height | **80 cm** | **102 cm** | **190 cm** |
+| Period | 30-inch soft-goods table | 40-inch service counter | double-sided merchandise gondola |
+| Hides a crouched keeper | **yes** | **yes** | **yes** |
+| Hides a standing keeper | **no — this is the point** | **yes** | **yes** |
+| Keeper can see over it | yes | **yes, by 50 cm** | **no** |
+| The trade | you must duck, and you can still watch | you stand, hide and watch — the best of the three | completely hidden and completely blind |
+| Parts | toe recess 0–10, painted plinth 10–64, laminate top 64–72, four folded stacks 72–80 | toe recess 0–10, carcass 10–96, painted apron 88–96, laminate top 96–102 | plinth 0–10, carcass 10–190, four shelf bands per face, faced stock on both sides |
+| Materials | `white_steel`, `steel`, `oat`, and `denim` / `cream` / `burgundy` / `mint` stock | `charcoal`, `cream`, `white_steel`, `dark_wood` | `charcoal`, `white_steel`, `steel`, six-colour faced stock |
+
+**The bay is furniture, not structure**, which is the whole reason to add it.
+`BSW_KIDS_CEILING_SALES_COLUMN` is the only dependable blocker in the
+department today, and a column is where the building holds up the roof rather
+than where the stealth needs a blocker. A gondola can be placed where the play
+wants it.
+
+**It is 240 cm long on purpose.** A long run breaks a sightline and makes the
+player pick an end to go round, which is a decision. A narrow blocker is a
+pillar you strafe past.
 
 **The table is the fixture that teaches crouching.** It is deliberately below
 chest height along its whole silhouette, so nobody can mistake it for
@@ -56,6 +76,7 @@ fixes the trace to use eye height and deletes it."* This is that, on purpose.
 | `assets/models/boswells/make_fixture_kit.py` | The generator. **Extended, not replaced** — the two fixtures join Codex's existing five rather than starting a second kit with a second palette and a second `.mtl` |
 | `assets/models/boswells/SM_BSW_FoldedGoodsTable.obj` | Source mesh, centimetres, Z up, origin at floor centre |
 | `assets/models/boswells/SM_BSW_ServiceCounter.obj` | Source mesh, same convention |
+| `assets/models/boswells/SM_BSW_WallMerchBay.obj` | Source mesh, same convention |
 | `assets/models/boswells/BoswellsFixtures.mtl` | The existing shared palette, unchanged |
 | `assets/models/boswells/import_fixtures.py` | Editor Python: imports both, boxes them, sets the collision profile, builds four material instances. **Opens no map** |
 
@@ -63,7 +84,7 @@ fixes the trace to use eye height and deletes it."* This is that, on purpose.
 
 | Check | Where | Run? |
 | --- | --- | --- |
-| Generator refuses to write a fixture that breaks the cover rule | `make_fixture_kit.py` `cover_check` | **yes** — `cover ok: table 0-80, counter 0-102` |
+| Generator refuses to write a fixture that breaks the cover rule | `make_fixture_kit.py` `cover_check` | **yes** — `table 0-80 (duck), counter 0-102 (stand and watch), bay 0-190 (hidden and blind)` |
 | The committed OBJs are still those heights | `tests/asset-deps.test.mjs` | **yes** — 15/15, inside 658 checks green |
 | Import lands at the authored height | `import_fixtures.py` `assert_it_is_cover` | **no — needs an editor** |
 | Simple box collision exists | same | **no** |
