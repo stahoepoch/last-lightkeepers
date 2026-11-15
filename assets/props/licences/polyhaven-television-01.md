@@ -58,9 +58,20 @@ downloaded. `nor_dx` is the one Unreal wants. Pointing UE at a GL normal
 inverts the green channel; it does not fail the import and it is not obvious on
 a dark prop, it simply lights backwards.
 
-Nothing has been imported. `ASSET-INTAKE.md` step 4 requires Unreal's
-**Asset Actions → Migrate** into `/Game/ThirdParty/PolyHaven_Television_01/`,
-not a file copy, and step 7 says to check Git LFS before pushing — `*.fbx` and
+~~Nothing has been imported.~~ **Imported and migrated 2026-11-14.** All four
+files verified against the checksums above first, then imported into the intake
+project and migrated with Unreal's own Migrate into
+`/Game/ThirdParty/PolyHaven_Television_01/` — Meshes/ and Textures/, four
+`.uasset` files, not a file copy. Measured after import: bounds
+**60.00 x 47.08 x 45.68 cm**, which is the published size on every axis to a
+ratio of 1.0000. The normal is `TC_NORMALMAP`, sRGB off, **green channel not
+flipped** (nor_dx is the DirectX convention Unreal expects); `arm` is
+`TC_MASKS` with sRGB off; `diff` is sRGB colour. One LOD, one convex collision
+primitive, one material slot. **No material was built and none is wired** —
+material import was disabled on purpose, because the FBX's own references point
+at `nor_gl` and at roughness/metallic EXRs that were never downloaded, so the
+mesh renders untextured until somebody authors a material from these three maps.
+`ASSET-INTAKE.md` step 7 says to check Git LFS before pushing — `*.fbx` and
 `*.tga` are LFS patterns. ~~The LFS pre-push path is currently failing~~ —
 **no longer true: X6 closed 2026-11-05 by `ea928d3`, and `0c0c921` pushed a
 230 KB `.umap` clean on 2026-11-09.** The transfer path works.
