@@ -96,8 +96,11 @@ bool ALLKOpeningGrille::CanFocus(const APawn* Keeper) const
 		return false;
 	}
 
-	const FVector Eye = LLKLanternFeel::GameplayLightPosition(
-		Keeper->GetActorLocation(), LLKLanternFeel::KeeperEyeHeightCm);
+	// The pawn location is the capsule centre. The authored eye height is
+	// measured from its feet; adding both puts the trace above the child's
+	// head and disagrees with the pickup beside this release.
+	const FVector Eye = LLKLanternFeel::KeeperEyeWorldPosition(
+		Keeper->GetActorLocation());
 	const FVector Point = GetReadPoint();
 	const FVector ToMark = Point - Eye;
 	const float Distance = ToMark.Size();
