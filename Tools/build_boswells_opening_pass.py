@@ -44,11 +44,11 @@ start = actors["ANCHOR_PLAYERSTART_ENTRANCE"]
 require(start.set_actor_location(unreal.Vector(*START), False, False),
         "could not move PlayerStart")
 # Unreal Python's positional Rotator arguments are roll, pitch, yaw. Set the
-# fields explicitly so this faces south without pitching the pawn into the tile.
+# fields explicitly so the authored release hardware is in the first view.
 start_rotation = unreal.Rotator()
-start_rotation.yaw = -90.0
+start_rotation.yaw = -162.0
 require(start.set_actor_rotation(start_rotation, False),
-        "could not face PlayerStart toward the grille")
+        "could not face PlayerStart toward the release")
 
 # A world pickup actor, not a second usable lantern. The cylinder is an unlit
 # placeholder silhouette that will be replaced with the issued lantern mesh.

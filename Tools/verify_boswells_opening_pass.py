@@ -56,9 +56,9 @@ require(close_to(xyz(start.get_actor_location()), (1600.0, -2370.0, 73.0)),
         "PlayerStart moved")
 start_rotation = start.get_actor_rotation()
 require(abs(start_rotation.pitch) < 0.1 and
-        abs(start_rotation.yaw + 90.0) < 0.1 and
+        abs(start_rotation.yaw + 162.0) < 0.1 and
         abs(start_rotation.roll) < 0.1,
-        "PlayerStart must face south without pitching the pawn")
+        "PlayerStart must face the release without pitching the pawn")
 require(close_to(xyz(pickup.get_actor_location()), (1450.0, -2260.0, 9.0)),
         "pickup moved")
 require(150.0 < math.dist((1600.0, -2370.0), (1450.0, -2260.0)) < 200.0,
@@ -94,6 +94,8 @@ grille_view_hit = hit_label((1600, -2370, 33), (0, -2700, 33))
 unreal.log("BOSWELLS_OPENING_VERIFY grille view hit: " + str(grille_view_hit))
 require(grille_view_hit == "ROUTE_MALL_GRILLE_23",
         "grille is not visible through the counter gap")
+require(hit_label((1600, -2370, 125), (780, -2635, 168)) is None,
+        "first-view release hardware sightline is blocked")
 
 message = ("BOSWELLS_OPENING_VERIFY PASSED: saved pickup and start, "
            "closed grille, inherited cover, blocked approach and open view")
