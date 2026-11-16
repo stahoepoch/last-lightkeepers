@@ -25,16 +25,19 @@ subsystem = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
 actors = subsystem.get_all_level_actors()
 by_label = {actor.get_actor_label(): actor for actor in actors}
 stock = [actor for actor in actors if actor.get_actor_label().startswith(PREFIX)]
-require(len(stock) == 480, "saved stock inventory differs")
-require(len({actor.get_actor_label() for actor in stock}) == 480,
+require(len(stock) == 96, "saved stock inventory differs")
+require(len({actor.get_actor_label() for actor in stock}) == 96,
         "duplicate stock labels")
 
 bodies = []
+visuals = []
 for actor in stock:
     label = actor.get_actor_label()
     require(isinstance(actor, unreal.StaticMeshActor), "non-mesh stock: " + label)
     comp = actor.static_mesh_component
     solid = label.endswith("_BODY")
+    require(solid or label.endswith("_STOCK_MESH"),
+            "old cuboid decoration survived replacement: " + label)
     require(comp.get_collision_enabled() ==
             (unreal.CollisionEnabled.QUERY_AND_PHYSICS if solid
              else unreal.CollisionEnabled.NO_COLLISION),
@@ -43,7 +46,38 @@ for actor in stock:
             "stock navigation differs: " + label)
     if solid:
         bodies.append(actor)
+        require(not comp.get_editor_property("visible"),
+                "collision body should be hidden: " + label)
+    else:
+        visuals.append(actor)
 require(len(bodies) == 48, "structural body count differs")
+require(len(visuals) == 48, "modeled stock wing count differs")
+
+body_by_prefix = {actor.get_actor_label()[:-5]: actor for actor in bodies}
+for visual in visuals:
+    label = visual.get_actor_label()
+    prefix = label[:-len("_STOCK_MESH")]
+    require(prefix in body_by_prefix,
+            "visual wing has no matching collision body: " + label)
+    mesh = visual.static_mesh_component.get_editor_property("static_mesh")
+    require(mesh is not None and mesh.get_path_name().startswith(
+        "/Game/LLK/Boswells/Fixtures/SM_BSW_StockWing_"),
+        "stock visual is not an authored mesh: " + label)
+    slots = mesh.get_editor_property("static_materials")
+    require(len(slots) >= 5 and all(
+        slot.get_editor_property("material_interface") is not None
+        and slot.get_editor_property("material_interface").get_path_name().startswith(
+            "/Game/LLK/Boswells/Fixtures/") for slot in slots),
+        "stock mesh has a missing or foreign material: " + label)
+    vcenter, vextent = visual.get_actor_bounds(False)
+    bcenter, bextent = body_by_prefix[prefix].get_actor_bounds(False)
+    require(abs(vcenter.x - bcenter.x) < 1 and
+            abs(vcenter.y - bcenter.y) < 1 and
+            vextent.x <= bextent.x + 1 and
+            vextent.y <= bextent.y + 1 and
+            vcenter.z - vextent.z >= -1 and
+            vcenter.z + vextent.z <= 171,
+            "visual wing escaped its unchanged collision footprint: " + label)
 
 for actor in bodies:
     label = actor.get_actor_label()
@@ -86,7 +120,8 @@ hit = hit_name((-3300, -650, 125), (-3190, -650, 125))
 require(hit is not None and hit.startswith(PREFIX) and hit.endswith("_BODY"),
         "stock wing does not block child-eye trace: " + str(hit))
 
-message = ("BOSWELLS_APPAREL_DENSITY_VERIFY PASSED: 480 saved pieces, "
-           "48 route-clear collision bodies, child-eye cover and release tags")
+message = ("BOSWELLS_APPAREL_DENSITY_VERIFY PASSED: 48 modeled stock wings, "
+           "48 unchanged route-clear collision bodies, child-eye cover "
+           "and release tags")
 unreal.log(message)
 print(message)
