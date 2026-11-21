@@ -41,11 +41,16 @@ mesh = unreal.EditorAssetLibrary.load_asset(
     "/Game/Characters/UEFN_Mannequin/Meshes/SKM_UEFN_Mannequin")
 walk = unreal.EditorAssetLibrary.load_asset(
     "/Game/Characters/UEFN_Mannequin/Animations/LookAtPOI/LookAtPOI_test_walk_loop")
-require(isinstance(mesh, unreal.SkeletalMesh) and isinstance(walk, unreal.AnimSequence),
-        "walk asset or human mesh missing")
+run = unreal.EditorAssetLibrary.load_asset(
+    "/Game/Characters/UEFN_Mannequin/Animations/LookAtPOI/LookAtPOI_test_sprint_loop")
+require(isinstance(mesh, unreal.SkeletalMesh) and
+        isinstance(walk, unreal.AnimSequence) and
+        isinstance(run, unreal.AnimSequence),
+        "gait asset or human mesh missing")
 require(mesh.get_editor_property("skeleton").get_path_name() ==
-        walk.get_editor_property("skeleton").get_path_name(),
-        "walk and mesh skeletons diverged")
+        walk.get_editor_property("skeleton").get_path_name() ==
+        run.get_editor_property("skeleton").get_path_name(),
+        "gait and mesh skeletons diverged")
 for person in people:
     body = person.get_editor_property("skeletal_mesh_component")
     require(body.get_editor_property("skeletal_mesh_asset") == mesh,
@@ -82,6 +87,6 @@ sound = unreal.EditorAssetLibrary.load_asset(
     "/Game/Audio/Opening/opening-sayers-machine-v1")
 require(isinstance(sound, unreal.SoundWave), "machine call missing")
 
-message = "BOSWELLS_CAPTURE_VERIFY PASSED: four skinned people, compatible walk, no route collision, six-cd witness pool, silent storm at rest, timed lantern, machine call"
+message = "BOSWELLS_CAPTURE_VERIFY PASSED: four skinned people, compatible walk and sprint, no route collision, six-cd witness pool, silent storm at rest, timed lantern, machine call"
 unreal.log(message)
 print(message)

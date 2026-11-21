@@ -32,6 +32,15 @@ namespace
 	const FName CaptorTag(TEXT("LLK.Opening.Captor"));
 	const FName StormTag(TEXT("LLK.Opening.StormFlash"));
 	const FName FallenLanternTag(TEXT("LLK.Opening.FallenLantern"));
+	// The bars must be below the child's head before a clean sprint from the
+	// counter can reach them. Keep these in one place for the route check.
+	constexpr float CaptureLiftStart = 0.05f;
+	constexpr float CaptureLiftEnd = 0.60f;
+	constexpr float CaptureHaulStart = 0.55f;
+	constexpr float CaptureHaulEnd = 1.65f;
+	constexpr float CaptureFallStart = 1.65f;
+	constexpr float CaptureFallEnd = 2.15f;
+	constexpr float CaptureFinish = 2.20f;
 }
 
 ALLKOpeningGrille::ALLKOpeningGrille()
@@ -129,9 +138,11 @@ void ALLKOpeningGrille::BeginPlay()
 			TEXT("/Game/Audio/Opening/opening-sayers-machine-v1.opening-sayers-machine-v1"));
 		UAnimSequence* Walk = LoadObject<UAnimSequence>(nullptr,
 			TEXT("/Game/Characters/UEFN_Mannequin/Animations/LookAtPOI/LookAtPOI_test_walk_loop.LookAtPOI_test_walk_loop"));
-		if (Walk == nullptr)
+		UAnimSequence* Sprint = LoadObject<UAnimSequence>(nullptr,
+			TEXT("/Game/Characters/UEFN_Mannequin/Animations/LookAtPOI/LookAtPOI_test_sprint_loop.LookAtPOI_test_sprint_loop"));
+		if (Walk == nullptr || Sprint == nullptr)
 		{
-			UE_LOG(LogLLK, Error, TEXT("Opening capture walk animation missing; release remains available."));
+			UE_LOG(LogLLK, Error, TEXT("Opening capture gait animation missing; release remains available."));
 			bCaptureActive = false;
 			bCaptureFinished = true;
 		}
@@ -146,13 +157,15 @@ void ALLKOpeningGrille::BeginPlay()
 					bCaptureFinished = true;
 					break;
 				}
-				Person->GetSkeletalMeshComponent()->PlayAnimation(Walk, true);
+				const bool bRunning = CaptiveStarts[Index].Y > -2480.f;
+				UAnimSequence* Gait = bRunning ? Sprint : Walk;
+				Person->GetSkeletalMeshComponent()->PlayAnimation(Gait, true);
 				// Four identical mannequins stepping on the same frame read as a
 				// factory line. The cast enters on different phases and tempos.
 				if (UAnimSingleNodeInstance* Player = Person->GetSkeletalMeshComponent()->GetSingleNodeInstance())
 				{
-					Player->SetPosition(Walk->GetPlayLength() * 0.19f * Index, false);
-					Player->SetPlayRate(0.91f + 0.07f * Index);
+					Player->SetPosition(Gait->GetPlayLength() * 0.19f * Index, false);
+					Player->SetPlayRate(0.94f + 0.05f * Index);
 				}
 			}
 		}
@@ -252,43 +265,45 @@ void ALLKOpeningGrille::Tick(float DeltaSeconds)
 		CaptureSeconds += DeltaSeconds;
 		if (APointLight* Flash = StormFlash.Get())
 		{
-			// Two short strokes against the glass, never permanent room fill.
-			const bool bLit = (CaptureSeconds > 0.20f && CaptureSeconds < 0.29f)
-				|| (CaptureSeconds > 1.42f && CaptureSeconds < 1.53f)
-				|| (CaptureSeconds > 3.70f && CaptureSeconds < 3.82f);
+			// Brief storm strokes against the glass, never permanent room fill.
+			const bool bLit = (CaptureSeconds > 0.10f && CaptureSeconds < 0.22f)
+				|| (CaptureSeconds > 0.92f && CaptureSeconds < 1.04f)
+				|| (CaptureSeconds > 1.65f && CaptureSeconds < 1.77f);
 			if (UPointLightComponent* Lamp = Cast<UPointLightComponent>(Flash->GetLightComponent()))
 			{
 				Lamp->SetIntensity(bLit ? 180.f : 0.f);
 			}
 		}
-		if (!bHaulPlayed && CaptureSeconds >= 0.35f)
+		if (!bHaulPlayed && CaptureSeconds >= CaptureLiftStart)
 		{
 			bHaulPlayed = true;
 			if (HaulSound) UGameplayStatics::PlaySoundAtLocation(this, HaulSound, CaptorStart);
 		}
-		if (!bCallPlayed && CaptureSeconds >= 2.35f)
+		if (!bCallPlayed && CaptureSeconds >= 1.05f)
 		{
 			bCallPlayed = true;
 			if (SayersCall) UGameplayStatics::PlaySoundAtLocation(this, SayersCall, CaptorStart, 1.f, 0.8f);
 		}
-		if (CaptureSeconds >= 2.35f)
+		if (CaptureSeconds >= 1.20f)
 		{
 			if (AActor* Lamp = FallenLantern.Get())
 			{
 				Lamp->SetActorHiddenInGame(false);
 			}
 		}
-		if (!bCrashPlayed && CaptureSeconds >= 3.5f)
+		if (!bCrashPlayed && CaptureSeconds >= CaptureFallStart)
 		{
 			bCrashPlayed = true;
 			if (CrashSound) UGameplayStatics::PlaySoundAtLocation(this, CrashSound, CaptorStart);
 		}
 		// The grille begins closed in the saved map. It lifts just far enough
-		// for the four figures, then crashes shut; the child can watch without
-		// losing camera or movement input. A rushing player can reach the seam,
-		// so the collision bars stay real throughout the motion.
-		const float Lift = FMath::Clamp((CaptureSeconds - 0.35f) / 1.25f, 0.f, 1.f);
-		const float Fall = 1.f - FMath::Clamp((CaptureSeconds - 3.5f) / 0.65f, 0.f, 1.f);
+		// for the four figures, then crashes shut. The child keeps movement
+		// and look, but even a straight-line sprint from their saved start
+		// arrives after the bars become too low to cross.
+		const float Lift = FMath::Clamp((CaptureSeconds - CaptureLiftStart)
+			/ (CaptureLiftEnd - CaptureLiftStart), 0.f, 1.f);
+		const float Fall = 1.f - FMath::Clamp((CaptureSeconds - CaptureFallStart)
+			/ (CaptureFallEnd - CaptureFallStart), 0.f, 1.f);
 		const float Height = RaiseCm * FMath::Min(Lift, Fall);
 		for (int32 Index = 0; Index < Segments.Num(); ++Index)
 		{
@@ -297,7 +312,8 @@ void ALLKOpeningGrille::Tick(float DeltaSeconds)
 				Segment->SetActorLocation(ClosedLocations[Index] + FVector(0.f, 0.f, Height));
 			}
 		}
-		const float Haul = FMath::Clamp((CaptureSeconds - 1.15f) / 2.5f, 0.f, 1.f);
+		const float Haul = FMath::Clamp((CaptureSeconds - CaptureHaulStart)
+			/ (CaptureHaulEnd - CaptureHaulStart), 0.f, 1.f);
 		for (int32 Index = 0; Index < Captives.Num(); ++Index)
 		{
 			if (AActor* Person = Captives[Index].Get())
@@ -308,15 +324,15 @@ void ALLKOpeningGrille::Tick(float DeltaSeconds)
 				// destination instead.
 				const FVector Start = CaptiveStarts[Index];
 				Person->SetActorLocation(FVector(Start.X, FMath::Lerp(Start.Y, -2780.f, Haul), Start.Z));
-				Person->SetActorHiddenInGame(CaptureSeconds >= 3.9f);
+				Person->SetActorHiddenInGame(CaptureSeconds >= CaptureFallEnd);
 			}
 		}
 		if (AActor* Machine = Captor.Get())
 		{
 			Machine->SetActorLocation(CaptorStart + FVector(0.f, -180.f * Haul, 0.f));
-			Machine->SetActorHiddenInGame(CaptureSeconds >= 3.9f);
+			Machine->SetActorHiddenInGame(CaptureSeconds >= CaptureFallEnd);
 		}
-		if (CaptureSeconds >= 4.2f)
+		if (CaptureSeconds >= CaptureFinish)
 		{
 			bCaptureActive = false;
 			bCaptureFinished = true;
