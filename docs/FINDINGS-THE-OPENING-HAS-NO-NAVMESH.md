@@ -1,9 +1,25 @@
 # The opening's navmesh was never built, so the machine has never been able to take a step toward the boy
 
-**Status: measured in a running Development game on 2026-11-21, not fixed.**
-The fix is a navigation build saved into `Content/LLK_Boswells_OpeningPass.umap`,
-which is another writer's lane and currently dirty with their work. This
-document is the evidence and the exact numbers; it changes nothing.
+**Status: found and FIXED on disk, 2026-11-21, both inside the hour**, after
+Chris asked for the build to be done here. Navigation is now built into
+`Content/LLK_Boswells_OpeningPass.umap` and the running game says:
+
+```
+LLKSweeper_0 can reach the keeper: 7145 cm of path over 2758 cm straight
+  (2.59x), 42.5 s at 168 cm/s.
+```
+
+**That line also settles a question this document had filed as separate.** The
+machine stands on the upper plate at z=753 and the boy begins on the lower
+floor at z=75. A 2.59x detour over 71 m of path means Recast does carry an
+agent between the two floors - the escalator ramp is navigable, and the
+two-level connection is no longer theoretical.
+
+**The map holding the fix is uncommitted, and it is not only mine.** That blob
+also carries another writer's uncommitted dressing from 2026-11-21, which was
+already on disk when the navigation went in. Nothing of theirs was overwritten
+- a byte-identical backup was taken first, verified by SHA-256, and restored
+once - but committing that file lands their work too, which is Chris's call.
 
 ---
 
@@ -101,14 +117,65 @@ dressed map would also fire its harness-convention checks - tagged enemy
 spawns, test lanes - which `LLK_Boswells_OpeningPass` never adopted, and a
 diagnostic that reports six irrelevant findings is a diagnostic nobody reads.
 
+## How it was built, and the two things in the way
+
+Both will recur, so they are recorded rather than summarised.
+
+**1. The resave commandlet cannot build an async-loaded map in UE 5.8.** The
+first attempt logged:
+
+```
+UNavigationSystemV1::Build Navigation NOT building because navigation build
+  is locked (flags: 0x20).
+```
+
+`0x20` is `ENavigationBuildLock::AsyncLoadLock`. The commandlet async-loads the
+map, which takes that lock, and the lock comes off via a core ticker that needs
+**sixteen ticks, a time delay, and zero remaining asset compiles**
+(`NavigationSystem.cpp:5971`, `RegisterDelayedUnlock`). The commandlet calls
+`FNavigationSystem::Build` immediately and never pumps that ticker, so the lock
+is still held, the build refuses - and the commandlet still exits **0**.
+
+The lock is taken only when
+`bWaitForAsyncLoadingBeforeBuildingNavigationAutomatically` is true. It is
+`UPROPERTY(config)`, so it can be overridden on the command line without
+editing anyone's ini:
+
+```
+-run=ResavePackages -PACKAGE=/Game/LLK_Boswells_OpeningPass -BuildNavigationData
+-ini:Engine:[/Script/NavigationSystem.NavigationSystemV1]:bWaitForAsyncLoadingBeforeBuildingNavigationAutomatically=False
+```
+
+Safe here because the commandlet already calls
+`FStaticMeshCompilingManager::FinishAllCompilation()` before building, so it
+does its own waiting for the geometry.
+
+**2. The save failed once on a sharing violation, and the file changed
+anyway.** `MoveFile ... (Error Code 32)` six times, then
+`LogSavePackage: Error: Error saving`, `0/1 packages were resaved` - and the
+map had still grown by 308 KB. The holder was almost certainly a hard-killed
+`-game` verification process of mine. The file was restored from the verified
+backup rather than trusted, and the build re-run once nothing held the map.
+
+**And `0/1 packages were resaved` is not the test.** It read 0 on the
+successful run too. The resave loop and the navigation build's own
+`CheckoutAndSavePackage` pass over `ANavigationData` packages are different
+code paths, and the second is what writes the map. The boot log is the test.
+
 ## What closes this
 
-1. Navigation built and saved into the opening map, so
-   `RecastNavMesh-Default` reports non-empty bounds at boot. The startup
-   report goes quiet by itself when that happens.
-2. Then the separate question: a `SUCCESS` path query from the machine on the
-   upper plate to the boy on the lower floor, with a path length and a time at
-   168 cm/s. Until that line appears, "the machine can reach him" is unproven
-   even with tiles present.
-3. Then, and only then, the thing none of this proves: that being hunted
-   through that store is frightening. No instrument reports on that.
+1. ~~Navigation built and saved into the opening map.~~ **Done.** The startup
+   Warning is gone; the report is now an ordinary Log line.
+2. ~~A `SUCCESS` path query from the machine on the upper plate to the boy on
+   the lower floor.~~ **Done:** 7145 cm, 2.59x, 42.5 s at 168 cm/s.
+3. **Still open, and now the only thing left: whether being hunted through
+   that store is frightening.** No instrument reports on that, and nothing in
+   this document is evidence for it.
+
+   Two numbers deserve a human judgment, and both are newly measurable rather
+   than newly wrong. **42.5 seconds** is how long the machine takes to arrive
+   from where it spawns - which may be exactly right for an opening where the
+   player is working out the lantern, or far too slow to ever matter. And the
+   route is **2.59x** the straight line, so it arrives the long way round
+   rather than from where the player last saw it. Neither is a defect. Both
+   are now facts to tune against instead of guesses.
