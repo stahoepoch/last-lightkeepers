@@ -325,6 +325,27 @@ void ALLKDebugHUD::DrawOpeningObjective(const ALLKOpeningGrille* Grille)
 	{
 		return;
 	}
+	if (Grille->UsesDockOpening())
+	{
+		const ULLKLanternComponent* Lantern = Keeper->GetLantern();
+		if (Grille->HasReachedFarReceiving())
+		{
+			DrawBottomObjective(TEXT("The drag marks end at this receiving door."), ColourQuiet);
+		}
+		else if (Grille->HasDroppedDockLantern() && (Lantern == nullptr || !Lantern->HasLantern()))
+		{
+			DrawBottomObjective(TEXT("Dad dropped his light by the loading door."), ColourQuiet);
+		}
+		else if (Keeper->GetActorLocation().Y < -3100.f)
+		{
+			DrawBottomObjective(TEXT("Look for the drag marks across the mall."), ColourQuiet);
+		}
+		else if (Grille->IsCaptureFinished())
+		{
+			DrawBottomObjective(TEXT("Find a way out of the store. Follow where they took them."), ColourQuiet);
+		}
+		return;
+	}
 	// The family is still visible. Do not announce Dad's dropped lantern
 	// before the player witnesses it fall.
 	if (!Grille->IsCaptureFinished())

@@ -6,6 +6,7 @@
 
 class APawn;
 class APointLight;
+class USoundAttenuation;
 class USoundBase;
 
 /** The opening's one lantern read and the grille it releases. Map pieces are found by tags. */
@@ -27,9 +28,16 @@ public:
 	bool TryRelease(const APawn* Keeper);
 	bool IsOpen() const { return bOpen; }
 	bool IsCaptureFinished() const { return bCaptureFinished; }
+	bool UsesDockOpening() const { return DockRoute.Num() >= 2; }
+	bool HasDroppedDockLantern() const { return DockGrabSeconds >= .48f; }
+	bool HasReachedFarReceiving() const { return bFarReceivingReached; }
 	FVector GetReadPoint() const;
 
 private:
+	void StartDockCapture();
+	void TickDockCapture(float DeltaSeconds);
+	FVector SampleDockRoute(float Distance, FVector& Direction) const;
+
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USceneComponent> Root;
 
@@ -61,24 +69,33 @@ private:
 	TArray<FVector> ClosedLocations;
 	float OpenAlpha = 0.f;
 
-	// The opening is witnessed from the counter. These actors are presentation
-	// only; the release and its bars remain the player's later world puzzle.
+	// The cast and hauler are presentation actors. The grille remains an
+	// independent world interaction once the opening beat completes.
 	TArray<TWeakObjectPtr<AActor>> Captives;
 	TArray<FVector> CaptiveStarts;
 	TWeakObjectPtr<AActor> Captor;
 	TWeakObjectPtr<AActor> FallenLantern;
 	TWeakObjectPtr<APointLight> StormFlash;
+	TWeakObjectPtr<AActor> FarReceiving;
 	UPROPERTY()
 	TObjectPtr<USoundBase> HaulSound;
 	UPROPERTY()
 	TObjectPtr<USoundBase> CrashSound;
+	UPROPERTY(EditInstanceOnly, Category = "LLK|Opening")
+	TArray<TObjectPtr<USoundBase>> DockScreams;
+
 	UPROPERTY()
-	TObjectPtr<USoundBase> SayersCall;
+	TObjectPtr<USoundAttenuation> DockVoiceAttenuation;
+	TArray<FVector> DockRoute;
+	TArray<float> DockRouteDistances;
+	float DockGrabSeconds = 0.f;
+	float NextDockScream = 0.f;
+	int32 DockScreamIndex = 0;
 	FVector CaptorStart = FVector::ZeroVector;
 	float CaptureSeconds = 0.f;
 	bool bCaptureActive = false;
 	bool bCaptureFinished = false;
 	bool bHaulPlayed = false;
-	bool bCallPlayed = false;
 	bool bCrashPlayed = false;
+	bool bFarReceivingReached = false;
 };

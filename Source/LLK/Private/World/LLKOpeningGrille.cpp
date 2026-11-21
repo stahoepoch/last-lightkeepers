@@ -11,6 +11,7 @@
 #include "EngineUtils.h"
 #include "Engine/PointLight.h"
 #include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "Lantern/LLKLanternComponent.h"
 #include "Lantern/LLKLanternFeel.h"
@@ -18,6 +19,7 @@
 #include "LLK.h"
 #include "Net/UnrealNetwork.h"
 #include "Sound/SoundBase.h"
+#include "Sound/SoundAttenuation.h"
 #include "Components/PointLightComponent.h"
 
 namespace
@@ -32,6 +34,9 @@ namespace
 	const FName CaptorTag(TEXT("LLK.Opening.Captor"));
 	const FName StormTag(TEXT("LLK.Opening.StormFlash"));
 	const FName FallenLanternTag(TEXT("LLK.Opening.FallenLantern"));
+	const FName DockGrabTag(TEXT("LLK.DockOpening.Grab"));
+	constexpr float DockGrabLeadSeconds = 1.35f;
+	constexpr float DockHaulSpeed = 530.f;
 	// The bars must be below the child's head before a clean sprint from the
 	// counter can reach them. Keep these in one place for the route check.
 	constexpr float CaptureLiftStart = 0.05f;
@@ -60,6 +65,7 @@ void ALLKOpeningGrille::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 void ALLKOpeningGrille::BeginPlay()
 {
 	Super::BeginPlay();
+	TMap<int32, FVector> HaulPoints;
 	for (TActorIterator<AActor> It(GetWorld()); It; ++It)
 	{
 		AActor* Actor = *It;
@@ -110,6 +116,32 @@ void ALLKOpeningGrille::BeginPlay()
 		{
 			FallenLantern = Actor;
 		}
+		if (Actor->ActorHasTag(DockGrabTag))
+		{
+			HaulPoints.Add(0, Actor->GetActorLocation());
+		}
+		if (Actor->ActorHasTag(FName(TEXT("LLK.DockOpening.FarReceiving"))))
+		{
+			FarReceiving = Actor;
+		}
+		for (const FName& Tag : Actor->Tags)
+		{
+			FString IndexString = Tag.ToString();
+			if (IndexString.RemoveFromStart(TEXT("LLK.DockOpening.Haul.")) && IndexString.IsNumeric())
+			{
+				HaulPoints.Add(FCString::Atoi(*IndexString), Actor->GetActorLocation());
+			}
+		}
+	}
+	for (int32 Index = 0; Index < HaulPoints.Num(); ++Index)
+	{
+		const FVector* Point = HaulPoints.Find(Index);
+		if (Point == nullptr)
+		{
+			DockRoute.Reset();
+			break;
+		}
+		DockRoute.Add(*Point);
 	}
 	if (!Witness.IsValid() || !ReleaseBar.IsValid() || Segments.Num() != 45)
 	{
@@ -134,8 +166,11 @@ void ALLKOpeningGrille::BeginPlay()
 			TEXT("/Game/Audio/Sweeper/sweeper-stock-started-v1.sweeper-stock-started-v1"));
 		CrashSound = LoadObject<USoundBase>(nullptr,
 			TEXT("/Game/Audio/Sweeper/sweeper-stock-filed-v1.sweeper-stock-filed-v1"));
-		SayersCall = LoadObject<USoundBase>(nullptr,
-			TEXT("/Game/Audio/Opening/opening-sayers-machine-v1.opening-sayers-machine-v1"));
+		if (UsesDockOpening())
+		{
+			StartDockCapture();
+			return;
+		}
 		UAnimSequence* Walk = LoadObject<UAnimSequence>(nullptr,
 			TEXT("/Game/Characters/UEFN_Mannequin/Animations/LookAtPOI/LookAtPOI_test_walk_loop.LookAtPOI_test_walk_loop"));
 		UAnimSequence* Sprint = LoadObject<UAnimSequence>(nullptr,
@@ -174,6 +209,122 @@ void ALLKOpeningGrille::BeginPlay()
 	{
 		UE_LOG(LogLLK, Error, TEXT("Opening capture incomplete: people=%d captor=%d; grille remains playable."),
 			Captives.Num(), Captor.IsValid());
+	}
+}
+
+void ALLKOpeningGrille::StartDockCapture()
+{
+	DockRouteDistances.Add(0.f);
+	for (int32 Index = 1; Index < DockRoute.Num(); ++Index)
+	{
+		DockRouteDistances.Add(DockRouteDistances.Last()
+			+ FVector::Distance(DockRoute[Index - 1], DockRoute[Index]));
+	}
+	DockVoiceAttenuation = NewObject<USoundAttenuation>(this);
+	DockVoiceAttenuation->Attenuation.bSpatialize = true;
+	DockVoiceAttenuation->Attenuation.AttenuationShapeExtents = FVector(340.f, 0.f, 0.f);
+	DockVoiceAttenuation->Attenuation.FalloffDistance = 6100.f;
+}
+
+FVector ALLKOpeningGrille::SampleDockRoute(float Distance, FVector& Direction) const
+{
+	for (int32 End = 1; End < DockRoute.Num(); ++End)
+	{
+		if (Distance <= DockRouteDistances[End] || End == DockRoute.Num() - 1)
+		{
+			const FVector& Start = DockRoute[End - 1];
+			const FVector& Target = DockRoute[End];
+			Direction = (Target - Start).GetSafeNormal2D();
+			const float Alpha = FMath::Clamp((Distance - DockRouteDistances[End - 1]) /
+				FMath::Max(1.f, DockRouteDistances[End] - DockRouteDistances[End - 1]), 0.f, 1.f);
+			return FMath::Lerp(Start, Target, Alpha);
+		}
+	}
+	Direction = FVector::ForwardVector;
+	return CaptorStart;
+}
+
+void ALLKOpeningGrille::TickDockCapture(float DeltaSeconds)
+{
+	const APlayerController* Player = GetWorld()->GetFirstPlayerController();
+	if (Player == nullptr || Player->GetPawn() == nullptr)
+	{
+		return; // Start the beat after possession, with the player present.
+	}
+	CaptureSeconds += DeltaSeconds;
+	if (CaptureSeconds < DockGrabLeadSeconds)
+	{
+		return;
+	}
+	DockGrabSeconds = CaptureSeconds - DockGrabLeadSeconds;
+	const float GrabAlpha = FMath::Clamp(DockGrabSeconds / .55f, 0.f, 1.f);
+	const float Travel = FMath::Max(0.f, DockGrabSeconds - .36f) * DockHaulSpeed;
+	FVector Direction;
+	const FVector MachinePoint = SampleDockRoute(Travel, Direction);
+	if (AActor* Machine = Captor.Get())
+	{
+		Machine->SetActorLocationAndRotation(FMath::Lerp(CaptorStart, MachinePoint, GrabAlpha),
+			Direction.Rotation());
+	}
+	if (!bHaulPlayed)
+	{
+		bHaulPlayed = true;
+		if (HaulSound) UGameplayStatics::PlaySoundAtLocation(this, HaulSound, CaptorStart);
+		UE_LOG(LogLLK, Log, TEXT("Dock opening: hauler grabbed the family."));
+	}
+	if (DockGrabSeconds >= .48f)
+	{
+		if (AActor* Lamp = FallenLantern.Get())
+		{
+			Lamp->SetActorHiddenInGame(false);
+		}
+	}
+	for (int32 Index = 0; Index < Captives.Num(); ++Index)
+	{
+		if (AActor* Person = Captives[Index].Get())
+		{
+			FVector BodyDirection;
+			const FVector Track = SampleDockRoute(Travel - 105.f - 83.f * (Index / 2), BodyDirection);
+			const FVector Side = FVector::CrossProduct(FVector::UpVector, BodyDirection);
+			const float Struggle = FMath::Sin(DockGrabSeconds * 12.f + Index * 1.4f);
+			const FVector DragPoint = Track + Side * ((Index % 2 == 0 ? -1.f : 1.f) *
+				(55.f + Struggle * 9.f)) + FVector(0.f, 0.f, (21.f + 4.f * Struggle));
+			FRotator DragPose = BodyDirection.Rotation();
+			DragPose.Yaw += 180.f + 8.f * Struggle;
+			DragPose.Pitch = GrabAlpha * (-78.f + 7.f * Struggle);
+			DragPose.Roll = 9.f * GrabAlpha * Struggle;
+			const float CaptureBlend = FMath::Clamp((DockGrabSeconds - .045f * Index) / .7f, 0.f, 1.f);
+			Person->SetActorLocationAndRotation(
+				FMath::Lerp(CaptiveStarts[Index], DragPoint, CaptureBlend), DragPose);
+		}
+	}
+	if (!DockScreams.IsEmpty() && DockGrabSeconds >= NextDockScream)
+	{
+		const int32 Index = DockScreamIndex++;
+		USoundBase* Scream = DockScreams[Index % DockScreams.Num()];
+		if (Scream && !Captives.IsEmpty())
+		{
+			if (AActor* Person = Captives[Index % Captives.Num()].Get())
+			{
+				UGameplayStatics::SpawnSoundAttached(Scream, Person->GetRootComponent(), NAME_None,
+					FVector(0.f, 0.f, 50.f), EAttachLocation::KeepRelativeOffset, true, 1.0f,
+					.9f + .09f * (Index % 4), 0.f, DockVoiceAttenuation);
+				UE_LOG(LogLLK, Display, TEXT("Dock opening: spatial scream %d at %s."),
+					Index + 1, *Person->GetActorLocation().ToCompactString());
+			}
+		}
+		NextDockScream += 2.15f + .33f * (Index % 3);
+	}
+	if (Travel >= DockRouteDistances.Last() + 215.f)
+	{
+		for (const TWeakObjectPtr<AActor>& Person : Captives)
+		{
+			if (Person.IsValid()) Person->SetActorHiddenInGame(true);
+		}
+		if (Captor.IsValid()) Captor->SetActorHiddenInGame(true);
+		bCaptureActive = false;
+		bCaptureFinished = true;
+		UE_LOG(LogLLK, Display, TEXT("Dock opening: capture complete at the far side of Boswell's."));
 	}
 }
 
@@ -260,6 +411,22 @@ bool ALLKOpeningGrille::TryRelease(const APawn* Keeper)
 void ALLKOpeningGrille::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	if (!bFarReceivingReached && FarReceiving.IsValid())
+	{
+		const APlayerController* Player = GetWorld()->GetFirstPlayerController();
+		const APawn* Keeper = Player ? Player->GetPawn() : nullptr;
+		if (Keeper && FVector::DistSquared(Keeper->GetActorLocation(),
+			FarReceiving->GetActorLocation()) < FMath::Square(260.f))
+		{
+			bFarReceivingReached = true;
+			UE_LOG(LogLLK, Display, TEXT("Dock opening: reached far receiving."));
+		}
+	}
+	if (bCaptureActive && UsesDockOpening())
+	{
+		TickDockCapture(DeltaSeconds);
+		return;
+	}
 	if (bCaptureActive)
 	{
 		CaptureSeconds += DeltaSeconds;
@@ -278,11 +445,6 @@ void ALLKOpeningGrille::Tick(float DeltaSeconds)
 		{
 			bHaulPlayed = true;
 			if (HaulSound) UGameplayStatics::PlaySoundAtLocation(this, HaulSound, CaptorStart);
-		}
-		if (!bCallPlayed && CaptureSeconds >= 1.05f)
-		{
-			bCallPlayed = true;
-			if (SayersCall) UGameplayStatics::PlaySoundAtLocation(this, SayersCall, CaptorStart, 1.f, 0.8f);
 		}
 		if (CaptureSeconds >= 1.20f)
 		{
