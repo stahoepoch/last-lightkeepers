@@ -105,14 +105,72 @@ for actor in lights:
             unreal.ComponentMobility.MOVABLE,
             "route light still requires an unavailable bake")
 
+# The six public-facing shops are now furnished, with physical fixtures
+# rather than art the keeper can walk through. Their ceiling meets the
+# existing storefront header at 5.5 m instead of hanging 6.5 m above it.
+for side, sign in (("W", -1), ("E", 1)):
+    ceiling = near[f"GALLERIA_NEAR_{side}_SHOP_CEILING"]
+    require(abs(ceiling.get_actor_location().z - 560) < 1,
+            "shop ceiling still has a warehouse-scale void")
+    for index, y in enumerate((-4050, -5575, -7125)):
+        stem = f"GALLERIA_SHOP_{side}_{index}_"
+        for suffix in ("DEEP", "N", "S"):
+            visual = labels.get(stem + suffix)
+            proxy = labels.get(stem + suffix + "_COLLISION")
+            require(isinstance(visual, unreal.StaticMeshActor) and
+                    isinstance(proxy, unreal.StaticMeshActor),
+                    "furnished shop or collision missing: " + stem + suffix)
+            require(visual.static_mesh_component.get_collision_enabled() ==
+                    unreal.CollisionEnabled.NO_COLLISION and
+                    proxy.static_mesh_component.get_collision_enabled() ==
+                    unreal.CollisionEnabled.QUERY_AND_PHYSICS and
+                    proxy.static_mesh_component.get_editor_property(
+                        "can_ever_affect_navigation"),
+                    "render and physics disagree: " + stem + suffix)
+        sign_actor = labels.get(stem + "SIGN")
+        pool = labels.get(stem + "POOL")
+        front = labels.get(stem + "FRONT_LIGHT")
+        require(isinstance(sign_actor, unreal.TextRenderActor) and
+                isinstance(pool, unreal.PointLight) and
+                pool.point_light_component.get_editor_property("mobility") ==
+                unreal.ComponentMobility.MOVABLE and
+                pool.point_light_component.get_editor_property("intensity_units") ==
+                unreal.LightUnits.CANDELAS and
+                abs(pool.point_light_component.get_editor_property("intensity") - 2) < .01,
+                "shop identity or dynamic light missing: " + stem)
+        require(abs(sign_actor.get_actor_location().z - 480) < 1 and
+                abs(sign_actor.get_actor_rotation().yaw - (0 if sign < 0 else 180)) < .1,
+                "department sign is above the facade or facing away: " + stem)
+        require(isinstance(front, unreal.SpotLight) and
+                front.spot_light_component.get_editor_property("mobility") ==
+                unreal.ComponentMobility.MOVABLE and
+                front.spot_light_component.get_editor_property("intensity_units") ==
+                unreal.LightUnits.CANDELAS and
+                abs(front.spot_light_component.get_editor_property("intensity") - 16) < .01 and
+                abs(front.spot_light_component.get_editor_property("outer_cone_angle") - 55) < .01,
+                "inward shop light missing: " + stem)
+        require(abs(pool.get_actor_location().z - 350) < 1 and
+                abs(front.get_actor_location().z - 480) < 1 and
+                abs(front.get_actor_rotation().pitch + 30) < .1 and
+                abs(front.get_actor_rotation().roll) < .1 and
+                abs(front.get_actor_rotation().yaw - (180 if sign < 0 else 0)) < .1,
+                "shop lighting reverted to ceiling glare: " + stem)
+        require(hit_label((sign * 1800, y, 80),
+                          (sign * 2050, y, 80)) == stem + "DEEP_COLLISION",
+                "deep stock has no blocking body: " + stem)
+        for offset in (-200, 200):
+            require(hit_label((sign * 1200, y + offset, 80),
+                              (sign * 1800, y + offset, 80)) is None,
+                    "counter has no flank route: " + stem)
+
 nav = labels["ANCHOR_NAV_BOUNDS_FULL_PLATE"]
 centre, extent = nav.get_actor_bounds(False)
 require(centre.y - extent.y <= -8099 and
         centre.y + extent.y >= 2899,
         "nav volume does not cover store and new walk")
 
-message = ("GALLERIA_NEAR_VERIFY PASSED: supported 50 m walk, six shop "
-           "pockets, cover, 10 visual route lights and a solid far frontier; "
+message = ("GALLERIA_NEAR_VERIFY PASSED: supported 50 m walk, six furnished "
+           "pockets and inward lights, cover, 10 visual route lights, solid frontier; "
            f"{len(near)} saved actors")
 unreal.log(message)
 print(message)

@@ -32,13 +32,16 @@ are the authority.
 | First chapter machine encounter | Player experience | **Unverified against current acceptance:** it must prove cue → hide/detour/flee → retained control, not merely legacy enemy logic. |
 | Opening lantern and grille | Direct game observation, 2026-11-21 | **Functional in isolation:** in the Development game, E took Dad's lantern, F lit it, the aimed beam changed the shadowed release prompt to an E action, and E raised the south grille. The opening objective changed with each state. This was probed with `BugItGo`, not a natural route play. |
 | Opening route lighting | Direct game observation, 2026-11-21 | **Partially repaired:** ten Galleria route lights had unbuilt interactions; after making them movable, the 98-object rebuild warning was absent on fresh game launch. The concourse floor and shop mouths are readable in isolated pools, but deep black gaps remain. The lantern clips the release panel nearly white. Lowering the separate glass fill from 15 to 4 cd barely changed that view; the experiment was reverted. |
+| First mall shops | Saved-map traces and Development game camera, 2026-11-21 | **Furnished blockout, not finished art:** six already-built shop pockets now have 18 measured retail fixtures, matching collision bodies, department signs, and movable floor/face lights. The pocket ceilings meet their 5.5 m storefront headers instead of floating at 12 m. Fresh saved-map checks confirm open mouths and counter flank paths; the opening pickup/grille map check still passes. In the game camera, the inward lights reveal counter faces and the dimmed ceiling pools reduce glare. The furniture is still sparse and flat colored; the deep rooms remain too black for a believable department store. A debug teleport established this view, not a natural player traversal. |
 | Chapter finish and lantern cost | Player experience | **Unverified:** the near concourse ends at a safety wall; Sayers and the whole-mall crossing are still unbuilt. A machine's reaction to this opening lantern use has not been played through. |
 
 ## Next risk to retire
 
 Extend the playable crossing beyond the near-concourse safety wall toward
-Sayers, then walk the opening route without debug teleportation. In that pass,
-judge the dark gaps and overbright lantern target against the fixture contract,
+Sayers, then walk the opening route without debug teleportation. Dress the
+first six shops with retail-quality merchandise and surfaces so they read as
+departments instead of three colored meshes in each black pocket. Judge the
+remaining dark gaps and overbright lantern target against the fixture contract,
 and record whether the machine responds to the necessary light use while the
-player still has a cover or escape choice. The current map proves a first gate,
-not the chapter's traversal, threat, or finish.
+player still has a cover or escape choice. The current map proves a first gate
+and physical shop routes, not the chapter's traversal, threat, or finish.
