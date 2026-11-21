@@ -79,6 +79,15 @@ UnrealEditor-Cmd.exe <project> /Game/<MapName> -game -unattended -nullrhi
   -nosplash -nopause -ExecCmds="LLK.CheckMap strict"
 ```
 
+**Run step 3 from PowerShell, not Git Bash.** MSYS rewrites a leading
+`/Game/...` argument into a Windows path, so the command above became
+`"C:/Program Files/Git/Game/LLK_Boswells_OpeningPass"`, the engine loaded its
+default map instead, and the checker found nothing to report — **exit 0 for
+the wrong reason**, on a map nobody had looked at. A gate that passes when it
+never ran is the same hazard as `IsNavigationBuilt`. If the log has no
+`Map readiness:` line at all, the gate did not run; check the
+`LogInit: Command Line:` line for a mangled path before believing the code.
+
 **Exit 0 means ready. Exit 1 means findings, and the log names them.** The
 bare `LLK.CheckMap` stays a human instrument that changes nothing and never
 exits; only `strict` ends the process, because a diagnostic that can kill the
