@@ -9,6 +9,22 @@ know it would take longer to walk around than it does now."*
 Three claims in that, and they do not all survive measurement. **Values in
 `data/*.json` are Chris's; this proposes and does not change them.**
 
+> **ADOPTED 2026-11-21, and this document is now history rather than a
+> proposal.** `data/lantern.json` authors walk **5 studs = 140 cm/s** and
+> crouch **3 = 84**, with sprint held at 12.5 = 350 so the worst-state escape
+> margin survives. The running game logs `walk 140, sprint 350, crouch 84`.
+> The height half was adopted on 2026-11-15 (145 cm keeper, every dimension
+> derived from that one number in `LLKLanternFeel.cpp`).
+>
+> **Two things this document got wrong, kept here rather than quietly
+> edited.** It proposed 5 studs and left crouch's 0.5625 ratio alone, which
+> would have given crouch 79; the adopted 3 studs gives 84, so the ratio moved
+> to 0.6 on purpose. And it treated sprint/walk as a number to preserve - the
+> adopted pass moved it from 1.5625 to **2.5**, which is a bigger change in
+> feel than anything proposed here and is still unjudged in a played route.
+> **The tables below use the old 224 cm/s walk throughout.** Read them as the
+> argument for slowing down, not as a description of the game.
+
 ---
 
 ## 1. The store is not too small, and this is worth settling first
