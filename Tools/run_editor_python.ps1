@@ -3,7 +3,8 @@ param(
     [Parameter(Mandatory = $true)][string]$Script,
     [string]$EngineRoot = "C:\Program Files\Epic Games\UE_5.8",
     [string]$Project = "",
-    [string]$LogPath = ""
+    [string]$LogPath = "",
+    [switch]$AllowUnsafeMapSave
 )
 
 # Run a Python script against this project with no editor open, through
@@ -36,6 +37,17 @@ if (-not (Test-Path -LiteralPath $editor)) { throw "UnrealEditor-Cmd.exe not fou
 if (-not (Test-Path -LiteralPath $Script)) { throw "Python script not found at '$Script'." }
 $projectPath = (Resolve-Path $Project).Path
 $scriptPath = (Resolve-Path $Script).Path.Replace("\", "/")
+
+# A pythonscript commandlet loads navigation data but does not preserve built
+# navmesh tiles when it saves a .umap.  Until a map-save path rebuilds and
+# proves navigation in the same transaction, fail closed rather than silently
+# committing a level whose AI routes no longer exist.  Read-only audits remain
+# available.  The explicit switch is a short-lived escape hatch for recovery
+# work and is deliberately conspicuous in command history.
+$scriptContents = Get-Content -LiteralPath $Script -Raw
+if (-not $AllowUnsafeMapSave -and $scriptContents -match "EditorLoadingAndSavingUtils\.save_map") {
+    throw "Refusing map-writing Python script '$Script': UnrealEditor-Cmd map saves currently strip built navigation. Rebuild/prove navigation first, then rerun with -AllowUnsafeMapSave only for controlled recovery."
+}
 
 # An editor holding this project owns the packages we are about to save, and
 # a commandlet saving underneath it loses whichever write lands second.

@@ -43,6 +43,8 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "LLK|Elevator")
 	TObjectPtr<UBoxComponent> CabTrigger;
 
+	/** A second instance is placed at the other floor; both call the same stops. */
+
 	UPROPERTY(VisibleAnywhere, Category = "LLK|Elevator")
 	TObjectPtr<UStaticMeshComponent> CabVisual;
 
