@@ -605,6 +605,44 @@ bool FLLKMapReadinessTest::RunTest(const FString& Parameters)
 			Report.IsReady());
 	}
 
+	// ---- the route query has no destination on an authored map ----------
+	{
+		// The last finding standing between the opening and a clean gate on
+		// 2026-11-21, with navigation freshly built and the Sweeper
+		// demonstrably reaching the keeper in the same boot. The query runs
+		// only against TAGGED enemy spawns, so a map that tags nothing can
+		// never clear RouteUnverified by fixing anything.
+		FLLKMapObservations Obs = ReadyMap();
+		Obs.bHarnessMap = false;
+		Obs.EnemySpawnPoints = 0;
+		Obs.OpenLaneEnds = 0;
+		Obs.BlockedLaneEnds = 0;
+		Obs.OpenLaneResult.Reset();
+		Obs.BlockedLaneResult.Reset();
+		Obs.EnemySpawnsOffNavmesh.Reset();
+		Obs.RouteFromSpawnReaches.Reset();
+
+		const FLLKMapReport Report = LLKMapReadiness::Evaluate(Obs);
+
+		TestFalse(
+			TEXT("an authored map is not faulted for a route query that had "
+				 "nowhere to go"),
+			Report.Has(ELLKMapCheck::RouteUnverified));
+		TestTrue(TEXT("and it reads as ready"), Report.IsReady());
+	}
+
+	// ---- but the harness is still faulted for not asking ----------------
+	{
+		FLLKMapObservations Obs = ReadyMap();
+		Obs.RouteFromSpawnReaches.Reset();
+
+		const FLLKMapReport Report = LLKMapReadiness::Evaluate(Obs);
+		TestTrue(
+			TEXT("the harness, which does tag its spawns, still owes a route "
+				 "query"),
+			Report.Has(ELLKMapCheck::RouteUnverified));
+	}
+
 	// ---- and the same conventions still bite on the harness --------------
 	{
 		// The other half. Gating them must not mean deleting them: the

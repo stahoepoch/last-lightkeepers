@@ -1,4 +1,5 @@
 #include "Harness/LLKMapReadiness.h"
+#include "HAL/PlatformMisc.h"
 
 #include "Engine/World.h"
 #include "EngineUtils.h"
@@ -230,8 +231,30 @@ namespace LLKMapReadiness
 		}
 		else if (!Obs.RouteFromSpawnReaches.IsSet())
 		{
-			Add(ELLKMapCheck::RouteUnverified,
-				TEXT("no navmesh path query ran - see the handoff in docs/MAP-READINESS.md"));
+			// **Only the harness can fail to have asked.** The route query
+			// runs against TAGGED enemy spawns
+			// (`SpawnOnNavmesh && !EnemySpawns.IsEmpty()` below), so on an
+			// authored map that tags nothing there is no destination and the
+			// query can never run - `RouteUnverified` would fire forever and
+			// could never be cleared by fixing anything.
+			//
+			// Measured 2026-11-21: with navigation freshly built into
+			// `LLK_Boswells_OpeningPass`, and the Sweeper demonstrably
+			// reaching the keeper in the same boot, this was the one finding
+			// still standing between the map and a clean gate.
+			//
+			// The real answer on an authored map comes from
+			// `ALLKTestGameMode::ReportThreatReachability`, which paths from
+			// the actual machines to the actual keeper. Re-implementing that
+			// here would be a second source of truth for one question.
+			//
+			// Note this suppresses the finding, not the branch: the `else if`
+			// below calls `GetValue()`, which asserts on an unset optional.
+			if (Obs.bHarnessMap)
+			{
+				Add(ELLKMapCheck::RouteUnverified,
+					TEXT("no navmesh path query ran - see the handoff in docs/MAP-READINESS.md"));
+			}
 		}
 		else if (!Obs.RouteFromSpawnReaches.GetValue())
 		{
@@ -635,9 +658,9 @@ FString FLLKMapReport::Describe() const
 // that never shows up in PIE.
 static FAutoConsoleCommandWithWorldAndArgs GLLKCheckMap(
 	TEXT("LLK.CheckMap"),
-	TEXT("Reports what this map is missing before an enemy is put in it. Changes nothing. See docs/MAP-READINESS.md."),
+	TEXT("Reports what this map is missing before an enemy is put in it. Changes nothing. Pass 'strict' to exit the process non-zero when there are findings, for use as a build gate. See docs/MAP-READINESS.md."),
 	FConsoleCommandWithWorldAndArgsDelegate::CreateLambda(
-		[](const TArray<FString>& /*Args*/, UWorld* World)
+		[](const TArray<FString>& Args, UWorld* World)
 		{
 			const FLLKStoreFloorPlan Plan;
 			const FLLKMapReport Report = LLKMapReadiness::Check(World, Plan);
@@ -652,5 +675,51 @@ static FAutoConsoleCommandWithWorldAndArgs GLLKCheckMap(
 			else
 			{
 				UE_LOG(LogTemp, Warning, TEXT("%s"), *Report.Describe());
+			}
+
+			// ---- strict, for a script that has to know ------------------
+			//
+			// **Why an exit code and not a log line.** The navmesh in
+			// `LLK_Boswells_OpeningPass` was destroyed twice on 2026-11-21
+			// by ordinary tool saves, and both times the only evidence was a
+			// line in a log nobody was reading. A workflow step cannot gate
+			// on prose; it can gate on a process exit code.
+			//
+			// Deliberately opt-in. The bare command stays a human
+			// instrument that changes nothing, because a diagnostic that can
+			// kill the editor you typed it into is one you stop typing.
+			const bool bStrict = Args.ContainsByPredicate(
+				[](const FString& Arg) { return Arg.Equals(TEXT("strict"), ESearchCase::IgnoreCase); });
+			//
+			// **`Force=true`, and that is not casual.** Measured on
+			// 2026-11-21: with `Force=false` this logged "exiting 1" and the
+			// process still returned **0**. The unforced path ends in
+			// `PostQuitMessage(ReturnCode)`
+			// (`WindowsPlatformMisc.cpp:1520`), and in a headless
+			// `-game -unattended` run nothing pumps a message loop, so the
+			// code is dropped - a gate that always passes, which is worse
+			// than no gate. `Force=true` reaches
+			// `TerminateProcess(GetCurrentProcess(), ReturnCode)` after
+			// flushing `GLog`, so the code survives and the run ends
+			// promptly rather than on a caller's timeout.
+			//
+			// Abrupt termination is safe here precisely because this command
+			// changes nothing: there is no unsaved state to lose. It is also
+			// why `strict` is opt-in and the bare command never does it.
+			if (bStrict)
+			{
+				if (Report.IsReady())
+				{
+					UE_LOG(LogTemp, Display,
+						TEXT("LLK.CheckMap strict: ready, exiting 0."));
+					FPlatformMisc::RequestExitWithStatus(/*Force=*/true, /*ReturnCode=*/0);
+				}
+				else
+				{
+					UE_LOG(LogTemp, Error,
+						TEXT("LLK.CheckMap strict: %d finding(s), exiting 1."),
+						Report.Findings.Num());
+					FPlatformMisc::RequestExitWithStatus(/*Force=*/true, /*ReturnCode=*/1);
+				}
 			}
 		}));
