@@ -125,11 +125,28 @@ if it is implemented on that call it will pass on an empty navmesh.
 struct deliberately designed so that *"a route that was not queried is not a
 route that failed"*.
 
-`LLKMapReadiness::Observe(UWorld*, const FLLKStoreFloorPlan&)` is the only
-half that reads a real world. **It has no callers.** `LLKMapReadinessTest`
-exercises `Evaluate` against hand-built `FLLKMapObservations` structs, so the
-pure half is covered and the world-reading half has never executed anywhere,
-in any map, once.
+**That paragraph's original claim was that `Observe` has no callers. It was
+wrong, and it is corrected here rather than deleted.** `LLK.CheckMap` is a
+registered console command at `LLKMapReadiness.cpp:574` and calls
+`Check` -> `Observe`. The grep behind the claim excluded
+`LLKMapReadiness.cpp`, which is the file the caller lives in.
+
+**Run on this map, the command finds the problem and then mis-names it:**
+
+```
+NoEnemySpawnPoints - no actors tagged LLK.EnemySpawn
+SpawnOffNavmesh - the keeper spawn does not project onto navigable space -
+  usually a PlayerStart sunk into the floor, floating above it, or on a counter
+SightlineTooLong - longest sightline 80.0 studs, limit 34.0
+TestLaneOpenMissing - 0 actor(s) tagged LLK.TestLane.Open, need exactly 2
+TestLaneBlockedMissing - 0 actor(s) tagged LLK.TestLane.Blocked, need exactly 2
+```
+
+`NavmeshNotBuilt` does not fire: two navigation data actors exist and
+`IsNavigationBuilt` returns true. So the empty navmesh appears as
+`SpawnOffNavmesh`, and that finding's own text sends the reader to move a
+PlayerStart. Three of the other four are harness conventions this map never
+adopted. Both halves are filed as **M18** and both are `Source/LLK`.
 
 That is filed as its own row rather than fixed here, because pointing it at a
 dressed map would also fire its harness-convention checks - tagged enemy
