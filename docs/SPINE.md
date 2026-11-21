@@ -131,33 +131,33 @@ crash, and the lantern on the tile. Between flashes the store's emergency
 light is enough to see the counter, the bars, and the floor. No light
 comes through the roof.
 
-The presentation is that view, held only long enough for the lift, the
-name, the drop, and the lantern hitting the tile. It ends by returning
-look and movement at the counter, with the lantern lying in the aisle.
-The child steps out when they choose. Nothing grabs them, stumbles them,
-or keeps them down after the view. The fear after that is the open aisle
+The presentation holds the action in that view only long enough for the
+lift, the name, the drop, and the lantern hitting the tile. The current
+blockout keeps look and movement with the child throughout; they can step
+out when they choose. Nothing grabs them, stumbles them, or keeps them
+down. The fear after that is the open aisle
 between the counter and the lantern, and the longer open aisle back to
 the mouth, where the haul-machine's partner is still working the drag.
 
 What the child remembers, and can use: the shaded bar by the eastern
 post, the roller above it, the way the bar traveled, and the sound of the
 chain. After the pickup, the lantern shows the fresh wear on that bar.
-Working the bar the way the machine did is the whole puzzle. The grille
-in the saved opening map does not move yet. When a runtime actor exists,
-that same bar is what raises it.
+Working the bar the way the machine did is the whole puzzle. The opening
+controller now moves those saved bars during the grab and raises them again
+when the lantern reveals the release and the child uses it.
 
-### What this scene needs that the project does not have
+### Capture blockout and remaining work
 
-Block these in with labeled silhouettes until the real actors exist. This
-page does not ask anyone to build them in the map.
+The opening map now stages a first pass with the actors below. These are
+readable placeholders for a witnessed event, not final performances.
 
 | Need | What exists now |
 | --- | --- |
-| Dad, his brother, and two other people | No human meshes for them. The temporary keeper body is the mannequin sample, and it is the wrong actor for the four who are taken. |
-| A haul | Sweeper job sounds on disk are stock cues: notice, start, interrupt, filed. None of them is this push through a grille. |
-| The grille moving | The saved south grille is static bars. |
-| The lantern on the floor | The opening map places a placeholder pickup on that tile. It is not the issued lantern mesh. Taking it is not yet proof the player understood the step. |
-| The spoken name | No capture line. "Sayers" has to be heard as one short call from the machine's direction, not as dialogue written on a surface. |
+| Dad, his brother, and two other people | Four skinned mannequin silhouettes now move through the opening grille, with separate walk phases. They still need clothed human identities and distinct reactions. |
+| A haul | A low blockout rover and a machine work sound now accompany the group. There is still no convincing physical push or struggle. |
+| The grille moving | The saved south bars now lift and fall during the opening, then the same release can lift them for the player. |
+| The lantern on the floor | The placeholder pickup appears when Dad loses it and cannot be taken beforehand. Its mesh still needs to become the issued lantern. |
+| The spoken name | A synthetic one-word machine call says “Sayers” from the haul location. Its mix and intelligibility await a player listen. |
 
 Four people and one machine are the whole cast. Faces are unnecessary.
 The silhouettes have to read against the lightning in the south glass:
@@ -556,7 +556,7 @@ That list is historical.
 
 | | |
 | --- | --- |
-| What the keeper does | From behind the east perfume and jewelry counter on the lower floor, sees dad, his brother, and the others taken through the south grille. When the view returns input, steps into the aisle, takes his lantern off the tile, tries the sleeve and finds it stuck, then works the same bar the machine used. |
+| What the keeper does | From behind the east perfume and jewelry counter on the lower floor, sees dad, his brother, and the others taken through the south grille. With movement retained, steps into the aisle when ready, takes his lantern off the tile, tries the sleeve and finds it stuck, then works the same bar the machine used. |
 | What emergency light already shows | The counter, the dragged aisle, the mouth, the sleeve in the bars, and the release as a silhouette under the storm in the entrance glass. |
 | What only the lantern resolves | The fresh wear where the machine gripped the bar. Not a note, and not a route. The kid already saw the way. |
 | What changes | The grille rises and stays up. The concourse can be entered on the fresh drag marks. |

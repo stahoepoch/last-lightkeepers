@@ -339,7 +339,7 @@ ALLKLanternPickup* ULLKInteractorComponent::ResolveLanternPickup() const
 
 	for (ALLKLanternPickup* Pickup : ALLKLanternPickup::GetLivePickups(World))
 	{
-		if (Pickup == nullptr || Pickup->IsTaken())
+		if (Pickup == nullptr || Pickup->IsTaken() || Pickup->IsHidden())
 		{
 			continue;
 		}

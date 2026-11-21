@@ -325,6 +325,12 @@ void ALLKDebugHUD::DrawOpeningObjective(const ALLKOpeningGrille* Grille)
 	{
 		return;
 	}
+	// The family is still visible. Do not announce Dad's dropped lantern
+	// before the player witnesses it fall.
+	if (!Grille->IsCaptureFinished())
+	{
+		return;
+	}
 
 	if (Grille->IsOpen())
 	{

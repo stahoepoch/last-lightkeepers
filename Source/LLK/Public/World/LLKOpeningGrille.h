@@ -5,6 +5,8 @@
 #include "LLKOpeningGrille.generated.h"
 
 class APawn;
+class APointLight;
+class USoundBase;
 
 /** The opening's one lantern read and the grille it releases. Map pieces are found by tags. */
 UCLASS()
@@ -24,6 +26,7 @@ public:
 	bool CanRelease(const APawn* Keeper) const;
 	bool TryRelease(const APawn* Keeper);
 	bool IsOpen() const { return bOpen; }
+	bool IsCaptureFinished() const { return bCaptureFinished; }
 	FVector GetReadPoint() const;
 
 private:
@@ -57,4 +60,25 @@ private:
 	TArray<TWeakObjectPtr<AActor>> Segments;
 	TArray<FVector> ClosedLocations;
 	float OpenAlpha = 0.f;
+
+	// The opening is witnessed from the counter. These actors are presentation
+	// only; the release and its bars remain the player's later world puzzle.
+	TArray<TWeakObjectPtr<AActor>> Captives;
+	TArray<FVector> CaptiveStarts;
+	TWeakObjectPtr<AActor> Captor;
+	TWeakObjectPtr<AActor> FallenLantern;
+	TWeakObjectPtr<APointLight> StormFlash;
+	UPROPERTY()
+	TObjectPtr<USoundBase> HaulSound;
+	UPROPERTY()
+	TObjectPtr<USoundBase> CrashSound;
+	UPROPERTY()
+	TObjectPtr<USoundBase> SayersCall;
+	FVector CaptorStart = FVector::ZeroVector;
+	float CaptureSeconds = 0.f;
+	bool bCaptureActive = false;
+	bool bCaptureFinished = false;
+	bool bHaulPlayed = false;
+	bool bCallPlayed = false;
+	bool bCrashPlayed = false;
 };

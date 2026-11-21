@@ -3,14 +3,22 @@
 #include "Characters/LLKCharacter.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Animation/AnimSequence.h"
+#include "Animation/AnimSingleNodeInstance.h"
+#include "Animation/SkeletalMeshActor.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "Engine/PointLight.h"
 #include "GameFramework/Pawn.h"
+#include "Kismet/GameplayStatics.h"
 #include "Lantern/LLKLanternComponent.h"
 #include "Lantern/LLKLanternFeel.h"
 #include "Lantern/LLKLanternLightComponent.h"
 #include "LLK.h"
 #include "Net/UnrealNetwork.h"
+#include "Sound/SoundBase.h"
+#include "Components/PointLightComponent.h"
 
 namespace
 {
@@ -20,6 +28,10 @@ namespace
 	const FName StemTag(TEXT("LLK.Opening.GrilleStem"));
 	const FName LinkTag(TEXT("LLK.Opening.GrilleLink"));
 	const FName RollerTag(TEXT("LLK.Opening.GrilleRoller"));
+	const FName CaptiveTag(TEXT("LLK.Opening.Captive"));
+	const FName CaptorTag(TEXT("LLK.Opening.Captor"));
+	const FName StormTag(TEXT("LLK.Opening.StormFlash"));
+	const FName FallenLanternTag(TEXT("LLK.Opening.FallenLantern"));
 }
 
 ALLKOpeningGrille::ALLKOpeningGrille()
@@ -71,6 +83,24 @@ void ALLKOpeningGrille::BeginPlay()
 			Segments.Add(Actor);
 			ClosedLocations.Add(Actor->GetActorLocation());
 		}
+		if (Actor->ActorHasTag(CaptiveTag))
+		{
+			Captives.Add(Actor);
+			CaptiveStarts.Add(Actor->GetActorLocation());
+		}
+		if (Actor->ActorHasTag(CaptorTag))
+		{
+			Captor = Actor;
+			CaptorStart = Actor->GetActorLocation();
+		}
+		if (Actor->ActorHasTag(StormTag))
+		{
+			StormFlash = Cast<APointLight>(Actor);
+		}
+		if (Actor->ActorHasTag(FallenLanternTag))
+		{
+			FallenLantern = Actor;
+		}
 	}
 	if (!Witness.IsValid() || !ReleaseBar.IsValid() || Segments.Num() != 45)
 	{
@@ -81,6 +111,57 @@ void ALLKOpeningGrille::BeginPlay()
 	{
 		UE_LOG(LogLLK, Warning, TEXT("Opening grille release hardware is incomplete; the bars can still rise."));
 	}
+	// Missing scene pieces never strand the player: the normal release still
+	// works. A partial cast is logged instead of presenting a false capture.
+	bCaptureActive = Captives.Num() == 4 && Captor.IsValid() && Segments.Num() == 45;
+	bCaptureFinished = !bCaptureActive;
+	if (bCaptureActive)
+	{
+		if (AActor* Lamp = FallenLantern.Get())
+		{
+			Lamp->SetActorHiddenInGame(true);
+		}
+		HaulSound = LoadObject<USoundBase>(nullptr,
+			TEXT("/Game/Audio/Sweeper/sweeper-stock-started-v1.sweeper-stock-started-v1"));
+		CrashSound = LoadObject<USoundBase>(nullptr,
+			TEXT("/Game/Audio/Sweeper/sweeper-stock-filed-v1.sweeper-stock-filed-v1"));
+		SayersCall = LoadObject<USoundBase>(nullptr,
+			TEXT("/Game/Audio/Opening/opening-sayers-machine-v1.opening-sayers-machine-v1"));
+		UAnimSequence* Walk = LoadObject<UAnimSequence>(nullptr,
+			TEXT("/Game/Characters/UEFN_Mannequin/Animations/LookAtPOI/LookAtPOI_test_walk_loop.LookAtPOI_test_walk_loop"));
+		if (Walk == nullptr)
+		{
+			UE_LOG(LogLLK, Error, TEXT("Opening capture walk animation missing; release remains available."));
+			bCaptureActive = false;
+			bCaptureFinished = true;
+		}
+		else
+		{
+			for (int32 Index = 0; Index < Captives.Num(); ++Index)
+			{
+				ASkeletalMeshActor* Person = Cast<ASkeletalMeshActor>(Captives[Index].Get());
+				if (Person == nullptr || Person->GetSkeletalMeshComponent() == nullptr)
+				{
+					bCaptureActive = false;
+					bCaptureFinished = true;
+					break;
+				}
+				Person->GetSkeletalMeshComponent()->PlayAnimation(Walk, true);
+				// Four identical mannequins stepping on the same frame read as a
+				// factory line. The cast enters on different phases and tempos.
+				if (UAnimSingleNodeInstance* Player = Person->GetSkeletalMeshComponent()->GetSingleNodeInstance())
+				{
+					Player->SetPosition(Walk->GetPlayLength() * 0.19f * Index, false);
+					Player->SetPlayRate(0.91f + 0.07f * Index);
+				}
+			}
+		}
+	}
+	if (!bCaptureActive && (Captives.Num() > 0 || Captor.IsValid()))
+	{
+		UE_LOG(LogLLK, Error, TEXT("Opening capture incomplete: people=%d captor=%d; grille remains playable."),
+			Captives.Num(), Captor.IsValid());
+	}
 }
 
 FVector ALLKOpeningGrille::GetReadPoint() const
@@ -90,7 +171,7 @@ FVector ALLKOpeningGrille::GetReadPoint() const
 
 bool ALLKOpeningGrille::CanFocus(const APawn* Keeper) const
 {
-	if (bOpen || Keeper == nullptr || !Witness.IsValid() || !ReleaseBar.IsValid()
+	if (bOpen || !bCaptureFinished || Keeper == nullptr || !Witness.IsValid() || !ReleaseBar.IsValid()
 		|| Segments.Num() != 45 || Keeper->GetWorld() != GetWorld())
 	{
 		return false;
@@ -166,6 +247,83 @@ bool ALLKOpeningGrille::TryRelease(const APawn* Keeper)
 void ALLKOpeningGrille::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	if (bCaptureActive)
+	{
+		CaptureSeconds += DeltaSeconds;
+		if (APointLight* Flash = StormFlash.Get())
+		{
+			// Two short strokes against the glass, never permanent room fill.
+			const bool bLit = (CaptureSeconds > 0.20f && CaptureSeconds < 0.29f)
+				|| (CaptureSeconds > 1.42f && CaptureSeconds < 1.53f)
+				|| (CaptureSeconds > 3.70f && CaptureSeconds < 3.82f);
+			if (UPointLightComponent* Lamp = Cast<UPointLightComponent>(Flash->GetLightComponent()))
+			{
+				Lamp->SetIntensity(bLit ? 180.f : 0.f);
+			}
+		}
+		if (!bHaulPlayed && CaptureSeconds >= 0.35f)
+		{
+			bHaulPlayed = true;
+			if (HaulSound) UGameplayStatics::PlaySoundAtLocation(this, HaulSound, CaptorStart);
+		}
+		if (!bCallPlayed && CaptureSeconds >= 2.35f)
+		{
+			bCallPlayed = true;
+			if (SayersCall) UGameplayStatics::PlaySoundAtLocation(this, SayersCall, CaptorStart, 1.f, 0.8f);
+		}
+		if (CaptureSeconds >= 2.35f)
+		{
+			if (AActor* Lamp = FallenLantern.Get())
+			{
+				Lamp->SetActorHiddenInGame(false);
+			}
+		}
+		if (!bCrashPlayed && CaptureSeconds >= 3.5f)
+		{
+			bCrashPlayed = true;
+			if (CrashSound) UGameplayStatics::PlaySoundAtLocation(this, CrashSound, CaptorStart);
+		}
+		// The grille begins closed in the saved map. It lifts just far enough
+		// for the four figures, then crashes shut; the child can watch without
+		// losing camera or movement input. A rushing player can reach the seam,
+		// so the collision bars stay real throughout the motion.
+		const float Lift = FMath::Clamp((CaptureSeconds - 0.35f) / 1.25f, 0.f, 1.f);
+		const float Fall = 1.f - FMath::Clamp((CaptureSeconds - 3.5f) / 0.65f, 0.f, 1.f);
+		const float Height = RaiseCm * FMath::Min(Lift, Fall);
+		for (int32 Index = 0; Index < Segments.Num(); ++Index)
+		{
+			if (AActor* Segment = Segments[Index].Get())
+			{
+				Segment->SetActorLocation(ClosedLocations[Index] + FVector(0.f, 0.f, Height));
+			}
+		}
+		const float Haul = FMath::Clamp((CaptureSeconds - 1.15f) / 2.5f, 0.f, 1.f);
+		for (int32 Index = 0; Index < Captives.Num(); ++Index)
+		{
+			if (AActor* Person = Captives[Index].Get())
+			{
+				// All four clear the bars but stop inside the glazed vestibule.
+				// A fixed displacement sent the nearer people through the
+				// exterior glass; their different starting depths need a common
+				// destination instead.
+				const FVector Start = CaptiveStarts[Index];
+				Person->SetActorLocation(FVector(Start.X, FMath::Lerp(Start.Y, -2780.f, Haul), Start.Z));
+				Person->SetActorHiddenInGame(CaptureSeconds >= 3.9f);
+			}
+		}
+		if (AActor* Machine = Captor.Get())
+		{
+			Machine->SetActorLocation(CaptorStart + FVector(0.f, -180.f * Haul, 0.f));
+			Machine->SetActorHiddenInGame(CaptureSeconds >= 3.9f);
+		}
+		if (CaptureSeconds >= 4.2f)
+		{
+			bCaptureActive = false;
+			bCaptureFinished = true;
+			UE_LOG(LogLLK, Log, TEXT("Opening capture completed: four people taken through the south grille."));
+		}
+		return;
+	}
 	if (!bOpen || OpenAlpha >= 1.f)
 	{
 		return;

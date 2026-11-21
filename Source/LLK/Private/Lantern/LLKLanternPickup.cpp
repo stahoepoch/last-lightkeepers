@@ -91,7 +91,7 @@ bool ALLKLanternPickup::GrantTo(ALLKCharacter* Keeper)
 		return false;
 	}
 
-	if (bTaken)
+	if (bTaken || IsHidden())
 	{
 		return false;
 	}
