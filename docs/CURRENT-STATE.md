@@ -33,15 +33,42 @@ are the authority.
 | Opening lantern and grille | Direct game observation, 2026-11-21 | **Functional in isolation:** in the Development game, E took Dad's lantern, F lit it, the aimed beam changed the shadowed release prompt to an E action, and E raised the south grille. The opening objective changed with each state. This was probed with `BugItGo`, not a natural route play. |
 | Opening route lighting | Direct game observation, 2026-11-21 | **Partially repaired:** ten Galleria route lights had unbuilt interactions; after making them movable, the 98-object rebuild warning was absent on fresh game launch. The concourse floor and shop mouths are readable in isolated pools, but deep black gaps remain. The lantern clips the release panel nearly white. Lowering the separate glass fill from 15 to 4 cd barely changed that view; the experiment was reverted. |
 | First mall shops | Saved-map traces and Development game camera, 2026-11-21 | **Furnished blockout, not finished art:** six already-built shop pockets now have 18 measured retail fixtures, matching collision bodies, department signs, and movable floor/face lights. The pocket ceilings meet their 5.5 m storefront headers instead of floating at 12 m. Fresh saved-map checks confirm open mouths and counter flank paths; the opening pickup/grille map check still passes. In the game camera, the inward lights reveal counter faces and the dimmed ceiling pools reduce glare. The furniture is still sparse and flat colored; the deep rooms remain too black for a believable department store. A debug teleport established this view, not a natural player traversal. |
+| Young keeper travel scale | Authored data, build, and game log, 2026-11-21 | **Provisional feel trial:** walk 140 cm/s and crouch 84 cm/s; sprint remains 350 cm/s. The previous 224 cm/s walk and its 1.5625 sprint/walk ratio are historical, despite their still appearing in old retune notes and code comments. The generated `DA_Lantern` was rebuilt and the Development game logged `walk 140, sprint 350, crouch 84`. Movement tests prove the compounded stumble and burden escape margin, not that this speed feels right in a played route. The 50 m concourse now takes 35.7 s to walk straight through versus 22.3 s before, with no pauses or detours. |
+| Atrium escalators | Saved-map traces and Development game camera, 2026-11-21 | **More legible, still stationary:** both smooth 30-degree collision ramps have 39 non-colliding tread strips each, three flat comb bars at each end, and three aimed 8 cd emergency pools per run. A fresh reload found all 96 unique details and traced the original ramp and landing collision; the game camera shows a readable ascent and lower landing. This is an inactive escalator presentation, not a moving escalator, and no player has walked its whole ascent at the new speed. |
+| Boswell's-to-mall upper-floor seam | Authored geometry comparison, 2026-11-21 | **Unresolved 180.5 cm mismatch:** Boswell's upper plate and escalator head are at 662.5 cm. The separate `GalleriaShell_Greybox.obj` reference puts its upper plate at 482 cm. Neither number was measured from TLP-1; the mall reference explicitly calls its figure a stand-in. A future upper walk must meet the store at a credible elevation, with the transition shown rather than hidden in an arbitrary stair. This blocks a truthful two-floor connection, not lower-floor work. |
+| Opening capture story | Authored spine versus game camera, 2026-11-21 | **Still missing:** the opening text asserts that Dad dropped his lantern, while the promised people, machine, capture, sound and closing grille are absent from the first view. A coat sleeve and drag marks exist in the map, but the player has not witnessed the event. This is the main reason the build still feels like a task instead of the beginning of a story. Do not call the opening beat complete on the strength of the pickup and grille interaction. |
 | Chapter finish and lantern cost | Player experience | **Unverified:** the near concourse ends at a safety wall; Sayers and the whole-mall crossing are still unbuilt. A machine's reaction to this opening lantern use has not been played through. |
 
 ## Next risk to retire
 
-Extend the playable crossing beyond the near-concourse safety wall toward
-Sayers, then walk the opening route without debug teleportation. Dress the
-first six shops with retail-quality merchandise and surfaces so they read as
-departments instead of three colored meshes in each black pocket. Judge the
-remaining dark gaps and overbright lantern target against the fixture contract,
-and record whether the machine responds to the necessary light use while the
-player still has a cover or escape choice. The current map proves a first gate
-and physical shop routes, not the chapter's traversal, threat, or finish.
+Stage the witnessed taking with people, a machine, a grille movement and
+directional sound, then play it from the child behind the counter. Measure the
+new gait through Boswell's and both escalator transitions in control, without
+debug teleportation. The game camera confirms that emergency light shows the
+stairs, but the treads are still visual strips on a ramp, and their three pools
+form bright islands separated by dark gaps. The route beyond the near-concourse
+safety wall then needs the scaled Galleria plan before it can reach Sayers;
+`HANDOFFS.md` P2 still owes the width from TLP-1's own 100 ft scale bar, and
+the upper-floor elevation mismatch must be resolved at the same seam. Dress
+the existing shop pockets with real merchandise and surfaces and test the
+machine's response to necessary lantern use. This map is a playable first gate,
+not a story chapter.
+
+## Measurements that conditioned this pass
+
+- Boswell's current shell spans about 87.4 by 54.4 m (4,755 m² per full
+  rectangle). Two such gross plates total about 102,400 sq ft, close to the
+  101,300 sq ft anchor noted in the Galleria reference. That arithmetic does
+  not prove the layout or usable floor area: atrium voids, blocked service
+  space, sparse stock, oversized heights and the missing rest of the mall
+  still change how large it feels. It does rule out solving the complaint by
+  blindly scaling every wall outward.
+- A study of children aged 6–10 measured median self-selected walking at
+  1.26 m/s and reviewed other 6–13-year-old cohorts around 1.13–1.37 m/s.
+  The 1.40 m/s trial is near the fast end, not an age lock or a player-feel
+  verdict: <https://pmc.ncbi.nlm.nih.gov/articles/PMC5135775/>.
+- Schindler's escalator planning guide puts common travel at about 0.5 m/s
+  and discusses 30-degree commercial rises and landing transition geometry:
+  <https://au.schindler.com/content/dam/website/au/docs/escalators-moving-walks/schindler-escalator-moving-walk-planning-guide-au.pdf/_jcr_content/renditions/original./schindler-escalator-moving-walk-planning-guide-au.pdf>.
+  The game escalators are powerless and walkable; the guide is a proportion
+  and presentation reference, not proof that the current ramp meets a standard.

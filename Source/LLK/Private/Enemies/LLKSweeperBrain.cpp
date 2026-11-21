@@ -51,8 +51,8 @@ namespace LLKSweeperBrainDetail
 	 * 2-second stock job so a pause reads as the machine doing something
 	 * deliberate rather than stalling, and well above the 1-second audio
 	 * telegraph so it is perceptible as a rhythm at all. Much shorter and
-	 * there is no crossing window - a keeper walks 448 cm/s, so a 5-stud gap
-	 * takes about a third of a second and the pause has to be long enough to
+	 * there is no crossing window - at the current 140 cm/s walk, a 5-stud
+	 * (140 cm) gap takes about a second and the pause has to be long enough to
 	 * decide in, not merely to move in. Much longer and the Sweeper spends
 	 * most of its night standing still, which is a different wrong answer.
 	 *

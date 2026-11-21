@@ -53,15 +53,15 @@ namespace LLKLanternFeelTestFixture
 	 * production literal it was testing against had rotted the same way, the
 	 * test and the code agreed with each other and both were wrong.
 	 *
-	 * So: one constant, used both as the speed and as the denominator it is
-	 * measured against. `SpeedFraction` is then 1.0 at a walk by construction,
-	 * whatever the authored scale becomes, and a future rescale cannot make
-	 * this fixture lie.
+	 * So: one fixture constant, used both as the speed and its denominator.
+	 * `SpeedFraction` is 1.0 for this walk scenario. This does not prove the
+	 * loaded DataAsset's speed: the importer verifies that separately, and a
+	 * deliberate gait retune must update this scenario too.
 	 */
-	constexpr float WalkCm = 224.f;
+	constexpr float WalkCm = 140.f;
 
-	/** Sprint/walk, which the retune preserved at 11.5 / 8. */
-	constexpr float SprintOverWalk = 1.4375f;
+	/** Current escape sprint divided by the child-scale walk: 12.5 / 5. */
+	constexpr float SprintOverWalk = 2.5f;
 
 	FLLKLanternFeelInput Walking(float DeltaSeconds)
 	{

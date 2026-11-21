@@ -253,21 +253,22 @@ console.log("\nGear ratios, which are what the scale change must not touch");
   const sprintOverWalk = lantern.movement.sprintSpeed / lantern.movement.walkSpeed;
   const crouchOverWalk = lantern.movement.crouchSpeed / lantern.movement.walkSpeed;
 
-  // **These expectations are DECISIONS, and they move only when somebody
-  // decides.** The rescale of 2026-11-04 halved all three speeds and left
-  // both ratios untouched, which is what a rescale should do. Then Chris
-  // played it and asked for running to be faster, which is a different kind
-  // of change: sprint went 11.5 -> 12.5 with walk held, so sprint/walk moved
-  // 1.4375 -> 1.5625 on purpose.
+  // **These expectations are authored choices, and they move deliberately.**
+  // The 2026-11-04 retune halved all three speeds, then Chris raised sprint.
+  // On 2026-11-21 his renewed report that the young keeper crosses the store
+  // too quickly prompted a child-scale walk/crouch trial. Sprint stayed put
+  // because the worst-state escape test above is load-bearing. The ratio
+  // change is intentional and still needs a human walk-through.
   //
-  // This check failed on that, correctly, and the fix was to move the number
-  // here rather than to widen the tolerance. A guard whose expectation gets
-  // loosened every time it fires is a guard that will never fire again.
-  const EXPECTED_SPRINT_OVER_WALK = 1.5625; // 12.5 / 8, Chris 2026-11-04
-  const EXPECTED_CROUCH_OVER_WALK = 0.5625; // 4.5 / 8, unchanged since 9 / 16
+  // Keep a narrow tolerance; a guard widened whenever it fires stops being
+  // a guard.
+  // 2026-11-21 child-scale trial: retain the escape sprint, slow everyday
+  // traversal to 1.4 m/s, and make crouch an actual careful approach.
+  const EXPECTED_SPRINT_OVER_WALK = 2.5; // 12.5 / 5
+  const EXPECTED_CROUCH_OVER_WALK = 0.6; // 3 / 5
 
   check(
-    "sprint is 1.5625x walk, the separation Chris asked for",
+    "sprint remains the escape gear at 2.5x the child-scale walk",
     Math.abs(sprintOverWalk - EXPECTED_SPRINT_OVER_WALK) < 0.02,
     `sprint/walk is ${sprintOverWalk.toFixed(4)} against the decided ` +
       `${EXPECTED_SPRINT_OVER_WALK}. This ratio is the feel of the gear ` +
@@ -276,7 +277,7 @@ console.log("\nGear ratios, which are what the scale change must not touch");
       `is a design change wearing a tuning change's clothes`,
   );
   check(
-    "crouch is 0.5625x walk, as it was before the rescale",
+    "crouch is 0.6x walk for careful approach",
     Math.abs(crouchOverWalk - EXPECTED_CROUCH_OVER_WALK) < 0.02,
     `crouch/walk is ${crouchOverWalk.toFixed(4)} against the decided ` +
       `${EXPECTED_CROUCH_OVER_WALK}`,

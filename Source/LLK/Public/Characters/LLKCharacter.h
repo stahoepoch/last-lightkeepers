@@ -281,17 +281,18 @@ protected:
 	// was confidently naming 448/644/252 as the declared fallback at the same
 	// moment nothing in the project intended those numbers any more. A
 	// fallback that announces itself is only better than a hidden copy while
-	// what it announces is true.
+	// what it announces is true. The 2026-11-21 child-scale trial changes walk
+	// to 5 and crouch to 3; sprint remains 12.5 to preserve the escape margin.
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Data", meta = (ClampMin = "0"))
-	float FallbackWalkStuds = 8.f;
+	float FallbackWalkStuds = 5.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Data", meta = (ClampMin = "0"))
-	// 12.5 since 2026-11-04: Chris, after walking it, "running could be a
-	// little faster." Walk deliberately held, so the gear change widened.
+	// 12.5 since 2026-11-04: Chris asked for a faster escape sprint. The
+	// 2026-11-21 slower walk widens that gear change again for a feel trial.
 	float FallbackSprintStuds = 12.5f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "LLK|Data", meta = (ClampMin = "0"))
-	float FallbackCrouchStuds = 4.5f;
+	float FallbackCrouchStuds = 3.f;
 
 	/**
 	 * Jump launch speed in STUDS/s, and the gravity it falls under.
@@ -300,10 +301,10 @@ protected:
 	 * is a little light, i float a little much."** He is right, and two
 	 * things were compounding. Unreal's defaults are `JumpZVelocity` 420 with
 	 * `GravityScale` 1 against -980 gravity, which is a 90cm apex and 0.86
-	 * seconds of airtime. And our keeper walks at 448cm/s rather than
-	 * Unreal's default 600, so less ground passes per second of air and the
-	 * hang feels proportionally longer than the same jump would in a stock
-	 * project. The defaults are tuned for a shooter; this is not one.
+	 * seconds of airtime. The keeper was then walking at 448cm/s rather than
+	 * Unreal's default 600, so less ground passed per second of air. The
+	 * current trial is slower still; apex and airtime below remain the physical
+	 * jump calculation, while the travel feel needs another play pass.
 	 *
 	 * **The arithmetic, so these can be argued with rather than guessed at.**
 	 * Apex is `v^2 / (2 * 980 * G)` and airtime is `2v / (980 * G)`. At 13.2
@@ -392,8 +393,8 @@ protected:
 	 *   cooldown would be re-applied before it expired, so repeated contact
 	 *   would become a permanent slow that nothing in the code says is
 	 *   permanent. Under the cooldown, each contact is a separate, visible
-	 *   cost. At the authored walk of 16 studs/s it is about 4.8 studs of
-	 *   ground - real, and survivable.
+	 *   cost. The 16-stud example was the October harness, not the current
+	 *   5-stud child-scale walk.
 	 */
 	/**
 	 * **0.70, and the floor under it is a hard constraint, not a preference.**
@@ -424,33 +425,30 @@ protected:
 	 * recourse, in precisely the state the game is about. Nobody met it
 	 * because nobody had ever carried a relic to the dock.
 	 *
-	 * At 0.70, against the retuned 224 walk / 322 sprint / 126 crouch and the
-	 * Sweeper's 168:
+	 * At 0.70, against the 2026-11-21 trial's 140 walk / 350 sprint / 84
+	 * crouch and the Sweeper's 168:
 	 *
-	 *   - a stumbled **walk** is 157, which is SLOWER than the Sweeper.
-	 *     Walking it off is not an option, and now decisively so.
-	 *   - a stumbled **sprint** is 225, gaining 57 cm/s.
-	 *   - a stumbled sprint **carrying three relics** is 198, gaining 30.
+	 *   - a stumbled **walk** is 98, losing 70 cm/s. Walking it off fails.
+	 *   - a stumbled **sprint** is 245, gaining 77 cm/s.
+	 *   - a stumbled sprint **carrying three relics** is 215.6, gaining 47.6.
 	 *     This is the row that matters, and it is the row that used to be
 	 *     negative.
 	 *
-	 * The floor is now `168 / (322 x 0.88) = 0.593`, cleared by 0.107. Check
+	 * The floor is now `168 / (350 x 0.88) = 0.545`, cleared by 0.155. Check
 	 * that number when tuning, not the unburdened one; `tests/movement.test.mjs`
 	 * asserts it in the worst state so authoring past it fails the suite
 	 * rather than a playtest.
 	 *
-	 * **What the stumble costs now, and the one honest loss in this change:**
-	 * ground. At 0.65 and the old speeds a stumbled walker lost 188 cm over
-	 * 1.2s, more than the 140 cm contact range. At 0.70 and the new speeds it
-	 * is **81 cm**, about 58% of contact range. The stumble bites less than it
-	 * did, in centimetres.
+	 * **What the stumble costs now:** 30% of 140 cm/s for 1.2 s is 50.4 cm
+	 * of unopposed walk travel. Against the Sweeper, a stumbled walker loses
+	 * 84 cm over that interval. Player feel still needs a walk-through.
 	 *
 	 * That is not fixable here. The multiplier is floor-bound by the
 	 * invariant above, so **duration is the only free lever** - and it is
 	 * bounded in turn by the contact-recovery window, since a stumble
 	 * outlasting recovery becomes a permanent slow. Restoring the old 188 cm
-	 * would need about 2.8s, which does not fit under the live 2.5s recovery
-	 * and would fit comfortably under 5.0s. Recovery lives in
+	 * of unopposed walk travel at this gait would take about 4.5s, beyond the
+	 * live 2.5s recovery. Recovery lives in
 	 * `LLKSweeperBrain.cpp` and is Codex's; the two numbers have to move
 	 * together or not at all. See `docs/PROPOSAL-MOVEMENT-RETUNE.md`.
 	 */

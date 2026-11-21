@@ -36,10 +36,9 @@ namespace LLKUnits
 	 * One Roblox stud in Unreal centimetres.
 	 *
 	 * 1 stud = 0.28 m is the standard figure. Sanity, with it applied:
-	 * walk 16 -> 448 cm/s, sprint 23 -> 644, crouch 9 -> 252, against
-	 * Unreal's own default walk of 600. Those are believable numbers for a
-	 * game about moving carefully in the dark, which is the cheap check that
-	 * the factor is right rather than merely plausible.
+	 * The old prototype's walk 16 -> 448 cm/s, sprint 23 -> 644, crouch 9
+	 * -> 252. That conversion verifies the unit factor, not the playable
+	 * gait. Current movement lives in `data/lantern.json`.
 	 *
 	 * This is a scale, not a tuning value. If the keeper feels wrong, the
 	 * answer is the speeds in `data/lantern.json`, not this constant.
