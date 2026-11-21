@@ -67,6 +67,33 @@ protected:
 	 */
 	void ReportLanternPickups();
 
+	/**
+	 * Say whether each machine in this world can actually path to the keeper.
+	 *
+	 * **Why this is not covered by anything already here.** The opening has a
+	 * threat in it - a Sweeper, awake, 168 cm/s, noticing a dark keeper at 12
+	 * studs and a lit one at 38 - and every component of it reports
+	 * correctly whether or not the navmesh connects its patrol to the floor
+	 * the child walks on. A machine that cannot reach the player is a horror
+	 * game with the monster in another room, and it fails with a clean log.
+	 *
+	 * This project has met that shape three times: a crate in a recess the
+	 * Sweeper could never reach, a lantern 189 cm above a 150 cm reach, and
+	 * fixtures whose collision never imported. Each time the system was right
+	 * and the geometry was not.
+	 *
+	 * **Deliberately not `LLKMapReadiness`, which asks a different
+	 * question.** That facility asks whether a map is harness-ready - tagged
+	 * enemy spawns, test lanes, a route from the player spawn - and on a
+	 * dressed map most of its checks would report conventions the map never
+	 * adopted. This asks the one runtime question: from where this machine
+	 * stands, is there a path to where this keeper stands, and how long does
+	 * it take at the speed the machine actually has. (`LLKMapReadiness` has
+	 * never been run against a real map at all; that is filed separately
+	 * rather than fixed by being quietly called from here.)
+	 */
+	void ReportThreatReachability();
+
 protected:
 	// ------------------------------------------------- M2.3, the storm outside
 	/**

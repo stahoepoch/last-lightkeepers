@@ -24,6 +24,11 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Pawn.h"
 #include "Lantern/LLKLanternPickup.h"
+#include "Enemies/LLKSweeper.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "NavigationSystem.h"
+#include "NavigationData.h"
+#include "NavMesh/NavMeshBoundsVolume.h"
 #include "Loot/LLKInteractorComponent.h"
 #include "TimerManager.h"
 #include "Harness/LLKStoreFloorBuilder.h"
@@ -411,6 +416,9 @@ void ALLKTestGameMode::BeginPlay()
 		World->GetTimerManager().SetTimerForNextTick(
 			FTimerDelegate::CreateUObject(
 				this, &ALLKTestGameMode::ReportLanternPickups));
+		World->GetTimerManager().SetTimerForNextTick(
+			FTimerDelegate::CreateUObject(
+				this, &ALLKTestGameMode::ReportThreatReachability));
 	}
 
 	// Bound here rather than in InitGame, where the harness world is built:
@@ -513,6 +521,218 @@ void ALLKTestGameMode::ReportLanternPickups()
 					 "is measured eye-to-lantern, so the height difference is "
 					 "a floor on the distance - walking closer cannot help."),
 				VerticalGap, Interactor->LanternReachCm);
+		}
+	}
+}
+
+void ALLKTestGameMode::ReportThreatReachability()
+{
+	UWorld* World = GetWorld();
+	if (World == nullptr)
+	{
+		return;
+	}
+
+	const APlayerController* PC = World->GetFirstPlayerController();
+	const APawn* Keeper = PC != nullptr ? PC->GetPawn() : nullptr;
+	if (Keeper == nullptr)
+	{
+		// No keeper yet is not a finding. Reporting one would make every
+		// menu map and every dedicated-server boot look broken.
+		return;
+	}
+
+	int32 Machines = 0;
+	for (TActorIterator<ALLKSweeper> It(World); It; ++It)
+	{
+		++Machines;
+	}
+	if (Machines == 0)
+	{
+		UE_LOG(LogLLK, Log,
+			TEXT("No machine in %s. Nothing in this map can threaten the "
+				 "keeper, which is correct for a quiet map and wrong for a "
+				 "chapter."), *World->GetMapName());
+		return;
+	}
+
+	// **The instrument, before any verdict.** Without a navigation system
+	// there is no path to find and no finding to report: every machine would
+	// look unreachable for one reason that has nothing to do with any of
+	// them. This project has twice reported a map defect that was a broken
+	// query, so the distinction gets its own branch.
+	const UNavigationSystemV1* Nav = UNavigationSystemV1::GetCurrent(World);
+	if (Nav == nullptr)
+	{
+		UE_LOG(LogLLK, Warning,
+			TEXT("%d machine(s) in %s and NO NAVIGATION SYSTEM, so none of "
+				 "them can pursue anything. This is not a report that they "
+				 "cannot reach the keeper - it is a report that nothing can "
+				 "be asked."), Machines, *World->GetMapName());
+		return;
+	}
+
+	const FVector KeeperAt = Keeper->GetActorLocation();
+
+	for (TActorIterator<ALLKSweeper> It(World); It; ++It)
+	{
+		const ALLKSweeper* Machine = *It;
+		if (Machine == nullptr)
+		{
+			continue;
+		}
+
+		const FVector MachineAt = Machine->GetActorLocation();
+		const float Straight = FVector::Dist(MachineAt, KeeperAt);
+
+		// Its real speed, off the component that moves it, rather than a
+		// number repeated here that would go stale the first time the roster
+		// is retuned.
+		float SpeedCms = 0.f;
+		if (const UCharacterMovementComponent* Movement = Machine->GetCharacterMovement())
+		{
+			SpeedCms = Movement->MaxWalkSpeed;
+		}
+
+		double PathLength = 0.0;
+		const ENavigationQueryResult::Type Result =
+			UNavigationSystemV1::GetPathLength(World, MachineAt, KeeperAt, PathLength);
+
+		switch (Result)
+		{
+		case ENavigationQueryResult::Success:
+		{
+			const float Detour = Straight > 1.f
+				? static_cast<float>(PathLength) / Straight : 1.f;
+			const float Seconds = SpeedCms > 1.f
+				? static_cast<float>(PathLength) / SpeedCms : -1.f;
+			UE_LOG(LogLLK, Log,
+				TEXT("%s can reach the keeper: %.0f cm of path over %.0f cm "
+					 "straight (%.2fx), %.1f s at %.0f cm/s."),
+				*Machine->GetName(), PathLength, Straight, Detour, Seconds,
+				SpeedCms);
+			break;
+		}
+		case ENavigationQueryResult::Fail:
+			// The one case that is about the map.
+			UE_LOG(LogLLK, Warning,
+				TEXT("%s CANNOT REACH THE KEEPER. %.0f cm apart in a straight "
+					 "line and no path between them, so it can telegraph and "
+					 "pursue forever without ever arriving. Check the navmesh "
+					 "between them."),
+				*Machine->GetName(), Straight);
+			break;
+		case ENavigationQueryResult::Error:
+		case ENavigationQueryResult::Invalid:
+		default:
+		{
+			// **An Error is a question, not an answer**, and left as one it
+			// is the least useful line a log can carry: it names a failure
+			// without naming a cause, which is how the unreachable crate
+			// survived for a day. So the three things that produce it get
+			// asked directly, and whichever is true gets said.
+			// **IsNavigationBuilt is not the authority here, and trusting it
+			// cost a wrong headline on 2026-11-21.** It reported YES for a
+			// RecastNavMesh whose bounds were (0,0,0)-(0,0,0): it answers
+			// "nothing is pending", not "tiles exist", and an unbuilt navmesh
+			// has nothing pending precisely because nobody ever asked for it.
+			// The fact that decides this is whether any navigation data has
+			// non-empty bounds.
+			const bool bNothingPending =
+				Nav->IsNavigationBuilt(World->GetWorldSettings());
+
+			int32 NavDataActors = 0;
+			int32 NavDataWithTiles = 0;
+			for (TActorIterator<ANavigationData> NavIt(World); NavIt; ++NavIt)
+			{
+				++NavDataActors;
+				const FBox NavBounds = NavIt->GetBounds();
+				if (NavBounds.IsValid != 0 && NavBounds.GetVolume() > 0.0)
+				{
+					++NavDataWithTiles;
+				}
+			}
+
+			FNavLocation MachineOnMesh;
+			const bool bMachineOnMesh = Nav->ProjectPointToNavigation(
+				MachineAt, MachineOnMesh, FVector(400.f, 400.f, 600.f));
+			FNavLocation KeeperOnMesh;
+			const bool bKeeperOnMesh = Nav->ProjectPointToNavigation(
+				KeeperAt, KeeperOnMesh, FVector(400.f, 400.f, 600.f));
+
+			UE_LOG(LogLLK, Warning,
+				TEXT("%s: path query returned %d, which is neither success nor "
+					 "failure. Why: %d of %d navigation data actor(s) carry "
+					 "any built tiles, machine projects onto the mesh %s, "
+					 "keeper projects %s. %s"),
+				*Machine->GetName(), static_cast<int32>(Result),
+				NavDataWithTiles, NavDataActors,
+				bMachineOnMesh ? TEXT("YES") : TEXT("NO"),
+				bKeeperOnMesh ? TEXT("YES") : TEXT("NO"),
+				(NavDataActors == 0)
+					? TEXT("With no navigation data in the world nothing can "
+						   "path at all, and the machine's pursuit is inert.")
+					: (NavDataWithTiles == 0
+						? TEXT("THE NAVMESH HAS NO BUILT TILES, so nothing in "
+							   "this map can path anywhere and every machine "
+							   "here can notice and telegraph and then never "
+							   "arrive. Build paths and save the map.")
+						: TEXT("Tiles exist somewhere, so the failure is about "
+							   "these two positions rather than the map as a "
+							   "whole.")));
+
+			// **Where the mesh actually is.** "It does not project" is true
+			// and unactionable; the bounds against the positions tell whoever
+			// owns the map which volume to move and how far. Logged only on
+			// the failing branch, so a healthy map stays quiet.
+			if (!bMachineOnMesh || !bKeeperOnMesh)
+			{
+				UE_LOG(LogLLK, Warning,
+					TEXT("  IsNavigationBuilt says %s, which is why it is not "
+						 "the test used above"),
+					bNothingPending ? TEXT("nothing pending") : TEXT("pending work"));
+				UE_LOG(LogLLK, Warning,
+					TEXT("  machine at (%.0f, %.0f, %.0f), keeper at "
+						 "(%.0f, %.0f, %.0f)"),
+					MachineAt.X, MachineAt.Y, MachineAt.Z,
+					KeeperAt.X, KeeperAt.Y, KeeperAt.Z);
+
+				for (TActorIterator<ANavigationData> NavIt(World); NavIt; ++NavIt)
+				{
+					const FBox Bounds = NavIt->GetBounds();
+					UE_LOG(LogLLK, Warning,
+						TEXT("  nav data %s covers (%.0f, %.0f, %.0f) to "
+							 "(%.0f, %.0f, %.0f)%s"),
+						*NavIt->GetName(),
+						Bounds.Min.X, Bounds.Min.Y, Bounds.Min.Z,
+						Bounds.Max.X, Bounds.Max.Y, Bounds.Max.Z,
+						Bounds.IsValid == 0 ? TEXT(" - EMPTY BOUNDS") : TEXT(""));
+				}
+
+				int32 Volumes = 0;
+				for (TActorIterator<ANavMeshBoundsVolume> VolIt(World); VolIt; ++VolIt)
+				{
+					++Volumes;
+					FVector Origin = FVector::ZeroVector;
+					FVector Extent = FVector::ZeroVector;
+					VolIt->GetActorBounds(false, Origin, Extent);
+					UE_LOG(LogLLK, Warning,
+						TEXT("  bounds volume %s centred (%.0f, %.0f, %.0f) "
+							 "extent (%.0f, %.0f, %.0f) - keeper is %s it"),
+						*VolIt->GetName(), Origin.X, Origin.Y, Origin.Z,
+						Extent.X, Extent.Y, Extent.Z,
+						FBox(Origin - Extent, Origin + Extent).IsInside(KeeperAt)
+							? TEXT("INSIDE") : TEXT("OUTSIDE"));
+				}
+				if (Volumes == 0)
+				{
+					UE_LOG(LogLLK, Warning,
+						TEXT("  and there is no NavMeshBoundsVolume in the "
+							 "level, so nothing tells Recast where to build."));
+				}
+			}
+			break;
+		}
 		}
 	}
 }
