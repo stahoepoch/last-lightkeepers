@@ -193,6 +193,9 @@ protected:
 	void DrawBeatNotice();
 
 	void DrawWorldPrompt();
+	const class ALLKOpeningGrille* GetOpeningGrille() const;
+	void DrawOpeningObjective(const class ALLKOpeningGrille* Grille);
+	void DrawBottomObjective(const FString& Objective, const FLinearColor& Colour);
 
 	/**
 	 * A downed crewmate, and the rescue in progress. M2.2.

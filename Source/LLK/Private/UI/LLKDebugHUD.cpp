@@ -1,5 +1,6 @@
 #include "UI/LLKDebugHUD.h"
 #include "Lantern/LLKLanternPickup.h"
+#include "Lantern/LLKLanternComponent.h"
 
 #include "Engine/Canvas.h"
 #include "Engine/Engine.h"
@@ -247,7 +248,14 @@ void ALLKDebugHUD::DrawHUD()
 	BindSweepers();
 
 	DrawWorldPrompt();
-	DrawExtraction();
+	if (const ALLKOpeningGrille* Opening = GetOpeningGrille())
+	{
+		DrawOpeningObjective(Opening);
+	}
+	else
+	{
+		DrawExtraction();
+	}
 	DrawBeatNotice();
 
 	if (CVarShowStormHUD.GetValueOnGameThread() == 0)
@@ -291,6 +299,69 @@ void ALLKDebugHUD::DrawHUD()
 	DrawBurdenLine(CursorY);
 	DrawRelicPanel(CursorY);
 
+}
+
+const ALLKOpeningGrille* ALLKDebugHUD::GetOpeningGrille() const
+{
+	UWorld* World = GetWorld();
+	if (World == nullptr)
+	{
+		return nullptr;
+	}
+	// The actor, rather than a map-name string, marks this chapter's active
+	// puzzle. The class iterator uses Unreal's actor hash; it does not scan
+	// every fixture on the store floor each frame.
+	for (TActorIterator<ALLKOpeningGrille> It(World); It; ++It)
+	{
+		return *It;
+	}
+	return nullptr;
+}
+
+void ALLKDebugHUD::DrawOpeningObjective(const ALLKOpeningGrille* Grille)
+{
+	const ALLKCharacter* Keeper = Cast<ALLKCharacter>(GetOwningPawn());
+	if (Grille == nullptr || Keeper == nullptr)
+	{
+		return;
+	}
+
+	if (Grille->IsOpen())
+	{
+		DrawBottomObjective(TEXT("Follow them through the south grille."), ColourQuiet);
+		return;
+	}
+
+	const ULLKLanternComponent* Lantern = Keeper->GetLantern();
+	if (Lantern == nullptr || !Lantern->HasLantern())
+	{
+		DrawBottomObjective(TEXT("Dad's lantern fell beyond the counter."), ColourQuiet);
+		return;
+	}
+	DrawBottomObjective(TEXT("Find the worn release on the south grille."), ColourQuiet);
+}
+
+void ALLKDebugHUD::DrawBottomObjective(const FString& Objective, const FLinearColor& Colour)
+{
+	if (Canvas == nullptr || Objective.IsEmpty())
+	{
+		return;
+	}
+	UFont* Font = GEngine != nullptr ? GEngine->GetMediumFont() : nullptr;
+	if (Font == nullptr)
+	{
+		return;
+	}
+	const float Scale = 1.2f * GetUIScale();
+	float Width = 0.f;
+	float Height = 0.f;
+	Canvas->TextSize(Font, Objective, Width, Height, Scale, Scale);
+	FCanvasTextItem Item(
+		FVector2D(Canvas->SizeX * 0.5f - Width * 0.5f, Canvas->SizeY * 0.86f),
+		FText::FromString(Objective), Font, Colour);
+	Item.Scale = FVector2D(Scale, Scale);
+	Item.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.95f));
+	Canvas->DrawItem(Item);
 }
 
 void ALLKDebugHUD::DrawExtraction()
@@ -463,20 +534,7 @@ void ALLKDebugHUD::DrawExtraction()
 	// the lower third so it does not compete with the crosshair or the shelf
 	// brackets, and it leaves centre screen free for the climax that `Centre`
 	// is reserved for.
-	if (!Readout.Objective.IsEmpty())
-	{
-		float W = 0.f;
-		float H = 0.f;
-		const float S = 1.2f * Scale;
-		Canvas->TextSize(Font, Readout.Objective, W, H, S, S);
-
-		FCanvasTextItem Item(
-			FVector2D(Canvas->SizeX * 0.5f - W * 0.5f, Canvas->SizeY * 0.86f),
-			FText::FromString(Readout.Objective), Font, ColourQuiet);
-		Item.Scale = FVector2D(S, S);
-		Item.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.95f));
-		Canvas->DrawItem(Item);
-	}
+	DrawBottomObjective(Readout.Objective, ColourQuiet);
 }
 
 float ALLKDebugHUD::DrawProgressBar(
@@ -756,7 +814,7 @@ void ALLKDebugHUD::DrawWorldPrompt()
 	// waiting for anybody and telling them to is worse than telling them
 	// nothing.
 	const ALLKGameState* RunGameState = RunWorld->GetGameState<ALLKGameState>();
-	if (RunGameState != nullptr && RunGameState->HasCrewWiped())
+	if (GetOpeningGrille() == nullptr && RunGameState != nullptr && RunGameState->HasCrewWiped())
 	{
 		UFont* Font = GEngine != nullptr ? GEngine->GetMediumFont() : nullptr;
 		if (Font == nullptr)
@@ -798,7 +856,7 @@ void ALLKDebugHUD::DrawWorldPrompt()
 	// The second line is `GAME-THESIS.md`'s own words. Its stated emotional
 	// promise is "We got something home", and the one moment that promise is
 	// kept is this one - so the screen says it rather than paraphrasing it.
-	if (RunGameState != nullptr && RunGameState->HasRunSecured())
+	if (GetOpeningGrille() == nullptr && RunGameState != nullptr && RunGameState->HasRunSecured())
 	{
 		UFont* Font = GEngine != nullptr ? GEngine->GetMediumFont() : nullptr;
 		if (Font == nullptr)

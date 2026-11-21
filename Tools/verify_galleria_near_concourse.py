@@ -101,6 +101,9 @@ for actor in lights:
             abs(light.get_editor_property("intensity") - 8) < 0.01 and
             abs(light.get_editor_property("indirect_lighting_intensity") - .25)
             < .01, "route light left its authored band")
+    require(light.get_editor_property("mobility") ==
+            unreal.ComponentMobility.MOVABLE,
+            "route light still requires an unavailable bake")
 
 nav = labels["ANCHOR_NAV_BOUNDS_FULL_PLATE"]
 centre, extent = nav.get_actor_bounds(False)

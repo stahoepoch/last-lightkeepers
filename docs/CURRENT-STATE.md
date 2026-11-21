@@ -1,6 +1,6 @@
 # Current state — Galleria crossing
 
-Status: **active checkpoint, 2026-11-14.** Replace this file at a completed
+Status: **active checkpoint, 2026-11-21.** Replace this file at a completed
 work-package boundary. It is a present-tense pointer, not a session diary.
 Historical detail belongs in Git and `HANDOFFS.md`.
 
@@ -30,13 +30,15 @@ are the authority.
 | Current product direction | Authored decision | **Observed in project guidance:** solo first-person story-led horror RPG with stealth and environmental puzzles. |
 | Whole-Galleria playable crossing | Player experience | **Unverified:** do not infer it from maps, C++ compilation, old extraction tests, or screenshots. |
 | First chapter machine encounter | Player experience | **Unverified against current acceptance:** it must prove cue → hide/detour/flee → retained control, not merely legacy enemy logic. |
-| Lantern read and infrastructure use | Player experience | **Unverified against current acceptance:** both must occur in the crossing and produce an intelligible cost. |
+| Opening lantern and grille | Direct game observation, 2026-11-21 | **Functional in isolation:** in the Development game, E took Dad's lantern, F lit it, the aimed beam changed the shadowed release prompt to an E action, and E raised the south grille. The opening objective changed with each state. This was probed with `BugItGo`, not a natural route play. |
+| Opening route lighting | Direct game observation, 2026-11-21 | **Partially repaired:** ten Galleria route lights had unbuilt interactions; after making them movable, the 98-object rebuild warning was absent on fresh game launch. The concourse floor and shop mouths are readable in isolated pools, but deep black gaps remain. The lantern clips the release panel nearly white. |
+| Chapter finish and lantern cost | Player experience | **Unverified:** the near concourse ends at a safety wall; Sayers and the whole-mall crossing are still unbuilt. A machine's reaction to this opening lantern use has not been played through. |
 
 ## Next risk to retire
 
-Run the whole-mall crossing in Unreal with the current map writer's agreed asset
-boundary. Record: where orientation fails; whether overgrowth, scavenging, cover
-and escape routes make each stretch worth crossing; what machine cue the player
-recognized; whether lantern use advanced the path; and whether Sayers gives a
-clear reason to continue. Update this table only with what was actually
-observed.
+Extend the playable crossing beyond the near-concourse safety wall toward
+Sayers, then walk the opening route without debug teleportation. In that pass,
+judge the dark gaps and overbright lantern target against the fixture contract,
+and record whether the machine responds to the necessary light use while the
+player still has a cover or escape choice. The current map proves a first gate,
+not the chapter's traversal, threat, or finish.
