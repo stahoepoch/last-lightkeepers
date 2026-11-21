@@ -1,6 +1,25 @@
 # The opening's navmesh was never built, so the machine has never been able to take a step toward the boy
 
-**Status: found and FIXED on disk, 2026-11-21, both inside the hour**, after
+> **REOPENED the same hour, and the status below was wrong when it was
+> written.** The navigation build survived about three minutes. Codex wrote
+> `Tools/rehabilitate_boswells_emergency_lighting.py` at 15:49:11 and the map
+> was saved at 15:49:26, which dropped the navmesh - 2,605,317 bytes back to
+> 2,300,902, and the next boot read `0 of 2 navigation data actor(s) carry any
+> built tiles` again. A second build at 16:0x was destroyed the same way
+> within minutes, by `Tools/build_boswells_service_core.py`.
+>
+> **This is systemic, not an accident.** A commandlet world holds empty
+> navigation data, so ANY tool that loads this map and saves it writes that
+> emptiness over the built tiles. Every dressing, lighting and fixture script
+> in `Tools/` silently un-navigates the level. Filed as **X11**, which is now
+> the row that matters; this document's own "fix" is not durable until that
+> one closes.
+>
+> Rebuilding was abandoned rather than retried a third time: Codex is actively
+> authoring and running map tools minute by minute, and a navmesh cannot be
+> landed into a map somebody else is saving.
+
+**Status: found, built twice, and destroyed twice on 2026-11-21**, after
 Chris asked for the build to be done here. Navigation is now built into
 `Content/LLK_Boswells_OpeningPass.umap` and the running game says:
 
@@ -164,8 +183,11 @@ code paths, and the second is what writes the map. The boot log is the test.
 
 ## What closes this
 
-1. ~~Navigation built and saved into the opening map.~~ **Done.** The startup
-   Warning is gone; the report is now an ordinary Log line.
+1. ~~Navigation built and saved into the opening map.~~ **Done twice and
+   undone twice.** It builds correctly and does not survive another writer's
+   save. **X11 is the real closure condition**: either every map-saving tool
+   in `Tools/` rebuilds navigation as its last step, or navigation is built
+   once at the end of a dressing session with nothing else touching the map.
 2. ~~A `SUCCESS` path query from the machine on the upper plate to the boy on
    the lower floor.~~ **Done:** 7145 cm, 2.59x, 42.5 s at 168 cm/s.
 3. **Still open, and now the only thing left: whether being hunted through
