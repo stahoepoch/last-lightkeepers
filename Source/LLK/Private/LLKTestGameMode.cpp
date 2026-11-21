@@ -31,6 +31,7 @@
 #include "NavMesh/NavMeshBoundsVolume.h"
 #include "Loot/LLKInteractorComponent.h"
 #include "TimerManager.h"
+#include "Harness/LLKMapReadiness.h"
 #include "Harness/LLKStoreFloorBuilder.h"
 #include "UI/LLKDebugHUD.h"
 #include "UObject/ConstructorHelpers.h"
@@ -42,7 +43,7 @@ namespace
 	// streamed actor can answer a content-based question.  The harness is
 	// deliberately opt-in: a map must carry this tag to receive runtime
 	// scaffolding.
-	const FName HarnessMapTag(TEXT("LLK.Harness"));
+
 
 	/**
 	 * Pass two, as one line in the console.
@@ -171,7 +172,7 @@ void ALLKTestGameMode::BuildHarnessWorld()
 	// false and produces a second, server-only store.  Map intent is stable at
 	// this point: only an explicit WorldSettings tag enables the harness.
 	const AWorldSettings* WorldSettings = World->GetWorldSettings();
-	if (WorldSettings == nullptr || !WorldSettings->ActorHasTag(HarnessMapTag))
+	if (WorldSettings == nullptr || !WorldSettings->ActorHasTag(LLKMapReadiness::HarnessMapTag))
 	{
 		UE_LOG(LogLLK, Log,
 			TEXT("LLKTestGameMode: no LLK.Harness tag on WorldSettings; skipping runtime harness."));

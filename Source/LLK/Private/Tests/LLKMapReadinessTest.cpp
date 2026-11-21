@@ -51,8 +51,15 @@ namespace LLKMapReadinessTestFixture
 		Obs.EnemySpawnPoints = 3;
 		Obs.bFloorUnderSpawn = true;
 		Obs.VisualEnvironmentReachesClients = true;
+		// This fixture is the HARNESS map, which is what every existing test
+		// below assumes: they break one thing and expect one finding,
+		// including findings about tagged spawns and test lanes. Those are
+		// conventions and now apply only where the convention does, so the
+		// fixture has to declare which kind of map it is.
+		Obs.bHarnessMap = true;
 		Obs.NavBoundsVolumes = 1;
 		Obs.NavDataActors = 1;
+		Obs.NavDataActorsWithTiles = 1;
 		Obs.SpawnPointsOutsideNavBounds = 0;
 		Obs.NavigationBuilt = true;
 		Obs.SpawnOnNavmesh = true;
@@ -525,6 +532,99 @@ bool FLLKMapReadinessTest::RunTest(const FString& Parameters)
 			Report.Has(ELLKMapCheck::FloorHasNoCollision));
 		TestEqual(TEXT("and it is the only finding, so nothing distracts from it"),
 			Report.Findings.Num(), 1);
+	}
+
+	// ---- a navmesh nobody generated, 2026-11-21 -------------------------
+	{
+		// `LLK_Boswells_OpeningPass` in exactly this state: one bounds
+		// volume, two nav data actors, `IsNavigationBuilt` true - and zero
+		// tiles. Nothing in it could path anywhere, and before this check
+		// the only finding was `SpawnOffNavmesh`, whose text sends the
+		// reader to move a `PlayerStart` that was correctly placed.
+		FLLKMapObservations Obs = ReadyMap();
+		Obs.NavDataActors = 2;
+		Obs.NavDataActorsWithTiles = 0;
+		Obs.SpawnOnNavmesh = false;      // what an empty mesh always answers
+		Obs.EnemySpawnsOffNavmesh = 1;   // and so does this
+		Obs.RouteFromSpawnReaches = false;
+
+		const FLLKMapReport Report = LLKMapReadiness::Evaluate(Obs);
+
+		TestTrue(TEXT("an empty navmesh is reported as NavmeshNotBuilt"),
+			Report.Has(ELLKMapCheck::NavmeshNotBuilt));
+		TestFalse(
+			TEXT("and it does NOT blame the spawn, which is where this went "
+				 "wrong on the opening map"),
+			Report.Has(ELLKMapCheck::SpawnOffNavmesh));
+		TestFalse(TEXT("nor the enemy spawns"),
+			Report.Has(ELLKMapCheck::EnemySpawnOffNavmesh));
+		TestFalse(TEXT("nor the route, which cannot exist without tiles"),
+			Report.Has(ELLKMapCheck::NoRouteFromSpawn));
+	}
+
+	// ---- not asking is still not failing --------------------------------
+	{
+		FLLKMapObservations Obs = ReadyMap();
+		Obs.NavDataActorsWithTiles.Reset();
+
+		const FLLKMapReport Report = LLKMapReadiness::Evaluate(Obs);
+		TestFalse(
+			TEXT("an unasked tile count reports nothing about tiles"),
+			Report.Has(ELLKMapCheck::NavmeshNotBuilt));
+	}
+
+	// ---- harness conventions do not apply to an authored map ------------
+	{
+		// The dressed opening: no tagged enemy spawns, no test lanes, and an
+		// 80-stud sightline across a department against the harness floor
+		// plan's 34. Four findings that are not defects, which is why nobody
+		// ran this command on a real map.
+		FLLKMapObservations Obs = ReadyMap();
+		Obs.bHarnessMap = false;
+		Obs.EnemySpawnPoints = 0;
+		Obs.OpenLaneEnds = 0;
+		Obs.BlockedLaneEnds = 0;
+		Obs.OpenLaneResult.Reset();
+		Obs.BlockedLaneResult.Reset();
+		Obs.LongestSightlineStuds = 80.f;
+		Obs.MaxSightlineStuds = 34.f;
+
+		const FLLKMapReport Report = LLKMapReadiness::Evaluate(Obs);
+
+		TestFalse(TEXT("an authored map is not missing tagged enemy spawns"),
+			Report.Has(ELLKMapCheck::NoEnemySpawnPoints));
+		TestFalse(TEXT("nor an open test lane"),
+			Report.Has(ELLKMapCheck::TestLaneOpenMissing));
+		TestFalse(TEXT("nor a blocked test lane"),
+			Report.Has(ELLKMapCheck::TestLaneBlockedMissing));
+		TestFalse(
+			TEXT("nor over the harness floor plan's sightline limit, which is "
+				 "a convention and not a fact about a department store"),
+			Report.Has(ELLKMapCheck::SightlineTooLong));
+		TestTrue(TEXT("so a dressed map with real navigation reads as ready"),
+			Report.IsReady());
+	}
+
+	// ---- and the same conventions still bite on the harness --------------
+	{
+		// The other half. Gating them must not mean deleting them: the
+		// harness still needs its tagged spawns and both lanes.
+		FLLKMapObservations Obs = ReadyMap();
+		Obs.EnemySpawnPoints = 0;
+		Obs.OpenLaneEnds = 0;
+		Obs.BlockedLaneEnds = 0;
+		Obs.LongestSightlineStuds = 80.f;
+
+		const FLLKMapReport Report = LLKMapReadiness::Evaluate(Obs);
+
+		TestTrue(TEXT("the harness is still missing tagged enemy spawns"),
+			Report.Has(ELLKMapCheck::NoEnemySpawnPoints));
+		TestTrue(TEXT("and its open lane"),
+			Report.Has(ELLKMapCheck::TestLaneOpenMissing));
+		TestTrue(TEXT("and its blocked lane"),
+			Report.Has(ELLKMapCheck::TestLaneBlockedMissing));
+		TestTrue(TEXT("and its sightline limit still applies there"),
+			Report.Has(ELLKMapCheck::SightlineTooLong));
 	}
 
 	return true;

@@ -21,6 +21,7 @@ namespace LLKMapReadiness
 	const FName EnemySpawnTag(TEXT("LLK.EnemySpawn"));
 	const FName TestLaneOpenTag(TEXT("LLK.TestLane.Open"));
 	const FName TestLaneBlockedTag(TEXT("LLK.TestLane.Blocked"));
+	const FName HarnessMapTag(TEXT("LLK.Harness"));
 
 	// Deferred rather than re-declared: LLKLanternFeel owns this number,
 	// because the gameplay light anchor is derived from it and that is the
@@ -96,7 +97,7 @@ namespace LLKMapReadiness
 			Add(ELLKMapCheck::NoPlayerSpawn,
 				TEXT("no APlayerStart in the level - everything else is measured from it"));
 
-			if (Obs.EnemySpawnPoints <= 0)
+			if (Obs.bHarnessMap && Obs.EnemySpawnPoints <= 0)
 			{
 				Add(ELLKMapCheck::NoEnemySpawnPoints,
 					FString::Printf(TEXT("no actors tagged %s"), *EnemySpawnTag.ToString()));
@@ -104,7 +105,9 @@ namespace LLKMapReadiness
 			return Report;
 		}
 
-		if (Obs.EnemySpawnPoints <= 0)
+		// A convention, not map truth: an authored map places its machines
+		// directly and tags nothing. See `bHarnessMap`.
+		if (Obs.bHarnessMap && Obs.EnemySpawnPoints <= 0)
 		{
 			Add(ELLKMapCheck::NoEnemySpawnPoints,
 				FString::Printf(TEXT("no actors tagged %s"), *EnemySpawnTag.ToString()));
@@ -176,6 +179,26 @@ namespace LLKMapReadiness
 			// above. Everything below would be measuring against a mesh that
 			// does not exist.
 		}
+		else if (Obs.NavDataActorsWithTiles.IsSet()
+			&& Obs.NavDataActorsWithTiles.GetValue() <= 0)
+		{
+			// **Above the spawn projection, and that order is the point.**
+			// Every projection against a mesh with no tiles fails, so with
+			// this link below the spawn check the only finding on an
+			// un-generated navmesh is `SpawnOffNavmesh` - which blames a
+			// `PlayerStart` that is exactly where it belongs. Measured on
+			// `LLK_Boswells_OpeningPass`, 2026-11-21: one volume, two nav
+			// data actors, `IsNavigationBuilt` true, zero tiles, and the
+			// Sweeper unable to take a step toward the keeper.
+			Add(ELLKMapCheck::NavmeshNotBuilt,
+				FString::Printf(
+					TEXT("%d nav data actor(s) and NONE with any built tiles - "
+						"the navmesh was never generated, so nothing in this map "
+						"can path anywhere. Build paths and save the map. Note "
+						"IsNavigationBuilt reports true for this: it answers "
+						"whether work is pending, and an unbuilt mesh has none"),
+					Obs.NavDataActors));
+		}
 		else if (Obs.NavigationBuilt.IsSet() && !Obs.NavigationBuilt.GetValue())
 		{
 			if (Obs.NavDataActors > 0)
@@ -231,7 +254,11 @@ namespace LLKMapReadiness
 						Obs.ProbedDirections, CoverMattersWithinStuds));
 			}
 
-			if (Obs.LongestSightlineStuds > Obs.MaxSightlineStuds)
+			// The limit comes from the harness floor plan, so it is a
+			// convention and not a fact about an authored store. Boswell's
+			// measures 80 studs across a department against a harness limit
+			// of 34, which is a design choice rather than a defect.
+			if (Obs.bHarnessMap && Obs.LongestSightlineStuds > Obs.MaxSightlineStuds)
 			{
 				Add(ELLKMapCheck::SightlineTooLong,
 					FString::Printf(TEXT("longest sightline %.1f studs, limit %.1f"),
@@ -240,28 +267,40 @@ namespace LLKMapReadiness
 		}
 
 		// ---- the two lanes, which prove the trace can say both words ------
-		if (Obs.OpenLaneEnds != 2)
+		//
+		// Harness conventions throughout: an authored map has no tagged lane
+		// ends and is not missing anything. Gated so this command is worth
+		// running on a dressed map at all.
+		// **The gate wraps the whole convention, not just its first
+		// question.** Gating only the `!= 2` branch left the `else if` below
+		// it live, and on an authored map with no tagged ends the lane result
+		// is `Unknown` - which is not `Clear` - so `TestLaneOpenBlocked`
+		// fired instead. Caught by this file's own new test on 2026-11-21.
+		if (Obs.bHarnessMap)
 		{
-			Add(ELLKMapCheck::TestLaneOpenMissing,
-				FString::Printf(TEXT("%d actor(s) tagged %s, need exactly 2"),
-					Obs.OpenLaneEnds, *TestLaneOpenTag.ToString()));
-		}
-		else if (Obs.OpenLaneResult.Get(ELLKVisibility::Unknown) != ELLKVisibility::Clear)
-		{
-			Add(ELLKMapCheck::TestLaneOpenBlocked,
-				TEXT("the open lane did not report Clear, so a Clear answer is unproven on this map"));
-		}
+			if (Obs.OpenLaneEnds != 2)
+			{
+				Add(ELLKMapCheck::TestLaneOpenMissing,
+					FString::Printf(TEXT("%d actor(s) tagged %s, need exactly 2"),
+						Obs.OpenLaneEnds, *TestLaneOpenTag.ToString()));
+			}
+			else if (Obs.OpenLaneResult.Get(ELLKVisibility::Unknown) != ELLKVisibility::Clear)
+			{
+				Add(ELLKMapCheck::TestLaneOpenBlocked,
+					TEXT("the open lane did not report Clear, so a Clear answer is unproven on this map"));
+			}
 
-		if (Obs.BlockedLaneEnds != 2)
-		{
-			Add(ELLKMapCheck::TestLaneBlockedMissing,
-				FString::Printf(TEXT("%d actor(s) tagged %s, need exactly 2"),
-					Obs.BlockedLaneEnds, *TestLaneBlockedTag.ToString()));
-		}
-		else if (Obs.BlockedLaneResult.Get(ELLKVisibility::Unknown) != ELLKVisibility::Blocked)
-		{
-			Add(ELLKMapCheck::TestLaneBlockedClear,
-				TEXT("the blocked lane did not report Blocked, so a Blocked answer is unproven on this map"));
+			if (Obs.BlockedLaneEnds != 2)
+			{
+				Add(ELLKMapCheck::TestLaneBlockedMissing,
+					FString::Printf(TEXT("%d actor(s) tagged %s, need exactly 2"),
+						Obs.BlockedLaneEnds, *TestLaneBlockedTag.ToString()));
+			}
+			else if (Obs.BlockedLaneResult.Get(ELLKVisibility::Unknown) != ELLKVisibility::Blocked)
+			{
+				Add(ELLKMapCheck::TestLaneBlockedClear,
+					TEXT("the blocked lane did not report Blocked, so a Blocked answer is unproven on this map"));
+			}
 		}
 
 		return Report;
@@ -275,6 +314,12 @@ namespace LLKMapReadiness
 		if (World == nullptr)
 		{
 			return Obs;
+		}
+
+		// The same signal the game mode gates its harness build on.
+		if (const AWorldSettings* WorldSettings = World->GetWorldSettings())
+		{
+			Obs.bHarnessMap = WorldSettings->ActorHasTag(HarnessMapTag);
 		}
 
 		// ---- the spawn ----------------------------------------------------
@@ -376,9 +421,26 @@ namespace LLKMapReadiness
 			NavBounds.Add(It->GetComponentsBoundingBox(/*bNonColliding=*/true));
 		}
 
+		int32 NavDataWithTiles = 0;
 		for (TActorIterator<ANavigationData> It(World); It; ++It)
 		{
 			++Obs.NavDataActors;
+
+			// Non-empty bounds is the only honest proxy for "has tiles" that
+			// is available without reaching into Recast. An un-generated
+			// RecastNavMesh reports (0,0,0)-(0,0,0) with IsValid clear.
+			const FBox Bounds = It->GetBounds();
+			if (Bounds.IsValid != 0 && Bounds.GetVolume() > 0.0)
+			{
+				++NavDataWithTiles;
+			}
+		}
+		if (Obs.NavDataActors > 0)
+		{
+			// Only set where it means something. No nav data actors at all is
+			// NavDataMissing's business, and a set zero here would say the
+			// same thing less clearly.
+			Obs.NavDataActorsWithTiles = NavDataWithTiles;
 		}
 
 		if (!NavBounds.IsEmpty())

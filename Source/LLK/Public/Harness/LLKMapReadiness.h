@@ -193,6 +193,30 @@ struct FLLKMapObservations
 
 	// ---- the things that must exist --------------------------------------
 
+	/**
+	 * Whether this world is the runtime harness rather than an authored map.
+	 *
+	 * Read from the `LLK.Harness` tag on `WorldSettings`, which is the same
+	 * signal `ALLKTestGameMode::BuildHarnessWorld` already gates on.
+	 *
+	 * **Why a readiness checker cares.** Several checks here test harness
+	 * *conventions* rather than map truth: actors tagged `LLK.EnemySpawn`,
+	 * exactly two `LLK.TestLane.Open` ends, exactly two
+	 * `LLK.TestLane.Blocked` ends, and a sightline against the harness floor
+	 * plan's own limit. An authored map adopts none of those and is not
+	 * wrong for it. Run on the dressed opening on 2026-11-21 this command
+	 * reported five findings, **four of them conventions that map never
+	 * adopted** - and the fifth, the one that mattered, was the one a reader
+	 * would discount after the first four. A diagnostic that cries wolf four
+	 * times in five is a diagnostic nobody runs, which is exactly what had
+	 * happened.
+	 *
+	 * So convention checks apply where the convention does, and map-truth
+	 * checks apply everywhere.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "LLK|Map")
+	bool bHarnessMap = false;
+
 	UPROPERTY(BlueprintReadOnly, Category = "LLK|Map")
 	bool bHasPlayerSpawn = false;
 
@@ -256,6 +280,24 @@ struct FLLKMapObservations
 	 * came to fire on maps with no volume.
 	 */
 	TOptional<bool> NavigationBuilt;
+
+	/**
+	 * How many nav data actors carry any built tiles at all.
+	 *
+	 * **The field that catches a navmesh nobody ever generated**, which the
+	 * two counts above cannot and `NavigationBuilt` actively hides. On
+	 * `LLK_Boswells_OpeningPass` on 2026-11-21 there was one bounds volume,
+	 * two nav data actors, `IsNavigationBuilt` answering true - and
+	 * `RecastNavMesh-Default` reporting bounds of `(0,0,0)-(0,0,0)`. Zero
+	 * tiles. Nothing in that map could path anywhere, and the only finding
+	 * that fired was `SpawnOffNavmesh`, whose own text sends the reader to
+	 * move a `PlayerStart` that was exactly where it belonged.
+	 *
+	 * Unset means nobody asked, and an unset value reports nothing - the same
+	 * rule the rest of this struct follows. A set zero, with nav data
+	 * present, is `NavmeshNotBuilt`.
+	 */
+	TOptional<int32> NavDataActorsWithTiles;
 
 	/**
 	 * Whether the keeper spawn projects onto navigable space.
@@ -322,6 +364,15 @@ namespace LLKMapReadiness
 {
 	/** Actor tag marking a place M2.6's enemies may start. */
 	LLK_API extern const FName EnemySpawnTag;
+
+	/**
+	 * The `WorldSettings` tag that marks the runtime harness.
+	 *
+	 * Declared here rather than in `LLKTestGameMode.cpp`, which had its own
+	 * local copy, so the game mode's gate and this checker's convention gate
+	 * cannot drift apart.
+	 */
+	LLK_API extern const FName HarnessMapTag;
 
 	/** Actor tags marking the two ends of each line-of-sight test lane. */
 	LLK_API extern const FName TestLaneOpenTag;
