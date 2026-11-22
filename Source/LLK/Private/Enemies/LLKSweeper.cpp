@@ -444,14 +444,11 @@ FLLKSweeperSenses ALLKSweeper::Observe(const float DeltaSeconds)
 	Senses.KeeperPosition = KeeperActor->GetActorLocation();
 	Senses.DistanceToKeeperStuds = DistanceStuds;
 
-	// **What the keeper SOUNDS like, measured from how fast they are really
-	// going.** `Size2D` and not `Size`: vertical motion is a fall or a jump,
-	// neither of which this models, and a keeper dropping down a stairwell
-	// must not broadcast a sprint. Ground speed already carries the burden and
-	// stumble multipliers, so a loaded keeper limping is correctly quieter
-	// than a clean one running, and a keeper who has stopped is silent.
-	ConsiderNoise(Senses, LLKHearing::NoiseFromMovement(
-		Senses.KeeperPosition, KeeperActor->GetVelocity().Size2D()));
+	// The keeper's own noise is NOT computed here any more. `ALLKCharacter`
+	// is an `ILLKNoiseSource`, so the loop above already asked it - one code
+	// path for "what can I hear", which is what let the climb fall silently
+	// through a gap between two of them. See the character's
+	// `GetCurrentNoise` for the argument.
 
 
 	// **Detectability at the keeper, not "is their lantern on".** The light

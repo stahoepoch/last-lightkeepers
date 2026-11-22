@@ -12,6 +12,8 @@
 #include "EngineUtils.h"
 #include "Components/BoxComponent.h"
 #include "Enemies/LLKHearing.h"
+#include "Characters/LLKClimbComponent.h"
+#include "Characters/LLKClimbFeel.h"
 #include "World/LLKPushFeel.h"
 #include "World/LLKPushableFixture.h"
 #include "Enemies/LLKSweeper.h"
@@ -429,6 +431,9 @@ void ALLKTestGameMode::BeginPlay()
 		World->GetTimerManager().SetTimerForNextTick(
 			FTimerDelegate::CreateUObject(
 				this, &ALLKTestGameMode::ReportPushables));
+		World->GetTimerManager().SetTimerForNextTick(
+			FTimerDelegate::CreateUObject(
+				this, &ALLKTestGameMode::ReportClimbReach));
 	}
 
 	// Bound here rather than in InitGame, where the harness world is built:
@@ -532,6 +537,38 @@ void ALLKTestGameMode::ReportLanternPickups()
 					 "a floor on the distance - walking closer cannot help."),
 				VerticalGap, Interactor->LanternReachCm);
 		}
+	}
+}
+
+void ALLKTestGameMode::ReportClimbReach()
+{
+	// Affirmative, like the motor and the ears, and for the same reason: a
+	// keeper who never pressed jump at a counter and a keeper who cannot
+	// climb at all produce the same empty log. This states the reach and
+	// what it sorts, so a playtest can tell at a glance whether the store
+	// in front of them is supposed to be climbable.
+	const FLLKStoreFloorPlan Plan;
+	const float Ceiling = LLKClimbFeel::MaxLedgeHeightCm();
+	const float CounterCm = LLKUnits::DistanceFromStuds(Plan.CounterHeightStuds);
+	const float ShelfCm = LLKUnits::DistanceFromStuds(Plan.ShelfHeightStuds);
+
+	UE_LOG(LogLLK, Display,
+		TEXT("The keeper can climb onto anything up to %.0f cm, reaching %.0f cm "
+			 "in front. A %.0f cm counter is climbable, a %.0f cm shelf is not - "
+			 "push something to its foot and climb that. %.0f studs loud while "
+			 "scrambling."),
+		Ceiling, ULLKClimbComponent::ForwardReachCm(), CounterCm, ShelfCm,
+		LLKClimbFeel::ClimbNoiseStuds);
+
+	// The one arrangement that would make the verb pointless, said out loud
+	// rather than left to be discovered in play.
+	if (CounterCm > Ceiling)
+	{
+		UE_LOG(LogLLK, Warning,
+			TEXT("But a counter at %.0f cm is ABOVE the %.0f cm climb ceiling, so "
+				 "there is nothing in a standard Boswell's fixture set this keeper "
+				 "can get onto. Either the fixtures rose or the keeper shrank."),
+			CounterCm, Ceiling);
 	}
 }
 

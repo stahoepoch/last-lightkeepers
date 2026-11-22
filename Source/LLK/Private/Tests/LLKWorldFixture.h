@@ -104,11 +104,42 @@ namespace LLKWorldFixture
 
 			for (TActorIterator<AActor> It(World); It; ++It)
 			{
-				if (AActor* Actor = *It)
+				AActor* Actor = *It;
+				if (Actor == nullptr)
 				{
-					if (Actor->PrimaryActorTick.bCanEverTick)
+					continue;
+				}
+
+				if (Actor->PrimaryActorTick.bCanEverTick)
+				{
+					Actor->Tick(DeltaSeconds);
+				}
+
+				// **Components too, and separately.** `AActor::Tick` does not
+				// tick an actor's components - the engine registers each
+				// component's tick function on its own - so an actor-only
+				// loop silently skips every `UActorComponent`, which is
+				// where a good deal of this project's behaviour lives.
+				//
+				// **Only OUR components, and that is a hard rule rather than
+				// a convenience.** Ticking a component outside this module
+				// crashed the first run of `LLK.World.ClimbChain`:
+				// `USkeletalMeshComponent::TickComponent` asserts that the
+				// tick function it is handed is not null, and this loop has
+				// no real one to give - the engine owns those. Engine
+				// component behaviour is not what this layer exists to
+				// prove, and a test harness that can crash the runner is
+				// worse than one that covers less.
+				for (UActorComponent* Component : Actor->GetComponents())
+				{
+					if (Component == nullptr || !Component->PrimaryComponentTick.bCanEverTick)
 					{
-						Actor->Tick(DeltaSeconds);
+						continue;
+					}
+
+					if (Component->GetClass()->GetName().StartsWith(TEXT("LLK")))
+					{
+						Component->TickComponent(DeltaSeconds, LEVELTICK_All, nullptr);
 					}
 				}
 			}

@@ -25,12 +25,14 @@
 #include "Characters/LLKVitalsComponent.h"
 #include "Data/LLKLanternData.h"
 #include "Data/LLKLootRulesData.h"
+#include "Enemies/LLKNoiseSource.h"
 #include "LLKCharacter.generated.h"
 
 class UCameraComponent;
 class USceneComponent;
 class UStaticMeshComponent;
 class UPointLightComponent;
+class ULLKClimbComponent;
 class ULLKLanternComponent;
 class ULLKLanternLightComponent;
 class ULLKInteractorComponent;
@@ -97,7 +99,7 @@ enum class ELLKInputSource : uint8
 };
 
 UCLASS()
-class LLK_API ALLKCharacter : public ACharacter
+class LLK_API ALLKCharacter : public ACharacter, public ILLKNoiseSource
 {
 	GENERATED_BODY()
 
@@ -575,6 +577,36 @@ protected:
 	 * relic inspection, or enemy perception.
 	 */
 	float LanternPresentationSeconds = 0.f;
+
+public:
+	/**
+	 * What the keeper sounds like right now. `ILLKNoiseSource`.
+	 *
+	 * **The keeper is a noise source like everything else, and that replaced
+	 * a special case.** `ALLKSweeper::Observe` used to compute the keeper's
+	 * noise itself from their velocity, beside a loop that asked every
+	 * `ILLKNoiseSource` actor in the world. Two code paths for one question,
+	 * and the climb fell straight down the gap between them: a mantle moves
+	 * the capsule directly, so velocity reads zero, and the component that
+	 * knew the real answer was a *component* - invisible to a loop that casts
+	 * actors. `LLK.World.ClimbChain` caught it, which is what it is for.
+	 *
+	 * So there is one path now. This returns the loudest thing the keeper is
+	 * doing, and `Observe` just iterates sources.
+	 */
+	virtual bool GetCurrentNoise(LLKHearing::FLLKNoise& OutNoise) const override;
+
+protected:
+	/**
+	 * The mantle. Tried before a jump, so one key covers both.
+	 *
+	 * Its own component because it owns its own state and its own tick, the
+	 * same argument `ULLKInteractorComponent` makes - this class already
+	 * carries movement, sprint, crouch, burden, stumble, the lantern and the
+	 * input fallback.
+	 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "LLK|Climb")
+	TObjectPtr<ULLKClimbComponent> Climb;
 
 	/**
 	 * The keeper's lantern state. M1.2 owns on/off and owns no light.

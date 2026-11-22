@@ -109,12 +109,34 @@ check(
 
 // Vertical motion is the bug this shape invites: a keeper falling down a
 // stairwell broadcasting a sprint they did not run.
+//
+// **This guard moved, and it moved because it failed.** The keeper's noise
+// used to be computed inside `ALLKSweeper::Observe`, beside a loop that asked
+// every `ILLKNoiseSource` in the world - two code paths for one question. The
+// climb fell through the gap between them: a mantle moves the capsule
+// directly, so velocity reads zero, and the component that knew the real
+// answer was a *component*, invisible to a loop that casts actors. The keeper
+// is now a noise source like everything else.
+const character = read(
+  join(root, "Source", "LLK", "Private", "Characters", "LLKCharacter.cpp"));
+
 check(
-  "the noise is measured from ground speed only",
-  /GetVelocity\(\)\.Size2D\(\)/.test(pawn) && !/GetVelocity\(\)\.Size\(\)/.test(pawn),
+  "the keeper's own noise is measured from ground speed only",
+  /GetVelocity\(\)\.Size2D\(\)/.test(character)
+    && !/GetVelocity\(\)\.Size\(\)/.test(character),
   "the keeper's speed must be read with Size2D. Size includes vertical " +
     "motion, so a fall down an escalator well would broadcast as a sprint " +
     "and a jump would be the loudest thing in the game",
+);
+
+check(
+  "and the keeper reports it as a noise source, not as a special case",
+  /ALLKCharacter::GetCurrentNoise/.test(character)
+    && !/GetVelocity\(\)\.Size2D\(\)/.test(pawn),
+  "either the keeper is not an ILLKNoiseSource, or the Sweeper still " +
+    "computes their noise itself. Two code paths for 'what can I hear' is " +
+    "what hid the climb's silence: anything that is not an actor, or not " +
+    "velocity-driven, falls down the gap between them",
 );
 
 // ---- the anti-harassment rule --------------------------------------------

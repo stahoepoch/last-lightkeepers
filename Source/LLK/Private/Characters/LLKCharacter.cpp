@@ -20,6 +20,8 @@
 #include "Lantern/LLKLanternFeel.h"
 #include "Lantern/LLKLanternComponent.h"
 #include "Lantern/LLKLanternLightComponent.h"
+#include "Characters/LLKClimbComponent.h"
+#include "Enemies/LLKHearing.h"
 #include "Characters/LLKVitalsComponent.h"
 #include "Loot/LLKInteractorComponent.h"
 #include "Loot/LLKBurden.h"
@@ -96,6 +98,8 @@ ALLKCharacter::ALLKCharacter()
 	RemoteLanternAnchor->SetupAttachment(GetMesh(), TEXT("palm_r_Socket"));
 	RemoteLanternAnchor->SetRelativeLocation(FVector(6.f, 0.f, -12.f));
 	RemoteLanternAnchor->SetRelativeRotation(FRotator(0.f, 90.f, 0.f));
+
+	Climb = CreateDefaultSubobject<ULLKClimbComponent>(TEXT("Climb"));
 
 	Lantern = CreateDefaultSubobject<ULLKLanternComponent>(TEXT("Lantern"));
 
@@ -1027,9 +1031,56 @@ void ALLKCharacter::OnCrouchStopped()
 	SetCrouching(false);
 }
 
+bool ALLKCharacter::GetCurrentNoise(LLKHearing::FLLKNoise& OutNoise) const
+{
+	// **The loudest thing the keeper is doing, not the sum of them.** A
+	// scramble and a step are one body making one sound; adding them would
+	// make a climbing keeper louder than a sprinting one for no reason a
+	// player could hear.
+	//
+	// `Size2D` and not `Size`: vertical motion is a fall or a jump, neither
+	// of which this models, and a keeper dropping down a stairwell must not
+	// broadcast a sprint.
+	LLKHearing::FLLKNoise Moving = LLKHearing::NoiseFromMovement(
+		GetActorLocation(), GetVelocity().Size2D());
+
+	// The climb reports its own sound because it has to: the mantle moves the
+	// capsule with SetActorLocation, so the velocity above is zero for the
+	// whole climb and the most exposed second in the chapter would be the
+	// quietest thing in it.
+	LLKHearing::FLLKNoise Climbing;
+	const bool bClimbing = Climb != nullptr && Climb->GetCurrentNoise(Climbing);
+
+	if (bClimbing && Climbing.RadiusStuds > Moving.RadiusStuds)
+	{
+		OutNoise = Climbing;
+		return true;
+	}
+
+	if (Moving.RadiusStuds <= 0.f)
+	{
+		// Standing still is silence, and it is reported as "no noise" rather
+		// than a zero-radius one so a listener can never select it.
+		return false;
+	}
+
+	OutNoise = Moving;
+	return true;
+}
+
 void ALLKCharacter::OnJumpStarted()
 {
 	if (IsDowned())
+	{
+		return;
+	}
+
+	// **A mantle first, and a jump when there is nothing to mantle.** One key
+	// doing the obvious thing in both cases, which also means no new input
+	// action, no new asset and nothing in `Config/` - this stays entirely in
+	// the runtime lane. `TryClimb` is cheap when there is no ledge: it runs
+	// one downward trace in front of the keeper and sends no RPC.
+	if (Climb != nullptr && Climb->TryClimb())
 	{
 		return;
 	}
