@@ -163,6 +163,28 @@ public:
 	ALLKOpeningGrille* GetFocusedOpeningGrille() const { return FocusedOpeningGrille; }
 
 	/**
+	 * The generic `ILLKInteractable` in reach and view, or null.
+	 *
+	 * **The last focus slot this component should ever grow.** The five above
+	 * are each a type this component had to be taught by name; anything added
+	 * from here implements the interface and arrives through this one pointer,
+	 * this one resolver and this one RPC pair. The five are deliberately not
+	 * migrated - they work, they are covered, and rewriting them in the same
+	 * change that introduces the seam would put a regression in the old path
+	 * and a bug in the new one in one commit, indistinguishable from each
+	 * other.
+	 *
+	 * Held as `AActor*` rather than `TScriptInterface`, because it crosses an
+	 * RPC and the server re-resolves it by identity.
+	 */
+	UFUNCTION(BlueprintPure, Category = "LLK|Interaction")
+	AActor* GetFocusedInteractable() const { return FocusedInteractable; }
+
+	/** What the prompt should say for the focused interactable. Empty if none. */
+	UFUNCTION(BlueprintPure, Category = "LLK|Interaction")
+	FText GetFocusedInteractableVerb() const;
+
+	/**
 	 * How close the keeper's eye must be to the lantern, in cm.
 	 *
 	 * Measured eye-to-lantern rather than foot-to-foot, because a child
@@ -297,6 +319,28 @@ protected:
 	TObjectPtr<ALLKOpeningGrille> FocusedOpeningGrille;
 
 	ALLKOpeningGrille* ResolveOpeningGrille() const;
+
+	/**
+	 * The nearest interactable that says this keeper can focus it.
+	 *
+	 * Each actor answers for itself - its own reach, its own aim, its own
+	 * state - because a single reach on this component would have to be the
+	 * loosest of them and would then apply to all of them.
+	 */
+	AActor* ResolveInteractable() const;
+
+	UFUNCTION(Server, Reliable)
+	void ServerBeginInteractable(AActor* Candidate);
+
+	UFUNCTION(Server, Reliable)
+	void ServerEndInteractable(AActor* Candidate);
+
+	UPROPERTY()
+	TObjectPtr<AActor> FocusedInteractable;
+
+	/** What we told the server we had hold of, so the release names the same thing. */
+	UPROPERTY()
+	TObjectPtr<AActor> HeldInteractable;
 
 	UFUNCTION(Server, Reliable)
 	void ServerReleaseOpeningGrille(ALLKOpeningGrille* Candidate);

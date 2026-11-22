@@ -13,6 +13,7 @@
 #include "Characters/LLKCharacter.h"
 #include "Characters/LLKVitalsComponent.h"
 #include "Loot/LLKRelicComponent.h"
+#include "World/LLKInteractable.h"
 #include "Run/LLKExtractionSubsystem.h"
 #include "Components/BoxComponent.h"
 #include "Run/LLKExtractionZone.h"
@@ -69,6 +70,7 @@ void ULLKInteractorComponent::TickComponent(
 	// one frame's world while E acts on another's.
 	FocusedLantern = ResolveLanternPickup();
 	FocusedOpeningGrille = ResolveOpeningGrille();
+	FocusedInteractable = ResolveInteractable();
 
 	ULLKRelicComponent* Found = FocusedCasualty != nullptr ? nullptr : FindFocus();
 	if (Found == Focused)
@@ -239,6 +241,7 @@ void ULLKInteractorComponent::BeginInteract()
 	// reorder these, so the new focus is added to the condition instead.
 	if (FocusedCasualty == nullptr && Focused == nullptr
 		&& FocusedLantern == nullptr && FocusedOpeningGrille == nullptr
+		&& FocusedInteractable == nullptr
 		&& FocusedZone != nullptr)
 	{
 		ServerBeginExtractionCall(FocusedZone);
@@ -263,6 +266,17 @@ void ULLKInteractorComponent::BeginInteract()
 	if (FocusedOpeningGrille != nullptr)
 	{
 		ServerReleaseOpeningGrille(FocusedOpeningGrille);
+		return;
+	}
+
+	// Below the authored openings, above loot. A keeper standing at a fixture
+	// with a brooch on it is there to move the fixture; the brooch can wait
+	// the half second it takes to look away, which is the same argument the
+	// lantern already makes one arm above.
+	if (FocusedInteractable != nullptr)
+	{
+		HeldInteractable = FocusedInteractable;
+		ServerBeginInteractable(FocusedInteractable);
 		return;
 	}
 
@@ -292,6 +306,76 @@ void ULLKInteractorComponent::ServerReleaseOpeningGrille_Implementation(ALLKOpen
 	if (Candidate != nullptr && ResolveOpeningGrille() == Candidate)
 	{
 		Candidate->TryRelease(Cast<APawn>(GetOwner()));
+	}
+}
+
+AActor* ULLKInteractorComponent::ResolveInteractable() const
+{
+	const APawn* Keeper = Cast<APawn>(GetOwner());
+	UWorld* World = GetWorld();
+	if (Keeper == nullptr || World == nullptr)
+	{
+		return nullptr;
+	}
+
+	// Nearest of those that will have this keeper, rather than the first
+	// found. Iteration order is not a design decision, and two pushables in
+	// one aisle would otherwise prompt for whichever the level happened to
+	// spawn first - the bug players describe as "it grabbed the wrong one".
+	AActor* Best = nullptr;
+	float BestDistanceSquared = TNumericLimits<float>::Max();
+	for (TActorIterator<AActor> It(World); It; ++It)
+	{
+		AActor* Actor = *It;
+		const ILLKInteractable* Interactable = Cast<ILLKInteractable>(Actor);
+		if (Interactable == nullptr || !Interactable->CanFocus(Keeper))
+		{
+			continue;
+		}
+
+		const float DistanceSquared =
+			FVector::DistSquared(Actor->GetActorLocation(), Keeper->GetActorLocation());
+		if (DistanceSquared < BestDistanceSquared)
+		{
+			BestDistanceSquared = DistanceSquared;
+			Best = Actor;
+		}
+	}
+
+	return Best;
+}
+
+FText ULLKInteractorComponent::GetFocusedInteractableVerb() const
+{
+	const ILLKInteractable* Interactable = Cast<ILLKInteractable>(FocusedInteractable);
+	return Interactable != nullptr ? Interactable->FocusVerb() : FText::GetEmpty();
+}
+
+void ULLKInteractorComponent::ServerBeginInteractable_Implementation(AActor* Candidate)
+{
+	// The same resolver runs on both sides. A client does not get to name an
+	// object across the store and have the server act on it, which is the
+	// rule `ServerReleaseOpeningGrille` already states for the grille.
+	if (Candidate == nullptr || ResolveInteractable() != Candidate)
+	{
+		return;
+	}
+
+	if (ILLKInteractable* Interactable = Cast<ILLKInteractable>(Candidate))
+	{
+		Interactable->BeginInteract(Cast<APawn>(GetOwner()));
+	}
+}
+
+void ULLKInteractorComponent::ServerEndInteractable_Implementation(AActor* Candidate)
+{
+	// **Deliberately NOT re-resolved.** A release must always land, and by the
+	// time it arrives the keeper may have walked out of reach of the thing
+	// they were pushing - which is exactly when stopping it matters most. The
+	// opening request is the half that needs guarding; letting go is not.
+	if (ILLKInteractable* Interactable = Cast<ILLKInteractable>(Candidate))
+	{
+		Interactable->EndInteract(Cast<APawn>(GetOwner()));
 	}
 }
 
@@ -436,6 +520,17 @@ void ULLKInteractorComponent::EndInteract()
 	// that can disagree with the first.
 	ServerCancelExtractionCall();
 	ServerCancelRelicTake();
+
+	// Named rather than unconditional, unlike the two above, and the
+	// difference is that this one CAN be held while focus has already moved
+	// on: a keeper pushing a fixture may well be looking past it by the time
+	// they let go. The server is told which object the release belongs to so
+	// it stops that one rather than whatever is in reach now.
+	if (HeldInteractable != nullptr)
+	{
+		ServerEndInteractable(HeldInteractable);
+		HeldInteractable = nullptr;
+	}
 }
 
 void ULLKInteractorComponent::ServerBeginExtractionCall_Implementation(ALLKExtractionZone* Zone)

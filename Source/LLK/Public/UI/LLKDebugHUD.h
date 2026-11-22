@@ -215,7 +215,10 @@ protected:
 	void DrawLanternPrompt(const ALLKLanternPickup* Pickup);
 
 	/** At the actual release mark, with the lantern requirement in the prompt. */
-	void DrawOpeningGrillePrompt(const class ALLKOpeningGrille* Grille, const class APawn* Keeper);
+/** Any ILLKInteractable, drawn from the verb the actor itself supplies. */
+	void DrawInteractablePrompt(const AActor* Interactable, const FText& Verb);
+
+		void DrawOpeningGrillePrompt(const class ALLKOpeningGrille* Grille, const class APawn* Keeper);
 
 	void DrawCasualtyPrompt(const class ULLKVitalsComponent* Casualty);
 

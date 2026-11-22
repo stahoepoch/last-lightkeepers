@@ -38,6 +38,7 @@
 #include "CoreMinimal.h"
 #include "Data/LLKLanternData.h"
 #include "Enemies/LLKSweeperBrain.h"
+#include "Enemies/LLKHearing.h"
 #include "Enemies/LLKSweeperPresence.h"
 #include "GameFramework/Character.h"
 #include "UObject/ObjectKey.h"
@@ -319,6 +320,15 @@ protected:
 	TObjectPtr<USoundAttenuation> PresenceAttenuation;
 
 	/** What the motor is set to right now, glided toward the state's target. */
+	/**
+	 * Keeps the most salient audible noise while a frame's sources are polled.
+	 * Reset at the top of every `Observe`; see `ConsiderNoise`.
+	 */
+	float HeardSalienceStuds = 0.f;
+
+	/** Offers one noise to the senses, keeping it only if it beats the incumbent. */
+	void ConsiderNoise(FLLKSweeperSenses& Senses, const LLKHearing::FLLKNoise& Noise);
+
 	LLKSweeperPresence::FLLKVoice Voice;
 
 	/** So the first tick in a state can cut instead of glide. */

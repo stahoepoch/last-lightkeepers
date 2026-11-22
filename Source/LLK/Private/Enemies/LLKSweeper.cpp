@@ -12,6 +12,7 @@
 #include "EngineUtils.h"
 #include "Enemies/LLKEnemyRosterSubsystem.h"
 #include "Enemies/LLKHearing.h"
+#include "Enemies/LLKNoiseSource.h"
 #include "Enemies/LLKPerception.h"
 #include "Enemies/LLKVisibility.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -24,6 +25,7 @@
 #include "Run/LLKRunStateSubsystem.h"
 #include "Storm/LLKLightField.h"
 #include "Storm/LLKZonePressureSubsystem.h"
+#include "World/LLKPushFeel.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 #include "Kismet/GameplayStatics.h"
@@ -343,10 +345,39 @@ ULLKVitalsComponent* ALLKSweeper::FindNearestKeeper(float& OutDistanceStuds) con
 	return Nearest;
 }
 
+void ALLKSweeper::ConsiderNoise(
+	FLLKSweeperSenses& Senses, const LLKHearing::FLLKNoise& Noise)
+{
+	const FVector Ear = GetActorLocation();
+	if (!LLKHearing::NoiseReaching(Noise, Ear))
+	{
+		return;
+	}
+
+	// **Most salient wins, and salience is excess reach** - how far past this
+	// machine the sound carried. `LLKPushFeel::Salience` states the argument;
+	// the consequence is the one a player needs, which is that a deliberate
+	// loud thing beats their own footsteps. Nearest would have made a pusher's
+	// own steps outrank the fixture they are pushing, because they are
+	// standing next to it, and the distraction would never work.
+	const float Excess = LLKPushFeel::Salience(Noise, Ear);
+	if (Senses.HeardNoisePosition.IsSet() && Excess <= HeardSalienceStuds)
+	{
+		return;
+	}
+
+	HeardSalienceStuds = Excess;
+	Senses.HeardNoisePosition = Noise.Position;
+	Senses.DistanceToHeardStuds = LLKHearing::DistanceStuds(Noise, Ear);
+}
+
 FLLKSweeperSenses ALLKSweeper::Observe(const float DeltaSeconds)
 {
 	FLLKSweeperSenses Senses;
 	Senses.DeltaSeconds = DeltaSeconds;
+	// Reset per frame. A running best that survived the tick would ratchet:
+	// the loudest sound ever heard would silence every quieter one forever.
+	HeardSalienceStuds = 0.f;
 	Senses.bHasPatrolPoint = NextPatrolPoint().IsSet();
 	Senses.bAtPatrolPoint = IsAtCurrentPatrolPoint();
 
@@ -373,6 +404,21 @@ FLLKSweeperSenses ALLKSweeper::Observe(const float DeltaSeconds)
 			Senses.DistanceToMisplacedStuds = MisplacedStuds;
 			PendingShelve = Misplaced;
 			PendingBay = *Bay;
+		}
+	}
+
+	// **Before the keeper, for the same reason the stocking job is.** A
+	// fixture grinding across tile in an empty building is a sound, and row
+	// 47's machine is indifferent to whether anybody is there to have made
+	// it. Resolving this after the keeper early-returns would have made the
+	// whole sense contingent on a keeper being present and upright.
+	for (TActorIterator<AActor> It(GetWorld()); It; ++It)
+	{
+		const ILLKNoiseSource* Source = Cast<ILLKNoiseSource>(*It);
+		LLKHearing::FLLKNoise SourceNoise;
+		if (Source != nullptr && Source->GetCurrentNoise(SourceNoise))
+		{
+			ConsiderNoise(Senses, SourceNoise);
 		}
 	}
 
@@ -404,13 +450,8 @@ FLLKSweeperSenses ALLKSweeper::Observe(const float DeltaSeconds)
 	// must not broadcast a sprint. Ground speed already carries the burden and
 	// stumble multipliers, so a loaded keeper limping is correctly quieter
 	// than a clean one running, and a keeper who has stopped is silent.
-	const LLKHearing::FLLKNoise Noise = LLKHearing::NoiseFromMovement(
-		Senses.KeeperPosition, KeeperActor->GetVelocity().Size2D());
-	if (LLKHearing::NoiseReaching(Noise, GetActorLocation()))
-	{
-		Senses.HeardNoisePosition = Noise.Position;
-		Senses.DistanceToHeardStuds = LLKHearing::DistanceStuds(Noise, GetActorLocation());
-	}
+	ConsiderNoise(Senses, LLKHearing::NoiseFromMovement(
+		Senses.KeeperPosition, KeeperActor->GetVelocity().Size2D()));
 
 
 	// **Detectability at the keeper, not "is their lantern on".** The light

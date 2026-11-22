@@ -92,6 +92,9 @@ protected:
 	 * never been run against a real map at all; that is filed separately
 	 * rather than fixed by being quietly called from here.)
 	 */
+	/** Says what in this map can be pushed, and warns loudly when nothing can. */
+	void ReportPushables();
+
 	void ReportThreatReachability();
 
 protected:

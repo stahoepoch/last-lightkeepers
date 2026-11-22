@@ -808,6 +808,35 @@ void ALLKDebugHUD::DrawOpeningGrillePrompt(const ALLKOpeningGrille* Grille, cons
 	Canvas->DrawItem(Item);
 }
 
+void ALLKDebugHUD::DrawInteractablePrompt(const AActor* Interactable, const FText& Verb)
+{
+	if (Interactable == nullptr || Canvas == nullptr || Verb.IsEmpty())
+	{
+		return;
+	}
+
+	const FVector Screen = Canvas->Project(Interactable->GetActorLocation());
+	UFont* Font = GEngine != nullptr ? GEngine->GetMediumFont() : nullptr;
+	if (Screen.Z <= 0.f || Font == nullptr)
+	{
+		return;
+	}
+
+	// The actor's own verb, never a string chosen here. A prompt written in
+	// the HUD is a second opinion about what E does, and the whole reason
+	// ULLKInteractorComponent exists is that there is only ever one.
+	const FString Label = FString::Printf(TEXT("[E]  %s"), *Verb.ToString());
+	const float Scale = GetUIScale();
+	float Width = 0.f;
+	float Height = 0.f;
+	Canvas->TextSize(Font, Label, Width, Height, Scale, Scale);
+	FCanvasTextItem Item(FVector2D(Screen.X - Width * 0.5f,
+		Screen.Y + 16.f * Scale), FText::FromString(Label), Font, ColourCause);
+	Item.Scale = FVector2D(Scale, Scale);
+	Item.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.9f));
+	Canvas->DrawItem(Item);
+}
+
 void ALLKDebugHUD::DrawWorldPrompt()
 {
 	// Named RunWorld because a `FVector World` position already lives further
@@ -942,6 +971,18 @@ void ALLKDebugHUD::DrawWorldPrompt()
 	if (const ALLKOpeningGrille* Grille = Interactor->GetFocusedOpeningGrille())
 	{
 		DrawOpeningGrillePrompt(Grille, Character);
+		return;
+	}
+
+	// The generic seam, in the same position it occupies in BeginInteract:
+	// below the authored openings, above loot. **This arm is why the HUD does
+	// not have to learn what a pushable is** - the verb comes off the
+	// interface, so the next interactable draws its own prompt without
+	// another branch here. The five above are each a type this file was
+	// taught by name, and that is the thing being stopped.
+	if (AActor* Interactable = Interactor->GetFocusedInteractable())
+	{
+		DrawInteractablePrompt(Interactable, Interactor->GetFocusedInteractableVerb());
 		return;
 	}
 

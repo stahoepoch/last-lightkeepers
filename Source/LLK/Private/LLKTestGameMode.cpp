@@ -12,6 +12,8 @@
 #include "EngineUtils.h"
 #include "Components/BoxComponent.h"
 #include "Enemies/LLKHearing.h"
+#include "World/LLKPushFeel.h"
+#include "World/LLKPushableFixture.h"
 #include "Enemies/LLKSweeper.h"
 #include "GameFramework/PlayerStart.h"
 #include "GameFramework/WorldSettings.h"
@@ -421,6 +423,12 @@ void ALLKTestGameMode::BeginPlay()
 		World->GetTimerManager().SetTimerForNextTick(
 			FTimerDelegate::CreateUObject(
 				this, &ALLKTestGameMode::ReportThreatReachability));
+		// Next tick like its siblings, not inline: level actors are not all
+		// spawned yet at this point, and an inline count would report zero
+		// pushables in a map that has them.
+		World->GetTimerManager().SetTimerForNextTick(
+			FTimerDelegate::CreateUObject(
+				this, &ALLKTestGameMode::ReportPushables));
 	}
 
 	// Bound here rather than in InitGame, where the harness world is built:
@@ -524,6 +532,53 @@ void ALLKTestGameMode::ReportLanternPickups()
 					 "a floor on the distance - walking closer cannot help."),
 				VerticalGap, Interactor->LanternReachCm);
 		}
+	}
+}
+
+void ALLKTestGameMode::ReportPushables()
+{
+	UWorld* World = GetWorld();
+	if (World == nullptr)
+	{
+		return;
+	}
+
+	int32 Found = 0;
+	for (TActorIterator<ALLKPushableFixture> It(World); It; ++It)
+	{
+		const ALLKPushableFixture* Fixture = *It;
+		if (Fixture == nullptr)
+		{
+			continue;
+		}
+
+		++Found;
+		// Read off the actor rather than restated from the class defaults,
+		// so an instance somebody retuned in the level reports its own
+		// numbers and not the ones this file remembers.
+		UE_LOG(LogLLK, Display,
+			TEXT("%s is pushable: %.1f studs of rail, %.1f s end to end, and "
+				 "%.0f studs loud while it moves (a sprint is 12.5, and this "
+				 "machine's lit sight is 38)."),
+			*Fixture->GetName(), Fixture->TravelStuds,
+			LLKPushFeel::PushSpeedStuds > 0.f
+				? Fixture->TravelStuds / LLKPushFeel::PushSpeedStuds : -1.f,
+			LLKPushFeel::PushNoiseStuds);
+	}
+
+	if (Found == 0)
+	{
+		// **A Warning, and the point of the whole report.** The runtime, the
+		// interface, the noise and both test layers can all be correct while
+		// no level contains a single pushable - and that is this project's
+		// recurring defect exactly: a correct system over an absent thing,
+		// with a clean log. Nothing else in the build would say so.
+		UE_LOG(LogLLK, Warning,
+			TEXT("No pushable fixture in %s. The push verb exists in code and "
+				 "there is nothing in this map to use it on, so no player can "
+				 "discover it here. Place an ALLKPushableFixture and author "
+				 "its LocalPushAxis and TravelStuds."),
+			*World->GetMapName());
 	}
 }
 
