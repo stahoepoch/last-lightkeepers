@@ -438,6 +438,9 @@ void ALLKTestGameMode::BeginPlay()
 		World->GetTimerManager().SetTimerForNextTick(
 			FTimerDelegate::CreateUObject(
 				this, &ALLKTestGameMode::ReportLightsWithoutFixtures));
+		World->GetTimerManager().SetTimerForNextTick(
+			FTimerDelegate::CreateUObject(
+				this, &ALLKTestGameMode::ReportFloorWithoutCeiling));
 	}
 
 	// Bound here rather than in InitGame, where the harness world is built:
@@ -564,6 +567,15 @@ void ALLKTestGameMode::ReportLightsWithoutFixtures()
 	// have done it again.
 	constexpr float NearCm = 260.f;
 
+	// **A ceiling is not a fixture, and leaving that out would have turned
+	// this check green by accident.** Once the lights were re-hung under the
+	// ceilings they belong to - 26 cm below, which is where a fitting hangs -
+	// every light in the map had a very large mesh very close by. A nearness
+	// test that counted it would have reported every light fitted on a map
+	// where none of them had a fitting, which is a worse state than the one
+	// this was written to catch: a silent check that cannot fail.
+	constexpr float BigSurfaceCm = 300.f;
+
 	TArray<FVector> MeshPositions;
 	for (TActorIterator<AActor> It(World); It; ++It)
 	{
@@ -572,6 +584,15 @@ void ALLKTestGameMode::ReportLightsWithoutFixtures()
 		{
 			continue;
 		}
+
+		FVector Origin;
+		FVector BoxExtent;
+		Actor->GetActorBounds(false, Origin, BoxExtent);
+		if (BoxExtent.X > BigSurfaceCm || BoxExtent.Y > BigSurfaceCm)
+		{
+			continue;
+		}
+
 		TArray<UStaticMeshComponent*> Meshes;
 		Actor->GetComponents<UStaticMeshComponent>(Meshes);
 		for (const UStaticMeshComponent* Mesh : Meshes)
@@ -629,6 +650,182 @@ void ALLKTestGameMode::ReportLightsWithoutFixtures()
 			 "rendering fault rather than a building. First: %s. Run "
 			 "Tools/fixture_boswells_lights.py."),
 		Naked, Total, *World->GetMapName(), NearCm, *FirstFew);
+}
+
+void ALLKTestGameMode::ReportFloorWithoutCeiling()
+{
+	UWorld* World = GetWorld();
+	if (World == nullptr)
+	{
+		return;
+	}
+
+	// Chris, 2026-11-22, on the opening map: "The ceiling beams."
+	//
+	// There were no beams. `BSW_LOWER_CEILING_WEST_FIELD` and `..._EAST_FIELD`
+	// roofed the wings and stopped at x = -900 and x = 900, so the 18 m main
+	// aisle - which is the chapter's route - had nothing overhead at all, and
+	// the two lit fields ending at that gap are what read as blades.
+	//
+	// **The absence is the thing to measure.** Every other check this class
+	// owns counts actors, and no count of actors can notice a hole. So this
+	// traces upward from the navigable floor and reports where the trace
+	// escapes. It is deliberately not a search for `BSW_LOWER_CEILING_`: that
+	// would have passed, happily, on a map whose ceiling covered a third of
+	// its floor.
+	//
+	// **What it reports is a hole in a ceiling, not the absence of a
+	// building.** The first version counted every open sample and announced
+	// 513 of 690, which is true and useless: most of them are the dock
+	// approach at y = -35,000, which is outdoors and supposed to be. A sample
+	// only means something is wrong when the floor beside it IS roofed -
+	// that is a room with a gap in its lid, which is exactly what the aisle
+	// was, and exactly what open sky is not.
+	constexpr float SampleStepCm = 600.f;   // one sample per 6 m of floor
+	constexpr float StartHeightCm = 200.f;  // above the keeper, below a ceiling
+	constexpr float ReachCm = 2500.f;       // 25 m: higher than any roof here
+
+	// The navigable bounds, rather than every actor's: the question is where
+	// a keeper can stand, and roofing a crawlspace nobody enters is not it.
+	FBox Navigable(ForceInit);
+	for (TActorIterator<ANavMeshBoundsVolume> It(World); It; ++It)
+	{
+		const ANavMeshBoundsVolume* Volume = *It;
+		if (Volume != nullptr)
+		{
+			Navigable += Volume->GetComponentsBoundingBox(true);
+		}
+	}
+
+	if (!Navigable.IsValid)
+	{
+		// Silent. A map with no nav bounds has already been reported on by
+		// the navmesh checks, and a second voice saying the same thing in
+		// different words is how a log stops being read.
+		return;
+	}
+
+	UNavigationSystemV1* Nav = UNavigationSystemV1::GetCurrent(World);
+	if (Nav == nullptr)
+	{
+		return;
+	}
+
+	// Three states per cell, kept as a grid so the second pass can ask what
+	// is NEXT TO an open cell. That neighbour question is the whole check:
+	// open beside open is a yard, open beside roofed is a hole.
+	enum class ECell : uint8 { NoFloor, Roofed, Open };
+	const int32 CountX = FMath::Max(1,
+		FMath::CeilToInt(Navigable.GetSize().X / SampleStepCm) + 1);
+	const int32 CountY = FMath::Max(1,
+		FMath::CeilToInt(Navigable.GetSize().Y / SampleStepCm) + 1);
+	TArray<ECell> Cells;
+	Cells.Init(ECell::NoFloor, CountX * CountY);
+
+	int32 Sampled = 0;
+	int32 Open = 0;
+	for (int32 IX = 0; IX < CountX; ++IX)
+	{
+		for (int32 IY = 0; IY < CountY; ++IY)
+		{
+			const float X = Navigable.Min.X + IX * SampleStepCm;
+			const float Y = Navigable.Min.Y + IY * SampleStepCm;
+			// Only sample where a keeper can actually stand, and ask the
+			// navmesh rather than a downward trace. **A trace down from the
+			// top of the bounds finds the ceiling, not the floor** - it would
+			// then trace up from just above the roof, find nothing, and
+			// report that a fully roofed building has no ceiling anywhere.
+			// The navmesh is the one source that means "stood on".
+			FNavLocation OnFloor;
+			if (!Nav->ProjectPointToNavigation(
+					FVector(X, Y, Navigable.Min.Z + 0.5 * Navigable.GetSize().Z),
+					OnFloor,
+					FVector(SampleStepCm, SampleStepCm, Navigable.GetSize().Z)))
+			{
+				continue;
+			}
+
+			++Sampled;
+			const FVector From = OnFloor.Location + FVector(0.f, 0.f, StartHeightCm);
+			FHitResult Above;
+			const bool bRoofed = World->LineTraceSingleByChannel(
+				Above, From, From + FVector(0.f, 0.f, ReachCm), ECC_Visibility);
+
+			Cells[IX * CountY + IY] = bRoofed ? ECell::Roofed : ECell::Open;
+			Open += bRoofed ? 0 : 1;
+		}
+	}
+
+	if (Sampled == 0)
+	{
+		return;
+	}
+
+	// The second pass. An open cell with a roofed cell beside it is standing
+	// in a room whose ceiling stops; an open cell surrounded by open ones is
+	// standing outside, which is not a defect and never was.
+	auto At = [&Cells, CountX, CountY](int32 IX, int32 IY)
+	{
+		return (IX < 0 || IY < 0 || IX >= CountX || IY >= CountY)
+			? ECell::NoFloor : Cells[IX * CountY + IY];
+	};
+
+	int32 Holes = 0;
+	FString FirstFew;
+	// Where they are, not just the first four. 105 holes reported as four
+	// coordinates reads as "somewhere over there"; a box says in one glance
+	// whether a ceiling stops in the middle of a room or merely runs out at
+	// the building's edge, and those are different jobs.
+	FBox HoleBounds(ForceInit);
+	for (int32 IX = 0; IX < CountX; ++IX)
+	{
+		for (int32 IY = 0; IY < CountY; ++IY)
+		{
+			if (At(IX, IY) != ECell::Open)
+			{
+				continue;
+			}
+			if (At(IX - 1, IY) != ECell::Roofed && At(IX + 1, IY) != ECell::Roofed
+				&& At(IX, IY - 1) != ECell::Roofed && At(IX, IY + 1) != ECell::Roofed)
+			{
+				continue;
+			}
+
+			++Holes;
+			const FVector Where(Navigable.Min.X + IX * SampleStepCm,
+								Navigable.Min.Y + IY * SampleStepCm, 0.f);
+			HoleBounds += Where;
+			if (Holes <= 4)
+			{
+				FirstFew += FString::Printf(
+					TEXT("%s(%.0f, %.0f)"),
+					FirstFew.IsEmpty() ? TEXT("") : TEXT(", "),
+					Where.X, Where.Y);
+			}
+		}
+	}
+
+	if (Holes == 0)
+	{
+		UE_LOG(LogLLK, Display,
+			TEXT("No roofed room in %s has a hole in its ceiling: of %d floor "
+				 "sample(s), %d are open overhead and every one of those is "
+				 "open ground, not a gap beside a ceiling."),
+			*World->GetMapName(), Sampled, Open);
+		return;
+	}
+
+	UE_LOG(LogLLK, Warning,
+		TEXT("%d floor sample(s) in %s stand under NOTHING while the floor "
+			 "beside them is roofed - a room whose ceiling stops. A player "
+			 "there looks up into void, and the lit ceiling ending at the gap "
+			 "reads as a blade rather than as a building. (%d of %d samples "
+			 "are open overhead in all; the rest of those are open ground.) "
+			 "They lie within x %.0f..%.0f, y %.0f..%.0f. First: %s. Run "
+			 "Tools/ceiling_boswells_aisle_soffit.py."),
+		Holes, *World->GetMapName(), Open, Sampled,
+		HoleBounds.Min.X, HoleBounds.Max.X, HoleBounds.Min.Y, HoleBounds.Max.Y,
+		*FirstFew);
 }
 
 void ALLKTestGameMode::ReportClimbReach()

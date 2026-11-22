@@ -51,6 +51,10 @@ MAINS_FIXTURE_TAG = "LLK_MainsFixture"
 
 NEAR_CM = 260.0
 
+# Half-span above which a mesh is architecture rather than a light fitting.
+# 3 m: a ceiling field, a floor slab, a wall. A troffer is 0.6 m.
+BIG_SURFACE_CM = 300.0
+
 # A ceiling troffer: 120 x 30 x 8 cm, from the engine's 100 cm cube.
 TROFFER_SCALE = unreal.Vector(1.2, 0.3, 0.08)
 # Sat just above the light, so the illumination reads as leaving its underside.
@@ -144,6 +148,14 @@ actors = subsystem.get_all_level_actors()
 meshes = []
 for actor in actors:
     if actor.get_actor_label().startswith(PREFIX):
+        continue
+    # **A ceiling is not a fixture.** Once the lights hang 26 cm under the
+    # ceiling they belong to, every one of them has a very large mesh very
+    # close by, and a nearness test that counts it says every light in the
+    # map is fitted while none of them has a fitting. A troffer is a small
+    # object; anything spanning more than this is the room, not the lamp.
+    centre, extent = actor.get_actor_bounds(False)
+    if extent.x > BIG_SURFACE_CM or extent.y > BIG_SURFACE_CM:
         continue
     for comp in actor.get_components_by_class(unreal.StaticMeshComponent):
         if comp.static_mesh is not None:

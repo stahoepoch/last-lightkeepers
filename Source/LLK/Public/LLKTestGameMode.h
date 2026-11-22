@@ -95,6 +95,24 @@ protected:
 	/** Chris's rule at boot: every light must have something it comes out of. */
 	void ReportLightsWithoutFixtures();
 
+	/**
+	 * The same rule one storey up: every place a keeper can stand must have
+	 * something overhead.
+	 *
+	 * Chris read the opening map's main aisle as *"the ceiling beams"*. There
+	 * were no beams. The suspended tile fields roofed the two wings and
+	 * stopped either side of the 18 m aisle, so the chapter's whole route was
+	 * open to a black trench and the lit ceilings ending at it read as blades.
+	 *
+	 * **Nothing in the project could have reported that**, because every
+	 * check it owns asks about actors and this is a question about an absence.
+	 * So this one traces: from a grid over the navigable bounds, straight up.
+	 * A point with nothing above it is a room with no ceiling, and it is
+	 * measured rather than looked for by name - a `BSW_LOWER_CEILING_` check
+	 * would pass on a map whose ceiling covers a third of the floor.
+	 */
+	void ReportFloorWithoutCeiling();
+
 	/** Says what the keeper can get onto, and warns if that is nothing. */
 	void ReportClimbReach();
 
