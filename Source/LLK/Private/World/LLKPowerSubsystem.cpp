@@ -1,6 +1,8 @@
 #include "World/LLKPowerSubsystem.h"
 
 #include "Components/LightComponent.h"
+#include "Components/MeshComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "Engine/Light.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
@@ -9,6 +11,7 @@
 
 const FName ULLKPowerSubsystem::MainsTag(TEXT("LLK_Mains"));
 const FName ULLKPowerSubsystem::EmergencyTag(TEXT("LLK_Emergency"));
+const FName ULLKPowerSubsystem::MainsFixtureTag(TEXT("LLK_MainsFixture"));
 
 void ULLKPowerSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 {
@@ -38,6 +41,7 @@ void ULLKPowerSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 	// start lit and nothing would say so.
 	bPowerOn = false;
 	ApplyToLights();
+	ApplyToFixtures();
 
 	// **Affirmative, for the fourth time in three days, and this one earns it
 	// most.** A map with no mains lights at all and a map with the power
@@ -71,6 +75,7 @@ bool ULLKPowerSubsystem::SetPowerOn(const bool bOn)
 
 	bPowerOn = bOn;
 	ApplyToLights();
+	ApplyToFixtures();
 
 	UE_LOG(LogLLK, Log,
 		TEXT("The mains are %s. %d light(s) moved."),
@@ -104,6 +109,50 @@ void ULLKPowerSubsystem::ApplyToLights()
 			Component->SetVisibility(bPowerOn);
 		}
 	}
+}
+
+void ULLKPowerSubsystem::ApplyToFixtures()
+{
+	UWorld* World = GetWorld();
+	if (World == nullptr)
+	{
+		return;
+	}
+
+	int32 Lit = 0;
+	for (TActorIterator<AActor> It(World); It; ++It)
+	{
+		AActor* Actor = *It;
+		if (Actor == nullptr || !Actor->ActorHasTag(MainsFixtureTag))
+		{
+			continue;
+		}
+
+		for (UActorComponent* Component : Actor->GetComponents())
+		{
+			UMeshComponent* Mesh = Cast<UMeshComponent>(Component);
+			if (Mesh == nullptr)
+			{
+				continue;
+			}
+
+			// A dynamic instance per housing, created on first use and kept
+			// by the component. Setting the parameter on the shared asset
+			// would change every fixture in every level at once, including
+			// ones a future map wants dark.
+			UMaterialInstanceDynamic* Dynamic =
+				Mesh->CreateAndSetMaterialInstanceDynamic(0);
+			if (Dynamic != nullptr)
+			{
+				Dynamic->SetScalarParameterValue(
+					TEXT("Emissive"), bPowerOn ? MainsFixtureEmissive : 0.f);
+				++Lit;
+			}
+		}
+	}
+
+	UE_LOG(LogLLK, Verbose, TEXT("%d mains housing(s) set %s."),
+		Lit, bPowerOn ? TEXT("lit") : TEXT("dark"));
 }
 
 // ---------------------------------------------------------------------------

@@ -92,6 +92,9 @@ protected:
 	 * never been run against a real map at all; that is filed separately
 	 * rather than fixed by being quietly called from here.)
 	 */
+	/** Chris's rule at boot: every light must have something it comes out of. */
+	void ReportLightsWithoutFixtures();
+
 	/** Says what the keeper can get onto, and warns if that is nothing. */
 	void ReportClimbReach();
 

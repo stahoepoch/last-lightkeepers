@@ -52,6 +52,22 @@ public:
 	/** The tag the always-on emergency layer carries. Read for reporting only. */
 	static const FName EmergencyTag;
 
+	/**
+	 * The tag a mains light's visible HOUSING carries.
+	 *
+	 * Chris, 2026-11-22: *"It kind of looks like lights are coming from
+	 * nowhere... It has to be believable, like a fixture or something, to
+	 * show that it is coming from where it's coming from."* So every light
+	 * now has geometry, and the mains housings have to go dark with their
+	 * lights - **a fixture that glows while its light is off is worse than no
+	 * fixture at all**, because it tells the player the power is on and the
+	 * room disagrees with it.
+	 */
+	static const FName MainsFixtureTag;
+
+	/** Emissive strength a lit mains housing shows. 0 when the power is off. */
+	static constexpr float MainsFixtureEmissive = 6.f;
+
 	virtual void OnWorldBeginPlay(UWorld& InWorld) override;
 
 	/** Is the building's mains supply on. False at the start of every chapter. */
@@ -94,4 +110,7 @@ private:
 
 	/** Applies `bPowerOn` to every tagged light. The only writer of visibility. */
 	void ApplyToLights();
+
+	/** Lights or darkens the housings, so the geometry agrees with the light. */
+	void ApplyToFixtures();
 };

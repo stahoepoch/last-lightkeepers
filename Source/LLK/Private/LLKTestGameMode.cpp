@@ -13,6 +13,7 @@
 #include "Components/BoxComponent.h"
 #include "Enemies/LLKHearing.h"
 #include "Characters/LLKClimbComponent.h"
+#include "Engine/Light.h"
 #include "Characters/LLKClimbFeel.h"
 #include "World/LLKPushFeel.h"
 #include "World/LLKPushableFixture.h"
@@ -434,6 +435,9 @@ void ALLKTestGameMode::BeginPlay()
 		World->GetTimerManager().SetTimerForNextTick(
 			FTimerDelegate::CreateUObject(
 				this, &ALLKTestGameMode::ReportClimbReach));
+		World->GetTimerManager().SetTimerForNextTick(
+			FTimerDelegate::CreateUObject(
+				this, &ALLKTestGameMode::ReportLightsWithoutFixtures));
 	}
 
 	// Bound here rather than in InitGame, where the harness world is built:
@@ -538,6 +542,93 @@ void ALLKTestGameMode::ReportLanternPickups()
 				VerticalGap, Interactor->LanternReachCm);
 		}
 	}
+}
+
+void ALLKTestGameMode::ReportLightsWithoutFixtures()
+{
+	UWorld* World = GetWorld();
+	if (World == nullptr)
+	{
+		return;
+	}
+
+	// Chris, 2026-11-22: "It kind of looks like lights are coming from
+	// nowhere... It has to be believable, like a fixture or something, to
+	// show that it is coming from where it's coming from. Otherwise, we're
+	// just making stuff up and it's not going to be real."
+	//
+	// **A rule, enforced at boot, rather than a cleanup done once.** 104 of
+	// 174 lights in this map had no geometry when he asked, and 46 of those
+	// had been added that same day by a tool that placed illumination and no
+	// source. Nothing would have reported it; the next dressing pass would
+	// have done it again.
+	constexpr float NearCm = 260.f;
+
+	TArray<FVector> MeshPositions;
+	for (TActorIterator<AActor> It(World); It; ++It)
+	{
+		AActor* Actor = *It;
+		if (Actor == nullptr)
+		{
+			continue;
+		}
+		TArray<UStaticMeshComponent*> Meshes;
+		Actor->GetComponents<UStaticMeshComponent>(Meshes);
+		for (const UStaticMeshComponent* Mesh : Meshes)
+		{
+			if (Mesh != nullptr && Mesh->GetStaticMesh() != nullptr)
+			{
+				MeshPositions.Add(Actor->GetActorLocation());
+				break;
+			}
+		}
+	}
+
+	int32 Naked = 0;
+	int32 Total = 0;
+	FString FirstFew;
+	for (TActorIterator<ALight> It(World); It; ++It)
+	{
+		const ALight* Light = *It;
+		if (Light == nullptr)
+		{
+			continue;
+		}
+		++Total;
+
+		const FVector Here = Light->GetActorLocation();
+		const bool bHasFixture = MeshPositions.ContainsByPredicate(
+			[&Here, NearCm](const FVector& Where)
+			{
+				return FVector::DistSquared(Here, Where) <= NearCm * NearCm;
+			});
+
+		if (!bHasFixture)
+		{
+			++Naked;
+			if (Naked <= 4)
+			{
+				FirstFew += (FirstFew.IsEmpty() ? TEXT("") : TEXT(", "))
+					+ Light->GetName();
+			}
+		}
+	}
+
+	if (Naked == 0)
+	{
+		UE_LOG(LogLLK, Display,
+			TEXT("Every one of %d light(s) in %s has a fixture within %.0f cm, "
+				 "so nothing in this map is lit from nowhere."),
+			Total, *World->GetMapName(), NearCm);
+		return;
+	}
+
+	UE_LOG(LogLLK, Warning,
+		TEXT("%d of %d light(s) in %s have NO geometry within %.0f cm - they "
+			 "are illumination with no visible source, which reads as a "
+			 "rendering fault rather than a building. First: %s. Run "
+			 "Tools/fixture_boswells_lights.py."),
+		Naked, Total, *World->GetMapName(), NearCm, *FirstFew);
 }
 
 void ALLKTestGameMode::ReportClimbReach()
