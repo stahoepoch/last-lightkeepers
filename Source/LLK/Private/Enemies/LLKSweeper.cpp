@@ -11,6 +11,7 @@
 #include "Engine/StaticMesh.h"
 #include "EngineUtils.h"
 #include "Enemies/LLKEnemyRosterSubsystem.h"
+#include "Enemies/LLKHearing.h"
 #include "Enemies/LLKPerception.h"
 #include "Enemies/LLKVisibility.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -396,6 +397,21 @@ FLLKSweeperSenses ALLKSweeper::Observe(const float DeltaSeconds)
 	Target = Keeper;
 	Senses.KeeperPosition = KeeperActor->GetActorLocation();
 	Senses.DistanceToKeeperStuds = DistanceStuds;
+
+	// **What the keeper SOUNDS like, measured from how fast they are really
+	// going.** `Size2D` and not `Size`: vertical motion is a fall or a jump,
+	// neither of which this models, and a keeper dropping down a stairwell
+	// must not broadcast a sprint. Ground speed already carries the burden and
+	// stumble multipliers, so a loaded keeper limping is correctly quieter
+	// than a clean one running, and a keeper who has stopped is silent.
+	const LLKHearing::FLLKNoise Noise = LLKHearing::NoiseFromMovement(
+		Senses.KeeperPosition, KeeperActor->GetVelocity().Size2D());
+	if (LLKHearing::NoiseReaching(Noise, GetActorLocation()))
+	{
+		Senses.HeardNoisePosition = Noise.Position;
+		Senses.DistanceToHeardStuds = LLKHearing::DistanceStuds(Noise, GetActorLocation());
+	}
+
 
 	// **Detectability at the keeper, not "is their lantern on".** The light
 	// field is the one definition of how marked a spot is, and a keeper
@@ -948,6 +964,19 @@ void ALLKSweeper::Tick(float DeltaSeconds)
 
 	const FLLKSweeperSenses Senses = Observe(DeltaSeconds);
 	const FLLKSweeperStep Step = LLKSweeperBrain::Advance(Mind, Senses, Def, ContactRules);
+
+	// Logged here rather than in `Act`, which is given the decision and not
+	// the senses: the distance is the whole value of the line. Without it a
+	// playtest can see that something made the machine leave its route and
+	// cannot tell whether the player caused it from across the store or from
+	// the next aisle.
+	if (Step.bNoiseInvestigated)
+	{
+		UE_LOG(LogLLK, Log,
+			TEXT("%s HEARD something %.1f studs away and left its route to look. ")
+			TEXT("It has not seen anybody."),
+			*GetName(), Senses.DistanceToHeardStuds);
+	}
 
 	Mind = Step.Mind;
 	Act(Step);

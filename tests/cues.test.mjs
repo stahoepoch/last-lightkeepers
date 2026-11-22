@@ -206,7 +206,7 @@ for (const name of Object.keys(SILENT).sort()) {
 // UNACTED when it reports a transition the brain already owns, and does not
 // when it names a consequence somebody outside the brain is supposed to feel.
 // The stumble named a consequence — a speed the keeper pays — so a log was
-// never enough. These four report.
+// never enough. These five report.
 const UNACTED = {
   bContactLanded:
     "The raw contact. `bStumbleLanded` and `bKnockedDown` are what the pawn " +
@@ -225,6 +225,15 @@ const UNACTED = {
     "Verbose, and the action that matters is `bAdvancePatrolPoint`, which " +
     "the pawn does act on when the pause is spent. Starting a pause asks " +
     "nothing of the pawn.",
+  bNoiseInvestigated:
+    "The same shape as `bLostTheKeeper`: the brain has already moved itself " +
+    "to Search and set the last known position to where the sound was, and " +
+    "the pawn walks there by following `Step.Move`. The tempting action is a " +
+    "cue, and a cue is exactly wrong here — `LLKHearing.h` argues that a " +
+    "machine which heard a noise has seen nobody, owes no announcement, and " +
+    "must not spend row 16's warning on a false alarm. So the pawn logs the " +
+    "distance and nothing else, which is the one thing a playtest cannot " +
+    "otherwise see.",
 };
 
 const brainHeader = readFileSync(

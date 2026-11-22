@@ -114,6 +114,23 @@ namespace LLKSweeperBrain
 			Step.Mind.bHasLastKnown = true;
 		}
 
+		// ---- did it hear anything this frame ------------------------------
+		//
+		// Resolved by `LLKHearing` and arriving pre-concluded, like the
+		// notice. The brain is told a sound reached it and never re-derives
+		// a radius, so there is one definition of audible.
+		//
+		// **Sound is not sight, and nothing below lets it become sight.**
+		// Hearing can start a search; it can never start a pursuit, set the
+		// telegraph, or refresh a search already running. The machine walks
+		// to where the sound was, looks for its authored interval, and gives
+		// up - and if the keeper is actually there it will be *seen*, by the
+		// rules that already exist, which is the only way contact is ever
+		// reached. That is the same contract `LLKSweeperPresence` states from
+		// the other side: hearing the machine must never imply being seen by
+		// it, and being heard must never imply being seen either.
+		const bool bHeard = Senses.HeardNoisePosition.IsSet();
+
 		// ---- the states --------------------------------------------------
 		switch (Step.Mind.State)
 		{
@@ -145,6 +162,42 @@ namespace LLKSweeperBrain
 				Step.Mind.PatrolDwellSecondsRemaining = 0.f;
 				Step.bTelegraphStarted = true;
 				Step.Move = ELLKSweeperMove::Hold;
+				break;
+			}
+
+			// Heard something, and did not see it. Go and look.
+			//
+			// **Why `Search` and not `Telegraph`.** Row 16 buys the keeper a
+			// second of warning before a machine that has SEEN them starts
+			// moving. A machine that heard a noise has not seen anybody and
+			// is not coming for anybody - it is going to look at a spot.
+			// Announcing that would spend row 16's whole budget on a false
+			// alarm and teach a player to ignore the one cue that means they
+			// have actually been found.
+			//
+			// **Why this is in `Patrol` only.** Entering it from `Search`
+			// would let a sprinting keeper refresh the clock indefinitely and
+			// be followed across the store, which is the "endless harassment"
+			// slice 3 refuses outright. Entering from `Stock` would mean
+			// sound interrupts the filing job, and that job's authored rule
+			// is that *being seen* is how you stop it. Widening that is
+			// Chris's call, not a side effect of adding a sense. So the worst
+			// case here is bounded by construction: investigate, search for
+			// the authored interval, return to the route.
+			if (bHeard)
+			{
+				Step.Mind.State = ELLKSweeperState::Search;
+				Step.Mind.SearchSecondsRemaining =
+					Def.LosesTargetAfterSeconds.Get(LLKSweeperBrainDetail::FallbackSearchSeconds);
+				// The sound's position, NOT the keeper's. The machine knows
+				// where the noise was; it does not know where the keeper got
+				// to afterwards, and walking to their live position would be
+				// hearing used as tracking.
+				Step.Mind.LastKnownKeeperPosition = *Senses.HeardNoisePosition;
+				Step.Mind.bHasLastKnown = true;
+				Step.Mind.PatrolDwellSecondsRemaining = 0.f;
+				Step.bNoiseInvestigated = true;
+				Step.Move = ELLKSweeperMove::LastKnown;
 				break;
 			}
 

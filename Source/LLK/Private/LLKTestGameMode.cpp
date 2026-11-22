@@ -11,6 +11,7 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "Components/BoxComponent.h"
+#include "Enemies/LLKHearing.h"
 #include "Enemies/LLKSweeper.h"
 #include "GameFramework/PlayerStart.h"
 #include "GameFramework/WorldSettings.h"
@@ -585,6 +586,31 @@ void ALLKTestGameMode::ReportThreatReachability()
 
 		const FVector MachineAt = Machine->GetActorLocation();
 		const float Straight = FVector::Dist(MachineAt, KeeperAt);
+
+		// **What this machine can HEAR from where it stands, reported before
+		// the path, because hearing does not need one.** A machine with no
+		// navmesh between it and the keeper can still be sent looking by a
+		// sound, and the whole point of the sense is that it operates on the
+		// keeper's gait rather than on the geometry.
+		//
+		// Reported affirmatively, and it is the navmesh lesson for the second
+		// time: a keeper standing still is correctly silent, so a Sweeper with
+		// working ears and a Sweeper with none produce the same empty log in
+		// every automated boot - nobody moves in an unattended one. "Nothing
+		// complained" is not evidence a sense exists.
+		//
+		// It reports the THRESHOLD rather than the model: the speed a keeper at
+		// this distance would have to exceed to be heard from here, against
+		// the gaits in `data/lantern.json` - crouch 3, walk 5, sprint 12.5.
+		// One number, and a playtest can tell at a glance whether this machine
+		// is reachable by a run, by a walk, or not at all.
+		const float AudibleAboveStuds =
+			Straight / LLKUnits::StudsToCm / LLKHearing::SecondsOfTravel;
+		UE_LOG(LogLLK, Display,
+			TEXT("%s has ears: from %.1f studs away it hears a keeper moving faster ")
+			TEXT("than %.1f studs/s (crouch 3, walk 5, sprint 12.5). Standing still ")
+			TEXT("is silent at any distance."),
+			*Machine->GetName(), Straight / LLKUnits::StudsToCm, AudibleAboveStuds);
 
 		// Its real speed, off the component that moves it, rather than a
 		// number repeated here that would go stale the first time the roster

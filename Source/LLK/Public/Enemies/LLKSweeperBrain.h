@@ -295,6 +295,25 @@ struct FLLKSweeperSenses
 	float DistanceToMisplacedStuds = 0.f;
 
 	/**
+	 * A noise this machine could hear this frame, or unset for silence.
+	 *
+	 * Pre-resolved by `LLKHearing::NoiseReaching`, exactly as `Notice` arrives
+	 * pre-concluded from `LLKPerception`: the brain is told what reached it and
+	 * never re-derives a radius. `TOptional` for the same reason the patrol
+	 * point is one - "nobody listened" and "the floor was silent" are the same
+	 * instruction here, but a plain `FVector` would have made the origin of a
+	 * silent frame indistinguishable from a noise at the world origin.
+	 *
+	 * **It carries a position and not a loudness**, because by the time it is
+	 * set the only question left is where to look. How loud the sound was is
+	 * what decided whether it is set at all.
+	 */
+	TOptional<FVector> HeardNoisePosition;
+
+	/** Studs to that sound. Only read when the position is set. */
+	float DistanceToHeardStuds = 0.f;
+
+	/**
 	 * Whether the map authored somewhere for a shelved thing to GO.
 	 *
 	 * The gate that makes this safe to land before the map has one. No bay,
@@ -364,6 +383,17 @@ struct FLLKSweeperStep
 
 	/** Gave up and went back to its route this frame. For a log, and for a readout. */
 	bool bLostTheKeeper = false;
+
+	/**
+	 * Started looking because it HEARD something this frame. True once.
+	 *
+	 * Separate from `bTelegraphStarted` on purpose: a machine that heard you
+	 * has not noticed you, owes you no announcement, and must not borrow the
+	 * telegraph's authority. This exists so the pawn can log the one event
+	 * that is otherwise invisible - a Sweeper leaving its route for a reason
+	 * the player caused and may not realise they caused.
+	 */
+	bool bNoiseInvestigated = false;
 
 	/**
 	 * Began filing a misplaced thing this frame. True once, like the telegraph.
