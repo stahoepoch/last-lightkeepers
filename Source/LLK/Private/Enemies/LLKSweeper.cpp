@@ -217,6 +217,20 @@ void ALLKSweeper::BeginPlay()
 		Presence->SetVolumeMultiplier(0.f);
 		Presence->Play();
 		bVoiceStarted = true;
+		// Affirmative, not the absence of a warning. The navmesh taught this
+		// project that "nothing complained" is not evidence: a null sound, a
+		// component that never played and a working motor all look identical
+		// in a log that only speaks up on failure. So this says what loaded
+		// and what the player will hear.
+		UE_LOG(LogLLK, Display,
+			TEXT("%s has a motor: %s, running at %.0f%% volume on patrol and %.0f%% in pursuit, ")
+			TEXT("silent while it telegraphs, audible to %.0f cm."),
+			*GetName(), *PresenceSound->GetName(),
+			LLKSweeperPresence::PatrolVolume * 100.f,
+			LLKSweeperPresence::PursueVolume * 100.f,
+			PresenceAttenuation != nullptr
+				? PresenceAttenuation->Attenuation.AttenuationShapeExtents.X
+				: 0.f);
 	}
 	else if (Presence != nullptr)
 	{

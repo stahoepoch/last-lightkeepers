@@ -1,9 +1,8 @@
 # The Sweeper is silent while it moves
 
 **Found 2026-11-21**, immediately after the navmesh work made it possible to
-measure. `HANDOFFS.md` M19. Fixed in the same session except for one import
-step that needed an editor nobody could close; `tests/sweeper-presence.test.mjs`
-names that step until it is done.
+measure. **Fixed and verified in a running game the same evening**, once Chris
+closed the editor that was blocking the import. `HANDOFFS.md` M19.
 
 ---
 
@@ -135,24 +134,35 @@ C++ asks for names a file that exists, something calls `Play()` after
 `TelegraphVolume` is still exactly `0`, because that single constant is the
 design claim above and a retune is where it would quietly go.
 
-## Open: the import
+## Verified, in a running game
 
-The render exists at `assets/audio/sweeper-presence-v1.wav`. Importing it
-needs `Tools/run_editor_python.ps1`, which refuses — correctly — while an
-editor holds the project, and an editor was open throughout. The same lock
-blocks the editor-target build and therefore the automation run, so
-**`LLK.Enemies.SweeperPresence` has not been executed**; the code is compile-
-verified against the game target only.
-
-Two commands, once no editor is running:
+The import was blocked for an hour: `Tools/run_editor_python.ps1` refuses -
+correctly - while an editor holds the project, and the same Live Coding lock
+refused the editor-target build. Chris closed the editor; both ran.
 
 ```
-Tools/run_editor_python.ps1 -Script <the import script>
-Tools/build_editor.ps1 ; Tools/run_automation.ps1 -TestFilter LLK
+LogLLK: LLKSweeper_0 has a motor: sweeper-presence-v1, running at 22% volume
+        on patrol and 62% in pursuit, silent while it telegraphs, audible to
+        1680 cm.
+LogLLK: LLKSweeper_0 can reach the keeper: 11045 cm of path over 4850 cm
+        straight (2.28x), 65.7 s at 168 cm/s.
+LogTemp: Display: Map readiness: ready.
 ```
 
-`node tests/sweeper-presence.test.mjs` goes green on the first and is the
-thing that says so.
+`LLK.Enemies.SweeperPresence` ran and reported `Result={Success}` - checked by
+name in `Saved/Logs/LLK-Automation.log` rather than inferred from the runner's
+"LLK automation passed", which earlier this same session exited 0 having never
+run a thing. `node tests/sweeper-presence.test.mjs` is 8/8. The imported wave
+is `looping = True` at `duration = 4.000 s`, read back from the asset after the
+import rather than assumed from the task that wrote it.
+
+**That first line is deliberately affirmative, and that is a lesson from the
+navmesh.** A null sound, a component that never played, and a working motor
+all look identical in a log that only speaks up on failure. "Nothing
+complained" is not evidence, so the Sweeper now says what loaded and what the
+player will hear. 1680 cm is 60 studs at the project's 28 cm scale, which is
+the attenuation contract above, read out of the live component rather than
+restated from the header.
 
 ## A side finding, fixed
 
@@ -169,13 +179,18 @@ check exists because the whole failure was a regex nobody had tested.
 
 ## What this does not claim
 
-- **Nobody has heard it.** Every number above is a design argument and a unit
-  test. Whether 0.22 disappears into the room and 0.62 arrives as dread is a
+- **Nobody has heard it.** Every number above is a design argument, a unit
+  test, and a log line from a `-nullrhi` boot that renders no audio at all.
+  That the component loaded, looped and was handed the right volumes is now
+  proven; whether 0.22 disappears into the room and 0.62 arrives as dread is a
   judgment in play, and the loudest thing this finding cannot tell you.
 - **Occlusion is not modelled.** A machine heard through a gondola is as loud
   as one in the open. That is the right next refinement and the wrong thing to
   guess at before the basic presence has been listened to.
-- **One machine.** 71.2 s of approach is a long time to be afraid of a single
+- **One machine.** The route is also not stable: the same query read 71.2 s
+  before the evening's dressing and 65.7 s after, so this duration is a
+  property of whatever was last placed in the aisles, not a tuned number.
+  65.7 s of approach is a long time to be afraid of a single
   Sweeper on a two-floor sales floor, and the motor makes that duration
   *audible* rather than shorter. Whether the chapter wants a nearer patrol, a
   faster machine, or a second one is a slice-3 question this answers nothing
