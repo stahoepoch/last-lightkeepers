@@ -109,6 +109,29 @@ public:
 	UPROPERTY(EditAnywhere, Category = "LLK|Push", meta = (ClampMin = "0"))
 	float ReachCm = 150.f;
 
+	/**
+	 * How high up the fixture a child actually shoves it, in studs.
+	 *
+	 * **Found by `LLKPushChainTest`, which could not focus a fixture at all.**
+	 * Focus was measured to `GetActorLocation()` - the fixture's feet, on the
+	 * tile. The keeper's eye is 125 cm up, so looking at a point on the floor
+	 * a metre away is a 40-degree downward stare, and the 0.75 aim gate
+	 * refused it from every standing position. The verb was unusable and
+	 * nothing but a world test could have shown it: every pure assertion
+	 * about pushing was true, and no keeper could start a push.
+	 *
+	 * 2.5 studs is 70 cm, which is about where a child's hands are. It is
+	 * also the same correction `ALLKOpeningGrille::GetReadPoint` already
+	 * makes for the same reason - an interaction point is where you touch a
+	 * thing, not where it meets the floor.
+	 */
+	UPROPERTY(EditAnywhere, Category = "LLK|Push", meta = (ClampMin = "0"))
+	float PushPointHeightStuds = 2.5f;
+
+	/** Where a keeper's hands meet it. The focus point, not the origin. */
+	UFUNCTION(BlueprintPure, Category = "LLK|Push")
+	FVector GetPushPoint() const;
+
 	/** Cosine of the half-angle. 0.75 is about 41 degrees off centre. */
 	UPROPERTY(EditAnywhere, Category = "LLK|Push", meta = (ClampMin = "-1", ClampMax = "1"))
 	float MinAimDot = 0.75f;

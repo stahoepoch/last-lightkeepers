@@ -153,13 +153,63 @@ interface, the noise model and both test layers can all be correct while no
 level contains a single pushable — which is this project's recurring defect
 exactly, and nothing else in the build would have said so.
 
+## The chain, run end to end
+
+`LLK.World.PushChain` is the first automation test in this project to build a
+real `UWorld`. Everything before it was pure arithmetic or a class-default
+read, which is fast and right and leaves one category unprovable: a pawn that
+never finds the actor beside it, an iterator that skips an interface it should
+match, an actor spawned where nothing looks for it. **The recurring failure
+shape is a correct system over an absent thing, and "absent" is a property of
+a world.**
+
+It spawns a fixture and a Sweeper eight studs apart - inside the fixture's
+16-stud carry, outside the machine's 12-stud dark sight, so it can hear and
+could not have seen - and asserts, in order: an untouched fixture is silent and
+the machine stays on patrol; a keeper pushes it through `ILLKInteractable`; it
+travels about 1.2 studs a second and reports noise through `ILLKNoiseSource`;
+**the machine across the aisle leaves patrol for Search**; releasing stops the
+fixture dead and silences it; and the machine gives up and returns to its route.
+
+**No keeper is involved in the hearing half, deliberately.** `Observe` scans
+noise sources before its keeper early-returns, and this is what proves that
+ordering is real rather than intended.
+
+### Three things it caught that nothing else could
+
+1. **The fixture was focusable only from directly overhead.** Focus was
+   measured to `GetActorLocation()` - the fixture's feet. A keeper's eye is
+   125 cm up, so a point on the floor a metre away is a 40-degree downward
+   stare and the 0.75 aim gate refused it from every standing position. **The
+   verb was unusable by any player**, and every pure test about pushing passed.
+   Fixed with `GetPushPoint()` at 2.5 studs - hand height - which is the same
+   correction `ALLKOpeningGrille::GetReadPoint` already makes.
+2. **A bare `APawn` has no root component**, so `SetActorLocation` on one
+   silently does nothing. That cost a run and is a good illustration of the
+   category: invisible to every pure test ever written.
+3. **My assertion about where the machine looks was wrong, and the code was
+   right.** It checked the fixture's *live* position and failed by about a
+   stud, because a sound arriving mid-search does not move the target - so the
+   machine walks to where the grinding started while the fixture travels on.
+   A machine that tracked the live position would be using hearing as a
+   tracking sense, which the design refuses outright. The test now asserts
+   both halves: it looks at the start, and the fixture is no longer there.
+
+The fixture drives `Tick` on the actors directly rather than through
+`UWorld::Tick`. A world built this way never begins play, so the engine's
+scheduler runs nothing - standing that up needs a game instance, world
+settings and a match start, which is a lot of engine ceremony to prove
+something about two of our own classes. What it proves is our tick code, our
+actor iteration, our interface casts and our state machines; what it does not
+prove is that UE will schedule those ticks, which the `LLK.CheckMap` boot gate
+exercises on a real level anyway.
+
 ## What this does not claim
 
-- **Nobody has pushed anything.** No level contains a pushable, so the chain
-  from focus to prompt to press to travel to noise to a Sweeper changing state
-  has never run end to end in a world. Every part is proven; the seam between
-  them is not. Placing one is the map writer's lane, and the opening `.umap`
-  has another writer in it.
+- **No level contains a pushable**, so no *player* has pushed anything, and
+  the gate warns about it at every boot. Placing one is the map writer's lane
+  and the opening `.umap` has another writer in it. The chain itself is now
+  proven - see below - but in a test world rather than in Boswell's.
 - **The climb does not exist.** A fixture pushed under a shelf is 89.6 cm of
   floor to stand on, and 89.6 + 125 puts a child's eye above a 168 cm shelf.
   That arithmetic is the reason the verb is worth having and none of it is

@@ -76,7 +76,7 @@ bool ALLKPushableFixture::CanFocus(const APawn* Keeper) const
 	// mostly closing a vertical gap, and a foot-to-foot range would let them
 	// start a push from behind a counter they never left.
 	const FVector Eye = LLKLanternFeel::KeeperEyeWorldPosition(Keeper->GetActorLocation());
-	const FVector ToBody = GetActorLocation() - Eye;
+	const FVector ToBody = GetPushPoint() - Eye;
 	const float Distance = ToBody.Size();
 	if (Distance < KINDA_SMALL_NUMBER || Distance > ReachCm)
 	{
@@ -85,6 +85,15 @@ bool ALLKPushableFixture::CanFocus(const APawn* Keeper) const
 
 	return FVector::DotProduct(
 		Keeper->GetBaseAimRotation().Vector(), ToBody / Distance) >= MinAimDot;
+}
+
+FVector ALLKPushableFixture::GetPushPoint() const
+{
+	// Up in world space, not along the actor's own up: a fixture rotated to
+	// face its aisle must still be shoved at hand height rather than at an
+	// angle that depends on how it was placed.
+	return GetActorLocation()
+		+ FVector(0.f, 0.f, LLKUnits::DistanceFromStuds(PushPointHeightStuds));
 }
 
 FText ALLKPushableFixture::FocusVerb() const
