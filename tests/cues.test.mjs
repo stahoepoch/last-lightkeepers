@@ -67,6 +67,15 @@ const check = (name, condition, detail) => {
 // checked. Remove an entry the moment something binds it — the test enforces
 // that, so the list cannot rot quietly.
 const SILENT = {
+  OnPowerChanged:
+    "The mains coming on. Nothing binds it yet and the honest reason is a " +
+    "hole worth naming rather than hiding: the obvious subscriber is the " +
+    "light field, because a lit building should make the keeper far easier " +
+    "to see - enemies notice at aggroRadiusLit 38 against aggroRadiusDark " +
+    "12 - and LLKLightField currently only knows about lanterns. So today " +
+    "restoring power costs noise once and nothing afterwards, when it " +
+    "should also cost permanent visibility. See " +
+    "docs/FINDINGS-EMERGENCY-POWER-IS-THE-VIBE.md.",
   OnDistressPulse:
     "The Anchor Revive's 'wakes the room' pulse (row 73). It is already a " +
     "gameplay source in the light field, so it has a mechanical effect " +
