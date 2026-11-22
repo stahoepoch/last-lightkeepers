@@ -26,6 +26,8 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/AudioComponent.h"
+#include "Enemies/LLKSweeperPresence.h"
 #include "Sound/SoundAttenuation.h"
 #include "Sound/SoundBase.h"
 #include "UObject/ConstructorHelpers.h"
@@ -139,6 +141,38 @@ ALLKSweeper::ALLKSweeper()
 	CueAttenuation->Attenuation.AttenuationShapeExtents = FVector(LLKUnits::DistanceFromStuds(38.f), 0.f, 0.f);
 	CueAttenuation->Attenuation.FalloffDistance = LLKUnits::DistanceFromStuds(12.f);
 
+	// The motor. Reaches further than a cue on purpose - see
+	// PresenceAttenuation in the header for why hearing a machine must never
+	// imply being noticed by it.
+	PresenceAttenuation = CreateDefaultSubobject<USoundAttenuation>(TEXT("SweeperPresenceAttenuation"));
+	PresenceAttenuation->Attenuation.bAttenuate = true;
+	PresenceAttenuation->Attenuation.bSpatialize = true;
+	PresenceAttenuation->Attenuation.DistanceAlgorithm = EAttenuationDistanceModel::Logarithmic;
+	PresenceAttenuation->Attenuation.AttenuationShape = EAttenuationShape::Sphere;
+	PresenceAttenuation->Attenuation.AttenuationShapeExtents =
+		FVector(LLKUnits::DistanceFromStuds(60.f), 0.f, 0.f);
+	PresenceAttenuation->Attenuation.FalloffDistance = LLKUnits::DistanceFromStuds(42.f);
+
+	Presence = CreateDefaultSubobject<UAudioComponent>(TEXT("SweeperPresence"));
+	Presence->SetupAttachment(RootComponent);
+	// Started in BeginPlay instead, and only on authority: a client's Sweeper
+	// moves because movement replicates, so it needs the sound, but a
+	// commandlet or a test world should not have a motor running in it.
+	Presence->bAutoActivate = false;
+	Presence->bAllowSpatialization = true;
+	Presence->AttenuationSettings = PresenceAttenuation;
+	// A machine heard through a gondola is still a machine. Occlusion would be
+	// the right refinement later; muffling it to nothing would give back the
+	// defect this exists to remove.
+	Presence->SetVolumeMultiplier(0.f);
+
+	static ConstructorHelpers::FObjectFinder<USoundBase> PresenceLoop(
+		TEXT("/Game/Audio/Sweeper/sweeper-presence-v1.sweeper-presence-v1"));
+	if (PresenceLoop.Succeeded())
+	{
+		PresenceSound = PresenceLoop.Object;
+	}
+
 	if (TemporaryCue.Succeeded())
 	{
 		TemporaryCueSound = TemporaryCue.Object;
@@ -172,6 +206,28 @@ void ALLKSweeper::BeginPlay()
 	if (BeaconHousing != nullptr)
 	{
 		StateLensMaterial = BeaconHousing->CreateAndSetMaterialInstanceDynamic(0);
+	}
+
+	// The motor runs for the whole of the machine's life, from silence. It is
+	// started here rather than auto-activated so a world without the asset,
+	// or a headless one, is exactly as quiet as it was before this existed.
+	if (Presence != nullptr && PresenceSound != nullptr)
+	{
+		Presence->SetSound(PresenceSound);
+		Presence->SetVolumeMultiplier(0.f);
+		Presence->Play();
+		bVoiceStarted = true;
+	}
+	else if (Presence != nullptr)
+	{
+		// Named, because a silent Sweeper is the defect this component was
+		// added to remove and it would otherwise look identical to a working
+		// one in every log.
+		UE_LOG(LogLLK, Warning,
+			TEXT("%s has no presence loop: /Game/Audio/Sweeper/sweeper-presence-v1 did not load, ")
+			TEXT("so this machine is inaudible while it moves. Render it with ")
+			TEXT("assets/audio/make_sweeper_presence.py and import it."),
+			*GetName());
 	}
 
 	// `enemies.json`'s Sweeper row, through the roster that already reads it.
@@ -841,6 +897,29 @@ void ALLKSweeper::UpdatePresentation()
 	BeaconHousing->SetRelativeScale3D(FVector(0.12f * Scale, 0.12f * Scale, 0.08f));
 }
 
+void ALLKSweeper::UpdateVoice(const float DeltaSeconds)
+{
+	if (Presence == nullptr || !bVoiceStarted)
+	{
+		return;
+	}
+
+	// Not `Target`: that name is the keeper this Sweeper is hunting.
+	const LLKSweeperPresence::FLLKVoice Wanted = LLKSweeperPresence::VoiceFor(Mind.State);
+
+	// The telegraph's silence has to be immediate. Gliding into it would play
+	// the announcement over a decaying motor, which is the one thing
+	// LLKSweeperPresence.h says this must not do.
+	const bool bImmediate = Mind.State == ELLKSweeperState::Telegraph
+		&& VoicedState != ELLKSweeperState::Telegraph;
+
+	Voice = LLKSweeperPresence::GlideToward(Voice, Wanted, DeltaSeconds, bImmediate);
+	VoicedState = Mind.State;
+
+	Presence->SetVolumeMultiplier(Voice.Volume);
+	Presence->SetPitchMultiplier(Voice.Pitch);
+}
+
 void ALLKSweeper::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
@@ -859,6 +938,7 @@ void ALLKSweeper::Tick(float DeltaSeconds)
 	Mind = Step.Mind;
 	Act(Step);
 	UpdatePresentation();
+	UpdateVoice(DeltaSeconds);
 
 	switch (Step.Move)
 	{

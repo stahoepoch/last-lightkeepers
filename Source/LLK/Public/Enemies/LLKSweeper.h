@@ -38,10 +38,12 @@
 #include "CoreMinimal.h"
 #include "Data/LLKLanternData.h"
 #include "Enemies/LLKSweeperBrain.h"
+#include "Enemies/LLKSweeperPresence.h"
 #include "GameFramework/Character.h"
 #include "UObject/ObjectKey.h"
 #include "LLKSweeper.generated.h"
 
+class UAudioComponent;
 class ULLKEnemyRosterSubsystem;
 class ULLKVitalsComponent;
 class UStaticMeshComponent;
@@ -175,6 +177,16 @@ protected:
 	 */
 	void UpdatePresentation();
 
+	/**
+	 * Sets the running motor to match the state the brain is in.
+	 *
+	 * The sibling of `UpdatePresentation` and deliberately a separate
+	 * function: the beacon is for a player who can already see the machine,
+	 * and this is for one who cannot. Called every authority tick, because the
+	 * glide in `LLKSweeperPresence::GlideToward` needs the delta.
+	 */
+	void UpdateVoice(float DeltaSeconds);
+
 	/** Walks toward a world position along a queried nav path. */
 	void StepToward(const FVector& Destination, float DeltaSeconds);
 
@@ -279,6 +291,40 @@ protected:
 	/** The distance and spatialization contract shared by every temporary cue. */
 	UPROPERTY(VisibleAnywhere, Category = "LLK|Presentation")
 	TObjectPtr<USoundAttenuation> CueAttenuation;
+
+	/**
+	 * The motor, running. Attached to the pawn so it moves with the machine,
+	 * which is the whole difference between this and a cue: a cue tells you
+	 * something happened somewhere, a presence tells you where something is
+	 * now. See `Enemies/LLKSweeperPresence.h` for why it exists and what the
+	 * state balance claims.
+	 */
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Presentation")
+	TObjectPtr<UAudioComponent> Presence;
+
+	/** The looping motor asset. Null leaves the Sweeper silent, as before. */
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Presentation")
+	TObjectPtr<USoundBase> PresenceSound;
+
+	/**
+	 * Reaches further than `CueAttenuation` on purpose.
+	 *
+	 * A cue is bounded to the authored bright reach so that hearing one tells
+	 * you a machine has committed within range of noticing you. The motor is
+	 * the opposite contract: it should be audible *before* you are anywhere
+	 * near being noticed, because its job is to let you route around a
+	 * machine you have not met. Hearing it must never imply being seen.
+	 */
+	UPROPERTY(VisibleAnywhere, Category = "LLK|Presentation")
+	TObjectPtr<USoundAttenuation> PresenceAttenuation;
+
+	/** What the motor is set to right now, glided toward the state's target. */
+	LLKSweeperPresence::FLLKVoice Voice;
+
+	/** So the first tick in a state can cut instead of glide. */
+	ELLKSweeperState VoicedState = ELLKSweeperState::Patrol;
+
+	bool bVoiceStarted = false;
 
 	UPROPERTY()
 	TObjectPtr<ULLKVitalsComponent> Target;

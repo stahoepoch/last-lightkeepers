@@ -343,11 +343,29 @@ for (const [name, family] of families) {
 
   // And the brain stays the only thing that decides: the pawn may not
   // shortcut a state, which is how row 16 would quietly die.
+  // The lookahead is load-bearing. `Mind\.State\s*=` also matched the first
+  // `=` of `Mind.State ==`, so READING the state to compare it tripped a
+  // guard about SETTING it - which is how a correct guard turns into one
+  // people route around. Found 2026-11-21 by `UpdateVoice`, which has to ask
+  // whether the state is Telegraph in order to cut the motor immediately.
+  const setsState = /Mind\.State\s*=(?!=)/;
   check(
     "ROW 16: the pawn never sets a state itself",
-    !/Mind\.State\s*=/.test(code),
+    !setsState.test(code),
     "the brain decides and this acts. A pawn that could set Pursue directly " +
       "could skip the telegraph without touching the tested rule",
+  );
+  // And the narrowing did not defang it: a real assignment is still caught,
+  // and a comparison is still allowed. Asserted rather than reasoned about,
+  // because the whole failure above was a regex nobody had tested.
+  check(
+    "and that rule still catches a real assignment",
+    setsState.test("Mind.State = ELLKSweeperState::Pursue;") &&
+      setsState.test("Mind.State=ELLKSweeperState::Pursue;") &&
+      !setsState.test("if (Mind.State == ELLKSweeperState::Telegraph)") &&
+      !setsState.test("if (Mind.State != ELLKSweeperState::Patrol)"),
+    "the guard above has been narrowed to the point where the pawn could " +
+      "set its own state and this file would not notice",
   );
 }
 // ---- what the generated asset actually received --------------------------
