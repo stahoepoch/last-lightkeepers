@@ -103,8 +103,8 @@ ceiling coffer.
 | | |
 | --- | --- |
 | Panels | 4, one per corner of the square |
-| Size | 500 × 350 cm, turned 45° so the oblong reads as a diamond |
-| At | (±3200, ±1650) |
+| Size | **1400 × 950 cm**, turned 45° so the oblong reads as a diamond — 16.6 m corner to corner, 133 m² each |
+| At | (±2625, ±1200) |
 | Set in | the suspended tile, underside 5.14 m, 300 cm grid |
 | Lit from | the 124 cm plenum above, between tile and mezzanine soffit 6.38 m |
 | Middle | the atrium, chandelier, 14.88 m, under the smoked mirror canopy |
@@ -112,6 +112,27 @@ ceiling coffer.
 Drawn in `docs/reference/boswells/BoswellsGroundFloor_Ceiling.svg`. The
 generator refuses to place a panel that is not wholly inside a tile field, so
 none of them lands half in the painted aisle bulkhead.
+
+**Resized 2026-11-23**, same day: *"The glass panels are much larger than
+that. Look at some reference pictures of Costco's glass ceiling and you can
+definitely see what it's supposed to look like."* The first pass drew 500 ×
+350 cm, which is a light fitting, not a ceiling. 1400 × 950 is nearly half the
+width of its own tile field.
+
+Two things the Costco photographs actually show, which this does not, and both
+are Chris's call:
+
+- **Costco repeats.** The look is a regular field of big bright rectangles
+  across the whole ceiling — dozens of them on the roof photograph — rather
+  than four large ones in the corners. Four is what Chris asked for; a
+  repeated field is what the reference is. If he wants the repeat, the same
+  constants do it with a grid instead of `DIAMOND_AT`.
+- **Costco's are real skylights.** Theirs are daylight through the roof.
+  Ours cannot be — a deck is above the corners — so they are luminous panels,
+  and they will read as flat even slabs unless the 124 cm plenum is given some
+  depth and falloff. Four panels is 532 m², 12.8% of the floor; real
+  daylighting runs 3–5%, so this is a show ceiling, not a daylight
+  calculation.
 
 ## Not done
 

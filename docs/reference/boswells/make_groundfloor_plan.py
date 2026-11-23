@@ -543,9 +543,14 @@ def draw_section() -> None:
 TILE_FIELDS = ((-4350.0, -2700.0, -900.0, 2100.0),
                (900.0, -2700.0, 4350.0, 2100.0))
 PLENUM = DECK_UNDERSIDE - SALES_CEILING        # 124 cm to light it from
-DIAMOND_AT = ((-3200.0, -1650.0), (3200.0, -1650.0),
-              (-3200.0, 1650.0), (3200.0, 1650.0))
-DIAMOND = (500.0, 350.0)                       # oblong, then turned 45 degrees
+DIAMOND_AT = ((-2625.0, -1200.0), (2625.0, -1200.0),
+              (-2625.0, 1200.0), (2625.0, 1200.0))
+# Chris, 2026-11-23: *"The glass panels are much larger than that. Look at
+# some reference pictures of Costco's glass ceiling."* The Costco interior is
+# big bright rectangles repeated across the whole ceiling, each one reading as
+# a panel of sky rather than a fitting. 500 x 350 was a light fitting. This is
+# 16.6 m corner to corner, nearly half the width of its own tile field.
+DIAMOND = (1400.0, 950.0)                      # oblong, then turned 45 degrees
 CEILING_PATH = OUT / "BoswellsGroundFloor_Ceiling.svg"
 
 

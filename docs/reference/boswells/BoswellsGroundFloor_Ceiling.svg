@@ -61,18 +61,18 @@
 </g>
 <rect x="415.0" y="55.0" width="180.0" height="480.0" fill="#111" fill-opacity="0.10" stroke="#111" stroke-width="1.1"/>
 <text x="505.0" y="455.0" text-anchor="middle" font-size="6.5" fill="#111" transform="rotate(-90 505.0 455.0)" letter-spacing="1.4">PAINTED BULKHEAD 5.13 m</text>
-<polygon points="179.7,460.1 215.1,424.7 190.3,399.9 154.9,435.3" fill="#111" fill-opacity="0.16" stroke="#111" stroke-width="1.5"/>
-<text x="185.0" y="429.0" text-anchor="middle" font-size="6" fill="#111">GLASS</text>
-<text x="185.0" y="437.0" text-anchor="middle" font-size="5.2" fill="#555">500 &#215; 350 cm</text>
-<polygon points="819.7,460.1 855.1,424.7 830.3,399.9 794.9,435.3" fill="#111" fill-opacity="0.16" stroke="#111" stroke-width="1.5"/>
-<text x="825.0" y="429.0" text-anchor="middle" font-size="6" fill="#111">GLASS</text>
-<text x="825.0" y="437.0" text-anchor="middle" font-size="5.2" fill="#555">500 &#215; 350 cm</text>
-<polygon points="179.7,130.1 215.1,94.7 190.3,69.9 154.9,105.3" fill="#111" fill-opacity="0.16" stroke="#111" stroke-width="1.5"/>
-<text x="185.0" y="99.0" text-anchor="middle" font-size="6" fill="#111">GLASS</text>
-<text x="185.0" y="107.0" text-anchor="middle" font-size="5.2" fill="#555">500 &#215; 350 cm</text>
-<polygon points="819.7,130.1 855.1,94.7 830.3,69.9 794.9,105.3" fill="#111" fill-opacity="0.16" stroke="#111" stroke-width="1.5"/>
-<text x="825.0" y="99.0" text-anchor="middle" font-size="6" fill="#111">GLASS</text>
-<text x="825.0" y="107.0" text-anchor="middle" font-size="5.2" fill="#555">500 &#215; 350 cm</text>
+<polygon points="226.6,468.1 325.6,369.1 258.4,301.9 159.4,400.9" fill="#111" fill-opacity="0.16" stroke="#111" stroke-width="1.5"/>
+<text x="242.5" y="384.0" text-anchor="middle" font-size="6" fill="#111">GLASS</text>
+<text x="242.5" y="392.0" text-anchor="middle" font-size="5.2" fill="#555">1400 &#215; 950 cm</text>
+<polygon points="751.6,468.1 850.6,369.1 783.4,301.9 684.4,400.9" fill="#111" fill-opacity="0.16" stroke="#111" stroke-width="1.5"/>
+<text x="767.5" y="384.0" text-anchor="middle" font-size="6" fill="#111">GLASS</text>
+<text x="767.5" y="392.0" text-anchor="middle" font-size="5.2" fill="#555">1400 &#215; 950 cm</text>
+<polygon points="226.6,228.1 325.6,129.1 258.4,61.9 159.4,160.9" fill="#111" fill-opacity="0.16" stroke="#111" stroke-width="1.5"/>
+<text x="242.5" y="144.0" text-anchor="middle" font-size="6" fill="#111">GLASS</text>
+<text x="242.5" y="152.0" text-anchor="middle" font-size="5.2" fill="#555">1400 &#215; 950 cm</text>
+<polygon points="751.6,228.1 850.6,129.1 783.4,61.9 684.4,160.9" fill="#111" fill-opacity="0.16" stroke="#111" stroke-width="1.5"/>
+<text x="767.5" y="144.0" text-anchor="middle" font-size="6" fill="#111">GLASS</text>
+<text x="767.5" y="152.0" text-anchor="middle" font-size="5.2" fill="#555">1400 &#215; 950 cm</text>
 <rect x="445.0" y="175.0" width="120.0" height="180.0" fill="#ffffff" stroke="#111" stroke-width="1.8"/>
 <circle cx="505.0" cy="265.0" r="13" fill="none" stroke="#111" stroke-width="1.2"/>
 <circle cx="505.0" cy="265.0" r="5" fill="#111"/>
@@ -95,6 +95,6 @@
 <text x="505.0" y="215.0" text-anchor="middle" font-size="6" fill="#555">UNDER THE SMOKED MIRROR CANOPY</text>
 <text x="70.0" y="601.0" font-size="22" font-weight="700" fill="#111">REFLECTED CEILING PLAN</text>
 <text x="70.0" y="617.0" font-size="10" letter-spacing="2" fill="#111">A SQUARE WITH DIAMONDS</text>
-<text x="70.0" y="633.0" font-size="7.5" fill="#555">Suspended tile at 5.14 m, 300 cm grid. Four glass panels 500 &#215; 350 cm turned 45&#176;, at (&#177;3200, &#177;1650), lit from the 124 cm plenum between the tile and the mezzanine soffit at 6.38 m.</text>
+<text x="70.0" y="633.0" font-size="7.5" fill="#555">Suspended tile at 5.14 m, 300 cm grid. Four glass panels 1400 &#215; 950 cm turned 45&#176;, at (&#177;2625, &#177;1200), lit from the 124 cm plenum between the tile and the mezzanine soffit at 6.38 m.</text>
 <text x="70.0" y="645.0" font-size="7.5" fill="#555">The glass is in the bottom floor's ceiling only; it does not cut the storey above, because a deck is up there. The middle is the one place that is open to the roof.</text>
 </svg>
