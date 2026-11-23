@@ -70,3 +70,26 @@ not substituting.
 Unmeasured: the keeper capsule in the build is not nine yet, nobody has
 walked any of this, and the Sweeper's sightlines have not been re-checked
 against a player who cannot see over a clothing rail.
+
+
+---
+
+## Amended 2026-11-23: the racks were not there
+
+This document argued the floor's stealth from the measured height of its
+fixtures, and the heights are right. **What it did not check is whether any of
+those fixtures existed for the machine that hunts on the floor**, and for all
+but thirty-six of them, they did not: the dressing is placed `NO_COLLISION` by
+`dress_boswells_juniors.py` and the others, deliberately and correctly, and
+nothing blocked `ECC_Visibility`. A child hiding behind a rail of coats was
+standing in an open hall.
+
+This document's own sentence — *"the Sweeper at 176 cm sees over everything the
+player cannot"* — was also untrue in code twice over. The Sweeper traced sight
+from `GetActorLocation()`, its capsule centre at 88 cm, and on the floor as it
+stood an eye at head height was worth **6%** more visible floor, because there
+was nothing to see over.
+
+Both are fixed, and the fixes turn out to depend on each other: making the
+racks block sight is what made the eye height worth **352%**.
+`docs/FINDINGS-THE-RACKS-WERE-NOT-THERE.md` is the measurement and the repair.

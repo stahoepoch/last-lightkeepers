@@ -253,7 +253,12 @@ namespace LLKPerception
 			return Result;
 		}
 
-		Result.Visibility = Visibility->VisibilityBetween(Perceiver.Position, Keeper.Position);
+		// `EyeOrBody`, not `Position`: a perceiver that gave an eye is traced
+		// from it, and one that did not is traced from where it stands. Ranges
+		// above still use `Position`, because the authored radii are distances
+		// between bodies - see FLLKPerceiver::EyePosition for what that split
+		// cost before it existed.
+		Result.Visibility = Visibility->VisibilityBetween(Perceiver.EyeOrBody(), Keeper.Position);
 
 		// Clear and only Clear. Unknown does not notice - see FLLKNotice::
 		// IsUnverified for why it is not quietly folded into Blocked.

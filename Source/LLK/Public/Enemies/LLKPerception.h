@@ -210,6 +210,36 @@ struct FLLKPerceiver
 	/** Unit vector. Only `SightCone` reads it; the other senses are omnidirectional. */
 	UPROPERTY(BlueprintReadWrite, Category = "LLK|Perception")
 	FVector Facing = FVector::ForwardVector;
+
+	/**
+	 * Where this perceiver looks FROM, if that is not where it stands.
+	 *
+	 * **Only the visibility trace reads this. Every range still measures from
+	 * `Position`**, and the split is the whole point: `aggroRadiusLit` 38 and
+	 * `aggroRadiusDark` 12 are authored as distances between two bodies on a
+	 * floor, and raising the measuring point to a machine's head would quietly
+	 * re-scale every one of them.
+	 *
+	 * **Why it exists.** `ALLKSweeper::Senses` passed `GetActorLocation()` for
+	 * both, which is `ACharacter`'s capsule centre - 88 cm up on a machine
+	 * 176 cm tall. So the Sweeper traced sight from its waist. That cost
+	 * nothing while Boswell's ground floor had 36 objects on it that blocked
+	 * `ECC_Visibility`; on 2026-11-23 the floor's dressing became cover and the
+	 * count went to 1,114, and the same measurement that found it also found
+	 * what the waist costs: from two of the three patrol points the Sweeper
+	 * could then see **nothing at all**, while an eye at 176 saw 45% of what
+	 * was in range. `docs/FINDINGS-AT-NINE-YOU-CANNOT-SEE-OVER-THE-RACKS.md`
+	 * argues this floor's entire stealth from a tall machine seeing over
+	 * fixtures a nine-year-old cannot. This is the field that makes that true.
+	 *
+	 * Unset means "looks from where it stands", so every existing caller and
+	 * every test keeps its current behaviour by saying nothing.
+	 */
+	UPROPERTY(BlueprintReadWrite, Category = "LLK|Perception")
+	TOptional<FVector> EyePosition;
+
+	/** Where the visibility trace starts: the eye if one was given, else the body. */
+	FVector EyeOrBody() const { return EyePosition.IsSet() ? *EyePosition : Position; }
 };
 
 /** A keeper, reduced to what a sense needs. */

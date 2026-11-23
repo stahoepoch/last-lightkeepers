@@ -490,6 +490,34 @@ FLLKSweeperSenses ALLKSweeper::Observe(const float DeltaSeconds)
 	Perceiver.Position = GetActorLocation();
 	Perceiver.Facing = GetActorForwardVector();
 
+	// **The Sweeper looks out of its head, not its waist.**
+	//
+	// `GetActorLocation()` is the capsule centre, and this class takes
+	// `ACharacter`'s default capsule deliberately - see the constructor, "the
+	// map owns the Sweeper's physical scale". That puts the centre 88 cm up on
+	// a machine 176 cm tall, and until 2026-11-23 the sight trace started
+	// there. It did not show, because Boswell's ground floor had thirty-six
+	// objects on it that blocked `ECC_Visibility`; the clothing the player
+	// hides behind was visual-only. Once that dressing became cover the floor
+	// had 1,114, and `Tools/audit_boswells_sweeper_sight.py` measured what the
+	// waist was costing: from two of the three patrol points the Sweeper could
+	// see **nothing at all**, against 45% of what was in range from a proper
+	// eye.
+	//
+	// The inset is 8 cm below the crown rather than at it, because a sensor
+	// sits on a machine and not floating at its exact apex - and because a
+	// trace starting on the top plane of its own capsule is a trace that can
+	// graze geometry the machine is standing against.
+	//
+	// Read from the capsule rather than typed, so a Sweeper scaled by a level
+	// author or a future authored body keeps looking out of its own head.
+	if (const UCapsuleComponent* Body = GetCapsuleComponent())
+	{
+		constexpr float EyeInsetCm = 8.f;
+		const float Rise = FMath::Max(0.f, Body->GetScaledCapsuleHalfHeight() - EyeInsetCm);
+		Perceiver.EyePosition = Perceiver.Position + FVector(0.f, 0.f, Rise);
+	}
+
 	FLLKPerceivedKeeper Perceived;
 	Perceived.Position = Senses.KeeperPosition;
 	Perceived.Detectability = Detectability;
