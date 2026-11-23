@@ -123,3 +123,37 @@ should be.
   takes a second tag the day that is wanted.
 - **The floor is still 76% one material**, which remains the largest untouched
   realism gap and is what Chris asked about twice.
+
+---
+
+## Amended 2026-11-23: the mains cast shadows, and the table above is stale
+
+The row saying the mains *"falls off — no: mains lighting is designed to be
+even"* was authored from a true fact about real stores and applied to a grid
+that cannot produce it. **A real store's evenness comes from its spacing.**
+Troffers go up at roughly their mounting height apart; ours are **1,200 cm
+apart over a 390 cm drop to a child's eye, about three times that**. So the
+evenness here was never coming from the grid — it was coming from the lights
+not casting shadows, which is a different thing wearing the same word.
+
+The photograph settled it. `docs/FINDINGS-THE-CEILING-WAS-LYING.md` has the
+frames: with the mains on, the store read as an untextured model viewer, and
+that is the state the player crosses the whole floor to reach. A lit room has
+shadows.
+
+So `BSW_MAINS_*` on the lower floor now casts shadows, and the attenuation
+radius is trimmed from unlimited to 1,400 cm — enough to reach the floor and
+about 6 m sideways, half the 12 m spacing, so neighbours meet in the middle
+instead of every lamp washing the whole wing with no edge anywhere.
+
+**Intensity is unchanged at 26 cd**, and the reason is worth keeping: the audit
+computed that mains-on gives 0.84 lux at the eye against a real store's
+300–500, and concluded the payoff was two orders of magnitude short. That
+arithmetic is correct and the conclusion is wrong. `BSW_EXPOSURE_LOCK` pins
+auto-exposure min and max together at 0.5 and
+`r.DefaultFeature.AutoExposure.ExtendDefaultLuminanceRange=0` pins the units,
+so screen brightness here is a fixed mapping of scene luminance, not a physical
+one. The photograph of the mains state was already a fully lit room. Raising
+the candelas would have blown it out.
+
+`Tools/repair_boswells_ground_lighting.py` is the change.
