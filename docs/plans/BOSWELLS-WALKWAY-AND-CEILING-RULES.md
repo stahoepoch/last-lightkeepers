@@ -56,8 +56,35 @@ floor so the escape route is continuous without being straight — which is what
 a real anchor store does and what *"all kinds of intricate little paths... they
 have angles"* describes.
 
+**Answered 2026-11-23, by Chris and by measuring.** Chris: *"Jogging through
+the middle of the floor continues to be a strange choice."* So no racetrack
+through the departments. The escapes are the ones a real store has, and they
+are now measured from the map rather than claimed:
+
+| Route | Narrowest | |
+| --- | --- | --- |
+| West perimeter | 250 cm | clear |
+| East perimeter | 250 cm | clear |
+| Front perimeter | 861 cm | clear |
+| Back-of-house aisle | 250 cm | clear |
+| Main spine | 1800 cm | clear |
+
+All above the 200 cm escape gap. The back-of-house aisle became continuous
+across the full width on the same day, when the two invented service cells
+came out of the middle of the floor.
+
+So **inside a department there is no way past a Sweeper, and that is the
+design.** Chris, the same day: *"You're a nine-year-old kid, so getting lost
+should be pretty easy. You're tiny."* The 180 cm runs are the trap and the
+perimeter is the way out, which is also why the player has to reach an edge
+to be safe.
+
 Unverified either way: nobody has walked any of it with the keeper capsule,
-and the Sweeper's patrol has not been re-checked against it.
+and the Sweeper's patrol has not been re-checked against it. And the walkway
+itself is now unsettled from underneath — see
+`docs/FINDINGS-AT-NINE-YOU-CANNOT-SEE-OVER-THE-RACKS.md`. Three child steps
+of a 145 cm child is 180 cm; of a nine-year-old at 134 cm it is **165**. The
+rule is Chris's and the age under it moved, so the number is his to re-say.
 
 Unverified: nobody has walked a 180 cm aisle with the keeper capsule, and the
 Sweeper's patrol has not been re-checked against it.

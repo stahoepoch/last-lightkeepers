@@ -35,6 +35,8 @@ import unreal
 MAP = "/Game/LLK_Boswells_OpeningPass"
 CARPET = "BSW_GROUND_CARPET_"
 MIRROR = "BSW_CEILING_MIRROR_"
+ISLAND = "BSW_COURT_ISLAND_"
+EYE_NINE = 124.0           # a nine-year-old: ~134 cm stature, eye at 0.93
 ROOT = Path(unreal.Paths.project_dir()) / "docs/reference/boswells"
 CSV_PATH = ROOT / "BoswellsGroundFloor_Cells.csv"
 OUT = ROOT / "BoswellsGroundFloor_AsBuilt.svg"
@@ -78,9 +80,14 @@ actors = unreal.get_editor_subsystem(
 # stands on.
 built = []
 mirrors = []
+islands = []
 for actor in actors:
     label = actor.get_actor_label()
-    if label.startswith(CARPET):
+    if label.startswith(ISLAND):
+        origin, extent = actor.get_actor_bounds(False)
+        islands.append((label, origin.x, origin.y,
+                        2 * extent.x, 2 * extent.y, origin.z + extent.z))
+    elif label.startswith(CARPET):
         here = actor.get_actor_location()
         scale = actor.get_actor_scale3d()
         built.append((label, here.x, here.y, scale.x * 100.0, scale.y * 100.0,
@@ -92,7 +99,15 @@ for actor in actors:
         mirrors.append((label, here.x, here.y, here.z,
                         scale.x * 100.0, scale.y * 100.0, yaw))
 
-print("ASBUILT carpets=%d mirrors=%d" % (len(built), len(mirrors)))
+print("ASBUILT carpets=%d mirrors=%d court_islands=%d" % (
+    len(built), len(mirrors), len(islands)))
+if islands:
+    over = sum(1 for i in islands if i[5] > EYE_NINE)
+    print("ASBUILT island_top_median=%.0f cm over_a_nine_year_old=%d of %d"
+          % (sorted(i[5] for i in islands)[len(islands) // 2], over,
+             len(islands)))
+else:
+    fail("the escalator court has no islands; it is still an empty room")
 if not built:
     fail("no carpet in the map at all")
 
@@ -236,6 +251,46 @@ else:
          "the mall grille at (%.0f, %.0f); the walkways do not connect"
          % (BODY, ENTRY[0], ENTRY[1], GOAL[0], GOAL[1]))
 
+# ---- is there a way round the outside, and across the back? ------------
+#
+# The 180 cm walkway is below the 200 cm escape gap, so the question is where
+# a keeper CAN get past something. An earlier version of this file assumed a
+# cross aisle through the middle and was wrong about it; Chris, 2026-11-23:
+# *"Jogging through the middle of the floor continues to be a strange
+# choice."* He is right, and real stores agree: the routes that have to stay
+# wide are the perimeter and the back-of-house run, not a diagonal.
+#
+# So this measures them instead of asserting them. Both are reported whether
+# they pass or fail, because a number that only appears when it is wrong is a
+# number nobody checks.
+ESCAPE = 200.0
+
+
+def clearance(edge, axis, limit):
+    """How close does any cell come to this edge of the plate?"""
+    nearest_cell = None
+    for label, x, y, width, length, _m in built:
+        lo = (x - width * 0.5) if axis == "x" else (y - length * 0.5)
+        hi = (x + width * 0.5) if axis == "x" else (y + length * 0.5)
+        gap = (lo - edge) if limit > 0 else (edge - hi)
+        if nearest_cell is None or gap < nearest_cell[0]:
+            nearest_cell = (gap, label)
+    return nearest_cell
+
+
+for edge, axis, limit, name in ((PLATE[0], "x", 1, "west perimeter"),
+                                (PLATE[2], "x", -1, "east perimeter"),
+                                (PLATE[1], "y", 1, "front perimeter"),
+                                (PLATE[3], "y", -1, "back-of-house aisle")):
+    gap, label = clearance(edge, axis, limit)
+    verdict = "clear" if gap >= ESCAPE else "BELOW ESCAPE GAP"
+    print("ASBUILT %-20s narrowest=%.0f cm at %s (%s)"
+          % (name, gap, label, verdict))
+    if gap < ESCAPE:
+        fail("the %s narrows to %.0f cm at %s, under the %.0f cm escape gap; "
+             "with 180 cm inside the departments there would then be no way "
+             "past anything anywhere" % (name, gap, label, ESCAPE))
+
 # ---- the mirrors -------------------------------------------------------
 WANT_MIRRORS = ((-2625.0, -1200.0), (2625.0, -1200.0),
                 (-2625.0, 1200.0), (2625.0, 1200.0))
@@ -337,6 +392,16 @@ out.append('<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" fill="none" '
               (COURT[2] - COURT[0]) / SCALE, (COURT[3] - COURT[1]) / SCALE))
 out.append('<text x="%.1f" y="%.1f" text-anchor="middle" font-size="5.6" '
            'fill="#111">ESCALATOR COURT</text>' % (sx(0), sy(0) - 2))
+
+# The counter islands ringing the well, drawn from the map. These are the
+# answer to "what are we doing with that giant empty space in front of the
+# escalators" - and at 124 cm they are the only fixture on this floor a
+# nine-year-old can see over.
+for label, x, y, width, length, top in islands:
+    out.append('<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" '
+               'fill="#8c8a84" stroke="#111" stroke-width="0.5"/>'
+               % (sx(x - width * 0.5), sy(y + length * 0.5),
+                  width / SCALE, length / SCALE))
 out.append('<text x="%.1f" y="%.1f" text-anchor="middle" font-size="5" '
            'fill="#666">14.88 m to the roof</text>' % (sx(0), sy(0) + 7))
 
@@ -365,9 +430,10 @@ for label, x, y, z, width, length, yaw in mirrors:
 carpet_m2 = sum(c[3] * c[4] for c in built) / 10000.0
 ty = sy(PLATE[1]) + 18.0
 out.append('<text x="%.1f" y="%.1f" font-size="6.4" fill="#111">%d carpeted '
-           'cells, %.0f m&#178;. %d cells left as hard floor: counters, the '
-           'lift, the service desk, the stock room.</text>'
-           % (OX, ty, len(built), carpet_m2, len(plan) - len(built)))
+           'cells, %.0f m&#178;. %d left as hard floor, the way a counter '
+           'hall and a stock room are. %d case units ring the well.</text>'
+           % (OX, ty, len(built), carpet_m2, len(plan) - len(built),
+              len(islands)))
 out.append('<text x="%.1f" y="%.1f" font-size="6.4" fill="#111">The %.0f cm '
            'walkway is the gap: the carpet stops at the cell edge, so what '
            'the player sees between departments is bare tile.</text>'

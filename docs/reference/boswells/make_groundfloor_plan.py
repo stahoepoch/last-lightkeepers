@@ -125,9 +125,28 @@ CELLS = [
     ("MENS SHOES",            "shoes",   "shoes",     3050,   150,  4100,  1050),
     ("SEASONAL PROMOTION",    "ladies",  "apparel",   3050,  1300,  4100,  1840),
 
-    # --- behind the court, where the back aisle runs to both service doors --
-    ("CUSTOMER SERVICE",      "service", "desk",       -750,  1300,  -150,  1840),
-    ("ELEVATOR",              "service", "vertical",    100,  1300,   500,  1840),
+    # --- behind the court: nothing, and that is the point -------------------
+    #
+    # **Removed 2026-11-23.** There were two cells here, CUSTOMER SERVICE and
+    # ELEVATOR, and Chris was right about both: *"Why is the elevator in the
+    # middle of the floor? It doesn't follow the floor plan that I showed you
+    # for reference images."*
+    #
+    # They were invented, and the map already disagreed with them. Boswell's
+    # has a lift and it is built properly, in the rear wall rather than on the
+    # selling floor: `BSW_REALITY_ELEVATOR_SHAFT` at (-850, 2210), behind the
+    # back-of-house line at y 2090, with `BSW_CIRCULATION_ELEVATOR_LOWER_*`
+    # opening onto the floor at (-850, 1770) and an `LLKStoreElevator` call
+    # plate on it. A second lift 900 cm east of a real one, floating in open
+    # floor, is exactly the kind of thing a plan invents when it is not
+    # checked against the building.
+    #
+    # Taking them out does more than delete a mistake. It leaves the whole
+    # width behind the court clear, so the back-of-house aisle runs from the
+    # west wall to the east wall between the two service doors - which is
+    # where a real store puts the route staff and stock move along, and where
+    # the one east-west escape on this floor now is. See the perimeter check
+    # in `Tools/verify_boswells_ground_cells.py`.
 ]
 
 # Small counter islands ringing the escalator well, the way the Meriden sheet

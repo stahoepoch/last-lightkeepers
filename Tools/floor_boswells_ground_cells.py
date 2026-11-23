@@ -105,7 +105,11 @@ DEFAULT_COLOUR = (0.15, 0.14, 0.14)
 
 # The plan's own numbers, so this tool fails loudly if the plan moves under
 # it rather than laying a floor nobody checked.
-EXPECT_CELLS = 27
+EXPECT_CELLS = 25   # 27 until 2026-11-23, when the invented CUSTOMER SERVICE
+                    # and ELEVATOR cells came out: the lift is already built
+                    # in the rear wall at (-850, 2210), and a second one in
+                    # open floor was Chris's "why is the elevator in the
+                    # middle of the floor".
 PLATE = (-4350.0, -2700.0, 4350.0, 2090.0)
 WALKWAY = 180.0
 

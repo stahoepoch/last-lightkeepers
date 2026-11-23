@@ -46,10 +46,6 @@
 <text x="851.4" y="103.2" text-anchor="middle" font-size="5.6" fill="#111">SEASONAL PROMOTION</text>
 <rect x="792.7" y="459.1" width="112.3" height="42.9" fill="#f7f3e9" stroke="#111" stroke-width="0.7" stroke-dasharray="3 2"/>
 <text x="848.9" y="482.6" text-anchor="middle" font-size="5.2" fill="#555">ACCESSORIES</text>
-<rect x="413.9" y="73.0" width="70.7" height="66.0" fill="#f7f3e9" stroke="#111" stroke-width="0.7" stroke-dasharray="3 2"/>
-<text x="449.2" y="108.0" text-anchor="middle" font-size="5.2" fill="#555">CUSTOMER SERVICE</text>
-<rect x="502.7" y="73.0" width="70.3" height="66.0" fill="#f7f3e9" stroke="#111" stroke-width="0.7" stroke-dasharray="3 2"/>
-<text x="537.9" y="108.0" text-anchor="middle" font-size="5.2" fill="#555">ELEVATOR</text>
 <rect x="85.0" y="459.1" width="114.6" height="42.9" fill="#f7f3e9" stroke="#111" stroke-width="0.7" stroke-dasharray="3 2"/>
 <text x="142.3" y="482.6" text-anchor="middle" font-size="5.2" fill="#555">HANDBAGS</text>
 <rect x="613.0" y="459.1" width="161.5" height="42.9" fill="#f7f3e9" stroke="#111" stroke-width="0.7" stroke-dasharray="3 2"/>
@@ -60,6 +56,22 @@
 <text x="619.8" y="156.2" text-anchor="middle" font-size="5.2" fill="#555">SHOE STOCK</text>
 <rect x="395.0" y="157.0" width="200.0" height="200.0" fill="none" stroke="#111" stroke-width="1" stroke-dasharray="5 3"/>
 <text x="495.0" y="255.0" text-anchor="middle" font-size="5.6" fill="#111">ESCALATOR COURT</text>
+<rect x="411.0" y="334.3" width="14.0" height="3.9" fill="#8c8a84" stroke="#111" stroke-width="0.5"/>
+<rect x="411.0" y="327.4" width="14.0" height="3.9" fill="#8c8a84" stroke="#111" stroke-width="0.5"/>
+<rect x="411.0" y="320.6" width="14.0" height="3.9" fill="#8c8a84" stroke="#111" stroke-width="0.5"/>
+<rect x="411.0" y="313.7" width="14.0" height="3.9" fill="#8c8a84" stroke="#111" stroke-width="0.5"/>
+<rect x="565.1" y="334.3" width="13.7" height="4.0" fill="#8c8a84" stroke="#111" stroke-width="0.5"/>
+<rect x="565.1" y="327.4" width="13.7" height="4.0" fill="#8c8a84" stroke="#111" stroke-width="0.5"/>
+<rect x="565.1" y="320.4" width="13.7" height="4.0" fill="#8c8a84" stroke="#111" stroke-width="0.5"/>
+<rect x="565.1" y="313.5" width="13.7" height="4.0" fill="#8c8a84" stroke="#111" stroke-width="0.5"/>
+<rect x="411.0" y="196.2" width="14.0" height="3.9" fill="#8c8a84" stroke="#111" stroke-width="0.5"/>
+<rect x="411.0" y="189.3" width="14.0" height="3.9" fill="#8c8a84" stroke="#111" stroke-width="0.5"/>
+<rect x="411.0" y="182.5" width="14.0" height="3.9" fill="#8c8a84" stroke="#111" stroke-width="0.5"/>
+<rect x="411.0" y="175.6" width="14.0" height="3.9" fill="#8c8a84" stroke="#111" stroke-width="0.5"/>
+<rect x="565.1" y="196.1" width="13.7" height="3.9" fill="#8c8a84" stroke="#111" stroke-width="0.5"/>
+<rect x="565.1" y="189.2" width="13.7" height="3.9" fill="#8c8a84" stroke="#111" stroke-width="0.5"/>
+<rect x="565.1" y="182.4" width="13.7" height="3.9" fill="#8c8a84" stroke="#111" stroke-width="0.5"/>
+<rect x="565.1" y="175.5" width="13.7" height="3.9" fill="#8c8a84" stroke="#111" stroke-width="0.5"/>
 <text x="495.0" y="264.0" text-anchor="middle" font-size="5" fill="#666">14.88 m to the roof</text>
 <polygon points="216.6,460.1 315.6,361.1 248.4,293.9 149.4,392.9" fill="#111" fill-opacity="0.13" stroke="#111" stroke-width="1.3"/>
 <text x="232.5" y="376.0" text-anchor="middle" font-size="5.8" fill="#111" paint-order="stroke" stroke="#fbfaf7" stroke-width="2.6" stroke-linejoin="round">MIRROR</text>
@@ -73,7 +85,7 @@
 <polygon points="741.6,220.1 840.6,121.1 773.4,53.9 674.4,152.9" fill="#111" fill-opacity="0.13" stroke="#111" stroke-width="1.3"/>
 <text x="757.5" y="136.0" text-anchor="middle" font-size="5.8" fill="#111" paint-order="stroke" stroke="#fbfaf7" stroke-width="2.6" stroke-linejoin="round">MIRROR</text>
 <text x="757.5" y="143.0" text-anchor="middle" font-size="4.8" fill="#555" paint-order="stroke" stroke="#fbfaf7" stroke-width="2.6" stroke-linejoin="round">1400 &#215; 950 at z 513</text>
-<text x="60.0" y="545.0" font-size="6.4" fill="#111">20 carpeted cells, 1679 m&#178;. 7 cells left as hard floor: counters, the lift, the service desk, the stock room.</text>
+<text x="60.0" y="545.0" font-size="6.4" fill="#111">20 carpeted cells, 1679 m&#178;. 5 left as hard floor, the way a counter hall and a stock room are. 16 case units ring the well.</text>
 <text x="60.0" y="557.0" font-size="6.4" fill="#111">The 180 cm walkway is the gap: the carpet stops at the cell edge, so what the player sees between departments is bare tile.</text>
 <text x="60.0" y="569.0" font-size="6.4" fill="#1c6b2e">Every carpet matches its cell; every mirror is where the plan puts it, turned 45&#176;, below the tile.</text>
 </svg>
