@@ -111,7 +111,7 @@ EXPECT_CELLS = 25   # 27 until 2026-11-23, when the invented CUSTOMER SERVICE
                     # open floor was Chris's "why is the elevator in the
                     # middle of the floor".
 PLATE = (-4350.0, -2700.0, 4350.0, 2090.0)
-WALKWAY = 180.0
+WALKWAY = 165.0   # three child steps of 55: a nine-year-old at ~134 cm
 
 
 def require(condition, message):

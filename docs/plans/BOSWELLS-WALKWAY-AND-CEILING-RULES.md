@@ -11,26 +11,52 @@ blocked by the building, and this page says by what.
 
 ---
 
-## 1. The walkway: 180 cm
+## 1. The walkway: 165 cm
 
 Nothing in the repo measured a step, so it is derived rather than picked —
 decision row 81 allows that when the derivation is written beside it. Walking
-step length is about 0.41 of stature; the keeper is a child of 145 cm, so a
-step is 59.5 cm, taken as **60**. Three of them is **180 cm**, and
-`CHILD_STEP` and `WALKWAY` in
-`docs/reference/boswells/make_groundfloor_plan.py` are now those numbers.
+step length is about 0.41 of stature.
 
-Changing the constant repacks the whole ground floor: every bay grows until
-its aisle is exactly one walkway, a bay facing another bay taking half the
-slack and a bay facing the shell or the main spine taking all of it. Going
-from the drafting gap of 250 to 180 gave the departments **1,886 m² of the
-4,167 m² plate, up from 1,623** — 39% selling to 45%.
+**Re-derived 2026-11-23, because the child changed.** The first pass assumed
+a 145 cm child and got 59.5, taken as 60, so 180. Then Chris said how old the
+keeper actually is — *"You're a nine-year-old kid, so getting lost should be
+pretty easy. You're tiny"* — which reopened decision row 90 and put back the
+low end of his own 9–13 against Codex's narrowing to 12 or 13. A nine-year-old
+is about 134 cm, so a step is 54.9, taken as **55**, and three of them is
+**165 cm**. Asked whether to re-derive or keep 180, Chris: *"Narrow."*
 
-**What 180 costs, which is the part worth knowing before it is built.** The
-measured side aisle in `docs/reference/boswells/README.md` is 168 cm, *"two 68
-cm bodies pass"*, so 180 still passes two. But the **escape gap in the same
-table is 200 cm, and 180 is under it**. Inside a department you can no longer
-slip past a Sweeper.
+**The derivation is the rule, not the number**, which is why this cost one
+constant. `CHILD_STEP` in `docs/reference/boswells/make_groundfloor_plan.py`
+repacks the whole floor: every bay grows until its aisle is exactly one
+walkway, a bay facing another bay taking half the slack and a bay facing the
+main spine or the court taking all of it. The three widths so far:
+
+| Walkway | Selling area | Share of the 4,167 m² plate |
+| --- | --- | --- |
+| 250 cm, the drafting gap | 1,623 m² | 39% |
+| 180 cm, a 145 cm child | 1,886 m² | 45% |
+| **165 cm, a nine-year-old** | **1,936 m²** | **46%** |
+
+The perimeter did not move with it. The shell is not an obstacle the repack
+pushes against, so the walk against the walls stays at its drafted 250 cm —
+which is what keeps the escape routes legal, and is lucky rather than
+designed. It is worth knowing that one line of `nearest()` is holding the
+only way out of this floor.
+
+**What 165 costs, which is the part worth knowing.** Two 68 cm bodies are
+136 cm, so 165 physically passes two with 29 cm to spare. But it is now under
+**both** numbers in the measured walk table in
+`docs/reference/boswells/README.md`: the 200 cm escape gap, and the 168 cm
+side aisle that table describes as *"two 68 cm bodies pass"*. **Every aisle
+inside a department is now narrower than the narrowest aisle anyone has
+measured in this project.** Inside a department you cannot slip past a
+Sweeper, and you are walking a trench between 164 cm rails you cannot see
+over.
+
+That is the floor Chris asked for, twice and in his own words, so it is
+written down as a property rather than flagged as a risk. It does mean the
+chapter has no margin left in this direction: 165 is the last width at which
+two bodies pass at all.
 
 **Corrected 2026-11-23, and this correction matters more than the rule it
 corrects.** The first version of this page said the escapes *"become the cross
@@ -75,18 +101,18 @@ came out of the middle of the floor.
 
 So **inside a department there is no way past a Sweeper, and that is the
 design.** Chris, the same day: *"You're a nine-year-old kid, so getting lost
-should be pretty easy. You're tiny."* The 180 cm runs are the trap and the
+should be pretty easy. You're tiny."* The 165 cm runs are the trap and the
 perimeter is the way out, which is also why the player has to reach an edge
 to be safe.
 
 Unverified either way: nobody has walked any of it with the keeper capsule,
 and the Sweeper's patrol has not been re-checked against it. And the walkway
-itself is now unsettled from underneath — see
-`docs/FINDINGS-AT-NINE-YOU-CANNOT-SEE-OVER-THE-RACKS.md`. Three child steps
-of a 145 cm child is 180 cm; of a nine-year-old at 134 cm it is **165**. The
-rule is Chris's and the age under it moved, so the number is his to re-say.
+itself was re-derived from underneath on the same day — see
+`docs/FINDINGS-AT-NINE-YOU-CANNOT-SEE-OVER-THE-RACKS.md` and section 1. Three
+child steps of a 145 cm child is 180 cm; of a nine-year-old at 134 cm it is
+165, and Chris chose to narrow.
 
-Unverified: nobody has walked a 180 cm aisle with the keeper capsule, and the
+Unverified: nobody has walked a 165 cm aisle with the keeper capsule, and the
 Sweeper's patrol has not been re-checked against it.
 
 ## 2. The high ceiling, and what stops it
@@ -256,7 +282,7 @@ and move forward with some things."* So both rules are now in
 | `Tools/verify_boswells_ground_cells.py` | reads the map back and draws it |
 
 **The floor.** 20 carpeted cells, 1,679 m², one plane sized to each cell
-rather than a grid of tiles — so the 180 cm walkway is not drawn, it is the
+rather than a grid of tiles — so the 165 cm walkway is not drawn, it is the
 gap where the carpet stops. The other 7 cells are left as the stone tile
 underneath, because a cosmetics hall, a jewellery counter, a lift lobby, a
 service desk and a stock room stand on hard floor in a real anchor store.

@@ -55,10 +55,20 @@ PLATE = (-4350.0, -2700.0, 4350.0, 2090.0)   # sales floor, x0 y0 x1 y1
 # Chris, 2026-11-23: *"the pacing should be three child-like steps in width of
 # a walkway."* Decision row 81 licenses deriving a number rather than picking
 # one, provided the derivation sits beside it. Walking step length is about
-# 0.41 of stature; the keeper is a child of 145 cm, so a step is 59.5 cm,
-# taken as 60. Three of them is the walkway.
-CHILD_STEP = 60.0
-WALKWAY = 3 * CHILD_STEP                      # 180 cm, every aisle and the walk
+# 0.41 of stature.
+#
+# **Re-derived the same day, because the child changed.** The first pass used
+# a 145 cm child and got 59.5, taken as 60, so 180. Then Chris said how old
+# the keeper is - *"You're a nine-year-old kid, so getting lost should be
+# pretty easy. You're tiny"* - which reopened decision row 90 and replaced
+# Codex's narrowing to 12 or 13 with the low end of Chris's own 9-13. A
+# nine-year-old is about 134 cm, so a step is 54.9, taken as 55, and the
+# walkway is 165. Asked whether to re-derive or keep 180, Chris: *"Narrow."*
+#
+# The derivation is the rule, not the number. Changing CHILD_STEP repacks the
+# whole floor, which is the point of having written it this way.
+CHILD_STEP = 55.0
+WALKWAY = 3 * CHILD_STEP                      # 165 cm, every aisle and the walk
 WALK = WALKWAY                                # perimeter walk, same rule
 
 # What 180 costs, recorded rather than smoothed over: the measured side aisle

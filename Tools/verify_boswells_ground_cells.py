@@ -45,7 +45,7 @@ PLATE = (-4350.0, -2700.0, 4350.0, 2090.0)
 MAIN_AISLE = 900.0
 COURT = (-1000.0, -1000.0, 1000.0, 1000.0)
 ATRIUM = (-600.0, -900.0, 600.0, 900.0)
-WALKWAY = 180.0
+WALKWAY = 165.0   # three child steps of 55: a nine-year-old at ~134 cm
 SALES_CEILING = 514.0
 TOLERANCE = 1.0
 
