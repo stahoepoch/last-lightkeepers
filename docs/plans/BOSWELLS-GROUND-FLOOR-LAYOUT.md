@@ -1,5 +1,19 @@
 # Where LADIES, MENS and ELECTRONICS go on Boswell's ground floor
 
+> **Superseded, 2026-11-23, by
+> `docs/reference/boswells/make_groundfloor_plan.py` and its drawing.** Chris:
+> *"What you're showing me are like four giant blocks. It's not like that."*
+> He is right, and this page is wrong three ways. It is four blocks where a
+> department store floor is two dozen cells. It puts ELECTRONICS on the ground
+> floor, which `THE-MALL-IS-STILL-TRADING.md` section 13 — Chris's own
+> department list, and the authority — does not: the big CRT sets sit in the
+> teens area with juniors. And it leaves out JEWELRY and PERFUME, which section
+> 13 does put on this floor. It was written without reading the reference
+> material already in this repo: section 13, the 104-socket authored plan in
+> `BoswellsFullStore_Sockets.csv`, and the fourteen photographs and two Meriden
+> floor diagrams in `docs/reference/boswells/`. Kept for the geometry it reads
+> out of the map in section 1, which still holds.
+
 **Proposal, 2026-11-23.** Chris: *"Propose, follow the internet and what those
 layouts suggest, they show floorplans and where the areas sit plus where people
 walk around to and from."*
