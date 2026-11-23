@@ -50,7 +50,23 @@ SVG_PATH = OUT / "BoswellsGroundFloor_Plan.svg"
 # --- the plate, from the map -------------------------------------------------
 
 PLATE = (-4350.0, -2700.0, 4350.0, 2090.0)   # sales floor, x0 y0 x1 y1
-WALK = 250.0                                  # perimeter walk
+
+# Chris, 2026-11-23: *"the pacing should be three child-like steps in width of
+# a walkway."* Decision row 81 licenses deriving a number rather than picking
+# one, provided the derivation sits beside it. Walking step length is about
+# 0.41 of stature; the keeper is a child of 145 cm, so a step is 59.5 cm,
+# taken as 60. Three of them is the walkway.
+CHILD_STEP = 60.0
+WALKWAY = 3 * CHILD_STEP                      # 180 cm, every aisle and the walk
+WALK = WALKWAY                                # perimeter walk, same rule
+
+# What 180 costs, recorded rather than smoothed over: the measured side aisle
+# in `README.md` is 168 cm, "two 68 cm bodies pass", so 180 still passes two.
+# But the escape gap in the same table is 200 cm, and 180 is under it. In a
+# department aisle you can no longer slip past a Sweeper. The escapes are the
+# cross aisles, the court and the main spine, which keep their widths.
+ESCAPE_GAP = 200.0
+TWO_BODIES = 168.0
 GRILLE = (-900.0, 900.0)                      # mall entrance opening, south
 ATRIUM = (-600.0, -900.0, 600.0, 900.0)       # void, open to the roof
 SERVICE_DOORS = ((-3400.0, -3000.0), (3000.0, 3400.0))
@@ -123,6 +139,67 @@ COURT_ISLANDS = [
 ]
 
 
+def widen() -> None:
+    """Grow every bay until its aisle is exactly one walkway.
+
+    The table above is the grammar - which department sits beside which, and
+    where the gaps fall. It is written with generous gaps so the grammar is
+    readable. This closes them to `WALKWAY`, so that changing one constant
+    repacks the whole floor instead of needing 27 rows retyped. A cell facing
+    another cell moves half the excess, because the other cell moves too; a
+    cell facing the shell or the main spine moves all of it, because they do
+    not move at all.
+    """
+    inner = (PLATE[0] + WALKWAY, PLATE[1] + WALKWAY,
+             PLATE[2] - WALKWAY, PLATE[3] - WALKWAY)
+    spine = (COURT[0], COURT[2])      # the central corridor, x, at every y
+
+    def nearest(cell, axis, side):
+        """(gap, moves_too) to the closest thing on one side of one cell."""
+        lo, hi = (3, 5) if axis == "x" else (4, 6)
+        olo, ohi = (4, 6) if axis == "x" else (3, 5)
+        best, shared = None, False
+        for other in CELLS:
+            if other is cell:
+                continue
+            if not (other[olo] < cell[ohi] and cell[olo] < other[ohi]):
+                continue
+            gap = (cell[lo] - other[hi]) if side < 0 else (other[lo] - cell[hi])
+            if gap >= 0 and (best is None or gap < best):
+                best, shared = gap, True
+        if axis == "x":
+            edge = inner[0] if side < 0 else inner[2]
+            gap = (cell[lo] - edge) if side < 0 else (edge - cell[hi])
+        else:
+            edge = inner[1] if side < 0 else inner[3]
+            gap = (cell[lo] - edge) if side < 0 else (edge - cell[hi])
+        if gap >= 0 and (best is None or gap < best):
+            best, shared = gap, False
+        if axis == "x":   # the spine never yields
+            gap = (cell[lo] - spine[1]) if side < 0 else (spine[0] - cell[hi])
+            if gap >= 0 and (best is None or gap < best):
+                best, shared = gap, False
+        elif cell[3] < COURT[2] and COURT[0] < cell[5]:
+            # Standing over the court's own x range, so the court is the
+            # obstacle on this axis. It does not yield either.
+            gap = (cell[4] - COURT[3]) if side < 0 else (COURT[1] - cell[6])
+            if gap >= 0 and (best is None or gap < best):
+                best, shared = gap, False
+        return best, shared
+
+    for _ in range(3):
+        for i, cell in enumerate(CELLS):
+            box = list(cell)
+            for axis, side, index in (("x", -1, 3), ("x", 1, 5),
+                                      ("y", -1, 4), ("y", 1, 6)):
+                gap, shared = nearest(CELLS[i], axis, side)
+                if gap is None or gap <= WALKWAY:
+                    continue
+                move = (gap - WALKWAY) / (2.0 if shared else 1.0)
+                box[index] += -move if side < 0 else move
+            CELLS[i] = tuple(box)
+
+
 def checks() -> list[str]:
     """Refuse to draw a plan that would not stand up."""
     problems = []
@@ -148,12 +225,12 @@ def checks() -> list[str]:
             # slot a body wedges in. 250 cm is this project's measured aisle.
             if a[4] < b[6] and b[4] < a[6]:
                 gap = max(b[3] - a[5], a[3] - b[5])
-                if 0 < gap < 250:
+                if 0 < gap < WALKWAY - 0.5:
                     problems.append("%s and %s leave a %.0f cm slot in x"
                                     % (a[0], b[0], gap))
             if a[3] < b[5] and b[3] < a[5]:
                 gap = max(b[4] - a[6], a[4] - b[6])
-                if 0 < gap < 250:
+                if 0 < gap < WALKWAY - 0.5:
                     problems.append("%s and %s leave a %.0f cm slot in y"
                                     % (a[0], b[0], gap))
 
@@ -347,7 +424,100 @@ def draw() -> None:
     SVG_PATH.write_text("\n".join(p), encoding="utf-8")
 
 
+# --- the section, because "high ceilings" is a vertical question ------------
+
+# Heights as this session's ceiling audit read them out of the map, in cm.
+SALES_CEILING = 514.0     # suspended tile underside, both wings
+AISLE_SOFFIT = 513.0      # painted bulkhead over the main aisle, 86cbdfd
+DECK_UNDERSIDE = 638.0    # mezzanine soffit
+DECK_TOP = 650.0          # upper selling floor
+ROOF_UNDERSIDE = 1488.0   # the only high ceiling in the building
+DECKS_Y = ((-2700.0, -900.0), (900.0, 2700.0))   # at x = 0, north and south
+SECTION_PATH = OUT / "BoswellsGroundFloor_Section.svg"
+
+
+def draw_section() -> None:
+    """A cut at x = 0, looking west. Chris, 2026-11-23: *'the ceilings are
+    high, high ceilings with the glass on the ceilings. That's the most
+    important thing.'* The cut is the honest answer to that: the building
+    only has a high ceiling where it has no second storey, and at x = 0 the
+    second storey stops only for the atrium."""
+    y0, y1 = PLATE[1], 2700.0
+    sc, left, base = 0.145, 70.0, 300.0
+
+    def px(y):
+        return left + (y - y0) * sc
+
+    def pz(z):
+        return base - z * sc
+
+    p = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" '
+         'width="900" height="400" '
+         'font-family="Helvetica, Arial, sans-serif">',
+         '<rect x="0" y="0" width="900" height="400" fill="#ffffff"/>']
+    add = p.append
+
+    def line(ya, za, yb, zb, w=1.2, dash=""):
+        add('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="#111" '
+            'stroke-width="%s"%s/>' % (px(ya), pz(za), px(yb), pz(zb), w,
+                                       ' stroke-dasharray="%s"' % dash
+                                       if dash else ""))
+
+    def note(y, z, text, anchor="start", size=7.5, fill="#111"):
+        add('<text x="%.1f" y="%.1f" font-size="%s" text-anchor="%s" '
+            'fill="%s">%s</text>' % (px(y), pz(z), size, anchor, fill, text))
+
+    # floor, roof, outer walls
+    line(y0, 0, y1, 0, 2.4)
+    line(y0, ROOF_UNDERSIDE, y1, ROOF_UNDERSIDE, 2.4)
+    line(y0, 0, y0, ROOF_UNDERSIDE, 2.4)
+    line(y1, 0, y1, ROOF_UNDERSIDE, 2.4)
+
+    # the second storey, and the drop ceiling tucked under it
+    for a, b in DECKS_Y:
+        add('<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" fill="#111" '
+            'fill-opacity="0.12" stroke="#111" stroke-width="1.2"/>' % (
+                px(a), pz(DECK_TOP), (b - a) * sc,
+                (DECK_TOP - DECK_UNDERSIDE) * sc))
+        line(a, SALES_CEILING, b, SALES_CEILING, 1.2)
+        add('<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" fill="#111" '
+            'fill-opacity="0.05" stroke="none"/>' % (
+                px(a), pz(SALES_CEILING), (b - a) * sc, SALES_CEILING * sc))
+
+    # the atrium: the one slot with no storey over it
+    line(-900, 0, -900, ROOF_UNDERSIDE, 1.0, "4 3")
+    line(900, 0, 900, ROOF_UNDERSIDE, 1.0, "4 3")
+    add('<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" fill="#111" '
+        'fill-opacity="0.04" stroke="none"/>' % (
+            px(-900), pz(ROOF_UNDERSIDE), 1800 * sc, ROOF_UNDERSIDE * sc))
+    line(-900, 1400, 900, 1400, 2.6)
+    note(0, 1430, "GLASS / MIRRORED CANOPY + CHANDELIER", "middle", 7)
+    note(0, 760, "the only high ceiling in the building:", "middle", 8)
+    note(0, 640, "18 m wide, 14.9 m to the roof", "middle", 8)
+
+    # dimension flags
+    note(-2600, SALES_CEILING + 40, "suspended tile, 5.14 m")
+    note(-2600, DECK_TOP + 60, "upper selling floor, 6.50 m")
+    note(2650, ROOF_UNDERSIDE + 50, "roof, 14.88 m", "end")
+    note(-2650, 40, "MALL ENTRANCE", "start", 7, "#555")
+    note(2650, 40, "DOCK", "end", 7, "#555")
+
+    add('<text x="70" y="348" font-size="15" font-weight="700" fill="#111">'
+        'SECTION AT X = 0, LOOKING WEST</text>')
+    add('<text x="70" y="366" font-size="7.5" fill="#555">'
+        'A second storey and a high ceiling cannot share a floor. The decks '
+        'cover everything except the 18 m atrium, so that slot is the whole '
+        'of the high, glass-roofed room.</text>')
+    add('<text x="70" y="379" font-size="7.5" fill="#555">'
+        'Heights as the 2026-11-22 ceiling audit read them from '
+        'LLK_Boswells_OpeningPass. Widening the glass means shrinking the '
+        'mezzanine; nothing else moves it.</text>')
+    add("</svg>")
+    SECTION_PATH.write_text("\n".join(p), encoding="utf-8")
+
+
 def main() -> None:
+    widen()
     problems = checks()
     if problems:
         for line in problems:
@@ -355,6 +525,7 @@ def main() -> None:
         raise SystemExit(1)
     write_csv()
     draw()
+    draw_section()
     selling = sum((c[5] - c[3]) * (c[6] - c[4]) for c in CELLS
                   if c[1] in DEPARTMENTS) / 10000.0
     plate = (PLATE[2] - PLATE[0]) * (PLATE[3] - PLATE[1]) / 10000.0
@@ -370,7 +541,9 @@ def main() -> None:
     print("GROUNDFLOOR selling=%.0f m2 of plate=%.0f m2 (%.0f%%), "
           "circulation and court are the rest" % (
               selling, plate, 100.0 * selling / plate))
-    print("GROUNDFLOOR wrote %s and %s" % (CSV_PATH.name, SVG_PATH.name))
+    print("GROUNDFLOOR walkway=%.0f cm (3 child steps of %.0f), escape gap %.0f"
+          " is no longer met inside a department" % (WALKWAY, CHILD_STEP, ESCAPE_GAP))
+    print("GROUNDFLOOR wrote %s, %s and %s" % (CSV_PATH.name, SVG_PATH.name, SECTION_PATH.name))
 
 
 if __name__ == "__main__":

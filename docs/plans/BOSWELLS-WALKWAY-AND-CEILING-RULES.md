@@ -1,0 +1,88 @@
+# Three child steps wide, and a high ceiling with glass
+
+**2026-11-23.** Chris, remote and unable to look at anything:
+
+> *"The pacing should be three child-like steps in width of a walkway. And the
+> ceilings are high, high ceilings with the glass on the ceilings. That's the
+> most important thing."*
+
+Two rules. The first is now a constant the floor repacks around. The second is
+blocked by the building, and this page says by what.
+
+---
+
+## 1. The walkway: 180 cm
+
+Nothing in the repo measured a step, so it is derived rather than picked —
+decision row 81 allows that when the derivation is written beside it. Walking
+step length is about 0.41 of stature; the keeper is a child of 145 cm, so a
+step is 59.5 cm, taken as **60**. Three of them is **180 cm**, and
+`CHILD_STEP` and `WALKWAY` in
+`docs/reference/boswells/make_groundfloor_plan.py` are now those numbers.
+
+Changing the constant repacks the whole ground floor: every bay grows until
+its aisle is exactly one walkway, a bay facing another bay taking half the
+slack and a bay facing the shell or the main spine taking all of it. Going
+from the drafting gap of 250 to 180 gave the departments **1,886 m² of the
+4,167 m² plate, up from 1,623** — 39% selling to 45%.
+
+**What 180 costs, which is the part worth knowing before it is built.** The
+measured side aisle in `docs/reference/boswells/README.md` is 168 cm, *"two 68
+cm bodies pass"*, so 180 still passes two. But the **escape gap in the same
+table is 200 cm, and 180 is under it**. Inside a department you can no longer
+slip past a Sweeper. The escapes become the cross aisles, the court and the
+main spine, which keep their widths. For a horror floor that may be the point;
+it is a change to how the chapter plays, so it is written down rather than
+absorbed.
+
+Unverified: nobody has walked a 180 cm aisle with the keeper capsule, and the
+Sweeper's patrol has not been re-checked against it.
+
+## 2. The high ceiling, and what stops it
+
+The section at x = 0 (`BoswellsGroundFloor_Section.svg`) is the answer, and it
+is not the one the directive wants.
+
+| Height | What is there | Covers |
+| --- | --- | --- |
+| 5.14 m | suspended tile ceiling | both wings |
+| 5.13 m | painted aisle bulkhead, `86cbdfd` | the 18 m main aisle |
+| 6.38 m | mezzanine soffit | everything the decks sit over |
+| 6.50 m | upper selling floor | — |
+| **14.88 m** | **the roof** | **the atrium only** |
+
+**A second storey and a high ceiling cannot share a floor.** The four
+`ANCHOR_UPPER_*` decks cover the whole plate except the atrium void at
+x ±600, y ±900. So the building already has exactly one high, glass-roofed
+room — 18 m of it — and no amount of raising the tile ceiling makes another,
+because the thing above the tile is not air, it is the floor somebody walks on
+upstairs.
+
+That means the directive is really a question about the mezzanine, and only
+Chris can answer it:
+
+- **Leave it.** The glass ceiling is the atrium: 216 m² of a 4,167 m² floor,
+  which is what is built now, and what `THE-STORE.md` already calls Boswell's
+  locked signature — the chandelier and the mirrored ceiling over the
+  escalator well.
+- **Open it up.** Shrink the mezzanine to a gallery ring and take the atrium
+  out to the court's 20 × 20 m, or wider. The high glass room then covers the
+  escalators, the court and the middle of the main aisle — the whole centre of
+  the chapter's route — and the upper floor loses the selling area it gains in
+  drama. This is what real anchors with glass ceilings do; the glass is over
+  the well, and the selling floor around it is low.
+
+Either way the tile ceiling over the wings stays at 5.14 m, because a deck is
+over it.
+
+**Knock-on, if the atrium widens:** the two lighting states hang 26 cm under
+whatever ceiling is actually above each light, read from the map, so they
+re-derive themselves on a re-run. The aisle bulkhead from `86cbdfd` does not —
+it is 18 m wide because the aisle is, and a wider atrium cuts a hole in it.
+`ALLKTestGameMode::ReportFloorWithoutCeiling` would report that hole, which is
+what it is for.
+
+## Not done
+
+Neither rule is in the map. The walkway is in the plan generator; the ceiling
+is a drawing and a question. Chris is remote and will field-check later.
