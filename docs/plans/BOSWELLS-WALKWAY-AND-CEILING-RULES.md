@@ -93,21 +93,32 @@ what it is for.
 > diamond. So it's a square with diamonds."*
 
 So the mezzanine stays. The high ceiling is the middle, as built, and the
-glass is four small panels rather than one big roof. **"Bottom floor only" is
-what makes it buildable**: the glass does not cut through the storey above —
-it cannot, there is a deck up there — so it is a luminous panel let into the
-5.14 m tile and lit from inside the 124 cm plenum between the tile and the
-mezzanine soffit. That is also exactly what a 1990s anchor did with a glazed
-ceiling coffer.
+corners get four panels rather than one big roof.
+
+**Corrected the same day: it is mirror, not glass.** Chris: *"Mirrored
+ceiling!!! My bad. Boscovs mirror ceiling."* And
+`docs/reference/boswells/source-photos/07-mirrored-atrium.jpg` — his own
+photograph, in this repo — shows exactly what it is: a **faceted, panelised
+mirrored coffer** stepping up out of the white tile, among ordinary troffers,
+each of which it doubles. Not a flat sheet. The mirror also carries down the
+vertical fascia at the atrium edge, and
+`10-escalator-glass-ceiling.jpg` shows the tiered glass-rod chandelier hanging
+in the well with the mirror above it.
+
+**This makes the whole problem go away.** The objection to glass was that a
+deck sits over the corners, so no daylight can reach them. A mirror does not
+want daylight — it reflects the room. The 124 cm plenum stops being a lightbox
+that has to be lit and becomes simply the coffer's depth.
 
 | | |
 | --- | --- |
-| Panels | 4, one per corner of the square |
+| Coffers | 4, one per corner of the square |
 | Size | **1400 × 950 cm**, turned 45° so the oblong reads as a diamond — 16.6 m corner to corner, 133 m² each |
 | At | (±2625, ±1200) |
 | Set in | the suspended tile, underside 5.14 m, 300 cm grid |
-| Lit from | the 124 cm plenum above, between tile and mezzanine soffit 6.38 m |
-| Middle | the atrium, chandelier, 14.88 m, under the smoked mirror canopy |
+| Depth | recessed **124 cm** up into the plenum, to the mezzanine soffit at 6.38 m |
+| Surface | mirror on the flat top and on all four slopes, in panels, as the photograph shows |
+| Middle | the atrium, chandelier, 14.88 m, smoked mirror canopy |
 
 Drawn in `docs/reference/boswells/BoswellsGroundFloor_Ceiling.svg`. The
 generator refuses to place a panel that is not wholly inside a tile field, so
@@ -119,20 +130,29 @@ definitely see what it's supposed to look like."* The first pass drew 500 ×
 350 cm, which is a light fitting, not a ceiling. 1400 × 950 is nearly half the
 width of its own tile field.
 
-Two things the Costco photographs actually show, which this does not, and both
-are Chris's call:
+### What a mirrored ceiling does to a dark store
 
-- **Costco repeats.** The look is a regular field of big bright rectangles
-  across the whole ceiling — dozens of them on the roof photograph — rather
-  than four large ones in the corners. Four is what Chris asked for; a
-  repeated field is what the reference is. If he wants the repeat, the same
-  constants do it with a grid instead of `DIAMOND_AT`.
-- **Costco's are real skylights.** Theirs are daylight through the roof.
-  Ours cannot be — a deck is above the corners — so they are luminous panels,
-  and they will read as flat even slabs unless the 124 cm plenum is given some
-  depth and falloff. Four panels is 532 m², 12.8% of the floor; real
-  daylighting runs 3–5%, so this is a show ceiling, not a daylight
-  calculation.
+This is the part that is worth more than the drawing, and none of it was true
+of the glass version:
+
+- **It doubles the lantern.** 532 m² of mirror overhead in a building whose
+  only moving light is the keeper's. The lantern gets a twin on the ceiling
+  that moves when the player moves, and lights nothing.
+- **It shows the player what is behind them.** A coffer ahead reflects the
+  aisle behind. That is a horror instrument and a navigation aid at once, and
+  it is free — it needs no script.
+- **It will lie to the machines.** `LLKLightField` only knows about lanterns,
+  so every reflection is invisible to anything that reads light. A player who
+  believes a reflected lantern hides them is wrong in a way the game never
+  states. Worth deciding deliberately rather than discovering.
+- **It is the one locked signature we already had.** `THE-STORE.md` has the
+  chandelier and the mirrored ceiling as Boswell's signature, and §13 records
+  Chris's *"glass ceiling mirrors"* as the same room Buda remembered. The
+  corners now rhyme with the middle instead of competing with it.
+- **Cost, unverified.** Real mirror in UE is a planar reflection, which is
+  expensive, or screen-space, which drops whatever is off screen — and a
+  mirror that loses the thing behind you loses the whole point. Nobody has
+  measured either here.
 
 ## Not done
 

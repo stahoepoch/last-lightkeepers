@@ -61,18 +61,46 @@
 </g>
 <rect x="415.0" y="55.0" width="180.0" height="480.0" fill="#111" fill-opacity="0.10" stroke="#111" stroke-width="1.1"/>
 <text x="505.0" y="455.0" text-anchor="middle" font-size="6.5" fill="#111" transform="rotate(-90 505.0 455.0)" letter-spacing="1.4">PAINTED BULKHEAD 5.13 m</text>
-<polygon points="226.6,468.1 325.6,369.1 258.4,301.9 159.4,400.9" fill="#111" fill-opacity="0.16" stroke="#111" stroke-width="1.5"/>
-<text x="242.5" y="384.0" text-anchor="middle" font-size="6" fill="#111">GLASS</text>
-<text x="242.5" y="392.0" text-anchor="middle" font-size="5.2" fill="#555">1400 &#215; 950 cm</text>
-<polygon points="751.6,468.1 850.6,369.1 783.4,301.9 684.4,400.9" fill="#111" fill-opacity="0.16" stroke="#111" stroke-width="1.5"/>
-<text x="767.5" y="384.0" text-anchor="middle" font-size="6" fill="#111">GLASS</text>
-<text x="767.5" y="392.0" text-anchor="middle" font-size="5.2" fill="#555">1400 &#215; 950 cm</text>
-<polygon points="226.6,228.1 325.6,129.1 258.4,61.9 159.4,160.9" fill="#111" fill-opacity="0.16" stroke="#111" stroke-width="1.5"/>
-<text x="242.5" y="144.0" text-anchor="middle" font-size="6" fill="#111">GLASS</text>
-<text x="242.5" y="152.0" text-anchor="middle" font-size="5.2" fill="#555">1400 &#215; 950 cm</text>
-<polygon points="751.6,228.1 850.6,129.1 783.4,61.9 684.4,160.9" fill="#111" fill-opacity="0.16" stroke="#111" stroke-width="1.5"/>
-<text x="767.5" y="144.0" text-anchor="middle" font-size="6" fill="#111">GLASS</text>
-<text x="767.5" y="152.0" text-anchor="middle" font-size="5.2" fill="#555">1400 &#215; 950 cm</text>
+<polygon points="226.6,468.1 325.6,369.1 258.4,301.9 159.4,400.9" fill="#111" fill-opacity="0.07" stroke="#111" stroke-width="1.6"/>
+<g stroke="#111" stroke-width="0.8">
+<line x1="226.6" y1="468.1" x2="233.7" y2="430.7"/>
+<line x1="325.6" y1="369.1" x2="288.2" y2="376.2"/>
+<line x1="258.4" y1="301.9" x2="251.3" y2="339.3"/>
+<line x1="159.4" y1="400.9" x2="196.8" y2="393.8"/>
+</g>
+<polygon points="233.7,430.7 288.2,376.2 251.3,339.3 196.8,393.8" fill="#111" fill-opacity="0.16" stroke="#111" stroke-width="1.2"/>
+<text x="242.5" y="384.0" text-anchor="middle" font-size="6.5" fill="#111" letter-spacing="0.8">MIRRORED COFFER</text>
+<text x="242.5" y="392.0" text-anchor="middle" font-size="5.2" fill="#555">1400 &#215; 950 cm, 124 cm deep</text>
+<polygon points="751.6,468.1 850.6,369.1 783.4,301.9 684.4,400.9" fill="#111" fill-opacity="0.07" stroke="#111" stroke-width="1.6"/>
+<g stroke="#111" stroke-width="0.8">
+<line x1="751.6" y1="468.1" x2="758.7" y2="430.7"/>
+<line x1="850.6" y1="369.1" x2="813.2" y2="376.2"/>
+<line x1="783.4" y1="301.9" x2="776.3" y2="339.3"/>
+<line x1="684.4" y1="400.9" x2="721.8" y2="393.8"/>
+</g>
+<polygon points="758.7,430.7 813.2,376.2 776.3,339.3 721.8,393.8" fill="#111" fill-opacity="0.16" stroke="#111" stroke-width="1.2"/>
+<text x="767.5" y="384.0" text-anchor="middle" font-size="6.5" fill="#111" letter-spacing="0.8">MIRRORED COFFER</text>
+<text x="767.5" y="392.0" text-anchor="middle" font-size="5.2" fill="#555">1400 &#215; 950 cm, 124 cm deep</text>
+<polygon points="226.6,228.1 325.6,129.1 258.4,61.9 159.4,160.9" fill="#111" fill-opacity="0.07" stroke="#111" stroke-width="1.6"/>
+<g stroke="#111" stroke-width="0.8">
+<line x1="226.6" y1="228.1" x2="233.7" y2="190.7"/>
+<line x1="325.6" y1="129.1" x2="288.2" y2="136.2"/>
+<line x1="258.4" y1="61.9" x2="251.3" y2="99.3"/>
+<line x1="159.4" y1="160.9" x2="196.8" y2="153.8"/>
+</g>
+<polygon points="233.7,190.7 288.2,136.2 251.3,99.3 196.8,153.8" fill="#111" fill-opacity="0.16" stroke="#111" stroke-width="1.2"/>
+<text x="242.5" y="144.0" text-anchor="middle" font-size="6.5" fill="#111" letter-spacing="0.8">MIRRORED COFFER</text>
+<text x="242.5" y="152.0" text-anchor="middle" font-size="5.2" fill="#555">1400 &#215; 950 cm, 124 cm deep</text>
+<polygon points="751.6,228.1 850.6,129.1 783.4,61.9 684.4,160.9" fill="#111" fill-opacity="0.07" stroke="#111" stroke-width="1.6"/>
+<g stroke="#111" stroke-width="0.8">
+<line x1="751.6" y1="228.1" x2="758.7" y2="190.7"/>
+<line x1="850.6" y1="129.1" x2="813.2" y2="136.2"/>
+<line x1="783.4" y1="61.9" x2="776.3" y2="99.3"/>
+<line x1="684.4" y1="160.9" x2="721.8" y2="153.8"/>
+</g>
+<polygon points="758.7,190.7 813.2,136.2 776.3,99.3 721.8,153.8" fill="#111" fill-opacity="0.16" stroke="#111" stroke-width="1.2"/>
+<text x="767.5" y="144.0" text-anchor="middle" font-size="6.5" fill="#111" letter-spacing="0.8">MIRRORED COFFER</text>
+<text x="767.5" y="152.0" text-anchor="middle" font-size="5.2" fill="#555">1400 &#215; 950 cm, 124 cm deep</text>
 <rect x="445.0" y="175.0" width="120.0" height="180.0" fill="#ffffff" stroke="#111" stroke-width="1.8"/>
 <circle cx="505.0" cy="265.0" r="13" fill="none" stroke="#111" stroke-width="1.2"/>
 <circle cx="505.0" cy="265.0" r="5" fill="#111"/>
@@ -92,9 +120,9 @@
 </g>
 <text x="505.0" y="295.0" text-anchor="middle" font-size="6.5" fill="#111">CHANDELIER</text>
 <text x="505.0" y="317.0" text-anchor="middle" font-size="6" fill="#555">HIGH CEILING, 14.88 m</text>
-<text x="505.0" y="215.0" text-anchor="middle" font-size="6" fill="#555">UNDER THE SMOKED MIRROR CANOPY</text>
+<text x="505.0" y="215.0" text-anchor="middle" font-size="6" fill="#555">SMOKED MIRROR CANOPY</text>
 <text x="70.0" y="601.0" font-size="22" font-weight="700" fill="#111">REFLECTED CEILING PLAN</text>
 <text x="70.0" y="617.0" font-size="10" letter-spacing="2" fill="#111">A SQUARE WITH DIAMONDS</text>
-<text x="70.0" y="633.0" font-size="7.5" fill="#555">Suspended tile at 5.14 m, 300 cm grid. Four glass panels 1400 &#215; 950 cm turned 45&#176;, at (&#177;2625, &#177;1200), lit from the 124 cm plenum between the tile and the mezzanine soffit at 6.38 m.</text>
-<text x="70.0" y="645.0" font-size="7.5" fill="#555">The glass is in the bottom floor's ceiling only; it does not cut the storey above, because a deck is up there. The middle is the one place that is open to the roof.</text>
+<text x="70.0" y="633.0" font-size="7.5" fill="#555">Suspended tile at 5.14 m, 300 cm grid. Four mirrored coffers 1400 &#215; 950 cm turned 45&#176;, at (&#177;2625, &#177;1200), recessed 124 cm up into the plenum, mirror on the flat top and on all four slopes.</text>
+<text x="70.0" y="645.0" font-size="7.5" fill="#555">A mirror needs no daylight, so the deck overhead now costs nothing: the coffer takes the plenum as its depth. It doubles every troffer near it, and in the dark it doubles the lantern.</text>
 </svg>

@@ -250,7 +250,7 @@ def checks() -> list[str]:
         if not any(fx0 <= cx - reach and cx + reach <= fx1
                    and fy0 <= cy - reach and cy + reach <= fy1
                    for fx0, fy0, fx1, fy1 in TILE_FIELDS):
-            problems.append("glass panel at (%.0f, %.0f) is not wholly in a "
+            problems.append("mirrored coffer at (%.0f, %.0f) is not wholly in a "
                             "tile field" % (cx, cy))
 
     missing = DEPARTMENTS - {c[1] for c in CELLS}
@@ -529,28 +529,34 @@ def draw_section() -> None:
 
 # --- the reflected ceiling plan ---------------------------------------------
 
-# Chris, 2026-11-23: *"The glass should be in each four corners of the square,
+# Chris, 2026-11-23: *"Mirrored ceiling!!! My bad. Boscovs mirror ceiling."*
+# Not glass. `source-photos/07-mirrored-atrium.jpg` is what it is: a faceted,
+# panelised mirrored coffer stepping up out of the white tile, set among
+# ordinary troffers, which it doubles. It reflects the floor rather than
+# admitting sky, so the deck overhead stops being a problem - a mirror needs
+# no daylight and no plenum to light it. It needs the plenum for depth.
+#
+# The earlier wording, kept because the composition it sets is unchanged:
+# *"The glass should be in each four corners of the square,
 # and the middle part is where the escalators are, the high ceiling with the
 # chandelier. So there'll be a small patch on each part of the ceiling on the
 # bottom floor only of glass that is an oblongish square of glass in each
 # corner, like a diamond. So it's a square with diamonds."*
 #
-# "Bottom floor only" is the part that makes this buildable. The glass does
-# not cut through the storey above - it cannot, there is a deck up there. It
-# is a luminous panel let into the 5.14 m tile, lit from inside the 124 cm
-# plenum between the tile and the mezzanine soffit. That is also exactly what
-# a 1990s anchor did with a glazed ceiling coffer.
+# "Bottom floor only" is still what makes it buildable, and now it costs
+# nothing: the coffer is recessed up into the 124 cm plenum between the tile
+# and the mezzanine soffit, and lined with mirror. The plenum is the
+# coffer's depth, not a lightbox.
 TILE_FIELDS = ((-4350.0, -2700.0, -900.0, 2100.0),
                (900.0, -2700.0, 4350.0, 2100.0))
 PLENUM = DECK_UNDERSIDE - SALES_CEILING        # 124 cm to light it from
 DIAMOND_AT = ((-2625.0, -1200.0), (2625.0, -1200.0),
               (-2625.0, 1200.0), (2625.0, 1200.0))
-# Chris, 2026-11-23: *"The glass panels are much larger than that. Look at
-# some reference pictures of Costco's glass ceiling."* The Costco interior is
-# big bright rectangles repeated across the whole ceiling, each one reading as
-# a panel of sky rather than a fitting. 500 x 350 was a light fitting. This is
+# Much larger than the first pass: 500 x 350 was a light fitting. This is
 # 16.6 m corner to corner, nearly half the width of its own tile field.
 DIAMOND = (1400.0, 950.0)                      # oblong, then turned 45 degrees
+COFFER_INNER = 0.55                            # the flat mirrored top
+COFFER_DEPTH = PLENUM                          # it rises the full plenum
 CEILING_PATH = OUT / "BoswellsGroundFloor_Ceiling.svg"
 
 
@@ -593,22 +599,39 @@ def draw_ceiling() -> None:
 
     # the four diamonds
     half_w, half_h = DIAMOND[0] / 2.0, DIAMOND[1] / 2.0
-    for cx, cy in DIAMOND_AT:
-        pts = []
+
+    def turned(cx, cy, scale):
+        """The oblong's corners, scaled, then turned 45 degrees about centre."""
+        out = []
         for dx, dy in ((-half_w, -half_h), (half_w, -half_h),
                        (half_w, half_h), (-half_w, half_h)):
-            # the corners of the oblong, turned 45 degrees about its centre,
-            # so a rectangle reads as a diamond
+            dx, dy = dx * scale, dy * scale
             rx = (dx - dy) * 0.70710678
             ry = (dx + dy) * 0.70710678
-            pts.append("%.1f,%.1f" % (sx(cx + rx), sy(cy + ry)))
+            out.append((sx(cx + rx), sy(cy + ry)))
+        return out
+
+    for cx, cy in DIAMOND_AT:
+        outer = turned(cx, cy, 1.0)
+        inner = turned(cx, cy, COFFER_INNER)
+        add('<polygon points="%s" fill="#111" fill-opacity="0.07" '
+            'stroke="#111" stroke-width="1.6"/>' %
+            " ".join("%.1f,%.1f" % pt for pt in outer))
+        # the four sloped mirrored facets, the way an RCP draws a coffer
+        add('<g stroke="#111" stroke-width="0.8">')
+        for (ax, ay), (bx, by) in zip(outer, inner):
+            add('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f"/>' % (
+                ax, ay, bx, by))
+        add("</g>")
         add('<polygon points="%s" fill="#111" fill-opacity="0.16" '
-            'stroke="#111" stroke-width="1.5"/>' % " ".join(pts))
-        add('<text x="%.1f" y="%.1f" text-anchor="middle" font-size="6" '
-            'fill="#111">GLASS</text>' % (sx(cx), sy(cy) - 1))
+            'stroke="#111" stroke-width="1.2"/>' %
+            " ".join("%.1f,%.1f" % pt for pt in inner))
+        add('<text x="%.1f" y="%.1f" text-anchor="middle" font-size="6.5" '
+            'fill="#111" letter-spacing="0.8">MIRRORED COFFER</text>'
+            % (sx(cx), sy(cy) - 1))
         add('<text x="%.1f" y="%.1f" text-anchor="middle" font-size="5.2" '
-            'fill="#555">%.0f &#215; %.0f cm</text>' % (
-                sx(cx), sy(cy) + 7, DIAMOND[0], DIAMOND[1]))
+            'fill="#555">%.0f &#215; %.0f cm, %.0f cm deep</text>' % (
+                sx(cx), sy(cy) + 7, DIAMOND[0], DIAMOND[1], COFFER_DEPTH))
 
     # the hole in the middle
     add(rect(*ATRIUM, fill="#ffffff", stroke="#111", stroke_width="1.8"))
@@ -629,7 +652,7 @@ def draw_ceiling() -> None:
     add('<text x="%.1f" y="%.1f" text-anchor="middle" font-size="6" '
         'fill="#555">HIGH CEILING, 14.88 m</text>' % (sx(0), sy(-520)))
     add('<text x="%.1f" y="%.1f" text-anchor="middle" font-size="6" '
-        'fill="#555">UNDER THE SMOKED MIRROR CANOPY</text>' % (sx(0), sy(500)))
+        'fill="#555">SMOKED MIRROR CANOPY</text>' % (sx(0), sy(500)))
 
     ty = sy(PLATE[1]) + 46
     add('<text x="%.1f" y="%.1f" font-size="22" font-weight="700" '
@@ -637,16 +660,17 @@ def draw_ceiling() -> None:
     add('<text x="%.1f" y="%.1f" font-size="10" letter-spacing="2" '
         'fill="#111">A SQUARE WITH DIAMONDS</text>' % (OX, ty + 36))
     add('<text x="%.1f" y="%.1f" font-size="7.5" fill="#555">'
-        'Suspended tile at 5.14 m, 300 cm grid. Four glass panels %.0f '
-        '&#215; %.0f cm turned 45&#176;, at (&#177;%.0f, &#177;%.0f), lit '
-        'from the %.0f cm plenum between the tile and the mezzanine soffit '
-        'at 6.38 m.</text>' % (OX, ty + 52, DIAMOND[0], DIAMOND[1],
-                               abs(DIAMOND_AT[0][0]), abs(DIAMOND_AT[0][1]),
-                               PLENUM))
+        'Suspended tile at 5.14 m, 300 cm grid. Four mirrored coffers %.0f '
+        '&#215; %.0f cm turned 45&#176;, at (&#177;%.0f, &#177;%.0f), '
+        'recessed %.0f cm up into the plenum, mirror on the flat top and on '
+        'all four slopes.</text>' % (
+            OX, ty + 52, DIAMOND[0], DIAMOND[1], abs(DIAMOND_AT[0][0]),
+            abs(DIAMOND_AT[0][1]), COFFER_DEPTH))
     add('<text x="%.1f" y="%.1f" font-size="7.5" fill="#555">'
-        'The glass is in the bottom floor\'s ceiling only; it does not cut '
-        'the storey above, because a deck is up there. The middle is the one '
-        'place that is open to the roof.</text>' % (OX, ty + 64))
+        'A mirror needs no daylight, so the deck overhead now costs nothing: '
+        'the coffer takes the plenum as its depth. It doubles every troffer '
+        'near it, and in the dark it doubles the lantern.</text>'
+        % (OX, ty + 64))
     add("</svg>")
     CEILING_PATH.write_text("\n".join(p), encoding="utf-8")
 
@@ -679,7 +703,7 @@ def main() -> None:
               selling, plate, 100.0 * selling / plate))
     print("GROUNDFLOOR walkway=%.0f cm (3 child steps of %.0f), escape gap %.0f"
           " is no longer met inside a department" % (WALKWAY, CHILD_STEP, ESCAPE_GAP))
-    print("GROUNDFLOOR ceiling tile=%.2f m plenum=%.0f cm glass=4 x %.0fx%.0f"
+    print("GROUNDFLOOR ceiling tile=%.2f m plenum=%.0f cm mirror=4 x %.0fx%.0f"
           " at (+/-%.0f, +/-%.0f), atrium open to %.2f m" % (
               SALES_CEILING / 100.0, PLENUM, DIAMOND[0], DIAMOND[1],
               abs(DIAMOND_AT[0][0]), abs(DIAMOND_AT[0][1]),
