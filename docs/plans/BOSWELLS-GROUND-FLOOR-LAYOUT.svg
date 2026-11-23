@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700" width="1000" height="700" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="1000" height="700" fill="#f4f3f0"/>
+
+  <!-- 1 px = 10 cm.  svg_x = 60 + (x+4350)/10   svg_y = 40 + (3300-y)/10 -->
+
+  <!-- outside: the receiving yard, north -->
+  <rect x="400" y="30" width="190" height="72" fill="#e3e1dc" stroke="#b6b3ac" stroke-dasharray="4 3"/>
+  <rect x="435" y="40" width="120" height="62" fill="#cfccc4"/>
+  <text x="495" y="26" text-anchor="middle" font-size="13" fill="#555">RECEIVING YARD  (north)</text>
+
+  <!-- store envelope -->
+  <rect x="58" y="98" width="874" height="544" fill="none" stroke="#2f2f2f" stroke-width="5"/>
+
+  <!-- back of house strip -->
+  <rect x="60" y="102" width="870" height="57" fill="#b9bdb8"/>
+  <text x="495" y="137" text-anchor="middle" font-size="13" fill="#2f2f2f" letter-spacing="2">BACK OF HOUSE — STOCKROOM / OFFICES</text>
+  <!-- north wall, with the 8 m dock opening -->
+  <rect x="60" y="98" width="395" height="5" fill="#2f2f2f"/>
+  <rect x="535" y="98" width="395" height="5" fill="#2f2f2f"/>
+  <!-- service wall at y=2090 with two 4 m doors -->
+  <rect x="60" y="159" width="95" height="4" fill="#2f2f2f"/>
+  <rect x="195" y="159" width="570" height="4" fill="#2f2f2f"/>
+  <rect x="805" y="159" width="125" height="4" fill="#2f2f2f"/>
+  <text x="175" y="176" text-anchor="middle" font-size="10" fill="#2f2f2f">STOCK / SALES</text>
+  <text x="785" y="176" text-anchor="middle" font-size="10" fill="#2f2f2f">SALES FLOOR</text>
+
+  <!-- sales floor: tile, which is what the aisles stay -->
+  <rect x="60" y="163" width="870" height="477" fill="#d9d8d4"/>
+
+  <!-- departments -->
+  <g stroke="#f4f3f0" stroke-width="2">
+    <rect x="60"  y="163" width="205" height="157" fill="#545460"/>
+    <rect x="265" y="163" width="140" height="157" fill="#cdcbc4"/>
+    <rect x="585" y="163" width="345" height="92"  fill="#474c66"/>
+    <rect x="585" y="255" width="345" height="65"  fill="#6b5f52"/>
+    <rect x="60"  y="420" width="345" height="165" fill="#4e6873"/>
+    <rect x="585" y="420" width="345" height="165" fill="#7a5768"/>
+  </g>
+  <rect x="265" y="163" width="140" height="157" fill="none" stroke="#8a867c" stroke-width="2" stroke-dasharray="6 4"/>
+
+  <g text-anchor="middle" fill="#ffffff" font-size="17" letter-spacing="3">
+    <text x="162" y="238">ELECTRONICS</text>
+    <text x="757" y="206">MENS</text>
+    <text x="757" y="293">SHOES</text>
+    <text x="232" y="500">JUNIORS</text>
+    <text x="757" y="500">LADIES</text>
+  </g>
+  <g text-anchor="middle" font-size="11" fill="#dcdcdc">
+    <text x="162" y="256">326 m² · behind the stock door</text>
+    <text x="757" y="222">324 m² · back wall, own quadrant</text>
+    <text x="757" y="308">224 m² · on the cross aisle</text>
+    <text x="232" y="518">570 m² · as built, 477 rails</text>
+    <text x="757" y="518">570 m² · prime block</text>
+  </g>
+  <g text-anchor="middle" font-size="11" fill="#6a665c">
+    <text x="335" y="236">unassigned</text>
+    <text x="335" y="252">224 m²</text>
+    <text x="335" y="268">Chris's call</text>
+  </g>
+
+  <!-- aisles, drawn over the blocks so the racetrack reads -->
+  <g fill="none" stroke="#9b9890" stroke-width="1.5" stroke-dasharray="7 5">
+    <rect x="405" y="163" width="180" height="477"/>
+    <rect x="60"  y="320" width="870" height="100"/>
+  </g>
+  <text x="495" y="612" text-anchor="middle" font-size="11" fill="#6a665c" letter-spacing="2">MAIN AISLE 18 m</text>
+  <text x="140" y="375" font-size="11" fill="#6a665c" letter-spacing="2">CROSS AISLE 10 m</text>
+
+  <!-- atrium and escalators -->
+  <rect x="435" y="280" width="120" height="180" fill="#edece8" stroke="#9b9890" stroke-width="1.5"/>
+  <path d="M452 440 L478 292" stroke="#7d8a93" stroke-width="9" stroke-linecap="round"/>
+  <path d="M512 292 L538 440" stroke="#7d8a93" stroke-width="9" stroke-linecap="round"/>
+  <text x="495" y="275" text-anchor="middle" font-size="10" fill="#6a665c">ATRIUM — open to the roof</text>
+
+  <!-- front of house band -->
+  <rect x="60" y="585" width="870" height="55" fill="#cfcec9"/>
+  <text x="250" y="608" text-anchor="middle" font-size="11" fill="#4a473f" letter-spacing="1">FRONT OF HOUSE — no selling</text>
+  <rect x="145" y="591" width="40" height="9" fill="#3f3f3f"/>
+  <rect x="805" y="591" width="40" height="9" fill="#3f3f3f"/>
+  <text x="165" y="585" text-anchor="middle" font-size="9" fill="#2f2f2f">CASH</text>
+  <text x="825" y="585" text-anchor="middle" font-size="9" fill="#2f2f2f">CASH</text>
+
+  <!-- south wall and the mall grille -->
+  <rect x="58" y="637" width="347" height="5" fill="#2f2f2f"/>
+  <rect x="585" y="637" width="347" height="5" fill="#2f2f2f"/>
+  <g stroke="#2f2f2f" stroke-width="2">
+    <path d="M410 637 v5 M425 637 v5 M440 637 v5 M455 637 v5 M470 637 v5 M485 637 v5 M500 637 v5 M515 637 v5 M530 637 v5 M545 637 v5 M560 637 v5 M575 637 v5"/>
+  </g>
+  <text x="495" y="664" text-anchor="middle" font-size="13" fill="#555">MALL GRILLE → GALLERIA CONCOURSE → SAYERS  (south)</text>
+
+  <!-- the player's route: in the goods door, out the front -->
+  <polyline points="535,34 495,75 495,130 815,130 815,370 605,370 570,470 495,470 495,628"
+            fill="none" stroke="#c4552f" stroke-width="3.5" stroke-dasharray="11 7" stroke-linejoin="round"/>
+  <circle cx="535" cy="34" r="6" fill="#c4552f"/>
+  <path d="M495 612 l-7 -14 h14 z" fill="#c4552f"/>
+  <text x="556" y="38" font-size="11" fill="#c4552f">player start (400, 3340)</text>
+
+  <!-- key -->
+  <text x="60" y="688" font-size="11" fill="#6a665c">Boswell's ground floor, proposed — 1 px = 10 cm, 87 × 48 m of sales floor. Department fills are the carpet hues from b3dc935, lightened to read on paper. Dashed orange: the player walks the store backwards.</text>
+</svg>
