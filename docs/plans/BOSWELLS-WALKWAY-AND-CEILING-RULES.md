@@ -141,10 +141,7 @@ of the glass version:
 - **It shows the player what is behind them.** A coffer ahead reflects the
   aisle behind. That is a horror instrument and a navigation aid at once, and
   it is free — it needs no script.
-- **It will lie to the machines.** `LLKLightField` only knows about lanterns,
-  so every reflection is invisible to anything that reads light. A player who
-  believes a reflected lantern hides them is wrong in a way the game never
-  states. Worth deciding deliberately rather than discovering.
+- **A reflection is a visual, not a light.** Decided below.
 - **It is the one locked signature we already had.** `THE-STORE.md` has the
   chandelier and the mirrored ceiling as Boswell's signature, and §13 records
   Chris's *"glass ceiling mirrors"* as the same room Buda remembered. The
@@ -153,6 +150,47 @@ of the glass version:
   expensive, or screen-space, which drops whatever is off screen — and a
   mirror that loses the thing behind you loses the whole point. Nobody has
   measured either here.
+
+### A reflected lantern is a visual, not a light
+
+**2026-11-23. Chris, asked whether a reflection should count as light to the
+machines:**
+
+> *"What would it do in real life if that light were there? That's what we'll
+> try to mimic. Probably it would count as a visual."*
+
+Real life agrees with him, and it is worth writing down why, because the
+physics also says what the mirror *does* add.
+
+**A mirror does not emit. It redirects.** A real mirrored coffer does put more
+light on the floor — the lantern's upward spill comes back down, less the
+coating's loss, and a dusty 1990s glass mirror returns well under the ~90% a
+clean one would. But the bounce is 5.14 m up and 5.14 m back, specular, so the
+returned light lands roughly where it already was. It brightens the floor the
+keeper is standing on. **It does not light the next aisle, and it does not
+light anything the lantern was not already pointed at.** Nobody is revealed by
+a reflection who was not already revealed by the lamp.
+
+So the rule: **`LLKLightField` stays lantern-only.** No reflection registers as
+a light source, nothing that reads light sees a mirror, and no machine gets a
+second lamp to hunt. If the bounce is ever wanted, it belongs as a small
+brightness multiplier on the floor directly beneath a coffer — the coffer's own
+faint contribution — not as a second emitter. That is both the cheap
+implementation and the true one, which is the rare case.
+
+**What a mirror really adds is a sight line, not a light.** That is the
+physically real thing the corners give the chapter: a coffer ahead shows the
+player an aisle they cannot see, around a corner, before they walk into it.
+Strict realism says that cuts both ways — a Sweeper that can see the coffer
+could see what the coffer sees. Whether the machines get the mirror as a sight
+line is a different question from light, and this rule does not answer it. Our
+own sight checks are straight traces, so today the answer is no by default: the
+mirror helps the player and not the machine. If that ever changes it should be
+a deliberate choice, and an expensive one.
+
+Unverified, unchanged: nobody has measured the cost of real mirror in UE —
+planar reflection, which is expensive, or screen-space, which drops whatever is
+off screen and so loses the aisle behind you, which was the whole point.
 
 ## Not done
 
