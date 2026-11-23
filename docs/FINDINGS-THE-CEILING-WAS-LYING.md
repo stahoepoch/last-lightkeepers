@@ -190,3 +190,30 @@ shadows under the rails, pools along the coves, polished tile. Compare
   the only wayfinding a child has, and in the state the chapter is played in
   they are dark. That is physically correct and may still be the wrong design.
   Open.
+
+---
+
+## Amended 2026-11-23: "100% of the floor at shapes-or-better" was the defect
+
+This page reports **shapes-or-better 87% → 100%** as the lighting win of that
+pass. Chris opened the map the next day and said the lighting is *"still to
+bright and not emergency looking."* He is right, and that row is why.
+
+**Emergency lighting in a real building is not dim room light.** It is a
+handful of isolated pools on the egress route with unlit dark between them,
+because its entire job is to show you the way out and nothing else. A floor
+where every square metre of 4,167 m² reaches "shapes or better" is a floor
+that is evenly, weakly lit everywhere — which is the one thing emergency
+lighting never looks like. **Full coverage was the wrong target**, and this
+page treated hitting it as success.
+
+Worse, the coverage was not even coming from the emergency layer.
+`docs/FINDINGS-FIFTY-LIGHTS-ON-NO-CIRCUIT.md` found that about fifty lights on
+this floor carried no power tag at all, so they burned at 19–55 candela in
+both power states while the 22 lights tagged `LLK_Emergency` ran at 1.3–2.8.
+The measurement on this page summed all of them without asking which circuit
+any of them was on.
+
+The target now is the **shape** of the distribution, not its floor: a wide
+ratio between the pools and the dark between them. The audit that replaces
+this one prints a histogram rather than a percentage, for exactly that reason.
