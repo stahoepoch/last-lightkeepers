@@ -82,6 +82,37 @@ it is 18 m wide because the aisle is, and a wider atrium cuts a hole in it.
 `ALLKTestGameMode::ReportFloorWithoutCeiling` would report that hole, which is
 what it is for.
 
+## 3. A square with diamonds
+
+**2026-11-23, Chris answering his own question:**
+
+> *"The glass should be in each four corners of the square, and the middle
+> part is where the escalators are, the high ceiling with the chandelier. So
+> there'll be a small patch on each part of the ceiling on the bottom floor
+> only of glass that is an oblongish square of glass in each corner, like a
+> diamond. So it's a square with diamonds."*
+
+So the mezzanine stays. The high ceiling is the middle, as built, and the
+glass is four small panels rather than one big roof. **"Bottom floor only" is
+what makes it buildable**: the glass does not cut through the storey above —
+it cannot, there is a deck up there — so it is a luminous panel let into the
+5.14 m tile and lit from inside the 124 cm plenum between the tile and the
+mezzanine soffit. That is also exactly what a 1990s anchor did with a glazed
+ceiling coffer.
+
+| | |
+| --- | --- |
+| Panels | 4, one per corner of the square |
+| Size | 500 × 350 cm, turned 45° so the oblong reads as a diamond |
+| At | (±3200, ±1650) |
+| Set in | the suspended tile, underside 5.14 m, 300 cm grid |
+| Lit from | the 124 cm plenum above, between tile and mezzanine soffit 6.38 m |
+| Middle | the atrium, chandelier, 14.88 m, under the smoked mirror canopy |
+
+Drawn in `docs/reference/boswells/BoswellsGroundFloor_Ceiling.svg`. The
+generator refuses to place a panel that is not wholly inside a tile field, so
+none of them lands half in the painted aisle bulkhead.
+
 ## Not done
 
 Neither rule is in the map. The walkway is in the plan generator; the ceiling

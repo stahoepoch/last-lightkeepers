@@ -41,6 +41,7 @@ void is x +/-600, y +/-900.
 from __future__ import annotations
 
 import csv
+import math
 from pathlib import Path
 
 OUT = Path(__file__).resolve().parent
@@ -241,6 +242,16 @@ def checks() -> list[str]:
             if cx0 < mid < cx1 and (cy0 <= y0 + WALK or cy1 >= y1 - WALK):
                 if cy1 >= y1 - WALK and not (cy1 <= y1 - WALK):
                     problems.append("%s blocks a doorway at x %.0f" % (name, mid))
+
+    # Every glass panel must sit wholly inside a tile field, clear of the
+    # aisle bulkhead: a diamond half in drywall is not a ceiling detail.
+    reach = (DIAMOND[0] + DIAMOND[1]) / 2.0 * 0.70710678   # turned corner
+    for cx, cy in DIAMOND_AT:
+        if not any(fx0 <= cx - reach and cx + reach <= fx1
+                   and fy0 <= cy - reach and cy + reach <= fy1
+                   for fx0, fy0, fx1, fy1 in TILE_FIELDS):
+            problems.append("glass panel at (%.0f, %.0f) is not wholly in a "
+                            "tile field" % (cx, cy))
 
     missing = DEPARTMENTS - {c[1] for c in CELLS}
     if missing:
@@ -516,6 +527,125 @@ def draw_section() -> None:
     SECTION_PATH.write_text("\n".join(p), encoding="utf-8")
 
 
+# --- the reflected ceiling plan ---------------------------------------------
+
+# Chris, 2026-11-23: *"The glass should be in each four corners of the square,
+# and the middle part is where the escalators are, the high ceiling with the
+# chandelier. So there'll be a small patch on each part of the ceiling on the
+# bottom floor only of glass that is an oblongish square of glass in each
+# corner, like a diamond. So it's a square with diamonds."*
+#
+# "Bottom floor only" is the part that makes this buildable. The glass does
+# not cut through the storey above - it cannot, there is a deck up there. It
+# is a luminous panel let into the 5.14 m tile, lit from inside the 124 cm
+# plenum between the tile and the mezzanine soffit. That is also exactly what
+# a 1990s anchor did with a glazed ceiling coffer.
+TILE_FIELDS = ((-4350.0, -2700.0, -900.0, 2100.0),
+               (900.0, -2700.0, 4350.0, 2100.0))
+PLENUM = DECK_UNDERSIDE - SALES_CEILING        # 124 cm to light it from
+DIAMOND_AT = ((-3200.0, -1650.0), (3200.0, -1650.0),
+              (-3200.0, 1650.0), (3200.0, 1650.0))
+DIAMOND = (500.0, 350.0)                       # oblong, then turned 45 degrees
+CEILING_PATH = OUT / "BoswellsGroundFloor_Ceiling.svg"
+
+
+def draw_ceiling() -> None:
+    """Looking up. The square, its four diamonds, and the hole in the middle."""
+    x0, y0, x1, y1 = PLATE
+    p = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1010 700" '
+         'width="1010" height="700" '
+         'font-family="Helvetica, Arial, sans-serif">',
+         '<rect x="0" y="0" width="1010" height="700" fill="#ffffff"/>']
+    add = p.append
+
+    add(rect(x0, y0, x1, y1, fill="none", stroke="#111", stroke_width="2.6"))
+
+    # the suspended tile, drawn as its grid so the panels read as let into it
+    for fx0, fy0, fx1, fy1 in TILE_FIELDS:
+        add(rect(fx0, fy0, fx1, fy1, fill="#111", fill_opacity="0.04",
+                 stroke="#111", stroke_width="1.1"))
+        add('<g stroke="#111" stroke-width="0.25" stroke-opacity="0.45">')
+        step = 300.0
+        gx = fx0 + step
+        while gx < fx1:
+            add('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f"/>' % (
+                sx(gx), sy(fy0), sx(gx), sy(fy1)))
+            gx += step
+        gy = fy0 + step
+        while gy < fy1:
+            add('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f"/>' % (
+                sx(fx0), sy(gy), sx(fx1), sy(gy)))
+            gy += step
+        add("</g>")
+
+    # the painted bulkhead over the main aisle, a different ceiling on purpose
+    add(rect(-900, -2700, 900, 2100, fill="#111", fill_opacity="0.10",
+             stroke="#111", stroke_width="1.1"))
+    add('<text x="%.1f" y="%.1f" text-anchor="middle" font-size="6.5" '
+        'fill="#111" transform="rotate(-90 %.1f %.1f)" letter-spacing="1.4">'
+        'PAINTED BULKHEAD 5.13 m</text>' % (
+            sx(0), sy(-1900), sx(0), sy(-1900)))
+
+    # the four diamonds
+    half_w, half_h = DIAMOND[0] / 2.0, DIAMOND[1] / 2.0
+    for cx, cy in DIAMOND_AT:
+        pts = []
+        for dx, dy in ((-half_w, -half_h), (half_w, -half_h),
+                       (half_w, half_h), (-half_w, half_h)):
+            # the corners of the oblong, turned 45 degrees about its centre,
+            # so a rectangle reads as a diamond
+            rx = (dx - dy) * 0.70710678
+            ry = (dx + dy) * 0.70710678
+            pts.append("%.1f,%.1f" % (sx(cx + rx), sy(cy + ry)))
+        add('<polygon points="%s" fill="#111" fill-opacity="0.16" '
+            'stroke="#111" stroke-width="1.5"/>' % " ".join(pts))
+        add('<text x="%.1f" y="%.1f" text-anchor="middle" font-size="6" '
+            'fill="#111">GLASS</text>' % (sx(cx), sy(cy) - 1))
+        add('<text x="%.1f" y="%.1f" text-anchor="middle" font-size="5.2" '
+            'fill="#555">%.0f &#215; %.0f cm</text>' % (
+                sx(cx), sy(cy) + 7, DIAMOND[0], DIAMOND[1]))
+
+    # the hole in the middle
+    add(rect(*ATRIUM, fill="#ffffff", stroke="#111", stroke_width="1.8"))
+    add('<circle cx="%.1f" cy="%.1f" r="13" fill="none" stroke="#111" '
+        'stroke-width="1.2"/>' % (sx(0), sy(0)))
+    add('<circle cx="%.1f" cy="%.1f" r="5" fill="#111"/>' % (sx(0), sy(0)))
+    add('<g stroke="#111" stroke-width="0.6">')
+    for i in range(12):
+        ang = i * 3.14159265 / 6.0
+        add('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f"/>' % (
+            sx(0) + 5.5 * math.cos(ang),
+            sy(0) + 5.5 * math.sin(ang),
+            sx(0) + 12.5 * math.cos(ang),
+            sy(0) + 12.5 * math.sin(ang)))
+    add("</g>")
+    add('<text x="%.1f" y="%.1f" text-anchor="middle" font-size="6.5" '
+        'fill="#111">CHANDELIER</text>' % (sx(0), sy(-300)))
+    add('<text x="%.1f" y="%.1f" text-anchor="middle" font-size="6" '
+        'fill="#555">HIGH CEILING, 14.88 m</text>' % (sx(0), sy(-520)))
+    add('<text x="%.1f" y="%.1f" text-anchor="middle" font-size="6" '
+        'fill="#555">UNDER THE SMOKED MIRROR CANOPY</text>' % (sx(0), sy(500)))
+
+    ty = sy(PLATE[1]) + 46
+    add('<text x="%.1f" y="%.1f" font-size="22" font-weight="700" '
+        'fill="#111">REFLECTED CEILING PLAN</text>' % (OX, ty + 20))
+    add('<text x="%.1f" y="%.1f" font-size="10" letter-spacing="2" '
+        'fill="#111">A SQUARE WITH DIAMONDS</text>' % (OX, ty + 36))
+    add('<text x="%.1f" y="%.1f" font-size="7.5" fill="#555">'
+        'Suspended tile at 5.14 m, 300 cm grid. Four glass panels %.0f '
+        '&#215; %.0f cm turned 45&#176;, at (&#177;%.0f, &#177;%.0f), lit '
+        'from the %.0f cm plenum between the tile and the mezzanine soffit '
+        'at 6.38 m.</text>' % (OX, ty + 52, DIAMOND[0], DIAMOND[1],
+                               abs(DIAMOND_AT[0][0]), abs(DIAMOND_AT[0][1]),
+                               PLENUM))
+    add('<text x="%.1f" y="%.1f" font-size="7.5" fill="#555">'
+        'The glass is in the bottom floor\'s ceiling only; it does not cut '
+        'the storey above, because a deck is up there. The middle is the one '
+        'place that is open to the roof.</text>' % (OX, ty + 64))
+    add("</svg>")
+    CEILING_PATH.write_text("\n".join(p), encoding="utf-8")
+
+
 def main() -> None:
     widen()
     problems = checks()
@@ -526,6 +656,7 @@ def main() -> None:
     write_csv()
     draw()
     draw_section()
+    draw_ceiling()
     selling = sum((c[5] - c[3]) * (c[6] - c[4]) for c in CELLS
                   if c[1] in DEPARTMENTS) / 10000.0
     plate = (PLATE[2] - PLATE[0]) * (PLATE[3] - PLATE[1]) / 10000.0
@@ -543,7 +674,13 @@ def main() -> None:
               selling, plate, 100.0 * selling / plate))
     print("GROUNDFLOOR walkway=%.0f cm (3 child steps of %.0f), escape gap %.0f"
           " is no longer met inside a department" % (WALKWAY, CHILD_STEP, ESCAPE_GAP))
-    print("GROUNDFLOOR wrote %s, %s and %s" % (CSV_PATH.name, SVG_PATH.name, SECTION_PATH.name))
+    print("GROUNDFLOOR ceiling tile=%.2f m plenum=%.0f cm glass=4 x %.0fx%.0f"
+          " at (+/-%.0f, +/-%.0f), atrium open to %.2f m" % (
+              SALES_CEILING / 100.0, PLENUM, DIAMOND[0], DIAMOND[1],
+              abs(DIAMOND_AT[0][0]), abs(DIAMOND_AT[0][1]),
+              ROOF_UNDERSIDE / 100.0))
+    print("GROUNDFLOOR wrote %s, %s, %s and %s" % (
+        CSV_PATH.name, SVG_PATH.name, SECTION_PATH.name, CEILING_PATH.name))
 
 
 if __name__ == "__main__":
