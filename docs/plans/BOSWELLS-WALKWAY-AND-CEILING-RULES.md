@@ -30,10 +30,34 @@ from the drafting gap of 250 to 180 gave the departments **1,886 m² of the
 measured side aisle in `docs/reference/boswells/README.md` is 168 cm, *"two 68
 cm bodies pass"*, so 180 still passes two. But the **escape gap in the same
 table is 200 cm, and 180 is under it**. Inside a department you can no longer
-slip past a Sweeper. The escapes become the cross aisles, the court and the
-main spine, which keep their widths. For a horror floor that may be the point;
-it is a change to how the chapter plays, so it is written down rather than
-absorbed.
+slip past a Sweeper.
+
+**Corrected 2026-11-23, and this correction matters more than the rule it
+corrects.** The first version of this page said the escapes *"become the cross
+aisles, the court and the main spine, which keep their widths."* **That is
+false, and `Tools/verify_boswells_ground_cells.py` is what proved it.** The
+27-cell plan has no straight cross aisle at all. It cannot have one: every
+column splits into its own rows precisely so that no row runs across the
+store, which is what the Meriden sheet does and what Chris asked for, and
+check any single y against the six columns and at least three of them are
+mid-bay there. **A straight cross aisle and that irregularity are mutually
+exclusive**, so the mitigation I wrote for the 180 cm aisle was a route that
+does not exist.
+
+What the floor does still have is the main spine at x ±900 (18 m), the
+escalator court, the perimeter walk, and a walkable network that a keeper-wide
+body can get all the way through — the verifier floods it and checks the walk
+from the service door to the mall grille. What it does not have is a 200 cm
+way out of the middle of a department on the east–west axis. That is now an
+open question with three honest answers and it is Chris's to pick: live with
+180 everywhere and let a department be a trap, widen the walkway to 200 and
+lose the "three child steps" derivation, or jog a 300 cm racetrack through the
+floor so the escape route is continuous without being straight — which is what
+a real anchor store does and what *"all kinds of intricate little paths... they
+have angles"* describes.
+
+Unverified either way: nobody has walked any of it with the keeper capsule,
+and the Sweeper's patrol has not been re-checked against it.
 
 Unverified: nobody has walked a 180 cm aisle with the keeper capsule, and the
 Sweeper's patrol has not been re-checked against it.
@@ -191,6 +215,58 @@ a deliberate choice, and an expensive one.
 Unverified, unchanged: nobody has measured the cost of real mirror in UE —
 planar reflection, which is expensive, or screen-space, which drops whatever is
 off screen and so loses the aisle behind you, which was the whole point.
+
+## Built, 2026-11-23
+
+Chris: *"I checked the drawing and everything that you sent me, so go ahead
+and move forward with some things."* So both rules are now in
+`LLK_Boswells_OpeningPass` rather than only in drawings.
+
+| | |
+| --- | --- |
+| `Tools/floor_boswells_ground_cells.py` | lays the 27-cell plan as floor |
+| `Tools/build_boswells_mirror_coffers.py` | hangs the four mirrored diamonds |
+| `Tools/verify_boswells_ground_cells.py` | reads the map back and draws it |
+
+**The floor.** 20 carpeted cells, 1,679 m², one plane sized to each cell
+rather than a grid of tiles — so the 180 cm walkway is not drawn, it is the
+gap where the carpet stops. The other 7 cells are left as the stone tile
+underneath, because a cosmetics hall, a jewellery counter, a lift lobby, a
+service desk and a stock room stand on hard floor in a real anchor store.
+
+This replaces the carpet laid by `Tools/floor_boswells_departments.py`, which
+had to *infer* the departments from merchandise centroids because nothing had
+authored them. The census of what that produced is the argument for replacing
+it: `MI_LLK_Carpet_Ladies=7` planes against `MI_LLK_Carpet_Electronics=18`,
+when LADIES is the largest department on this floor and **ELECTRONICS is not
+on it at all**. Section 13 of `docs/THE-MALL-IS-STILL-TRADING.md` puts the
+lower floor as juniors, jewelry, mens, perfume, ladies, shoes, with the CRT
+sets sitting among juniors. The conflict is cited rather than tidied away:
+the `MI_LLK_Carpet_Electronics` asset and the sign at (1600, 650) are left
+alone, and no actor now uses that carpet.
+
+**The ceiling.** Four mirror panels, 1400 × 950 cm turned 45°, at (±2625,
+±1200), 532 m² in all, in `M_BSW_SmokedMirror` — the material the atrium
+canopy already uses, so the corners and the middle are one ceiling family.
+
+**They are flush, not recessed, and that is a decision.** The lower ceiling is
+one slab per wing, so a coffer rising into the 124 cm plenum needs a hole in
+it, and the hole is a rotated rectangle in an axis-aligned slab — which leaves
+four corner triangles that neither an axis-aligned nor a 45° piece can fill
+without overlapping, and `ReportFloorWithoutCeiling` would rightly call each
+one a hole. At a 16.6 m span the recess is a shallow dish anyway, and the
+reflection is identical either way. The faceting in Chris's photograph is
+therefore still only in the drawing.
+
+**What the verifier checks, and what it caught.** It reads every actor's real
+transform, matches it to its cell by geometry rather than by label, and draws
+`BoswellsGroundFloor_AsBuilt.svg` from the map. Then it floods the walkable
+space at the keeper's own 68 cm and walks it: **1,425 m² reachable, and the
+route from the service door the player enters by to the mall grille connects.**
+
+Its first version also refused any cell crossing a cross aisle at y ±500, and
+flagged eight. That check was wrong and the plan was right — see the
+correction in section 1, which is the most useful thing this pass produced.
 
 ## Not done
 
