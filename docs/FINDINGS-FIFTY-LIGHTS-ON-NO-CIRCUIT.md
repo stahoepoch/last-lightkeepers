@@ -213,3 +213,10 @@ store, they need tagging.
 
 **Nobody has played any of it.** Every number here is a measurement against a
 saved map, and every picture is a render.
+
+---
+
+**Answered 2026-11-23: Chris said "Build it at 400."** The storey now has one
+datum at 400 cm, and building it turned up a second copy of the mains and
+emergency grid hanging in the roof space. See
+`docs/FINDINGS-THE-UPPER-STOREY-HAD-NO-HEIGHT.md`.

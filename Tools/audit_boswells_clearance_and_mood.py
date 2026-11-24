@@ -555,5 +555,68 @@ for i, c in enumerate(counts):
         % (100.0 * i / BUCKETS, 100.0 * (i + 1) / BUCKETS,
            "#" * int(40.0 * c / max(counts)), c, 100.0 * c / n))
 
+# --- C3. the same measurement on the deck ----------------------------
+#
+# Added 2026-11-23, with the ceiling. Until the upper storey was roofed it
+# had no floor worth sampling - its lights were 812 cm up in the roof space
+# and the deck was just the part of the building the roof could see. Now it
+# is a room, lit by its own copy of the grid hanging 26 cm under a ceiling at
+# 400, and the only way to know whether that room is "too bright" is to put
+# its number next to the ground floor's and look at both.
+#
+# Note the grid is doubled: `BSW_MAINS_*` and `BSW_EMERGENCY_FILL_*` exist
+# once below the deck for the ground floor and once above it for the upper,
+# with the same family names. Splitting them by z is the only thing that
+# tells the two storeys apart.
+upper = []
+for actor, comp, loc in lights:
+    if loc.z <= MEZZ_DECK:
+        continue
+    if (comp.get_editor_property("intensity") <= 0.0
+            or not comp.get_editor_property("visible")):
+        continue
+    upper.append((comp.get_editor_property("intensity"), loc))
+
+deck_samples = []
+eye = MEZZ_DECK + EYE_NINE
+x = PLATE[0] + LIGHT_GRID * 0.5
+while x < PLATE[2]:
+    y = -2700.0 + LIGHT_GRID * 0.5
+    while y < 2700.0:
+        if ATRIUM[0] < x < ATRIUM[2] and ATRIUM[1] < y < ATRIUM[3]:
+            y += LIGHT_GRID
+            continue
+        e = 0.0
+        for inten, loc in upper:
+            dx, dy, dz = loc.x - x, loc.y - y, loc.z - eye
+            d2 = dx * dx + dy * dy + dz * dz
+            if d2 < 1.0 or d2 > 4.0e6:
+                continue
+            e += inten * abs(dz) / (d2 * math.sqrt(d2))
+        deck_samples.append(e)
+        y += LIGHT_GRID
+    x += LIGHT_GRID
+
+deck_samples.sort()
+m = len(deck_samples)
+say("deck samples: %d at %.0f cm pitch, from %d lit fittings above the deck"
+    % (m, LIGHT_GRID, len(upper)))
+say("  p10=%.4f median=%.4f p90=%.4f p99=%.4f max=%.4f"
+    % (deck_samples[m // 10], deck_samples[m // 2],
+       deck_samples[(9 * m) // 10], deck_samples[(99 * m) // 100],
+       deck_samples[-1]))
+if samples[-1] > 0 and samples[n // 2] > 0:
+    say("  against the GROUND floor: median %.2fx, peak %.2fx. A storey much "
+        "brighter than the one below it is a storey lit by a different "
+        "building; the first wide render of this deck LOOKED far brighter "
+        "than the floor below and the arithmetic says it is not, which is "
+        "the fittings' own emissive in the frame rather than the light they "
+        "cast."
+        % (deck_samples[m // 2] / samples[n // 2],
+           deck_samples[-1] / samples[-1]))
+if deck_samples[m // 10] > 0:
+    say("  p90/p10 contrast ratio = %.1f"
+        % (deck_samples[(9 * m) // 10] / deck_samples[m // 10]))
+
 say("=" * 62)
 say("read only: nothing changed, no map saved")
