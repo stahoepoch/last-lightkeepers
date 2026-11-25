@@ -48,11 +48,30 @@ Importing 575 unlit actors into a level whose whole lighting discipline is
 circuit tags would recreate, at a stroke, the exact defect
 `docs/FINDINGS-FIFTY-LIGHTS-ON-NO-CIRCUIT.md` spent a day removing.
 
-**`LLK_Galleria_Shell.umap` is another writer's uncommitted work and nothing
-here opens, modifies or deletes it.** `docs/LANES.md` gives each binary asset
-one active writer, and it is not mine. It is also still untracked — 935 KB of
-somebody's afternoon that a `git clean` would take. **That is Chris's to
-resolve with Codex, not mine.**
+**`LLK_Galleria_Shell.umap` is another writer's work and nothing here opens,
+modifies or deletes it.** `docs/LANES.md` gives each binary asset one active
+writer, and it is not mine.
+
+**Committed on Chris's instruction, 2026-11-25**, with
+`Tools/build_galleria_shell.py` and `Tools/verify_galleria_shell.py`, because
+935 KB of somebody's afternoon sitting untracked is one `git clean` from
+gone. It was verified before it was committed, by **its own verifier, not
+mine**:
+
+> `GALLERIA_SHELL_VERIFY PASSED: 577 generated actors, 68 pillars, 24 shop
+> pockets, two public floors, three escalator connections, one court elevator,
+> seven stairs, Boswell's two retail floors plus office level, dock, and
+> fitting rooms`
+
+That is a sound plan, passing its own checks, and the file was byte-unchanged
+from the day it was built - reading a map does not dirty it. Committing it
+does not make it canon and does not transfer its lane: Codex still owns it,
+and this decision is still Chris's to overturn.
+
+Two precisions that verifier adds to the table above. The shell's third plate
+is an **office level**, not a third selling floor - which is a storey the
+playable store still does not have. And the shell models **two public floors**
+of mall, which is the fact section 3 is about.
 
 **This is a recommendation, not a ratification.** `docs/DECISIONS.md` rows are
 Chris's. If he wants the shell to be canon instead, the cost is named above:
