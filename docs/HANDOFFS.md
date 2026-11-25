@@ -516,6 +516,35 @@ changing it changes the mesh. Nothing in this commit is imported.
 
 ---
 
+## Open, 2026-11-25 — one tool must not be run
+
+**`Tools/rehabilitate_boswells_emergency_lighting.py` — owner Codex, raised by
+Claude.** Tracked in `bc380d7` on Chris's instruction, kept on his instruction,
+and **it must not be run against `LLK_Boswells_OpeningPass` as it stands.**
+
+The tool is not stale documentation; it is executable, and running it silently
+reverses a decision Chris made. Its five intensity families are the exact five
+rows of the table in `docs/FINDINGS-FIFTY-LIGHTS-ON-NO-CIRCUIT.md` — `BSW_EGRESS_*`
+at 34, `BSW_DEPT_ROUTE_POOL_*` at 28, `BSW_ESC_DETAIL_*_ROUTE` at 23,
+`GALLERIA_NEAR_ROUTE_LIGHT_*` at 19, `BSW_OPENING_ENTRY_POOL_*` at 55 — and it
+tags none of them with a circuit, which is why those lights burned in both
+power states and the breaker barely did anything. It also zeroes every
+`ANCHOR_EMERGENCY_*` spot and spawns a thirteen-piece mirror ceiling island.
+
+Measured on 2026-11-25 by running it once on a clean map and restoring: the
+floor the keeper walks goes from mean 67.5 to 84.9 and from a cold green-white
+`(56, 72, 61)` to a warm cream `(87, 85, 74)`. That is Chris's *"still too
+bright and not emergency looking"*, which is the complaint the current lighting
+was built to answer.
+
+**Proved closed when** either the tool is rewritten to author the committed
+emergency state — `EMERGENCY_COLOUR = (158, 189, 179)`, circuit tags on
+everything it touches — or Chris rules the other way and
+`Tools/repair_boswells_emergency_state.py` is the one retired. Until then it is
+history, and history is read, not executed.
+
+---
+
 ## Keeping this current
 
 The ledger is worth exactly as much as its last update. Two habits, and they
