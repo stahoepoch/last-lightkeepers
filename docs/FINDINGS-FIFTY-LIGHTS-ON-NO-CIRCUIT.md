@@ -220,3 +220,47 @@ saved map, and every picture is a render.
 datum at 400 cm, and building it turned up a second copy of the mains and
 emergency grid hanging in the roof space. See
 `docs/FINDINGS-THE-UPPER-STOREY-HAD-NO-HEIGHT.md`.
+
+---
+
+**Source identified 2026-11-25.** The fifty untagged lights had an author, and
+it is `Tools/rehabilitate_boswells_emergency_lighting.py` — tracked in
+`bc380d7` with its uncommitted changes, after Chris asked for the loose tools
+to be committed.
+
+Compare its values with the table in section 1:
+
+| family | this document measured | that tool sets |
+| --- | --- | --- |
+| `BSW_EGRESS_*` | 34 cd, no circuit | **34.0** |
+| `BSW_DEPT_ROUTE_POOL_*` | 28 cd, no circuit | **28.0** |
+| `BSW_ESC_DETAIL_*_ROUTE` | 23 cd, no circuit | **23.0** |
+| `GALLERIA_NEAR_ROUTE_LIGHT_*` | 19 cd, no circuit | **19.0** |
+| `BSW_OPENING_ENTRY_POOL_*` | 55 cd, no circuit | **55.0** |
+
+Five families, five exact matches. **Chris's "the lighting is still too bright
+and not emergency looking" was a description of that tool's output**, and it
+sets no `LLK_Mains` or `LLK_Emergency` tag on anything it touches, which is why
+every one of those lights burned in both power states and why the breaker
+barely did anything.
+
+It was run once on 2026-11-25, deliberately and reversibly, because Chris asked
+to see both lightings side by side. The map was clean at `a3610f7` before and
+was restored with `git checkout` after; the same camera measured 27.32 before,
+30.91 under that tool, and 27.31 after the restore.
+
+What the pair shows, at the escalator looking south down the store:
+
+| the floor the keeper walks | current | that tool |
+| --- | --- | --- |
+| mean luminance | 67.5 | **84.9** |
+| p90 | 114.1 | **143.5** |
+| colour | (56, 72, 61) cold green-white | (87, 85, 74) warm cream |
+| saturation | 0.221 | 0.146 |
+
+**It is 26% brighter and it is the wrong colour.** The warm cream is the
+`SERVICE` colour that tool authors, `(226, 214, 194)` — a corridor in a shop
+that is open. The current floor is the battery-pack white this document chose,
+and it reads as a building whose power is off.
+
+That is not an alternative direction. It is the state this whole pass replaced.
