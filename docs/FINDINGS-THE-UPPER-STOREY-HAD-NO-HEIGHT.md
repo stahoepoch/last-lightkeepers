@@ -135,3 +135,19 @@ already in a cell.
 
 **Nobody has played any of it.** Every number here is a measurement against a
 saved map, and every picture is a render.
+
+---
+
+**Corrected 2026-11-24.** Two of the lines above did not survive contact with
+a player.
+
+Chris had in fact played the map - *"I played it yesterday. I looked at it,
+walked through it"* - so the closing caveat was already false when it was
+written. See `docs/FINDINGS-THERE-WAS-NOTHING-TO-DO.md`.
+
+And **the offer at the top of this section was the wrong fix.** Dimming
+`MI_LLK_Fixture_Emergency` from 2.5 treats as a slightly-too-high value what
+is a scale error of roughly twenty times: on a floor that peaks at 0.0005,
+anything emissive over about 0.2 clips to white before its colour is visible.
+The sweep that settled it is in the new file. The value is still unchanged,
+but for a better reason than the one given here.
