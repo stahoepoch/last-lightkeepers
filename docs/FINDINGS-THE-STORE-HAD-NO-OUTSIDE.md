@@ -151,3 +151,9 @@ above - the empty lots and the black sky - are addressed in
 `docs/FINDINGS-THE-LOTS-AND-THE-SKY.md`. The interior moved by three tenths of
 one percent in the doing of it. The Galleria question in section 5 is still
 open, and no exterior door opens yet.
+
+**Answered 2026-11-25: the upper mall entrance now opens onto something.**
+When this pass put a glazed opening at the store's deck level it opened onto a
+650 cm drop, because the concourse had one floor. It has two now, and which of
+the project's two Galleria maps is real is settled in
+`docs/FINDINGS-WHICH-MAP-IS-THE-GALLERIA.md`.

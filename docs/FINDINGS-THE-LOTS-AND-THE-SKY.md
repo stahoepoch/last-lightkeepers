@@ -99,3 +99,10 @@ are sealed geometry with no verb on any of them.
 
 **Nobody has played it.** Every number here is a measurement against a saved
 map and every picture is a render.
+
+---
+
+**Followed up 2026-11-25.** Two of the holes this pass's sky revealed are
+closed in `docs/FINDINGS-WHICH-MAP-IS-THE-GALLERIA.md`: the mall's roof glass
+carried no collision at all, and its outer walls stopped 290 cm short of the
+roof. Both were invisible while the sky was black.
