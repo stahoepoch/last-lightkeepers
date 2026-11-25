@@ -151,3 +151,13 @@ is a scale error of roughly twenty times: on a floor that peaks at 0.0005,
 anything emissive over about 0.2 clips to white before its colour is visible.
 The sweep that settled it is in the new file. The value is still unchanged,
 but for a better reason than the one given here.
+
+**Corrected again 2026-11-25.** Section 4's closing line - "the fittings are
+still the brightest thing in frame ... now measured as a cause rather than
+guessed at" - measured the fitting, not the room, and the inference from one
+to the other was never checked. It has been now, and it does not hold: a
+seventeenfold cut to that value leaves the floor and the ceiling where they
+were. The offer to change it was the wrong offer for the second time, for the
+second reason. `docs/FINDINGS-THE-FITTINGS-WERE-NOT-THE-PROBLEM.md` has the
+sweep; the value is now 0.40, chosen because that is where the tube's own face
+stops clipping.

@@ -189,3 +189,27 @@ unchanged.
 against a saved map and every picture is still a render - but the thing that
 set this work going was a person walking the floor, and that is the only test
 that has ever found this particular defect.
+
+---
+
+**Corrected 2026-11-25.** Section 2's conclusion about the fixture materials
+was wrong, and a sweep of the actual fitting says so.
+
+The claim was that `MI_LLK_Fixture_Emergency` at 2.5 is "roughly seventeen
+times past the point where colour survives, which is why every emergency tube
+has rendered as a white blob **and why nothing in this building has had a
+colour at the fitting itself**." The first half is true of the tube's own
+face, where 26.5% of its pixels are fully clipped. **The second half is not
+true of the room.** Cutting that value seventeenfold moves the lit ceiling by
+0.04 of 255 and the frame median not at all: this store is lit by its placed
+lights, and the fittings contribute nothing measurable to it.
+
+So the "honest fix" that section called for - "a scale change across the
+fixture materials" - would have changed nothing a player could see. The real
+defect was narrower and the real fix was free. The emergency fitting is now at
+**0.40**, where its face stops clipping and the room does not move.
+
+See `docs/FINDINGS-THE-FITTINGS-WERE-NOT-THE-PROBLEM.md`.
+
+**Section 4 is answered**, too: the exterior Chris described now exists. See
+`docs/FINDINGS-THE-STORE-HAD-NO-OUTSIDE.md`.
