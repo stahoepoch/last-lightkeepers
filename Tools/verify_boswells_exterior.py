@@ -35,8 +35,9 @@ REQUIRED = {
 # A verifier cannot render, so these are recorded here as the numbers a future
 # render must still produce, not as something this script measures.
 INTERIOR_BEFORE = {
-    "ground pose, frame mean": 16.71,
-    "deck pose, frame mean": 41.24,
+    "ground pose, frame mean: 16.71 before any exterior, 16.39 after the "
+    "envelope, 16.44 after the lots and the sky": 16.44,
+    "deck pose, frame mean: 41.24, then 40.16, then 40.31": 40.31,
 }
 
 failures = []
@@ -169,8 +170,50 @@ for label, group in mine.items():
                   "%s carries LLK_Emergency, so it would be counted as part "
                   "of the store's emergency layer" % label)
 
-notes.append("the interior readings this build must not have moved: "
-             + "; ".join("%s %.2f" % (k, v) for k, v in INTERIOR_BEFORE.items()))
+# ---------------------------------------------------------------- lots and sky
+
+# Added 2026-11-25, when Chris picked "lots and sky" off this file's own list
+# of what the exterior did not do.
+LOT_PREFIX = "BSW_LOT_"
+lot = {label: group for label, group in by_label.items()
+       if label.startswith(LOT_PREFIX)}
+say("%d lot actor(s) in the saved map" % sum(len(g) for g in lot.values()))
+
+check(LOT_PREFIX + "SKY_ATMOSPHERE" in by_label,
+      "there is no SkyAtmosphere, so the moon is still a lamp in a void")
+
+for label in ("BSW_EXT_SKYLIGHT",):
+    for actor in by_label.get(label, []):
+        comp = actor.get_component_by_class(unreal.SkyLightComponent)
+        check(comp.get_editor_property("real_time_capture"),
+              "%s does not capture in real time, so it is still lighting the "
+              "level with the black sky it was built against" % label)
+
+POPULATION = {
+    "stall markings": ("STRIPE", 60),
+    "cars left on the lots": ("CAR_", 12),
+    "a treeline": ("TREE_", 20),
+    "a cart corral": ("CORRAL", 6),
+    "planted islands": ("ISLAND", 3),
+}
+for what, (fragment, least) in POPULATION.items():
+    count = sum(1 for label in lot if fragment in label)
+    check(count >= least,
+          "%s: %d actor(s), which is below the %d this pass placed - "
+          "something has been removed" % (what, count, least))
+    if count >= least:
+        say("ok: %s (%d actors)" % (what, count))
+
+# Nothing on a lot may carry a store circuit, same rule as the exterior
+# lights: the breaker must not switch the car park.
+for label, group in lot.items():
+    for actor in group:
+        tags = [str(t) for t in actor.get_editor_property("tags")]
+        check("LLK_Mains" not in tags and "LLK_Emergency" not in tags,
+              "%s carries a store circuit tag" % label)
+
+notes.append("the interior readings this build must not have moved - "
+             + "; ".join(sorted(INTERIOR_BEFORE)))
 
 for note in notes:
     say("note: " + note)

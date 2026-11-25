@@ -143,3 +143,11 @@ material, not a landscape.
 
 **Nobody has played it.** Every number here is a measurement against a saved
 map and every picture is a render.
+
+---
+
+**Answered 2026-11-25: Chris said "Lots and sky."** Both of the admissions
+above - the empty lots and the black sky - are addressed in
+`docs/FINDINGS-THE-LOTS-AND-THE-SKY.md`. The interior moved by three tenths of
+one percent in the doing of it. The Galleria question in section 5 is still
+open, and no exterior door opens yet.
